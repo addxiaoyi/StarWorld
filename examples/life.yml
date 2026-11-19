@@ -1,0 +1,59 @@
+# Same defaults as LifeDefinitions.defaults(); copied to config-examples in the release ZIP.
+# Missing CE content disables that action explicitly; no placeholder material or free reward.
+life-version: 1
+profession-cooldown-periods: 6
+player-culture-per-period: 80
+city-culture-per-period: 240
+culture-limit: 1000000000
+maximum-production-bonus: 0.30
+professions:
+  chef: 厨师
+  brewer: 酿酒师
+  artisan: 装饰工匠
+  musician: 乐师
+feasts:
+  community:
+    name: 城市聚餐
+    profession: chef
+    inputs: {minecraft:bread: 8}
+    culture: 12
+    production-bonus: 0.04
+    duration-periods: 3
+  cookery:
+    name: 森罗菜肴宴会
+    profession: chef
+    inputs: {kaleidoscopecookery:baozi: 4, kaleidoscopecookery:oil: 1}
+    culture: 25
+    production-bonus: 0.08
+    duration-periods: 4
+  tavern:
+    name: 酒馆宴会
+    profession: brewer
+    inputs: {kaleidoscope_tavern:barrel/wine: 1, minecraft:bread: 4}
+    culture: 20
+    production-bonus: 0.07
+    duration-periods: 4
+decorations:
+  profession: artisan
+  furniture-ids: [kaleidoscope_deco:chair/oak, kaleidoscope_deco:cook_stool/oak]
+  registration-cost: {minecraft:oak_planks: 4}
+  upkeep: {minecraft:bread: 1}
+  maximum-per-city: 8
+  culture-per-period: 1
+  production-bonus: 0.005
+concerts:
+  profession: musician
+  instruments: [minecraft:note_block, musicplus:handheld_instrument]
+  inputs: {minecraft:bread: 8}
+  minimum-duration-millis: 60000
+  maximum-duration-millis: 300000
+  note-gap-millis: 750
+  maximum-silence-millis: 10000
+  minimum-notes: 12
+  maximum-notes: 120
+  distinct-pitches: 5
+  audience: 1
+  culture: 20
+  production-bonus: 0.06
+  duration-periods: 4
+  cooldown-periods: 4

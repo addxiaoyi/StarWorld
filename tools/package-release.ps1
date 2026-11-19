@@ -47,8 +47,10 @@ if ($ExpectedPluginSha256 -and $pluginHash -ne $ExpectedPluginSha256.ToLowerInva
 $jar = [IO.Compression.ZipFile]::OpenRead($pluginJar)
 try {
     $jarNames = @($jar.Entries | ForEach-Object FullName)
-    foreach ($required in @('plugin.yml', 'config.yml', 'definitions.yml',
-        'dev/starworld/StarWorldPlugin.class', 'org/sqlite/JDBC.class')) {
+    foreach ($required in @('plugin.yml', 'config.yml', 'definitions.yml', 'evolution.yml', 'logistics.yml', 'exports.yml',
+        'dev/starworld/StarWorldPlugin.class', 'dev/starworld/evolution/EvolutionService.class',
+        'dev/starworld/logistics/LogisticsService.class', 'dev/starworld/life/LifeService.class',
+        'dev/starworld/integration/ResourceOutbox.class', 'dev/starworld/integration/StarCoreCombatContributor.class', 'org/sqlite/JDBC.class')) {
         if ($jarNames -notcontains $required) { throw "Plugin artifact lacks $required" }
     }
     if ($jarNames | Where-Object { $_ -match '^(dev/starcore/|dev/starworld/fixture/)' -or $_ -match 'Test\.class$' }) {
@@ -94,7 +96,8 @@ try {
         'tools/package-release.ps1', 'tools/smoke-paper.ps1',
         'tools/paper-fixture/pom.xml', 'tools/paper-fixture/plugin.yml',
         'tools/paper-fixture/README.md', 'tools/paper-fixture/starcore-build-provenance.json',
-        'tools/paper-client/package.json', 'tools/paper-client/acceptance.cjs', 'tools/paper-client/README.md'
+        'tools/paper-client/package.json', 'tools/paper-client/acceptance.cjs',
+        'tools/paper-client/expansion-acceptance.cjs', 'tools/paper-client/README.md'
     )
     foreach ($file in $toolFiles) { Copy-AllowedFile $file $sourceRoot }
     $fixtureSource = Join-Path $RepositoryRoot 'tools/paper-fixture/src'
@@ -108,9 +111,10 @@ try {
         (Join-Path $staging 'sources'), (Join-Path $staging 'config-examples') | Out-Null
     Copy-Item -LiteralPath $pluginJar -Destination (Join-Path $staging 'plugins/StarWorld.jar')
     Copy-Item -LiteralPath $sourcesJar -Destination (Join-Path $staging "sources/starworld-$version-sources.jar")
-    foreach ($file in @('config.yml', 'definitions.yml')) {
+    foreach ($file in @('config.yml', 'definitions.yml', 'evolution.yml', 'logistics.yml', 'exports.yml')) {
         Copy-Item -LiteralPath (Join-Path $RepositoryRoot "src/main/resources/$file") -Destination (Join-Path $staging "config-examples/$file")
     }
+    Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'examples/life.yml') -Destination (Join-Path $staging 'config-examples/life.yml')
     Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'README.md') -Destination (Join-Path $staging 'README.md')
     Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'LICENSE') -Destination (Join-Path $staging 'LICENSE')
     Copy-Item -LiteralPath (Join-Path $sourceRoot 'docs') -Destination (Join-Path $staging 'docs') -Recurse

@@ -159,6 +159,26 @@ class WorldStoreTest {
             assertEquals(8, store.stock(city.cityId()).get("minecraft:wheat"));
         }
     }
+    @Test void reducingConfiguredCapacityPreservesExistingGoodsAndAllowsGradualWithdrawal()throws Exception{
+        Path db=temp.resolve("reduced-limit.db");CoreCity city=city();
+        try(WorldStore store=new WorldStore(db,1000)){store.ensureCity(city);store.stock(city.cityId(),"minecraft:wheat",900);store.cityCapacity(city.cityId(),1000);}
+        try(WorldStore store=new WorldStore(db,100)){assertEquals(900,store.stock(city.cityId()).get("minecraft:wheat"));assertEquals(100,store.cityCapacity(city.cityId()));
+            assertThrows(SQLException.class,()->store.stock(city.cityId(),"minecraft:wheat",901));
+            Transfer t=store.prepareTransfer(UUID.randomUUID(),city.cityId(),"WITHDRAW","minecraft:wheat",20);assertEquals(880,store.stock(city.cityId()).get("minecraft:wheat"));store.completeTransfer(t.id());
+        }
+    }
+    @Test void configuredPeriodMigrationKeepsLogicalIdsAndEventTimelineAcrossRestart()throws Exception{
+        Path db=temp.resolve("clock.db");CoreCity city=city();EventState event;
+        try(WorldStore s=new WorldStore(db,1000)){s.ensureCity(city);var clock=s.simulationClock(10,1000);assertEquals(100,clock.period(1000));s.finish(city.cityId(),100,"old period");event=new EventState("drought",100,103,105);s.event(city.cityId(),event);}
+        try(WorldStore s=new WorldStore(db,1000)){var clock=s.simulationClock(300,1010);assertEquals(101,clock.period(1010));assertEquals(102,clock.period(1310));assertEquals(event,s.view(city.cityId()).orElseThrow().event());assertTrue(clock.period(710)<=100,"clock rollback does not create a future settlement");}
+        try(WorldStore s=new WorldStore(db,1000)){var clock=s.simulationClock(300,1310);assertEquals(102,clock.period(1310));var quick=s.simulationClock(10,1310);assertEquals(102,quick.period(1310));assertEquals(103,quick.period(1320));}
+    }
+    @Test void upgradingLegacyDatabaseWithLargerHistoricalPeriodNeverFreezesSettlementForYears()throws Exception{
+        try(WorldStore s=new WorldStore(temp.resolve("legacy-clock.db"),1000)){CoreCity c=city();s.ensureCity(c);s.finish(c.cityId(),10000,"historical ten second period");var clock=s.simulationClock(300,1000);assertEquals(10000,clock.period(1000));assertEquals(10001,clock.period(1300));}
+    }
+    @Test void cancellingAnUntouchedWithdrawalRestoresReservedGoodsAfterWarehouseCapacityFalls()throws Exception{
+        try(WorldStore s=new WorldStore(temp.resolve("refund-capacity.db"),1000)){CoreCity c=city();s.ensureCity(c);s.stock(c.cityId(),"minecraft:wheat",500);Transfer t=s.prepareTransfer(UUID.randomUUID(),c.cityId(),"WITHDRAW","minecraft:wheat",100);s.cityCapacity(c.cityId(),100);s.cancelUntouchedTransfer(t.id());assertEquals(500,s.stock(c.cityId()).get("minecraft:wheat"));assertThrows(Exception.class,()->s.cancelUntouchedTransfer(t.id()));assertThrows(SQLException.class,()->s.stock(c.cityId(),"minecraft:wheat",501));}
+    }
 
     @Test void untouchedWithdrawalsCanBeCancelledOnlyOnceAndFullDepositsRemainPending() throws Exception {
         try (WorldStore store = new WorldStore(temp.resolve("transfer-limits.db"), 100)) {

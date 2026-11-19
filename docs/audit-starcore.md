@@ -1,5 +1,7 @@
 # StarCore 技术审计与复用边界
 
+实现版本补记：本文保留首次审计的源码结论与第一阶段只读桥接范围。0.2.0 已在相同公开服务基线上增加不可变扩展快照、持久国家资源 outbox/receipt 和公开 army_combat 贡献者；没有直接修改核心表。当前接口、作用边界和验证记录见 [core-extension.md](core-extension.md)、[combat.md](combat.md) 与 [test-results.md](test-results.md)。
+
 审计日期：2026-11-19（Asia/Shanghai）。仓库：<https://github.com/addxiaoyi/starcore>。本地检出 `main`，`git log -1` 和 `git ls-remote origin HEAD` 均为 `f769e62799e769a18fe51305b545869a17f80cd1`，提交时间 `2026-11-18T23:34:47Z`，消息 `docs: record final shared budget Paper acceptance`。本次只读审计未修改 StarCore。审计范围包含 README（中文/英文）、ARCHITECTURE、Maven、plugin.yml、公共入口及实际注册、国家/城市/领土/资源/科技/政策/繁荣/天气/纪元实现。
 
 ## 实际基线与依赖

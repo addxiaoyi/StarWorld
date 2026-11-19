@@ -13,9 +13,10 @@ public final class WorldCommand implements CommandExecutor,TabCompleter {
         String sub=args.length==0?"menu":args[0].toLowerCase(Locale.ROOT);
         try{
             switch(sub){
-                case "help" -> sender.sendMessage(new String[]{"§6StarWorld 第一阶段", "/sw menu|status|stock|buildings", "/sw register <farm|sawmill|workshop> （看向设施锚点）", "/sw deposit|withdraw <命名空间:物品> <数量>", "/sw civilization <agrarian|industrial>", "/sw upgrade|remove <设施UUID>", "/sw event <drought|blizzard|harvest> （管理员）", "/sw pending /sw resolve <凭据UUID> <credit|discard> （管理员）"});
+                case "help" -> sender.sendMessage(new String[]{"§6StarWorld · 动态文明世界", "/sw menu|develop|status|stock|buildings", "/sw register <设施ID> （看向配置锚点）", "/sw deposit|withdraw <命名空间:物品> <数量>", "/sw civilization <文明ID> /sw upgrade|remove <设施UUID>", "/sw development|history|culture|nation /sw plan|specialty <ID>","/sw nation-development /sw national-specialty <ID>","/sw node|route|trade|demand help （交通贸易）","/sw profession <职业> /sw feast <宴会> /sw decoration /sw concert","/sw export <契约ID> <批数> /sw outbox","/sw event <事件ID> /sw pending /sw resolve <UUID> <credit|discard> （管理员）"});
                 case "status" -> {sender.sendMessage("§6StarWorld "+runtime.version());runtime.integrationStatus().forEach((k,v)->sender.sendMessage("§e"+k+"§f: "+v));}
                 case "menu" -> menu.open(player(sender));
+                case "develop" -> menu.openDevelopment(player(sender));
                 case "register" -> {require(args,2);runtime.register(player(sender),args[1]);}
                 case "civilization" -> {require(args,2);runtime.civilization(player(sender),args[1]);}
                 case "upgrade","remove" -> {require(args,2);UUID id=UUID.fromString(args[1]);if(sub.equals("upgrade"))runtime.upgrade(player(sender),id);else runtime.remove(player(sender),id);}
@@ -24,7 +25,7 @@ public final class WorldCommand implements CommandExecutor,TabCompleter {
                 case "event" -> {admin(sender);require(args,2);runtime.trigger(player(sender),args[1]);}
                 case "pending" -> {admin(sender);Player p=player(sender);runtime.reply(p,runtime.pending(),list->{p.sendMessage("§e待核对凭据："+list.size());list.forEach(t->p.sendMessage(t.toString()));});}
                 case "resolve" -> {admin(sender);require(args,3);if(!Set.of("credit","discard").contains(args[2]))throw new IllegalArgumentException("使用 credit 或 discard");Player p=player(sender);runtime.reply(p,runtime.resolve(UUID.fromString(args[1]),args[2].equals("credit"),p.getUniqueId().toString()),ok->p.sendMessage("§a凭据已人工核对并记入审计"));}
-                default -> throw new IllegalArgumentException("未知命令，请使用 /sw help");
+                default -> {if(!(sender instanceof Player p)||!runtime.expansionCommand(p,args))throw new IllegalArgumentException("未知命令，请使用 /sw help");}
             }
         }catch(Exception e){sender.sendMessage("§cStarWorld: "+e.getMessage());}
         return true;
@@ -35,7 +36,7 @@ public final class WorldCommand implements CommandExecutor,TabCompleter {
     @Override public List<String> onTabComplete(CommandSender sender,Command command,String alias,String[] args){
         if(!sender.hasPermission("starworld.use"))return List.of();
         List<String> values=List.of();
-        if(args.length==1){values=new ArrayList<>(List.of("menu","help","status","stock","buildings","register","civilization","deposit","withdraw","upgrade","remove"));if(sender.hasPermission("starworld.admin"))values.addAll(List.of("event","pending","resolve"));}
+        if(args.length==1){values=new ArrayList<>(List.of("menu","develop","help","status","stock","buildings","register","civilization","deposit","withdraw","upgrade","remove","development","plan","specialty","history","culture","nation","nation-development","national-specialty","export","outbox","node","route","trade","demand","profession","feast","decoration","concert"));if(sender.hasPermission("starworld.admin"))values.addAll(List.of("event","pending","resolve"));}
         else if(args.length==2)values=switch(args[0]){case "register"->runtime.definitions().buildings().keySet().stream().sorted().toList();case "civilization"->runtime.definitions().civilizations().keySet().stream().sorted().toList();case "event"->sender.hasPermission("starworld.admin")?runtime.definitions().events().keySet().stream().sorted().toList():List.of();case "deposit","withdraw"->dev.starworld.config.ConfigLoader.items(runtime.definitions()).stream().sorted().toList();default->List.of();};
         else if(args.length==3 && args[0].equals("resolve") && sender.hasPermission("starworld.admin"))values=List.of("credit","discard");
         String prefix=args[args.length-1].toLowerCase(Locale.ROOT);return values.stream().filter(v->v.startsWith(prefix)).sorted().toList();

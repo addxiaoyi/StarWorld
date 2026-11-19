@@ -1,0 +1,138 @@
+package dev.starworld.runtime;
+
+import dev.starworld.api.event.CityDevelopmentEvent;
+import dev.starworld.domain.*;
+import dev.starworld.domain.WorldState.*;
+import dev.starworld.evolution.*;
+import dev.starworld.evolution.EvolutionState.*;
+import dev.starworld.integration.*;
+import dev.starworld.integration.CoreExtensionPort.*;
+import dev.starworld.life.*;
+import dev.starworld.life.LifeState.*;
+import dev.starworld.logistics.*;
+import dev.starworld.persistence.WorldStore;
+import java.io.File;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+/** Wires pure extension modules to explicit Paper thread captures and the single storage worker. */
+public final class ExpansionRuntime {
+    private final JavaPlugin plugin;private final WorldRuntime runtime;private final CoreBridge core;
+    private final WorldStore store;private final SchedulerGate scheduler;private final CustomItems items;
+    private final EvolutionService evolution;private final ExportDefinitions exports;
+    private final NationalEvolution national;
+    private final LogisticsService logistics;private final LogisticsController transport;
+    private final LifeService life;private final LifePlatform lifePlatform;private final LifeController lifestyle;
+    private final ResourceOutbox outbox;private final CoreExtensionPort extensions;
+    private final StarCoreCombatContributor combat;
+    private final AtomicBoolean ticking=new AtomicBoolean();private int decorationCursor;
+    private final Set<String> itemIds;
+    public ExpansionRuntime(JavaPlugin plugin,WorldRuntime runtime,Definitions definitions,CoreBridge core,CustomItems items,WorldStore store,File folder)throws Exception {
+        this.plugin=plugin;this.runtime=runtime;this.core=core;this.items=items;this.store=store;this.scheduler=new SchedulerGate(plugin);
+        EvolutionDefinitions options=EvolutionDefinitions.load(new File(folder,"evolution.yml"),definitions);exports=ExportDefinitions.load(new File(folder,"exports.yml"));
+        LifeDefinitions.writeDefaults(new File(folder,"life.yml"));LifeDefinitions lifeDefinitions=LifeDefinitions.load(new File(folder,"life.yml"));
+        YamlConfiguration transportConfig=new YamlConfiguration();transportConfig.load(new File(folder,"logistics.yml"));
+        evolution=new EvolutionService(store,definitions,options);logistics=new LogisticsService(store,LogisticsConfig.load(transportConfig));
+        national=new NationalEvolution(store,definitions,new File(folder,"evolution.yml"));
+        life=new LifeService(store,lifeDefinitions);life.initialize();lifePlatform=new LifePlatform(plugin,core,items,lifeDefinitions);
+        lifestyle=new LifeController(plugin,runtime,core,items,life,lifePlatform);outbox=new ResourceOutbox(store);extensions=new StarCoreExtensions(plugin);
+        YamlConfiguration evolutionConfig=new YamlConfiguration();evolutionConfig.load(new File(folder,"evolution.yml"));combat=new StarCoreCombatContributor(plugin,core,runtime::currentPeriod,StarCoreCombatContributor.Settings.load(evolutionConfig));
+        transport=new LogisticsController(plugin,runtime,core,extensions,logistics);
+        Set<String> ids=new HashSet<>(lifeDefinitions.itemIds());exports.contracts().values().forEach(c->ids.addAll(c.costs().keySet()));
+        logistics.definitions().nodes().values().forEach(n->{ids.addAll(n.construction().keySet());ids.addAll(n.maintenance().keySet());});itemIds=Set.copyOf(ids);items.validate(itemIds);
+        for(var c:exports.contracts().values())if(!definitions.buildings().containsKey(c.facility()))throw new IllegalArgumentException("Unknown export facility "+c.facility());
+    }
+    public EvolutionService evolution(){return evolution;}
+    public NationalEvolution national(){return national;}
+    public LogisticsService logistics(){return logistics;}
+    public LifeService life(){return life;}
+    public Set<String> itemIds(){return itemIds;}
+    public void start(){combat.register();}
+    public void close(){combat.close();}
+    public Map<String,String> status(){Map<String,String> status=new LinkedHashMap<>(lifePlatform.status());status.put("Logistics","节点、双向托管、地形运时与战争封锁已启用");status.put("Core exports","幂等国家资源事务 + 持久 outbox");status.put("Core combat",combat.status());return Map.copyOf(status);}
+    public Optional<NationSnapshot> nation(UUID id){return extensions.snapshot(id,Set.of());}
+    public Settlement settle(CoreCity core,long period,Set<UUID> valid,Optional<NationSnapshot> nation,Simulation simulation)throws SQLException {
+        return store.tx(s->{s.ensureCity(core);CityView city=s.view(core.cityId()).orElseThrow();
+            if(city.lastPeriod()>=period||s.settled(city.id(),period))return simulation.settle(core,period,valid);
+            return simulation.settle(core,period,valid,cycle(core,city,period,valid,nation));
+        });
+    }
+    public Simulation.Hooks cycle(CoreCity core,CityView city,long period,Set<UUID> valid,Optional<NationSnapshot> nation)throws SQLException {
+        List<String> tradeActions=store.query("SELECT r.order_id FROM logistics_receipt r JOIN logistics_order o ON r.order_id=o.id LEFT JOIN evolution_trade_action a ON a.city=? AND a.receipt=r.order_id WHERE ((o.origin_city=? AND o.origin_nation=?) OR (o.target_city=? AND o.target_nation=?)) AND r.period<=? AND a.receipt IS NULL ORDER BY r.sequence LIMIT 10",r->r.getString(1),city.id(),city.id(),city.nationId(),city.id(),city.nationId(),period);
+        for(String receipt:tradeActions)store.execute("INSERT INTO evolution_trade_action(city,receipt,period) VALUES(?,?,?)",city.id(),receipt,period);
+        long trades=tradeActions.size();
+        Context context=new Context(nation.map(NationSnapshot::weather).orElse("unknown"),nation.map(n->n.epoch()==null?"unknown":Long.toString(n.epoch().number())).orElse("unknown"),nation.map(n->!n.warOpponents().isEmpty()).orElse(false),nation.map(n->n.diplomacy().values().stream().anyMatch(v->v.equals("HOSTILE")||v.equals("WAR"))).orElse(false),trades,life.drainEvolutionCulture(city.id(),period),life.productionMultiplier(city.id(),period));
+        Simulation.Hooks cityHooks=evolution.cycle(core,city,period,valid,context);Map<String,Double> nationalMultipliers=national.multipliers(core.nationId());
+        return new Simulation.Hooks(){
+            @Override public double multiplier(Building b)throws SQLException{return cityHooks.multiplier(b)*nationalMultipliers.getOrDefault(b.type(),1.0);}
+            @Override public long capacity(String item){return cityHooks.capacity(item);}
+            @Override public boolean filterEvents(){return cityHooks.filterEvents();}
+            @Override public Map<String,Double> eventWeights(CityView c,long p)throws SQLException{return cityHooks.eventWeights(c,p);}
+            @Override public void completed(CoreCity c,CityView previous,long p,Map<String,Long> produced,Set<UUID> maintained)throws SQLException{cityHooks.completed(c,previous,p,produced,maintained);}
+        };
+    }
+    private record Development(Profile profile,CityView city,Optional<Readiness> readiness){}
+    public void afterSettlement(UUID city){runtime.async(()->new Development(evolution.profile(city),store.view(city).orElseThrow(),evolution.readiness(city))).thenAccept(snapshot->scheduler.global(()->{
+        Optional<CoreCity> current=core.city(city);if(current.isEmpty()||!current.get().nationId().equals(snapshot.city().nationId())){combat.remove(city);return;}
+        Set<UUID> valid=runtime.verifiedBuildings(snapshot.city());List<Site> sites=snapshot.city().buildings().stream().filter(b->valid.contains(b.id())).map(Building::site).toList();
+        snapshot.readiness().filter(r->r.required()>0).ifPresentOrElse(r->combat.update(r,sites),()->combat.remove(city));Bukkit.getPluginManager().callEvent(new CityDevelopmentEvent(snapshot.profile()));
+    }));}
+    public void tick(){
+        if(!ticking.compareAndSet(false,true))return;
+        CompletableFuture<?> trades=transport.tickFuture();
+        CompletableFuture<?> resources=runtime.async(()->outbox.leaseDue(10,System.currentTimeMillis())).thenCompose(dispatches->{CompletableFuture<Void> done=new CompletableFuture<>();scheduler.global(()->{
+            try{List<CompletableFuture<?>> jobs=new ArrayList<>();for(var dispatch:dispatches){Delivery result=extensions.deliver(dispatch.entry().request());jobs.add(runtime.async(()->outbox.finish(dispatch,result,System.currentTimeMillis())));}CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new)).whenComplete((v,e)->{if(e==null)done.complete(null);else done.completeExceptionally(e);});}catch(Exception e){done.completeExceptionally(e);}
+        });return done;});
+        CompletableFuture<?> decorations=settleDecorations();
+        CompletableFuture.allOf(trades,resources,decorations).thenCompose(v->spreadCulture()).whenComplete((v,e)->{ticking.set(false);if(e!=null)plugin.getLogger().warning("Extension tick failed; durable work retained: "+root(e));});
+    }
+    private record Exchanges(List<dev.starworld.logistics.LogisticsState.TradeReceipt> receipts,Map<UUID,CityView> cities){}
+    private CompletableFuture<Void> spreadCulture(){
+        return runtime.async(()->{long cursor=store.query("SELECT value FROM extension_meta WHERE key='culture-trade-cursor'",r->Long.parseLong(r.getString(1))).stream().findFirst().orElse(0L);var receipts=logistics.completedAfter(cursor,20);Map<UUID,CityView> cities=new HashMap<>();for(var r:receipts)for(UUID id:List.of(r.originCity(),r.targetCity()))if(!cities.containsKey(id))store.view(id).ifPresent(c->cities.put(id,c));return new Exchanges(receipts,Map.copyOf(cities));}).thenCompose(batch->{CompletableFuture<Void> done=new CompletableFuture<>();scheduler.global(()->{
+            try{Map<UUID,Set<String>> regions=new HashMap<>();Map<UUID,UUID> nations=new HashMap<>();for(var view:batch.cities().values()){Optional<CoreCity> city=core.city(view.id());if(city.isEmpty()||!city.get().nationId().equals(view.nationId()))continue;Set<UUID> valid=runtime.verifiedBuildings(view);Set<String> keys=new HashSet<>();for(Building b:view.buildings())if(valid.contains(b.id()))keys.add(b.site().regionKey());regions.put(view.id(),Set.copyOf(keys));nations.put(view.id(),city.get().nationId());}
+                runtime.async(()->store.tx(s->{for(var receipt:batch.receipts()){
+                    if(receipt.originNation().equals(nations.get(receipt.originCity()))&&receipt.targetNation().equals(nations.get(receipt.targetCity())))evolution.exchange(receipt.orderId().toString(),receipt.originCity(),receipt.targetCity(),receipt.period(),regions.getOrDefault(receipt.originCity(),Set.of()),regions.getOrDefault(receipt.targetCity(),Set.of()));
+                    s.execute("INSERT INTO extension_meta(key,value) VALUES('culture-trade-cursor',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",Long.toString(receipt.sequence()));
+                }return true;})).whenComplete((v,e)->{if(e==null)done.complete(null);else done.completeExceptionally(e);});
+            }catch(Exception e){done.completeExceptionally(e);}
+        });return done;});
+    }
+    private record Decorations(UUID city,List<Decoration> decorations){}
+    private CompletableFuture<Void> settleDecorations(){
+        return runtime.async(()->{List<UUID> cities=store.cities(20,decorationCursor);if(cities.isEmpty()){decorationCursor=0;cities=store.cities(20,0);}decorationCursor+=cities.size();List<Decorations> batch=new ArrayList<>();for(UUID city:cities)batch.add(new Decorations(city,life.decorations(city)));return batch;}).thenCompose(batch->{CompletableFuture<Void> result=new CompletableFuture<>();scheduler.global(()->{
+            try{List<CompletableFuture<?>> jobs=new ArrayList<>();long period=runtime.currentPeriod();for(var row:batch){Optional<CoreCity> city=core.city(row.city());if(city.isEmpty())continue;Set<UUID> valid=new HashSet<>();for(Decoration d:row.decorations())if(d.nation().equals(city.get().nationId())&&core.ownsSite(row.city(),d.site())&&lifePlatform.validateDecoration(d))valid.add(d.furnitureId());jobs.add(runtime.async(()->life.settleDecorations(city.get(),period,valid)));}CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new)).whenComplete((v,e)->{if(e==null)result.complete(null);else result.completeExceptionally(e);});}catch(Exception e){result.completeExceptionally(e);}
+        });return result;});
+    }
+    public boolean command(Player p,String[] args){
+        if(lifestyle.execute(p,args)||transport.execute(p,args))return true;
+        String sub=args[0].toLowerCase(Locale.ROOT);
+        if(!Set.of("development","plan","specialty","history","culture","export","outbox","nation","nation-development","national-specialty").contains(sub))return false;
+        CoreCity city=runtime.playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入 StarCore 城市"));
+        switch(sub){
+            case "development"->{runtime.reply(p,runtime.open(city).thenCompose(v->runtime.async(()->evolution.profile(city.cityId()))),profile->p.sendMessage("§e城市发展："+profile+"\n§e规划："+evolution.options().plans().keySet()+"；专长："+evolution.options().specialties().keySet()));}
+            case "plan"->{require(args,2);manager(p,city);runtime.reply(p,runtime.async(()->evolution.plan(city,args[1],runtime.currentPeriod(),p.getUniqueId().toString())),v->p.sendMessage("§a城市规划："+v.plan()));}
+            case "specialty"->{require(args,2);manager(p,city);runtime.reply(p,runtime.open(city),view->{CoreCity fresh=runtime.playerCity(p).filter(c->c.cityId().equals(city.cityId())&&c.nationId().equals(city.nationId())).orElseThrow(()->new IllegalArgumentException("城市归属已变化"));manager(p,fresh);Set<UUID> valid=runtime.verifiedBuildings(view);runtime.reply(p,runtime.async(()->evolution.specialize(fresh,args[1],runtime.currentPeriod(),valid,p.getUniqueId().toString())),v->p.sendMessage("§a城市专长："+v.specialty()));});}
+            case "history"->runtime.reply(p,runtime.async(()->evolution.history(city.cityId())),rows->rows.forEach(h->p.sendMessage("§e"+h.period()+" "+h.kind()+" §f"+h.detail())));
+            case "culture"->runtime.reply(p,runtime.async(()->evolution.cultures(city.cityId())),rows->rows.forEach(c->p.sendMessage("§e"+c.region()+" §f"+c.tradition()+": "+c.influence())));
+            case "nation"->p.sendMessage("§eStarCore 公共快照："+nation(city.nationId()).map(Object::toString).orElse("不可用"));
+            case "nation-development"->runtime.reply(p,runtime.open(city).thenCompose(v->runtime.async(()->national.view(city.nationId()))),v->p.sendMessage("§e国家发展："+v+"\n§e国家专长："+national.specialties()));
+            case "national-specialty"->{require(args,2);if(!p.hasPermission("starworld.admin")&&!core.canGovern(p.getUniqueId(),city.cityId()))throw new IllegalArgumentException("国家专长需要国家创始人权限");runtime.reply(p,runtime.open(city),v->{CoreCity fresh=runtime.playerCity(p).filter(c->c.cityId().equals(city.cityId())&&c.nationId().equals(city.nationId())).orElseThrow(()->new IllegalArgumentException("城市归属已变化"));if(!p.hasPermission("starworld.admin")&&!core.canGovern(p.getUniqueId(),fresh.cityId()))throw new IllegalArgumentException("国家治理权限已变化");runtime.reply(p,runtime.async(()->national.choose(fresh.nationId(),args[1],runtime.currentPeriod(),p.getUniqueId().toString())),profile->p.sendMessage("§a国家专长："+profile.specialty()));});}
+            case "export"->{require(args,3);manager(p,city);ExportDefinitions.Contract contract=exports.contracts().get(args[1]);if(contract==null)throw new IllegalArgumentException("出口契约："+exports.contracts().keySet());int batches=Integer.parseInt(args[2]);Map<String,Long> costs=contract.cost(batches),output=contract.output(batches);String business="player:"+p.getUniqueId()+":"+UUID.randomUUID();runtime.reply(p,runtime.open(city),view->{
+                manager(p,city);if(runtime.playerCity(p).map(c->!c.cityId().equals(city.cityId())||!c.nationId().equals(city.nationId())).orElse(true))throw new IllegalArgumentException("城市归属已变化");Set<UUID> valid=runtime.verifiedBuildings(view);
+                if(view.buildings().stream().noneMatch(b->b.type().equals(contract.facility())&&valid.contains(b.id())))throw new IllegalArgumentException("需要已验证的 "+contract.facility());
+                runtime.reply(p,runtime.async(()->outbox.enqueue(business,city.cityId(),city.nationId(),costs,output,p.getUniqueId().toString())),entry->p.sendMessage("§a国家资源供给已托管："+entry.transactionId()+"；/sw outbox 查看回执"));
+            });}
+            case "outbox"->{if(args.length==1)runtime.reply(p,runtime.async(()->outbox.cityEntries(city.cityId(),100)),rows->rows.forEach(e->p.sendMessage("§e"+e.transactionId()+" "+e.state()+" "+e.lastError())));else{if(!p.hasPermission("starworld.admin"))throw new IllegalArgumentException("需要管理员权限");require(args,3);if(!Set.of("retry","cancel").contains(args[1]))throw new IllegalArgumentException("outbox retry|cancel <txid>");runtime.reply(p,runtime.async(()->{if(args[1].equals("retry"))outbox.retry(args[2],p.getUniqueId().toString());else outbox.cancelUnsent(args[2],p.getUniqueId().toString());return true;}),v->p.sendMessage("§a已记录处理决定"));}}
+            default->throw new IllegalStateException();
+        }return true;
+    }
+    private void manager(Player p,CoreCity city){if(!runtime.manage(p,city.cityId()))throw new IllegalArgumentException("需要城市管理权限");}
+    private static void require(String[] args,int length){if(args.length!=length)throw new IllegalArgumentException("参数错误，请 /sw help");}
+    private static Throwable root(Throwable e){while(e.getCause()!=null)e=e.getCause();return e;}
+}

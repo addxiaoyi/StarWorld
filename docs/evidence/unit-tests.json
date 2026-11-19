@@ -1,12 +1,12 @@
 {
-  "build_command": "./mvnw -B --no-transfer-progress clean verify",
-  "built_at": "2026-11-19T20:51:32+08:00",
-  "java": "Microsoft OpenJDK 21.0.13.1+2",
-  "maven": "3.9.11",
-  "artifact": "starworld-0.1.0.jar",
-  "artifact_sha256": "7e962b132c474519fea4f7d2d215ae07766baf6e3e2b1a48b0f16ccec9da6040",
+  "schema": 2,
+  "version": "0.2.0",
+  "recorded_at": "2026-11-19T15:17:05.128051+00:00",
+  "command": "./mvnw.cmd -B --no-transfer-progress verify",
+  "java": "21.0.13.1+2",
+  "artifact_sha256": "96872663790064f77b3f5366c1f586123a4bf7913ea573137b6471cf41fbaf35",
   "totals": {
-    "tests": 68,
+    "tests": 162,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -27,8 +27,29 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.evolution.EvolutionServiceTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.evolution.NationalEvolutionTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.integration.CustomItemsTest",
       "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.integration.ResourceOutboxTest",
+      "tests": 10,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -41,8 +62,71 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.integration.StarCoreCombatContributorTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.integration.StarCoreExtensionsTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.life.LifeDefinitionsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.life.LifePlatformTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.life.LifeServiceTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.logistics.LogisticsConfigTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.logistics.LogisticsControllerTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.logistics.LogisticsServiceTest",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.persistence.WorldStoreTest",
-      "tests": 10,
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.runtime.ExpansionRuntimeTest",
+      "tests": 3,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -62,30 +146,30 @@
       "skipped": 0
     }
   ],
-  "jacoco": {
+  "coverage": {
     "INSTRUCTION": {
-      "missed": 3018,
-      "covered": 5800
+      "covered": 23516,
+      "missed": 10513
     },
     "BRANCH": {
-      "missed": 355,
-      "covered": 449
+      "covered": 1591,
+      "missed": 1398
     },
     "LINE": {
-      "missed": 223,
-      "covered": 516
+      "covered": 1754,
+      "missed": 565
     },
     "COMPLEXITY": {
-      "missed": 359,
-      "covered": 330
+      "covered": 1093,
+      "missed": 1448
     },
     "METHOD": {
-      "missed": 110,
-      "covered": 169
+      "covered": 627,
+      "missed": 388
     },
     "CLASS": {
-      "missed": 7,
-      "covered": 23
+      "covered": 98,
+      "missed": 13
     }
   }
 }

@@ -1,6 +1,27 @@
 # 森罗物语依赖技术审计
 
+实现版本补记：本文保留审计基线与最初第一阶段建议；0.2.0 已据此实现 Cookery/Tavern 实际仓库商品消费、公共 CE 家具显式登记与逐期复核，以及 StarWorld 自己的受控现场演奏。上游 MusicPlus 无公开完成 API 的结论未变，不能把独立演奏说成自动监听 `/kmusic`。当前功能、降级和验证限度见 [life-integrations.md](life-integrations.md) 与 [test-results.md](test-results.md)。
+
 审计日期：2026-11-19（Asia/Shanghai）。审计方式：读取 Git 远端当前代码、README、Gradle 定义、插件描述符、公开 API、事件触发点、状态与调度代码。本审计不把上游 README 的历史验收范围扩大为 StarWorld 的运行验收。
+
+## 0.2.0 最新代码复审
+
+2026-11-19 再次通过远端固定 `6a432fe54097a3ebf22ba5757e016b602c711f28`（2026-11-19 22:05:49 +08:00，`Verify connected gameplay recovery across normal restarts`）。在 StarWorld 自己的只读审计 checkout 中 fetch 此提交，并比较下文历史 `7a676978…` 基线：仅新增一条提交，21 个文件变化；Paper `1.21.11`、Java 21 主目标和 CraftEngine `26.9.1` 均未改变。Cookery 根工程仍为 Gradle，系列为独立 Gradle 多模块，没有 Maven POM。
+
+此次唯一生产代码变化为包内 `MolotovController.preRemove`：异常归档失败时保留尽可能完整的原物品字节、Paper JSON 或明确标记不完整的应急状态，并允许 CE 完成家具生命周期；不得将恢复记录自动重放成物品。新增单测、双人协议三次正常重启夹具和文档占其余变化。Cookery 公共 API/取菜提交前语义、Tavern `DrinkCreatedEvent` 缺少玩家/位置/交易 ID、Deco 没有城市贡献 API、MusicPlus 没有公开演奏完成 API 的结论全部保持。
+
+上游新报告 `docs/research/series-gameplay-connected-acceptance-2026-11-19.json` 单独记录了当前五插件候选的物品哈希、Paper 132/Folia 14 有界协议测试与失败历史。StarWorld 可依据报告核对候选二进制身份，但它们的 PASS 不替代 StarWorld 适配器验收；不据此声明 Folia 安全、GPU 画面、音频或所有家具玩法通过。StarWorld 实服联调另见 [senluo-acceptance.md](senluo-acceptance.md)。
+
+当前报告中的四个接入候选 SHA-256：
+
+| 插件 | SHA-256 |
+| --- | --- |
+| Cookery 1.3.0 | `789528ba1d585553cb31cef4a3658693f9f6bd2d52c4669471f967aeefe7ec59` |
+| Tavern 0.1.0-dev | `205b36165b519106cda696f0d48ab91e031b6b90ba6bef8ee0d2202155948033` |
+| Deco 0.1.0-dev | `1db18976692f5de6b284b31cfc5ef40e14d60f86925f75e87fe7dc3cf807f263` |
+| Music 0.1.0-dev | `983fb4b88b39bb5211e12ead23d3202222624e114e2ee4137f48d49d434b1078` |
+
+下文为最初固定提交的详细审计，配合此复审补记阅读。
 
 ## 固定代码基线
 

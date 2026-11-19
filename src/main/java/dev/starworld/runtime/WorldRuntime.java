@@ -26,15 +26,17 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     private final WorldStore store;
     private final Simulation simulation;
     private final SchedulerGate scheduler;
+    private final WorldStore.SimulationClock clock;
     private final ExecutorService io=Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"StarWorld-storage");t.setDaemon(true);return t;});
     private final AtomicBoolean settling=new AtomicBoolean();
     private final Set<UUID> transfers=ConcurrentHashMap.newKeySet();
     private final Set<UUID> activeTransferIds=ConcurrentHashMap.newKeySet();
     private int cursor;
     private volatile boolean closed;
+    private ExpansionRuntime expansion;
     public WorldRuntime(JavaPlugin plugin,Definitions definitions,CoreBridge core,CustomItems items,WorldStore store){this.plugin=plugin;this.definitions=definitions;this.core=core;this.items=items;this.store=store;
         Set<String> available=new HashSet<>();for(String id:ConfigLoader.items(definitions))if(items.create(id,1)!=null)available.add(id);
-        simulation=new Simulation(store,definitions,available);scheduler=new SchedulerGate(plugin);}
+        simulation=new Simulation(store,definitions,available);scheduler=new SchedulerGate(plugin);try{clock=store.simulationClock(definitions.periodSeconds(),Instant.now().getEpochSecond());}catch(java.sql.SQLException e){throw new IllegalStateException("Cannot initialize simulation clock",e);}}
     @FunctionalInterface public interface Work<T>{T run()throws Exception;}
     public <T> CompletableFuture<T> async(Work<T> work){
         if(closed)return CompletableFuture.failedFuture(new IllegalStateException("StarWorld is stopping"));
@@ -42,17 +44,28 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     }
     public <T> void reply(Player player,CompletableFuture<T> future,Consumer<T> action){future.whenComplete((value,error)->scheduler.player(player,()->{
         if(error!=null){Throwable cause=error;while(cause.getCause()!=null)cause=cause.getCause();player.sendMessage("§cStarWorld: "+cause.getMessage());plugin.getLogger().fine(error.toString());}
-        else action.accept(value);
+        else try{action.accept(value);}catch(RuntimeException failure){player.sendMessage("§cStarWorld: "+failure.getMessage());plugin.getLogger().fine(failure.toString());}
     },()->{}));}
     public void tell(Player p,String message){scheduler.player(p,()->p.sendMessage(message),()->{});}
     public Optional<CoreCity> playerCity(Player p){return core.playerCity(p.getUniqueId());}
     public boolean manage(Player p,UUID city){return p.hasPermission("starworld.admin") || core.canManage(p.getUniqueId(),city);}
     public CompletableFuture<CityView> open(CoreCity city){return async(()->{store.ensureCity(city);return store.view(city.cityId()).orElseThrow();});}
-    public long currentPeriod(){return simulation.period(Instant.now().getEpochSecond());}
+    public long currentPeriod(){return clock.period(Instant.now().getEpochSecond());}
+    public void installExpansion(java.io.File folder)throws Exception{if(expansion!=null)throw new IllegalStateException("Expansion already installed");expansion=new ExpansionRuntime(plugin,this,definitions,core,items,store,folder);expansion.start();}
+    public Optional<ExpansionRuntime> expansion(){return Optional.ofNullable(expansion);}
+    public boolean expansionCommand(Player p,String[] args){return expansion!=null&&expansion.command(p,args);}
+    public Set<UUID> verifiedBuildings(CityView city){Set<UUID> result=new HashSet<>();for(Building b:city.buildings())if(b.nationId().equals(city.nationId())&&valid(b))result.add(b.id());return Set.copyOf(result);}
     @Override public String version(){return plugin.getPluginMeta().getVersion();}
     @Override public Definitions definitions(){return definitions;}
     @Override public CompletableFuture<Optional<CityView>> city(UUID id){return async(()->store.view(id));}
-    @Override public Map<String,String> integrationStatus(){Map<String,String> s=new LinkedHashMap<>(items.status());s.put("StarCore",core.status());s.put("Folia","未声明支持：当前 StarCore 城市/科技服务不保证区域线程安全，需 Paper");return Map.copyOf(s);}
+    @Override public CompletableFuture<Optional<dev.starworld.evolution.EvolutionState.Profile>> development(UUID id){return async(()->expansion==null||store.view(id).isEmpty()?Optional.empty():Optional.of(expansion.evolution().profile(id)));}
+    @Override public CompletableFuture<List<dev.starworld.evolution.EvolutionState.Culture>> culture(UUID id){return async(()->expansion==null?List.of():expansion.evolution().cultures(id));}
+    @Override public CompletableFuture<Optional<dev.starworld.life.LifeState.LifeView>> life(UUID id){return async(()->expansion==null||store.view(id).isEmpty()?Optional.empty():Optional.of(expansion.life().view(id,currentPeriod())));}
+    @Override public CompletableFuture<List<dev.starworld.logistics.LogisticsState.Route>> routes(UUID id,int limit,int offset){return async(()->expansion==null?List.of():expansion.logistics().cityRoutes(id,limit,offset));}
+    @Override public CompletableFuture<List<dev.starworld.logistics.LogisticsState.Order>> orders(UUID id,int limit,int offset){return async(()->expansion==null?List.of():expansion.logistics().cityOrders(id,limit,offset));}
+    @Override public CompletableFuture<Optional<dev.starworld.evolution.EvolutionState.Readiness>> readiness(UUID id){return async(()->expansion==null?Optional.empty():expansion.evolution().readiness(id));}
+    @Override public CompletableFuture<Optional<dev.starworld.evolution.NationalEvolution.NationDevelopment>> nationDevelopment(UUID id){return async(()->{if(expansion==null||store.query("SELECT 1 FROM nation_state WHERE id=?",r->1,id).isEmpty())return Optional.empty();return Optional.of(expansion.national().view(id));});}
+    @Override public Map<String,String> integrationStatus(){Map<String,String> s=new LinkedHashMap<>(items.status());s.put("StarCore",core.status());if(expansion!=null)s.putAll(expansion.status());s.put("Folia","未声明支持：当前 StarCore 城市/科技服务不保证区域线程安全，需 Paper");return Map.copyOf(s);}
     public void register(Player p,String type){
         CoreCity city=playerCity(p).orElseThrow(()->new IllegalArgumentException("请先在 StarCore 加入城市"));
         if(!manage(p,city.cityId()))throw new IllegalArgumentException("需要市长或城市管理权限");
@@ -74,7 +87,7 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     }
     private CoreCity requireManager(Player p){CoreCity c=playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入 StarCore 城市"));if(!manage(p,c.cityId()))throw new IllegalArgumentException("需要城市管理权限");return c;}
     public void transfer(Player p,String item,int amount,boolean deposit){
-        CoreCity city=requireManager(p);if(!ConfigLoader.items(definitions).contains(item))throw new IllegalArgumentException("该物品未在产业配置中定义");
+        CoreCity city=requireManager(p);if(!ConfigLoader.items(definitions).contains(item)&&(expansion==null||!expansion.itemIds().contains(item)))throw new IllegalArgumentException("该物品未在产业/生活/交通配置中定义");
         if(amount<1 || amount>2304)throw new IllegalArgumentException("数量须为 1–2304");
         if(items.create(item,1)==null)throw new IllegalArgumentException("自定义物品不可用，请检查 CraftEngine 与物品 ID");
         if(!transfers.add(p.getUniqueId()))throw new IllegalArgumentException("上一笔物品操作正在进行");
@@ -119,15 +132,17 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     public CompletableFuture<Boolean> resolve(UUID id,boolean credit,String actor){return async(()->{if(activeTransferIds.contains(id))throw new IllegalStateException("这笔物品操作仍在进行，不能人工处理");store.resolveTransfer(id,credit,actor);return true;});}
     public void trigger(Player p,String type){CoreCity c=playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入城市"));reply(p,async(()->{store.ensureCity(c);EventState previous=store.view(c.cityId()).orElseThrow().event();EventState next=simulation.trigger(c.cityId(),type,currentPeriod());store.audit(p.getUniqueId().toString(),"EVENT "+type+" "+c.cityId());return new WorldEvolutionEvent(c.cityId(),previous,next);}),event->{Bukkit.getPluginManager().callEvent(event);p.sendMessage("§a事件已触发："+type);});}
     public void tick(){
+        if(!closed&&expansion!=null)expansion.tick();
         if(closed || !settling.compareAndSet(false,true))return;
         async(()->{List<UUID> ids=store.cities(definitions.maxCitiesPerPass(),cursor);if(ids.isEmpty()){cursor=0;ids=store.cities(definitions.maxCitiesPerPass(),0);}cursor+=ids.size();List<CityView> views=new ArrayList<>();for(UUID id:ids)store.view(id).ifPresent(views::add);return views;}).whenComplete((views,error)->{
             if(error!=null){failure(error);return;}
             scheduler.global(()->{
                 List<CompletableFuture<?>> jobs=new ArrayList<>();long period=currentPeriod();
                 try{for(CityView view:views){Optional<CoreCity> current=core.city(view.id());if(current.isEmpty())continue;
-                    Set<UUID> valid=new HashSet<>();for(Building b:view.buildings())if(valid(b))valid.add(b.id());
-                    CompletableFuture<Settlement> job=async(()->simulation.settle(current.get(),period,valid));jobs.add(job);
-                    job.thenAccept(settlement->{if(settlement.applied())scheduler.global(()->Bukkit.getPluginManager().callEvent(new IndustrySettledEvent(settlement)));});
+                    Set<UUID> valid=verifiedBuildings(view);
+                    Optional<CoreExtensionPort.NationSnapshot> nation=expansion==null?Optional.empty():expansion.nation(current.get().nationId());
+                    CompletableFuture<Settlement> job=async(()->expansion==null?simulation.settle(current.get(),period,valid):expansion.settle(current.get(),period,valid,nation,simulation));jobs.add(job);
+                    job.thenAccept(settlement->{if(settlement.applied()){scheduler.global(()->Bukkit.getPluginManager().callEvent(new IndustrySettledEvent(settlement)));if(expansion!=null)expansion.afterSettlement(view.id());}});
                     jobs.add(job.thenCompose(result->city(view.id())).thenAccept(updated->updated.ifPresent(next->{if(!Objects.equals(view.event(),next.event()))scheduler.global(()->Bukkit.getPluginManager().callEvent(new WorldEvolutionEvent(view.id(),view.event(),next.event())));})));
                 }}catch(Exception e){failure(e);return;}
                 CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new)).whenComplete((nothing,err)->{settling.set(false);if(err!=null)plugin.getLogger().severe("Settlement failed (transaction rolled back): "+root(err));});
@@ -141,6 +156,6 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     }
     private void failure(Throwable e){settling.set(false);plugin.getLogger().severe("StarWorld tick failed: "+root(e));}
     @Override public void close()throws Exception{
-        closed=true;io.shutdown();if(!io.awaitTermination(10,TimeUnit.SECONDS)){io.shutdownNow();if(!io.awaitTermination(5,TimeUnit.SECONDS))throw new IllegalStateException("Storage worker did not terminate; database deliberately left open");}store.close();
+        closed=true;if(expansion!=null)expansion.close();io.shutdown();if(!io.awaitTermination(10,TimeUnit.SECONDS)){io.shutdownNow();if(!io.awaitTermination(5,TimeUnit.SECONDS))throw new IllegalStateException("Storage worker did not terminate; database deliberately left open");}store.close();
     }
 }

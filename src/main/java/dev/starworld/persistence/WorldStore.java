@@ -39,6 +39,7 @@ public final class WorldStore implements AutoCloseable {
             execute("CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY AUTOINCREMENT,at INTEGER NOT NULL,actor TEXT NOT NULL,action TEXT NOT NULL)");
             execute("CREATE INDEX IF NOT EXISTS building_city ON building(city)");
             execute("CREATE INDEX IF NOT EXISTS transfer_pending ON transfer(state)");
+            execute("CREATE TABLE IF NOT EXISTS city_capacity(city TEXT PRIMARY KEY REFERENCES city_state(id),limit_per_item INTEGER NOT NULL CHECK(limit_per_item>=64))");
             execute("PRAGMA user_version=2");
             return null;
         });
@@ -54,8 +55,9 @@ public final class WorldStore implements AutoCloseable {
     private static SQLException sql(Exception e) { return e instanceof SQLException se ? se : new SQLException(e.getMessage(),e); }
     public synchronized void execute(String sql,Object... args) throws SQLException { try(PreparedStatement p=connection.prepareStatement(sql)) { bind(p,args); p.executeUpdate(); } }
     private static void bind(PreparedStatement p,Object[] args) throws SQLException { for(int i=0;i<args.length;i++) p.setObject(i+1,args[i] instanceof UUID ? args[i].toString():args[i]); }
-    @FunctionalInterface private interface Mapper<T> { T map(ResultSet r) throws SQLException; }
-    private <T> List<T> query(String sql,Mapper<T> mapper,Object... args) throws SQLException {
+    /** Internal extension repositories share this connection and the enclosing transaction. */
+    @FunctionalInterface public interface Mapper<T> { T map(ResultSet r) throws SQLException; }
+    public synchronized <T> List<T> query(String sql,Mapper<T> mapper,Object... args) throws SQLException {
         try(PreparedStatement p=connection.prepareStatement(sql)) { bind(p,args); try(ResultSet r=p.executeQuery()) { List<T> list=new ArrayList<>();while(r.next()) list.add(mapper.map(r));return list; } }
     }
     public synchronized void ensureCity(CoreCity city) throws SQLException {
@@ -74,9 +76,12 @@ public final class WorldStore implements AutoCloseable {
         Map<String,Long> result=new TreeMap<>();query("SELECT item,amount FROM stock WHERE city=?",r->{ result.put(r.getString(1),r.getLong(2));return 0; },city);return result;
     }
     public synchronized void stock(UUID city,String item,long amount) throws SQLException {
-        if(amount<0 || amount>stockLimit) throw new SQLException("Stock capacity exceeded: "+item);
+        if(amount<0) throw new SQLException("Negative stock: "+item);
+        if(amount>cityCapacity(city)&&amount>query("SELECT amount FROM stock WHERE city=? AND item=?",r->r.getLong(1),city,item).stream().findFirst().orElse(0L))throw new SQLException("城市仓库容量不足: "+item);
         execute("INSERT INTO stock(city,item,amount) VALUES(?,?,?) ON CONFLICT(city,item) DO UPDATE SET amount=excluded.amount",city,item,amount);
     }
+    public synchronized long cityCapacity(UUID city)throws SQLException{return Math.min(stockLimit,query("SELECT limit_per_item FROM city_capacity WHERE city=?",r->r.getLong(1),city).stream().findFirst().orElse(stockLimit));}
+    public synchronized void cityCapacity(UUID city,long limit)throws SQLException{if(limit<64||limit>stockLimit)throw new IllegalArgumentException("Invalid city capacity");execute("INSERT INTO city_capacity(city,limit_per_item) VALUES(?,?) ON CONFLICT(city) DO UPDATE SET limit_per_item=excluded.limit_per_item",city,limit);}
     public synchronized List<Building> buildings(UUID city) throws SQLException { return query("SELECT * FROM building WHERE city=? ORDER BY id",this::building,city); }
     private Building building(ResultSet r) throws SQLException { return new Building(UUID.fromString(r.getString("id")),UUID.fromString(r.getString("city")),UUID.fromString(r.getString("nation")),r.getString("type"),new Site(UUID.fromString(r.getString("world")),r.getString("world_name"),r.getInt("x"),r.getInt("y"),r.getInt("z")),r.getInt("level")); }
     public synchronized void addBuilding(Building b,String terrain,Definitions definitions) throws SQLException {
@@ -134,7 +139,7 @@ public final class WorldStore implements AutoCloseable {
             if(!query("SELECT id FROM transfer WHERE player=? AND state='PREPARED'",r->r.getString(1),player).isEmpty()) throw new IllegalArgumentException("存在未核对的物品操作，请联系管理员");
             long current=stock(city).getOrDefault(item,0L);
             if(direction.equals("WITHDRAW")) { if(current<amount) throw new IllegalArgumentException("库存不足"); stock(city,item,current-amount); }
-            else if(current+amount>stockLimit) throw new IllegalArgumentException("仓库容量不足");
+            else if(current+amount>cityCapacity(city)) throw new IllegalArgumentException("仓库容量不足");
             Transfer t=new Transfer(UUID.randomUUID(),player,city,direction,item,amount,"PREPARED");
             execute("INSERT INTO transfer(id,player,city,direction,item,amount,state,created) VALUES(?,?,?,?,?,?,?,?)",t.id(),player,city,direction,item,amount,t.state(),System.currentTimeMillis());
             return t;
@@ -151,15 +156,36 @@ public final class WorldStore implements AutoCloseable {
     /** Explicit administrator decision: credit a deposit/restore a withdrawal, or acknowledge without credit. */
     public synchronized void resolveTransfer(UUID id,boolean credit,String actor) throws SQLException {
         tx(s->{ Transfer t=transfer(id).orElseThrow(); if(!t.state().equals("PREPARED")) throw new IllegalStateException("Transfer already resolved");
-            if(credit) stock(t.cityId(),t.item(),Math.addExact(stock(t.cityId()).getOrDefault(t.item(),0L),t.amount()));
+            if(credit) restoreTransferCredit(t);
             execute("UPDATE transfer SET state='RESOLVED',decision=? WHERE id=?",actor+":"+credit,id);audit(actor,"RESOLVE "+id+" credit="+credit);return null; });
     }
     public synchronized void cancelUntouchedTransfer(UUID id) throws SQLException {
         tx(s->{Transfer t=transfer(id).orElseThrow();if(!t.state().equals("PREPARED"))throw new IllegalStateException("Transfer already resolved");
-            if(t.direction().equals("WITHDRAW"))stock(t.cityId(),t.item(),Math.addExact(stock(t.cityId()).getOrDefault(t.item(),0L),t.amount()));
+            if(t.direction().equals("WITHDRAW"))restoreTransferCredit(t);
             execute("UPDATE transfer SET state='CANCELLED',decision='no inventory mutation' WHERE id=?",id);return null;});
     }
     public synchronized void audit(String actor,String action) throws SQLException { execute("INSERT INTO audit(at,actor,action) VALUES(?,?,?)",System.currentTimeMillis(),actor,action); }
+    /** A journaled refund restores existing goods even if capacity fell while they were reserved. */
+    private void restoreTransferCredit(Transfer t)throws SQLException{
+        long amount=Math.addExact(stock(t.cityId()).getOrDefault(t.item(),0L),t.amount());
+        execute("INSERT INTO stock(city,item,amount) VALUES(?,?,?) ON CONFLICT(city,item) DO UPDATE SET amount=excluded.amount",t.cityId(),t.item(),amount);
+    }
     public synchronized int schemaVersion() throws SQLException { return query("PRAGMA user_version",r->r.getInt(1)).getFirst(); }
+    /** Keeps existing logical period IDs when administrators change the length of a period. */
+    public record SimulationClock(long periodSeconds,long epochOrigin,long periodOrigin) {
+        public long period(long epochSeconds){return Math.addExact(periodOrigin,Math.floorDiv(Math.subtractExact(epochSeconds,epochOrigin),periodSeconds));}
+    }
+    public synchronized SimulationClock simulationClock(long periodSeconds,long now)throws SQLException {
+        if(periodSeconds<10||periodSeconds>86400||now<0)throw new IllegalArgumentException("Invalid simulation clock");
+        return tx(s->{s.execute("CREATE TABLE IF NOT EXISTS simulation_clock(id INTEGER PRIMARY KEY CHECK(id=1),period_seconds INTEGER NOT NULL,epoch_origin INTEGER NOT NULL,period_origin INTEGER NOT NULL)");
+            Optional<SimulationClock> saved=s.query("SELECT * FROM simulation_clock WHERE id=1",r->new SimulationClock(r.getLong("period_seconds"),r.getLong("epoch_origin"),r.getLong("period_origin"))).stream().findFirst();
+            if(saved.isPresent()&&saved.get().periodSeconds()==periodSeconds)return saved.get();
+            long previous=saved.map(clock->clock.period(now)).orElseGet(()->Math.floorDiv(now,periodSeconds));
+            long last=s.query("SELECT COALESCE(MAX(last_period),-1) FROM city_state",r->r.getLong(1)).getFirst();
+            SimulationClock clock=new SimulationClock(periodSeconds,now,Math.max(previous,last));
+            s.execute("INSERT INTO simulation_clock(id,period_seconds,epoch_origin,period_origin) VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET period_seconds=excluded.period_seconds,epoch_origin=excluded.epoch_origin,period_origin=excluded.period_origin",periodSeconds,now,clock.periodOrigin());
+            if(saved.isPresent())s.audit("migration","SIMULATION_PERIOD "+saved.get().periodSeconds()+" -> "+periodSeconds+" at="+clock.periodOrigin());return clock;
+        });
+    }
     @Override public synchronized void close() throws SQLException { connection.close(); }
 }

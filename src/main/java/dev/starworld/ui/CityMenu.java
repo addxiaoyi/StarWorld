@@ -19,6 +19,7 @@ public final class CityMenu implements Listener {
     public CityMenu(WorldRuntime runtime,String title){this.runtime=runtime;this.title=title;}
     private static final class Holder implements InventoryHolder {
         private Inventory inventory; private final UUID viewer,city;
+        private final Map<Integer,String[]> commands=new HashMap<>();private boolean development;
         Holder(UUID viewer,UUID city){this.viewer=viewer;this.city=city;}
         @Override public Inventory getInventory(){return inventory;}
     }
@@ -37,8 +38,25 @@ public final class CityMenu implements Listener {
             inv.setItem(36,item(Material.CHEST,"设施清单（点击聊天输出）",List.of("已登记："+city.buildings().size(),"升级 /sw upgrade <设施UUID>","注销 /sw remove <设施UUID>")));
             EventState e=city.event();inv.setItem(40,item(Material.CLOCK,"世界事件",e==null ? List.of("当前无事件"):List.of("类型："+e.type(),"生效至周期："+e.endPeriod(),"余波至周期："+e.aftermathEndPeriod())));
             inv.setItem(44,item(Material.PAPER,"最新结算",wrap(city.lastReport())));
+            if(runtime.expansion().isPresent())inv.setItem(45,item(Material.MAP,"城市规划与文明世界",List.of("设施、规划、专长、文化与交通","点击打开发展面板")));
             inv.setItem(49,item(Material.SUNFLOWER,"刷新",List.of("仅已加载且领土有效的设施生产","不加载区块，不补发离线产量")));
             p.openInventory(inv);
+        });
+    }
+    public void openDevelopment(Player p){
+        CoreCity city=runtime.playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入城市"));var expansion=runtime.expansion().orElseThrow(()->new IllegalArgumentException("扩展模块未启用"));
+        runtime.reply(p,runtime.open(city).thenCompose(v->runtime.async(()->expansion.evolution().profile(city.cityId()))),profile->{
+            if(runtime.playerCity(p).map(c->!c.cityId().equals(city.cityId())||!c.nationId().equals(city.nationId())).orElse(true))return;
+            Holder h=new Holder(p.getUniqueId(),city.cityId());h.development=true;h.inventory=Bukkit.createInventory(h,54,Component.text("StarWorld · 文明与城市发展"));Inventory inv=h.inventory;
+            int slot=0;for(var b:runtime.definitions().buildings().values().stream().sorted(java.util.Comparator.comparing(Definitions.BuildingType::id)).toList()){if(slot>=9)break;Material m=Material.matchMaterial(b.anchor());inv.setItem(slot,item(m==null?Material.BRICKS:m,b.name(),List.of("登记锚点："+b.anchor(),"每期维护："+b.upkeep(),"点击登记；需要城市管理权限")));h.commands.put(slot++,new String[]{"register",b.id()});}
+            slot=9;for(var entry:expansion.evolution().options().plans().entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()){if(slot>=18)break;inv.setItem(slot,item(Material.WRITABLE_BOOK,"规划："+entry.getValue().name(),List.of("当前："+profile.plan(),"倍率："+entry.getValue().multipliers(),"点击转型；冷却六周期")));h.commands.put(slot++,new String[]{"plan",entry.getKey()});}
+            slot=18;for(var entry:expansion.evolution().options().specialties().entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()){if(slot>=27)break;var s=entry.getValue();inv.setItem(slot,item(Material.SMITHING_TABLE,"专长："+s.name(),List.of("所需设施："+s.building(),"知识："+s.knowledge()+"；国家产能："+s.coreMultiplier(),"倍率："+s.multipliers(),"点击确立；与规划共用冷却")));h.commands.put(slot++,new String[]{"specialty",entry.getKey()});}
+            slot=27;for(var c:runtime.definitions().civilizations().values().stream().sorted(java.util.Comparator.comparing(Definitions.Civilization::id)).toList()){if(slot>=36)break;inv.setItem(slot,item(Material.BEACON,c.name(),List.of("国家文明："+c.id(),"倍率："+c.multipliers(),"点击转型；需要国家创始人权限")));h.commands.put(slot++,new String[]{"civilization",c.id()});}
+            inv.setItem(36,item(Material.EMERALD,"城市发展",List.of("规划/专长："+profile.plan()+" / "+profile.specialty(),"城市状况："+String.format(Locale.ROOT,"%.1f",profile.prosperity()),"稳定："+String.format(Locale.ROOT,"%.1f",profile.stability()),"知识/文化："+profile.knowledge()+" / "+profile.culture(),"本期军需消耗："+profile.supply(),"点击查看完整状态")));h.commands.put(36,new String[]{"development"});
+            String[] names={"生活与职业","城市货单","城市商路","地区文化","国家状态","历史记录"};Material[] icons={Material.BREAD,Material.CHEST,Material.COMPASS,Material.PAINTING,Material.NETHER_STAR,Material.BOOK};String[][] commands={{"feast"},{"trade","list"},{"route","list"},{"culture"},{"nation"},{"history"}};
+            for(int i=0;i<names.length;i++){inv.setItem(37+i,item(icons[i],names[i],List.of("点击查看；更多操作 /sw help")));h.commands.put(37+i,commands[i]);}
+            inv.setItem(43,item(Material.GOLDEN_HELMET,"国家倾向与专长",List.of("本国城市的真实产出、贸易、军需和文化共同积累","/sw national-specialty <ID> （国家创始人）")));h.commands.put(43,new String[]{"nation-development"});
+            inv.setItem(49,item(Material.ARROW,"返回城市产业",List.of()));inv.setItem(53,item(Material.SUNFLOWER,"刷新发展状态",List.of()));p.openInventory(inv);
         });
     }
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=false)
@@ -52,7 +70,11 @@ public final class CityMenu implements Listener {
             if(!p.isOnline())return;
             if(p.getOpenInventory().getTopInventory().getHolder()!=holder)return;
             if(runtime.playerCity(p).map(c->!c.cityId().equals(holder.city)).orElse(true)){p.closeInventory();return;}
-            try{switch(slot){
+            try{if(holder.development){
+                if(slot==49){open(p);return;}if(slot==53){openDevelopment(p);return;}String[] command=holder.commands.get(slot);if(command==null)return;p.closeInventory();
+                if(command[0].equals("register"))runtime.register(p,command[1]);else if(command[0].equals("civilization"))runtime.civilization(p,command[1]);else runtime.expansionCommand(p,command);return;
+            }switch(slot){
+                case 45 -> {if(!holder.development)openDevelopment(p);}
                 case 10,12,14 -> {p.closeInventory();runtime.register(p,slot==10?"farm":slot==12?"sawmill":"workshop");}
                 case 16 -> {p.closeInventory();p.sendMessage("§e/sw civilization <"+String.join("|",runtime.definitions().civilizations().keySet())+">");}
                 case 36 -> {p.closeInventory();runtime.reply(p,runtime.city(holder.city),c->c.ifPresent(v->v.buildings().forEach(b->p.sendMessage("§e"+b.id()+" §f"+b.type()+" Lv"+b.level()+" @ "+b.site().x()+","+b.site().y()+","+b.site().z()))));}

@@ -4,6 +4,6 @@
   "private": true,
   "description": "Real offline protocol client acceptance against a disposable Paper/StarCore/StarWorld server",
   "engines": { "node": ">=22" },
-  "scripts": { "acceptance": "node acceptance.cjs" },
+  "scripts": { "acceptance": "node acceptance.cjs", "expansion": "node expansion-acceptance.cjs" },
   "dependencies": { "mineflayer": "4.39.0" }
 }

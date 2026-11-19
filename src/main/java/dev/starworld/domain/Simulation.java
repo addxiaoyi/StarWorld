@@ -14,15 +14,27 @@ public final class Simulation {
     public Simulation(WorldStore store,Definitions definitions,Set<String> availableItems) { this.store=store;this.definitions=definitions;this.availableItems=availableItems==null?null:Set.copyOf(availableItems); }
     public long period(long epochSeconds) { return Math.floorDiv(epochSeconds,definitions.periodSeconds()); }
     public Settlement settle(CoreCity core,long period,Set<UUID> authorizedBuildings) throws SQLException {
+        return settle(core,period,authorizedBuildings,Hooks.NONE);
+    }
+    /** Hooks run inside the same settlement transaction; failures roll back the entire period. */
+    public interface Hooks {
+        Hooks NONE=new Hooks(){};
+        default double multiplier(Building building)throws SQLException{return 1;}
+        default long capacity(String item){return Long.MAX_VALUE;}
+        default Map<String,Double> eventWeights(CityView city,long period)throws SQLException{return Map.of();}
+        default boolean filterEvents(){return false;}
+        default void completed(CoreCity core,CityView previous,long period,Map<String,Long> produced,Set<UUID> maintained)throws SQLException{}
+    }
+    public Settlement settle(CoreCity core,long period,Set<UUID> authorizedBuildings,Hooks hooks) throws SQLException {
         if(period<0)throw new IllegalArgumentException("Invalid period");
         return store.tx(s->{
             store.ensureCity(core);
             CityView city=store.view(core.cityId()).orElseThrow();
             if(city.lastPeriod()>=period || store.settled(city.id(),period))return new Settlement(city.id(),period,false,Map.of(),"此周期已结算/时钟回拨，无重复产出");
             Map<String,Long> stock=new TreeMap<>(city.stock()),produced=new TreeMap<>();List<String> report=new ArrayList<>();
-            EventState event=advanceEvent(city,period);Definitions.Civilization civilization=definitions.civilizations().get(city.civilization());
+            EventState event=advanceEvent(city,period,hooks);Definitions.Civilization civilization=definitions.civilizations().get(city.civilization());
             if(civilization==null)throw new IllegalStateException("Unknown saved civilization: "+city.civilization());
-            Set<String> regenerated=new HashSet<>();
+            Set<String> regenerated=new HashSet<>();Set<UUID> maintained=new HashSet<>();
             for(Building b:city.buildings()) {
                 if(!authorizedBuildings.contains(b.id()) || !b.nationId().equals(core.nationId())) { report.add(b.type()+": 领土/建筑失效，停产");continue; }
                 Definitions.BuildingType type=definitions.buildings().get(b.type());
@@ -34,7 +46,9 @@ public final class Simulation {
                 if(availableItems!=null && !availableItems.containsAll(type.upkeep().keySet())){report.add(type.name()+": 维护物品依赖不可用");continue;}
                 if(!canPay(stock,type.upkeep(),b.level())) { report.add(type.name()+": 维护食物不足");continue; }
                 debit(stock,type.upkeep(),b.level());
+                maintained.add(b.id());
                 double factor=core.productionMultiplier()*civilization.multipliers().getOrDefault(type.id(),1.0)*eventFactor(event,period,type.id());
+                double extra=hooks.multiplier(b);if(!Double.isFinite(extra)||extra<0||extra>10)throw new IllegalArgumentException("Invalid extension multiplier");factor*=extra;
                 factor*=type.id().equals("farm") ? terrain.agriculture() : type.id().equals("sawmill") ? 1.0/Math.max(0.25,terrain.transport()) : 1.0;
                 final double effectiveFactor=Math.min(factor,10);
                 for(Definitions.Recipe recipe:definitions.recipes()) {
@@ -45,7 +59,7 @@ public final class Simulation {
                     Map<String,Long> output=new HashMap<>();
                     recipe.outputs().forEach((item,amount)->output.put(item,(long)Math.floor(amount*b.level()*effectiveFactor)));
                     if(output.values().stream().allMatch(x->x==0L))continue;
-                    boolean full=output.entrySet().stream().anyMatch(e->e.getValue()>definitions.stockLimit()-stock.getOrDefault(e.getKey(),0L));
+                    boolean full=output.entrySet().stream().anyMatch(e->e.getValue()>Math.min(definitions.stockLimit(),hooks.capacity(e.getKey()))-stock.getOrDefault(e.getKey(),0L));
                     if(full) {report.add(recipe.id()+": 仓储已满，原料保留");continue;}
                     debit(stock,recipe.inputs(),b.level());
                     output.forEach((k,v)->{stock.merge(k,v,Long::sum);produced.merge(k,v,Long::sum);});
@@ -54,20 +68,24 @@ public final class Simulation {
                 for(var e:reserves.entrySet())store.reserve(region.key(),e.getKey(),e.getValue());
             }
             for(var e:stock.entrySet())store.stock(city.id(),e.getKey(),e.getValue());
+            hooks.completed(core,city,period,Map.copyOf(produced),Set.copyOf(maintained));
             String summary="产出 "+produced+"；"+String.join("；",report)+(event==null ? "" : "；事件 "+event.type());
             store.finish(city.id(),period,summary);
             return new Settlement(city.id(),period,true,produced,summary);
         });
     }
-    private EventState advanceEvent(CityView city,long period) throws SQLException {
+    private EventState advanceEvent(CityView city,long period,Hooks hooks) throws SQLException {
         EventState event=city.event();
         if(event!=null && !definitions.events().containsKey(event.type()))throw new IllegalStateException("Unknown saved event: "+event.type());
         if(event!=null && period>=event.aftermathEndPeriod()) {event=null;store.event(city.id(),null);}
         if(event==null && !definitions.events().isEmpty()) {
             Random random=new Random(city.id().getMostSignificantBits()^city.id().getLeastSignificantBits()^period);
             if(random.nextDouble()<definitions.eventChance()) {
-                List<String> keys=definitions.events().keySet().stream().sorted().toList();Definitions.WorldEvent d=definitions.events().get(keys.get(random.nextInt(keys.size())));
-                event=event(d,period);store.event(city.id(),event);
+                Map<String,Double> weights=hooks.eventWeights(city,period);
+                List<String> keys=definitions.events().keySet().stream().filter(k->!hooks.filterEvents()||weights.getOrDefault(k,0.0)>0).sorted().toList();
+                double total=keys.stream().mapToDouble(k->weights.getOrDefault(k,1.0)).sum();
+                if(!keys.isEmpty()&&Double.isFinite(total)&&total>0){double roll=random.nextDouble()*total;String selected=keys.getLast();for(String key:keys){roll-=weights.getOrDefault(key,1.0);if(roll<0){selected=key;break;}}Definitions.WorldEvent d=definitions.events().get(selected);
+                    event=event(d,period);store.event(city.id(),event);}
             }
         }
         return event;

@@ -1,0 +1,70 @@
+package dev.starworld.logistics;
+
+import dev.starworld.domain.WorldState.Site;
+import java.util.*;
+
+/** Value objects passed between the main-thread authority capture and storage worker. */
+public final class LogisticsState {
+    private LogisticsState() {}
+    public enum NodeType { ROAD, BRIDGE, PORT, PASS }
+    public enum Mode { LAND, SEA }
+    public enum OrderStatus { OFFERED, IN_TRANSIT, PAUSED, COMPLETED, CANCELLED, EXPIRED }
+
+    /**
+     * Captured for exactly one current period on the Paper main thread. controlledAnchors means
+     * both StarCore city and nation claims AND the configured physical anchor are valid.
+     * validNodes means the same checks for persisted nodes, including loaded chunk/anchor checks.
+     * No omitted city/node is implicitly trusted. System processing may use an empty managedCities set.
+     */
+    public record AuthoritySnapshot(UUID actor, long period, Map<UUID, UUID> cityNations,
+                                    Set<UUID> managedCities, Set<String> controlledAnchors, Set<UUID> validNodes,
+                                    Set<TradePair> permittedTrades) {
+        public AuthoritySnapshot {
+            Objects.requireNonNull(actor);
+            if (period < 0) throw new IllegalArgumentException("Negative period");
+            cityNations = Map.copyOf(cityNations); managedCities = Set.copyOf(managedCities);
+            controlledAnchors = Set.copyOf(controlledAnchors); validNodes = Set.copyOf(validNodes);
+            permittedTrades = Set.copyOf(permittedTrades);
+        }
+    }
+    public record TradePair(UUID first, UUID second) {
+        public TradePair {
+            Objects.requireNonNull(first); Objects.requireNonNull(second);
+            if (first.equals(second) || first.compareTo(second) >= 0) throw new IllegalArgumentException("Use TradePair.of for distinct cities");
+        }
+        public static TradePair of(UUID a, UUID b) { return a.compareTo(b) < 0 ? new TradePair(a, b) : new TradePair(b, a); }
+    }
+
+    public record Node(UUID id, UUID cityId, UUID nationId, NodeType type, Site site,
+                       String terrain, int level, boolean enabled) {
+        public Node {
+            Objects.requireNonNull(id); Objects.requireNonNull(cityId); Objects.requireNonNull(nationId);
+            Objects.requireNonNull(type); Objects.requireNonNull(site); Objects.requireNonNull(terrain);
+            if (level < 1 || level > 3) throw new IllegalArgumentException("Node level must be 1..3");
+        }
+    }
+
+    public record Route(UUID id, UUID originCity, UUID targetCity, List<UUID> nodes, Mode mode,
+                        boolean enabled, double distanceBlocks, int travelPeriods, long capacity) {
+        public Route { nodes = List.copyOf(nodes); }
+    }
+
+    /** offered comes from origin; requested comes from target. Both remain in escrow in transit. */
+    public record Order(UUID id, UUID routeId, UUID originCity, UUID targetCity,
+                        UUID originNation, UUID targetNation, Map<String, Long> offered,
+                        Map<String, Long> requested, OrderStatus status, long createdPeriod,
+                        long expiresPeriod, long lastPeriod, int progressedPeriods, int travelPeriods,
+                        long completedPeriod, String reason) {
+        public Order { offered = Map.copyOf(offered); requested = Map.copyOf(requested); }
+        public long cargoUnits() { return Math.addExact(offered.values().stream().mapToLong(Long::longValue).sum(), requested.values().stream().mapToLong(Long::longValue).sum()); }
+    }
+
+    /** Durable sequence cursor for cultural diffusion; each completed order appears exactly once. */
+    public record TradeReceipt(long sequence, UUID orderId, UUID originCity, UUID targetCity,
+                               UUID originNation, UUID targetNation, long period,
+                               Map<String, Long> offered, Map<String, Long> requested) {
+        public TradeReceipt { offered = Map.copyOf(offered); requested = Map.copyOf(requested); }
+    }
+    public record SupplyDemand(UUID cityId, String item, long available, long desired, long surplus, long shortage) {}
+    public record BatchResult(long period, int inspected, int progressed, int completed, int paused, int expired) {}
+}

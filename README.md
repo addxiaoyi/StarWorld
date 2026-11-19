@@ -1,93 +1,98 @@
 # StarWorld
 
-Minecraft 动态文明与地区产业扩展。独立 Maven/Paper 插件，复用 **StarCore 国家、城市、领土、科技、政策、繁荣与资源公开 API**，不另建国家核心、不访问 StarCore 权威表。当前交付 **0.1.0，第一阶段**。
+持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **0.2.0**。
 
-## 环境与审计
+代码仓库：[addxiaoyi/StarWorld](https://github.com/addxiaoyi/StarWorld)。技术基线：Java 21、Paper **1.21.11**，CraftEngine **26.9.1** 为可选内容依赖。审计固定 StarCore `f769e62799e769a18fe51305b545869a17f80cd1` 与 SenLuo `7a676978f9c4a825275a9f905c3f860ac05a6827`，见 [StarCore 审计](docs/audit-starcore.md)、[森罗审计](docs/audit-senluo.md)。
 
-- Java 21，Paper **1.21.11**，可选 CraftEngine 26.9.1。
-- StarCore 审计提交 `f769e62799e769a18fe51305b545869a17f80cd1`。
-- SenLuo 审计提交 `7a676978f9c4a825275a9f905c3f860ac05a6827`。
-- **本版不声明 Folia 支持**：现有 StarCore 可变模型与同步调度缺少区域线程契约。检测 Folia 时明确停用。已有调度边界与迁移方案，见[架构](docs/architecture.md)。
-- 缺 StarCore 时可独立加载配置/数据库、查询降级状态；完整城市玩法需要 StarCore 国家和城市模块。不会创建替代国家。
+**Folia 仍为兼容规划。** 当前 StarCore 可变服务缺少区域线程安全契约，本版检测 Folia 后明确停用。缺 StarCore 时可独立安装、生成配置和数据库并显示降级原因；城市玩法需要真实 StarCore 国家/城市模块，不会自动建立替代国家。森罗模块或 CE 缺失时保留原版产业、贸易和音符盒演奏；缺失内容或 API 明确停用。
 
-详细审计：[StarCore](docs/audit-starcore.md) · [森罗物语](docs/audit-senluo.md)。源码：<https://github.com/addxiaoyi/StarWorld>。
-
-## 构建与安装
+## 构建、安装和升级
 
 ```sh
-./mvnw -B clean verify
-# Windows，JAVA_HOME 指向 JDK 21 或以上
-.\mvnw.cmd -B clean verify
+./mvnw -B --no-transfer-progress clean verify
 ```
 
-产物：`target/starworld-0.1.0.jar`（包含 SQLite JDBC）；源码：`target/starworld-0.1.0-sources.jar`。**不要安装 original 或 sources JAR。**
+Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME` 指向 JDK 21。Maven Wrapper 使用 Maven 3.9.11；插件包含 SQLite JDBC，不打包外部核心或森罗实现。
 
-1. 正常关闭测试服，备份既有 `plugins/StarWorld/`。
-2. 将插件放入 `plugins/`，与经核验的 StarCore 一起启动 Paper 1.21.11。
-3. 首次生成 `config.yml`、`definitions.yml`、`starworld.db`。执行 `/sw status` 查看真实集成能力。
-4. 使用 StarCore 自身命令建立国家/城市，取得**国家与城市两层区块领地**。
-5. 放置堆肥桶、切石机、高炉，站在城市领地内看向六格内锚点，执行 `/sw register farm|sawmill|workshop`，或 `/sw` 点击登记。
+产物为 `target/starworld-0.2.0.jar` 和 `target/starworld-0.2.0-sources.jar`；发布脚本生成 `target/StarWorld-0.2.0.zip`，包含插件、源码、配置、文档与校验和。只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
 
-## 第一阶段实际玩法
+1. 正常关服，备份整个 `plugins/StarWorld/`。升级时保留数据库和持久配置 ID。
+2. 放置插件 JAR，使用 Paper 1.21.11 和审计兼容的 StarCore 启动。
+3. 首次生成 `config.yml`、`definitions.yml`、`evolution.yml`、`logistics.yml`、`exports.yml`、`life.yml` 及 `starworld.db`。
+4. `/sw status` 查看真实能力；用 StarCore 自身命令建立国家、城市和国家/城市**两层区块领土**。
+5. 放置堆肥桶、切石机、高炉，看向六格内本城锚点，执行 `/sw register farm|sawmill|workshop`。先积累粮食，再供应林业和军工。
 
-| 内容 | 已实现行为 |
-|---|---|
-| 六类地区 | 山脉、河流、平原、森林、沙漠、雪原，单点群系采样、独立资源储量及恢复、农业/运输/军事属性 |
-| 农业链 | 地区肥力 → 小麦 → 面包，受地形、文明、事件与国家状态影响 |
-| 林业链 | 面包维护 + 地区林木 → 原木 → 木板，运输阻力影响产量 |
-| 军工链 | 面包维护 + 地区矿藏 → 粗铁；粗铁+原木 → 铁锭；铁锭+木板 → 箭 |
-| 三种设施 | 农场/食品作坊（堆肥桶）、林场/锯木厂（切石机）、矿业/军工作坊（高炉） |
-| 登记与升级 | 每区块同类限一座，默认每城十二座；最高三级，升级消耗真实木板/铁锭库存 |
-| 两种文明 | 农耕传统、工业传统；国家创始人选择，影响全国已登记城市，转型冷却六周期 |
-| 三类事件 | 干旱、暴雪、丰收，确定性抽选，持续与余波分别计算，重启恢复 |
-| 国家联动 | 每次重新验证国家、城市、成员与双层领土，读取真实科技/政策/繁荣修正，显示国家资源库存 |
-| 实际物品 | 仓库存取、食物维护、加工投入、实体箭产出；不把国家抽象资源伪装成物品 |
-| GUI | 查看国家/文明/倍率/仓储/事件/结算/设施，点击登记、清单、刷新 |
+原有配置 v1 自动备份后迁移 v2；扩展定义单独按版本加载，只补充旧定义里不存在的 ID，管理员已有覆盖优先。数据库做加法式事务迁移，拒绝未知高版本。卸载仅删除 JAR，数据保留；降级恢复对应备份。正式存档不要随意更改生产周期长度。
 
-军事系数当前为公开战略属性，不修改 StarCore 战斗判定。道路/港口/商路、文化传播、人口与完整城市规划等后续设计见[路线图](docs/roadmap.md)。
+## 已实现的世界玩法
 
-默认五分钟一个生产周期，不补发停服或未加载区块期间产量。先用农场积累面包，林场/工坊随后消耗面包开工。同城市设施共享仓储，按 UUID 稳定顺序处理，下游可能在下一周期拿到原料。只放高炉不会凭空产武器。
+| 系统 | 0.2.0 行为 |
+| --- | --- |
+| 六类地理 | 山脉、河流、平原、森林、沙漠、雪原；农业/运输/军事属性；地区矿藏/林木/肥力及恢复率 |
+| 基础产业 | 肥力→小麦→面包；面包维护+林木→原木→木板；面包维护+矿藏→粗铁→铁锭→箭；新增造纸、食品加工与盾牌 |
+| 九类设施 | 农场、林场、工坊、仓库、市场、学院、兵营、水井、厨房；显式锚点登记、三级升级、真实维护成本 |
+| 五种文明 | 农耕、工业、商业、尚武、文化；国家统一选择，六周期转型冷却，各产业有取舍 |
+| 城市发展 | 六种规划、四种专长；知识、稳定、城市繁荣、军需、发展倾向和有限历史；仓库容量依赖有效且维护过的仓库 |
+| 国家发展 | 按当前归属城市的真实结算聚合农业、工业、贸易、军需和文化倾向；五类国家专长有知识/行为门槛与六周期冷却，失去贡献城市会暂停加成 |
+| 区域文化 | 有效设施积累本国传统；完成贸易后凭唯一回执交流；地域文化有限影响产业 |
+| 十一种事件 | 干旱、暴雪、丰收、洪水、饥荒、资源危机、商业繁荣、文化节庆、边境争端、衰落、复兴；条件/权重/冷却/余波 |
+| 交通贸易 | 道路、桥梁、港口、关隘；显式商路、地形运时、共享容量、维护、双向实物托管、供需与战争封锁 |
+| 生活职业 | 厨师、酿酒师、装饰工匠、乐师；仓库消耗、个人/城市限额、临时产业效果和重启恢复 |
+| 国家资源出口 | 配置实物成本兑换已有国家抽象资源分类；outbox、稳定事务 ID、核心持久回执、退避重试 |
+| 核心军队战斗 | 已提交真实军需与地形通过公开army_combat贡献点影响有效设施区块的军队伤害 |
+| GUI/API | 城市仓储/设施与发展GUI，生活/贸易命令入口；不可变 Future 查询及提交后事件 |
+
+运输路径是管理者声明的有限节点路线，不证明沿途铺满道路。兵营实际消耗箭形成军需；当前或前一周期的有效供给通过核心公开扩展点提供最多30%军需增伤、20%额外地形减伤，只限有效设施区块。核心取贡献者最高伤害，其他插件可覆盖减伤；不修改真人PVP或核心军队补给。见[战斗联动](docs/combat.md)。城市繁荣为本地属性，不重复写无幂等回执的国家繁荣。
+
+默认五分钟一周期，停服和未加载区块不补发。产业需要维护和投入，注销登记不刷新矿藏。设施损坏、区块卸载、城市/国家丢领或转国会停产。失去资源地会切断原料；战争可暂停商路，军工城市需要粮食与材料补给。
+
+## 常用命令
 
 ```text
-/sw menu|help|status|stock|buildings
-/sw register <farm|sawmill|workshop>
-/sw deposit minecraft:oak_log 16
-/sw withdraw minecraft:arrow 12
-/sw upgrade <设施UUID>
-/sw remove <设施UUID>
-/sw civilization <agrarian|industrial>
+/sw menu|develop|status|stock|buildings|development|history|culture|nation
+/sw register <设施ID>
+/sw deposit|withdraw <物品ID> <1–2304>
+/sw upgrade|remove <设施UUID>
+/sw civilization <agrarian|industrial|mercantile|martial|scholarly>
+/sw plan <balanced|agriculture|industry|commerce|culture|military>
+/sw specialty <granary|arsenal|woodworking|gastronomy>
+/sw nation-development
+/sw national-specialty <agriculture|industry|commerce|military|culture>
+/sw node|route|trade|demand help
+/sw profession <chef|brewer|artisan|musician>
+/sw feast <community|cookery|tavern>
+/sw decoration <register|list|remove UUID>
+/sw concert <start|list|note UUID 音高|finish UUID|cancel UUID>
+/sw export <契约ID> <批数>
+/sw outbox
 ```
 
-失去领土、城市解散/转国、锚点损坏、区块卸载时相应设施停产且不扣维护。城市转国后旧设施需新归属下重新登记；重复注销登记不能重置矿藏。数量范围 1–2304。
-
-`starworld.use` 默认所有人；设施管理、存取、升级另需 StarCore 市长/国家创始人身份。全国文明另需国家创始人。`starworld.admin` 默认 OP，可覆盖管理权限及使用：
+`starworld.use` 默认所有玩家。设施、公共仓库、规划、贸易及有成本的生活活动需要城市管理权限；全国文明和国家专长还需 StarCore 国家创始人。`starworld.admin` 默认 OP，可覆盖管理权限，但不能证明无效领土/锚点有效。管理员可用：
 
 ```text
-/sw event <drought|blizzard|harvest>
+/sw event <事件ID>
 /sw pending
 /sw resolve <物品凭据UUID> <credit|discard>
+/sw outbox <retry|cancel> <事务ID>
 ```
 
-`credit` 向城市库存记入该数量（存入补记/取出退回）；`discard` 仅确认。**先核对背包与账目再决定**；正在进行的交付禁止人工核对。所有决定写审计。
+背包存档与 SQLite 没有共同事务，异常遗留凭据必须核对。`resolve credit` 只向城市库存记账一次，`discard` 只确认；活跃操作不能人工处理。已发送国家 outbox 可能在核心提交，不能直接退款；按原事务回执恢复。见[架构](docs/architecture.md)和[国家事务](docs/core-extension.md)。
 
-## 配置与可选联动
+## 配置与森罗内容
 
-[definitions.yml](src/main/resources/definitions.yml) 定义地区、文明、建筑、配方和事件；[config.yml](src/main/resources/config.yml) 定义周期/数量上限。修改后正常重启，保留持久 ID。生产存档变更周期长度前应备份并安排迁移。
+| 文件 | 内容 |
+| --- | --- |
+| [config.yml](src/main/resources/config.yml) | 周期、批量、设施和库存上限 |
+| [definitions.yml](src/main/resources/definitions.yml) | 六地形、基础文明、产业、事件 |
+| [evolution.yml](src/main/resources/evolution.yml) | 加法式设施/配方/文明/事件，规划、专长和条件 |
+| [logistics.yml](src/main/resources/logistics.yml) | 节点、成本、容量、运输和批量限制 |
+| [exports.yml](src/main/resources/exports.yml) | 国家资源出口契约及有效设施要求 |
+| [life.yml示例](examples/life.yml) | 首次由完整默认值生成；职业、宴会、家具、乐器、限额及效果 |
 
-CE 支持 `minecraft:wheat` 与真实自定义 ID。缺 CE/内容未加载时相关配方停用且不扣原料，原版链继续。示例见[森罗配方](examples/senluo-recipes.yml)。内容重载后建议同步重启 StarWorld 校验定义。
+自定义物品须为真实 CE ID；未知/未加载 ID 不静默替换。Cookery 菜肴和 Tavern 饮品以实际入库商品参与宴会，不用提交前事件刷奖励。Deco 通过公共 CE 家具 API 对登记 UUID 逐期复核。MusicPlus 没有公开完成 API；`/sw concert` 是 StarWorld 自己控制的现场演奏，可用真实森罗乐器，不自动奖励 `/kmusic`。见[生活联动](docs/life-integrations.md)、[森罗配方示例](examples/senluo-recipes.yml)。
 
-Cookery/Tavern 的 CE 食材/菜肴/饮品可参与配置的生产与维护。不会从取菜前事件重复发奖。Deco/MusicPlus 缺少可靠的城市贡献完成 API，明确显示自动家具/演奏加成不可用，不因检测安装就给加成。本版不宣称完整生活职业、家具登记或节庆演奏结算已完成。
+## 文档与验证证据
 
-## 持久化与升级
+[需求映射](docs/requirements.md) · [架构](docs/architecture.md) · [Java API](docs/API.md) · [玩法验收](docs/gameplay.md) · [交通贸易](docs/logistics.md) · [国家服务](docs/core-extension.md) · [战斗联动](docs/combat.md) · [生活联动](docs/life-integrations.md) · [测试结果](docs/test-results.md) · [后续边界](docs/roadmap.md)
 
-- 独立 SQLite，WAL + `synchronous=FULL`；库存、储量、事件与周期凭据一笔事务，`last_period` 防旧周期重放。
-- 国家资源仅公开 API 读取。跨库输出需 receipt/outbox，留待下一阶段。
-- 背包与 SQLite 没有共同事务。物品先落 `PREPARED`，变更后保存玩家数据再确认。崩溃遗留凭据隔离、不自动重放，需人工核对。纯产业结算幂等；不承诺跨玩家文件绝对原子性。
-- 配置 v1 → v2 自动备份 `.v1.bak`；DB schema v1 → v2 事务迁移；拒绝未知高版本并保留存档。
-- 停服后备份整个 `plugins/StarWorld/`；卸载仅移除 JAR，数据留存。降级应恢复对应备份，不手改 schema 版本。
-
-## 文档与验证
-
-[Java API](docs/API.md) · [架构与线程](docs/architecture.md) · [游玩验收](docs/gameplay.md) · [测试结果](docs/test-results.md) · [完整系统后续设计](docs/roadmap.md)
-
-`./mvnw -B verify` 运行 JUnit、真实 SQLite、并发及独立进程崩溃恢复测试，生成 `target/surefire-reports/`、`target/site/jacoco/`。GitHub Actions 执行同样检查并上传产物。Paper 真服冒烟与未验证边界见测试结果，不把契约模拟测试称为全部上游插件联服通过。
+`clean verify` 运行 JUnit、真实 SQLite、并发和独立进程崩溃恢复测试，生成 `target/surefire-reports/` 与 `target/site/jacoco/`。实际通过数、JAR SHA256、Paper 客户端步骤和限度以[测试结果](docs/test-results.md)及机器证据为准。旧版原版产业有真服验证基础；新增模块的模拟契约测试不等于整套 CE/森罗多人联服或 Folia 已通过。

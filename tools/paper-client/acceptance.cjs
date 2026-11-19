@@ -187,7 +187,7 @@ class Paper {
 }
 
 async function connect(mineflayer, options, directory, run) {
-  const bot = mineflayer.createBot({ host: '127.0.0.1', port: options.port, username: 'StarWorldQA', auth: 'offline', version: '1.21.11',
+  const bot = mineflayer.createBot({ host: '127.0.0.1', port: options.port, username: options.username || 'StarWorldQA', auth: 'offline', version: '1.21.11',
     checkTimeoutInterval: 60000, hideErrors: true });
   bot.messages = []; bot.failure = null;
   const transcript = fs.createWriteStream(path.join(directory, `client-run-${run}.log`), { encoding: 'utf8' });
@@ -356,4 +356,5 @@ async function main() {
   }
 }
 
-main().catch(error => { console.error(error.stack); process.exitCode = 1; });
+module.exports = { Paper, connect, botMessage, properties, configuredNumber, hash, plain, requireFile, waitUntil, withTimeout, argumentsOf };
+if (require.main === module) main().catch(error => { console.error(error.stack); process.exitCode = 1; });

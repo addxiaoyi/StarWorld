@@ -11,7 +11,20 @@ import org.bukkit.configuration.file.YamlConfiguration;
 public final class ConfigLoader {
     private ConfigLoader() {}
     public static Definitions load(File configFile,File definitionsFile) throws Exception {
+        return load(configFile,definitionsFile,null);
+    }
+    /** Additive expansion definitions preserve every existing administrator override. */
+    public static Definitions load(File configFile,File definitionsFile,File expansionFile) throws Exception {
         YamlConfiguration config=read(configFile),data=read(definitionsFile);
+        if(expansionFile!=null) {
+            YamlConfiguration expansion=read(expansionFile);
+            if(expansion.getInt("expansion-version")!=1)throw new IllegalArgumentException("Unsupported expansion-version");
+            for(String category:List.of("civilizations","buildings","recipes","events")) {
+                ConfigurationSection additions=expansion.getConfigurationSection(category);
+                if(additions!=null)for(String id:additions.getKeys(false))
+                    if(!data.contains(category+"."+id))data.set(category+"."+id,additions.get(id));
+            }
+        }
         int version=config.getInt("config-version",1);
         if(version>2 || version<1)throw new IllegalArgumentException("Unsupported config-version: "+version);
         if(version==1) {

@@ -1,0 +1,13 @@
+schema-version: 1
+# Nodes are explicit physical checkpoints. No world scans or per-tick pathfinding.
+limits:
+  nodes-per-city: 24
+  routes-per-city: 12
+  waypoints: 16
+  open-orders-per-city: 100
+  batch: 20
+  items-per-order: 16
+  travel-periods: 1000
+blocks-per-period: 128
+offer-lifetime-periods: 24
+terrain-time: {plains: 1.0, mountains: 2.2, forest: 1.4, desert: 1.6, snow: 2.0, river: 1.8}

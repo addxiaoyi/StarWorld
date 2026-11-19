@@ -1,0 +1,196 @@
+# Additive expansion: an ID already present in definitions.yml wins.
+expansion-version: 1
+combat:
+  enabled: true
+  max-attack: 0.30
+  max-defense: 0.20
+evolution:
+  cooldown: 6
+  history-limit: 100
+  food-per-facility: 1
+  max-bonus: 2.0
+planning:
+  balanced:
+    name: 综合发展
+    multipliers: {}
+  agriculture:
+    name: 农业中心
+    multipliers: {farm: 1.2, workshop: 0.9, kitchen: 1.15}
+  industry:
+    name: 工业城市
+    multipliers: {farm: 0.9, workshop: 1.2, sawmill: 1.1}
+  commerce:
+    name: 商贸都会
+    multipliers: {farm: 0.95, workshop: 0.95, kitchen: 1.2}
+  culture:
+    name: 文化学城
+    multipliers: {farm: 1.05, workshop: 0.9, kitchen: 1.1}
+  military:
+    name: 军工要塞
+    multipliers: {farm: 0.85, workshop: 1.25, sawmill: 1.05}
+specialties:
+  granary:
+    name: 天下粮仓
+    building: farm
+    knowledge: 5
+    core-multiplier: 0
+    multipliers: {farm: 1.2, kitchen: 1.1, workshop: 0.9}
+  arsenal:
+    name: 国家兵工厂
+    building: barracks
+    knowledge: 10
+    core-multiplier: 1.05
+    multipliers: {workshop: 1.25, farm: 0.85}
+  woodworking:
+    name: 林木加工之都
+    building: sawmill
+    knowledge: 5
+    core-multiplier: 0
+    multipliers: {sawmill: 1.25, workshop: 0.95}
+  gastronomy:
+    name: 美食之城
+    building: kitchen
+    knowledge: 10
+    core-multiplier: 0
+    multipliers: {kitchen: 1.3, farm: 1.1, workshop: 0.85}
+civilizations:
+  mercantile:
+    name: 商业文明
+    multipliers: {farm: 1.05, kitchen: 1.2, workshop: 0.9, sawmill: 1.1}
+  martial:
+    name: 尚武文明
+    multipliers: {farm: 0.85, workshop: 1.35, sawmill: 1.05, kitchen: 0.9}
+  scholarly:
+    name: 文化文明
+    multipliers: {farm: 1.1, kitchen: 1.15, workshop: 0.9, sawmill: 1.0}
+buildings:
+  warehouse:
+    name: 城市仓库
+    anchor: BARREL
+    upkeep: {minecraft:oak_planks: 1}
+  market:
+    name: 城市市场
+    anchor: BELL
+    upkeep: {minecraft:bread: 1}
+  academy:
+    name: 学院
+    anchor: LECTERN
+    upkeep: {minecraft:bread: 1, minecraft:paper: 1}
+  barracks:
+    name: 兵营与军需站
+    anchor: FLETCHING_TABLE
+    upkeep: {minecraft:bread: 2}
+  well:
+    name: 公共水井
+    anchor: CAULDRON
+    upkeep: {minecraft:oak_planks: 1}
+  kitchen:
+    name: 食品加工厨房
+    anchor: SMOKER
+    upkeep: {minecraft:bread: 1}
+recipes:
+  paper:
+    building: sawmill
+    inputs: {minecraft:oak_log: 1}
+    outputs: {minecraft:paper: 3}
+  provisions:
+    building: kitchen
+    inputs: {minecraft:wheat: 9, minecraft:oak_log: 1}
+    outputs: {minecraft:bread: 5}
+  weapons:
+    building: workshop
+    inputs: {minecraft:iron_ingot: 4, minecraft:oak_planks: 2}
+    outputs: {minecraft:shield: 1}
+events:
+  flood:
+    name: 河流洪灾
+    duration: 3
+    aftermath: 3
+    multipliers: {farm: 0.4, workshop: 0.7, sawmill: 0.6, kitchen: 0.8}
+    aftermath-multiplier: 0.85
+  famine:
+    name: 饥荒
+    duration: 3
+    aftermath: 3
+    multipliers: {farm: 0.7, workshop: 0.5, sawmill: 0.5, kitchen: 0.7}
+    aftermath-multiplier: 0.8
+  resource_crisis:
+    name: 战略资源危机
+    duration: 3
+    aftermath: 2
+    multipliers: {workshop: 0.5, sawmill: 0.8}
+    aftermath-multiplier: 0.9
+  commerce_boom:
+    name: 商业繁荣
+    duration: 3
+    aftermath: 2
+    multipliers: {farm: 1.1, workshop: 1.15, sawmill: 1.15, kitchen: 1.2}
+    aftermath-multiplier: 1.1
+  festival:
+    name: 文化节庆
+    duration: 2
+    aftermath: 2
+    multipliers: {farm: 1.1, workshop: 1.05, kitchen: 1.3}
+    aftermath-multiplier: 1.1
+  border_dispute:
+    name: 边境资源争端
+    duration: 3
+    aftermath: 3
+    multipliers: {farm: 0.85, workshop: 0.8, sawmill: 0.8}
+    aftermath-multiplier: 0.9
+  decline:
+    name: 地区衰落
+    duration: 4
+    aftermath: 4
+    multipliers: {farm: 0.7, workshop: 0.6, sawmill: 0.7, kitchen: 0.8}
+    aftermath-multiplier: 0.85
+  revival:
+    name: 地区复兴
+    duration: 4
+    aftermath: 3
+    multipliers: {farm: 1.3, workshop: 1.3, sawmill: 1.3, kitchen: 1.2}
+    aftermath-multiplier: 1.15
+event-rules:
+  drought: {condition: dry, weight: 1, cooldown: 10}
+  blizzard: {condition: snow, weight: 1, cooldown: 10}
+  harvest: {condition: always, weight: 1, cooldown: 8}
+  flood: {condition: river, weight: 1, cooldown: 12}
+  famine: {condition: famine, weight: 2, cooldown: 8}
+  resource_crisis: {condition: crisis, weight: 2, cooldown: 10}
+  commerce_boom: {condition: trade, weight: 2, cooldown: 8}
+  festival: {condition: culture, weight: 1, cooldown: 8}
+  border_dispute: {condition: border, weight: 2, cooldown: 10}
+  decline: {condition: decline, weight: 2, cooldown: 12}
+  revival: {condition: revival, weight: 2, cooldown: 12}
+national-specialty-cooldown: 6
+national-specialties:
+  agriculture:
+    name: 农耕强国
+    direction: agriculture
+    min-score: 20
+    min-knowledge: 5
+    multipliers: {farm: 1.15, kitchen: 1.10, workshop: 0.90}
+  industry:
+    name: 工业强国
+    direction: industry
+    min-score: 20
+    min-knowledge: 8
+    multipliers: {workshop: 1.15, sawmill: 1.10, farm: 0.90}
+  commerce:
+    name: 贸易联邦
+    direction: commerce
+    min-score: 3
+    min-knowledge: 5
+    multipliers: {kitchen: 1.15, sawmill: 1.10, workshop: 0.95}
+  military:
+    name: 军事强国
+    direction: military
+    min-score: 20
+    min-knowledge: 8
+    multipliers: {workshop: 1.15, farm: 0.90}
+  culture:
+    name: 文化强国
+    direction: culture
+    min-score: 20
+    min-knowledge: 10
+    multipliers: {kitchen: 1.15, farm: 1.10, workshop: 0.90}

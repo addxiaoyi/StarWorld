@@ -108,7 +108,8 @@ class Paper {
   async start() {
     await portIsFree(this.options.port);
     this.out = fs.createWriteStream(path.join(this.directory, `paper-run-${this.run}.log`), { encoding: 'utf8' });
-    this.child = spawn(this.options.java, ['-Xms256m', '-Xmx1024m', '-XX:ActiveProcessorCount=2', '-XX:+UseSerialGC',
+    const jvmArgs = this.options.jvmArgs || ['-Xms256m', '-Xmx1024m', '-XX:ActiveProcessorCount=2', '-XX:+UseSerialGC'];
+    this.child = spawn(this.options.java, [...jvmArgs,
       '-Dfile.encoding=UTF-8', '-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8', '-Dterminal.jline=false',
       '-Dterminal.ansi=false', '-jar', this.options.paper, '--nogui'], {
       cwd: this.options.runtime, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true

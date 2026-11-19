@@ -28,21 +28,83 @@ $target = Join-Path $RepositoryRoot 'target'
 $pluginJar = Join-Path $target "starworld-$version.jar"
 $sourcesJar = Join-Path $target "starworld-$version-sources.jar"
 $evidenceZip = Join-Path $target "StarWorld-$version-evidence.zip"
-foreach ($file in @($pluginJar, $sourcesJar)) {
+foreach ($file in @($pluginJar, $sourcesJar, $evidenceZip)) {
     if (!(Test-Path -LiteralPath $file -PathType Leaf)) { throw "Required build artifact is missing: $file" }
 }
 $pluginHash = (Get-FileHash -LiteralPath $pluginJar -Algorithm SHA256).Hash.ToLowerInvariant()
 $testEvidence = Join-Path $RepositoryRoot 'docs/evidence/unit-tests.json'
-if (Test-Path -LiteralPath $testEvidence -PathType Leaf) {
-    $unit = [IO.File]::ReadAllText($testEvidence) | ConvertFrom-Json
-    if ($unit.artifact_sha256 -ne $pluginHash) { throw 'Plugin JAR does not match the recorded verified build.' }
-    if ($unit.totals.failures -ne 0 -or $unit.totals.errors -ne 0 -or $unit.totals.skipped -ne 0) {
-        throw 'Recorded verification contains failures, errors or skipped tests.'
-    }
+if (!(Test-Path -LiteralPath $testEvidence -PathType Leaf)) { throw 'Required unit-test evidence is missing.' }
+$unit = [IO.File]::ReadAllText($testEvidence) | ConvertFrom-Json
+if ($unit.version -ne $version -or $unit.artifact_sha256 -ne $pluginHash) {
+    throw 'Plugin JAR/version does not match the recorded verified build.'
+}
+if ($unit.totals.tests -lt 1 -or $unit.totals.failures -ne 0 -or $unit.totals.errors -ne 0 -or $unit.totals.skipped -ne 0) {
+    throw 'Recorded verification contains no tests, failures, errors or skipped tests.'
 }
 if ($ExpectedPluginSha256 -and $pluginHash -ne $ExpectedPluginSha256.ToLowerInvariant()) {
     throw 'Plugin JAR does not match ExpectedPluginSha256.'
 }
+
+function Read-ZipEntryBytes([IO.Compression.ZipArchiveEntry] $Entry) {
+    $stream = $Entry.Open()
+    $buffer = [IO.MemoryStream]::new()
+    try { $stream.CopyTo($buffer); return ,$buffer.ToArray() }
+    finally { $buffer.Dispose(); $stream.Dispose() }
+}
+function Get-BytesSha256([byte[]] $Bytes) {
+    return [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($Bytes)).ToLowerInvariant()
+}
+# A stale evidence ZIP must not be attached to a different installable artifact.
+$evidenceArchive = [IO.Compression.ZipFile]::OpenRead($evidenceZip)
+try {
+    $manifestEntry = $evidenceArchive.GetEntry('manifest.json')
+    if (!$manifestEntry) { throw 'Evidence archive has no manifest; run package-evidence.py first.' }
+    $manifest = [Text.Encoding]::UTF8.GetString((Read-ZipEntryBytes $manifestEntry)) | ConvertFrom-Json
+    if ($manifest.version -ne $version -or $manifest.plugin_sha256 -ne $pluginHash -or
+        $manifest.unit_tests.tests -ne $unit.totals.tests -or $manifest.unit_tests.failures -ne 0 -or
+        $manifest.unit_tests.errors -ne 0 -or $manifest.unit_tests.skipped -ne 0) {
+        throw 'Evidence manifest does not describe this verified artifact.'
+    }
+    $seenEvidence = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    foreach ($entry in $manifest.entries) {
+        $name = [string] $entry.path
+        if (!$name -or $name.Contains('\') -or $name.StartsWith('/') -or
+            ($name -split '/') -contains '..' -or !$seenEvidence.Add($name)) {
+            throw "Invalid/duplicate evidence manifest path: $name"
+        }
+        $payloadEntry = $evidenceArchive.GetEntry($name)
+        if (!$payloadEntry -or $payloadEntry.Length -ne $entry.bytes -or
+            (Get-BytesSha256 (Read-ZipEntryBytes $payloadEntry)) -ne $entry.sha256) {
+            throw "Evidence payload does not match its manifest: $name"
+        }
+    }
+    if ($evidenceArchive.Entries.Count -ne $seenEvidence.Count + 1) { throw 'Evidence archive has unlisted payloads.' }
+    foreach ($suite in @('expansion', 'senluo')) {
+        $entry = $evidenceArchive.GetEntry("runtime/$suite/evidence.json")
+        if (!$entry) { throw "Evidence archive lacks the required $suite run." }
+        $run = [Text.Encoding]::UTF8.GetString((Read-ZipEntryBytes $entry)) | ConvertFrom-Json
+        if ($run.status -ne 'passed' -or $run.pluginJars.'StarWorld.jar' -ne $pluginHash -or
+            @($run.steps).Count -eq 0 -or @($run.steps | Where-Object status -ne 'passed').Count -ne 0) {
+            throw "Evidence archive contains an incomplete or mismatched $suite run."
+        }
+    }
+} finally { $evidenceArchive.Dispose() }
+
+# Refuse to combine current source with a JAR built before those source edits.
+$sourceArchive = [IO.Compression.ZipFile]::OpenRead($sourcesJar)
+try {
+    foreach ($folder in @('java', 'resources')) {
+        $sourceFolder = Join-Path $RepositoryRoot "src/main/$folder"
+        foreach ($file in Get-ChildItem -LiteralPath $sourceFolder -File -Recurse -Force) {
+            $name = [IO.Path]::GetRelativePath($sourceFolder, $file.FullName).Replace('\', '/')
+            $entry = $sourceArchive.GetEntry($name)
+            if (!$entry -or (Get-BytesSha256 (Read-ZipEntryBytes $entry)) -ne
+                (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()) {
+                throw "Sources JAR differs from the current source: $name"
+            }
+        }
+    }
+} finally { $sourceArchive.Dispose() }
 # Inspect the actual installable artifact, not merely a successful build log.
 $jar = [IO.Compression.ZipFile]::OpenRead($pluginJar)
 try {
@@ -53,7 +115,7 @@ try {
         'dev/starworld/integration/ResourceOutbox.class', 'dev/starworld/integration/StarCoreCombatContributor.class', 'org/sqlite/JDBC.class')) {
         if ($jarNames -notcontains $required) { throw "Plugin artifact lacks $required" }
     }
-    if ($jarNames | Where-Object { $_ -match '^(dev/starcore/|dev/starworld/fixture/)' -or $_ -match 'Test\.class$' }) {
+    if ($jarNames | Where-Object { $_ -match '^(dev/starcore/|dev/starworld/fixture/|net/momirealms/)' -or $_ -match 'Test\.class$' }) {
         throw 'Plugin artifact contains test fixtures or bundled StarCore classes.'
     }
 } finally { $jar.Dispose() }
@@ -93,17 +155,26 @@ try {
         }
     }
     $toolFiles = @(
-        'tools/package-release.ps1', 'tools/smoke-paper.ps1',
+        'tools/package-release.ps1', 'tools/package-evidence.py', 'tools/smoke-paper.ps1',
         'tools/paper-fixture/pom.xml', 'tools/paper-fixture/plugin.yml',
         'tools/paper-fixture/README.md', 'tools/paper-fixture/starcore-build-provenance.json',
         'tools/paper-client/package.json', 'tools/paper-client/acceptance.cjs',
-        'tools/paper-client/expansion-acceptance.cjs', 'tools/paper-client/README.md'
+        'tools/paper-client/expansion-acceptance.cjs', 'tools/paper-client/README.md',
+        'tools/senluo-fixture/pom.xml', 'tools/senluo-fixture/README.md',
+        'tools/senluo-fixture/acceptance.cjs'
     )
     foreach ($file in $toolFiles) { Copy-AllowedFile $file $sourceRoot }
     $fixtureSource = Join-Path $RepositoryRoot 'tools/paper-fixture/src'
     foreach ($file in Get-ChildItem -LiteralPath $fixtureSource -Recurse -File -Force) {
         if ($file.Extension -ne '.java' -or $file.Attributes -band [IO.FileAttributes]::ReparsePoint) {
             throw "Unexpected fixture source file: $($file.FullName)"
+        }
+        Copy-AllowedFile ([IO.Path]::GetRelativePath($RepositoryRoot, $file.FullName)) $sourceRoot
+    }
+    $senluoSource = Join-Path $RepositoryRoot 'tools/senluo-fixture/src'
+    foreach ($file in Get-ChildItem -LiteralPath $senluoSource -Recurse -File -Force) {
+        if ($file.Extension -notin @('.java', '.yml') -or $file.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            throw "Unexpected optional-integration fixture source file: $($file.FullName)"
         }
         Copy-AllowedFile ([IO.Path]::GetRelativePath($RepositoryRoot, $file.FullName)) $sourceRoot
     }
@@ -118,9 +189,7 @@ try {
     Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'README.md') -Destination (Join-Path $staging 'README.md')
     Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'LICENSE') -Destination (Join-Path $staging 'LICENSE')
     Copy-Item -LiteralPath (Join-Path $sourceRoot 'docs') -Destination (Join-Path $staging 'docs') -Recurse
-    if (Test-Path -LiteralPath $evidenceZip -PathType Leaf) {
-        Copy-Item -LiteralPath $evidenceZip -Destination (Join-Path $staging "StarWorld-$version-evidence.zip")
-    }
+    Copy-Item -LiteralPath $evidenceZip -Destination (Join-Path $staging "StarWorld-$version-evidence.zip")
     $payload = @(Get-ChildItem -LiteralPath $staging -Recurse -File -Force | Sort-Object FullName)
     $checksums = foreach ($file in $payload) {
         $relative = [IO.Path]::GetRelativePath($staging, $file.FullName).Replace('\', '/')

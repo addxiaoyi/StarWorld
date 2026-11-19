@@ -21,6 +21,10 @@
 | Deco 0.1.0-dev | `1db18976692f5de6b284b31cfc5ef40e14d60f86925f75e87fe7dc3cf807f263` |
 | Music 0.1.0-dev | `983fb4b88b39bb5211e12ead23d3202222624e114e2ee4137f48d49d434b1078` |
 
+2026-11-20 StarWorld 实服联调补记：CE26.9.1 的 `ItemStackUtils` 同时公开 `getBukkitStack(Object)` 和 `getBukkitStack(core.item.Item)`。前者要求原生 Minecraft 栈，后者先解包 CE Item；反射时按 `isInstance` 遍历重载可能误选 Object。当前适配器按公共 `Item` 类型精确绑定后一重载，并在公共 `BuildableItem` 接口绑定 `buildItem(CE Player)`、在公共 `Key` 类绑定 `asString()`。新增3项直接运行反射边界的契约测试，不能用 Access mock 代替这一选择验证。
+
+Tavern `catalog.json` 区分配方 `id` 与成品 `output`：`kaleidoscope_tavern:barrel/wine` 是酿造配方ID，其成品为 `kaleidoscope_tavern:wine`。默认生活配置和示例现已使用成品ID；服务端已有自定义 `life.yml` 保留管理员定义，更新时应核对自己的宴会输入，不把配方ID当物品ID。
+
 下文为最初固定提交的详细审计，配合此复审补记阅读。
 
 ## 固定代码基线

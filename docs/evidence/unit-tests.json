@@ -1,12 +1,12 @@
 {
   "schema": 2,
   "version": "0.2.0",
-  "recorded_at": "2026-11-19T15:30:01.242323+00:00",
+  "recorded_at": "2026-11-19T17:26:34.901429+00:00",
   "command": "./mvnw.cmd -B --no-transfer-progress clean verify",
   "java": "21.0.13.1+2",
-  "artifact_sha256": "7c5de80372c0474a6d65e07e53d85ec3854153c3081bcdd62263344692cc37a3",
+  "artifact_sha256": "3940fdf96c82bcb25be75a30d034615047d23545d48781ea290e4dfcafd654f6",
   "totals": {
-    "tests": 169,
+    "tests": 172,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -36,6 +36,13 @@
     {
       "suite": "dev.starworld.evolution.NationalEvolutionTest",
       "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.integration.CustomItemsReflectionTest",
+      "tests": 3,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -148,28 +155,28 @@
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 23692,
-      "missed": 10587
+      "covered": 23901,
+      "missed": 10329
     },
     "BRANCH": {
-      "covered": 1605,
-      "missed": 1408
+      "covered": 1611,
+      "missed": 1382
     },
     "LINE": {
-      "covered": 1770,
-      "missed": 568
+      "covered": 1800,
+      "missed": 533
     },
     "COMPLEXITY": {
-      "covered": 1109,
-      "missed": 1454
+      "covered": 1117,
+      "missed": 1436
     },
     "METHOD": {
-      "covered": 636,
-      "missed": 389
+      "covered": 641,
+      "missed": 384
     },
     "CLASS": {
-      "covered": 98,
-      "missed": 13
+      "covered": 99,
+      "missed": 12
     }
   }
 }

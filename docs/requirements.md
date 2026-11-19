@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 先审计两仓库最新代码/README/API/数据模型/依赖 | [audit-starcore.md](audit-starcore.md)、[audit-senluo.md](audit-senluo.md) 固定远端HEAD与源码证据 | 固定提交不是未来任意上游版本兼容承诺 |
 | 扩展现有国家核心，不重复开发 | `integration/CoreBridge`、`StarCoreBridge`、`CoreExtensionPort`、`StarCoreExtensions`；只读国家/城市/领地等，出口走公开事务 | `StarCoreBridgeTest`、`StarCoreExtensionsTest`；不访问核心权威表 |
-| 1.21.11/Paper/Java21/CE | pom、plugin.yml、CustomItems；CE26.9.1可选公共API隔离 | Maven、真实Paper测试另列；没有打包上游实现 |
+| 1.21.11/Paper/Java21/CE | pom、plugin.yml、CustomItems；CE26.9.1可选公共API隔离 | 当前172项单测；不同构建的20阶段真实Paper历史验收与当前回归分开记录，CE套件结果单列；没有打包上游实现 |
 | 规划Folia | `runtime/SchedulerGate`、启动门禁、[architecture.md](architecture.md) | 当前拒绝Folia启用，上游快照/权限区域契约与真服验证尚需完成 |
 | 绑定指定仓库并交付源码/Maven/JAR/配置/API/README | pom URL、README、Maven Wrapper、package-release.ps1 | 最终推送/产物状态与哈希见交付记录；不会把本地文件当作已远端发布 |
 
@@ -19,7 +19,7 @@
 | 地区划分与地形战略属性 | `WorldState.Site.regionKey`、`TerrainClassifier`、Definitions.Terrain | 登记区块增量分区，单点群系采样；不全图地貌识别 |
 | 山/河/平原/林/沙/雪六类地区 | definitions.yml六项农业/运输/军事系数 | `SimulationTest`、配置测试 |
 | 区域资源丰度和恢复 | region/reserve/last_regen；肥力、林木和矿藏有限储量 | 共享地区每期只恢复一次，矿藏默认不可再生；重复登记不刷新 |
-| 地形影响农业/运输/贸易/军事 | Simulation农业与运输阻力；Logistics地形运时；readiness与terrainDefense通过公开army_combat影响真实军队伤害 | `SimulationTest`、`LogisticsServiceTest`、`StarCoreCombatContributorTest`；有限设施区块/当前或前一周期，核心最高值聚合，不影响玩家PVP |
+| 地形影响农业/运输/贸易/军事 | Simulation农业与运输阻力；Logistics地形运时；readiness与terrainDefense通过公开army_combat影响真实军队伤害 | `SimulationTest`、`LogisticsServiceTest`、`StarCoreCombatContributorTest`及真实ArmyService/army_combat验收；有限设施区块/当前或前一周期，核心最高值聚合，不影响玩家PVP |
 | 要道/天然关隘/港口/交通节点 | `logistics`道路/桥梁/港口/关隘显式登记、路径/容量/维护 | 节点锚点真实验证；天然关隘和沿线道路连续性不自动推断 |
 | 发展差异与稀缺 | 不同储量/恢复/倍率、矿竭、食物维护、贸易供需、仓储容量 | 原料不足不能生产，失地停产；可进口替代 |
 
@@ -42,7 +42,7 @@
 | 仓库/市场/农场/工坊/兵营/学院 | definitions+evolution九设施、维护、产能/容量/知识/军需 | 有效并维护的设施才贡献；水井和厨房额外提供公共/食品功能 |
 | 公共设施/繁荣/维护成本 | Evolution本地繁荣、稳定；真实面包、纸、木板与箭消费 | 本地繁荣不重复写核心国家繁荣，后者缺幂等回执 |
 | 升级/特色/产业分工 | 三级实物升级、granary/arsenal/woodworking/gastronomy | `WorldStoreTest`、`EvolutionServiceTest`；条件失效专长作用停止 |
-| Deco家具/装饰 | LifePlatform公共CE家具UUID/ID/位置验证，登记/维护贡献 | `LifePlatformTest`、`LifeServiceTest`；真实CE整套热重载验收另列 |
+| Deco家具/装饰 | LifePlatform公共CE家具UUID/ID/位置验证，登记/维护贡献 | `LifePlatformTest`、`LifeServiceTest`；真实CE套件结果见森罗验收，未将热重载列为已通过 |
 
 ## 生产与产业系统
 
@@ -88,7 +88,7 @@
 | Folia区域调度正确 | SchedulerGate预留Global/Entity/Region边界，当前检测停用 | 上游不满足前不虚报兼容，正式Folia真服未验收 |
 | 森罗可选依赖、明确降级 | 正确插件名softdepend、CustomItems/平台能力诊断 | 缺CE或内容停相关动作，原版链继续；不伪造完成API |
 | 安装/升级/迁移 | 首次配置、旧ID优先、版本拒绝、备份与加法DDL | 配置/基础schema迁移和未来版本拒绝测试；降级用备份 |
-| 第一阶段6地理/3链/3设施/2文明/3事件 | 已包含于当前6/完整基础3链/9设施/5文明/11事件 | 基础真服与新增扩展证据分开，详细见测试结果 |
+| 第一阶段6地理/3链/3设施/2文明/3事件 | 已包含于当前6/完整基础3链/9设施/5文明/11事件 | 当前JAR的20阶段扩展、15阶段森罗与基础回归证据分别记录，详细见测试结果 |
 | 国家状态、持久化、配置、GUI、自动测试 | 上述实际模块与测试、客户端工具、GitHub CI | 最终通过数和JAR哈希不在此硬编码，避免旧结果冒充新版本 |
 
 ## 玩家决策如何落实

@@ -1,76 +1,82 @@
-# 测试结果（2026-11-19）
+# 测试结果：StarWorld 0.2.0
 
-## 最终构建
+## 最终构建与身份
 
-命令：`./mvnw -B --no-transfer-progress clean verify`，Windows 实际执行 `mvnw.cmd`。Microsoft OpenJDK **21.0.13.1+2**、Maven **3.9.11**，最终构建完成于 **2026-11-19 20:51:32 Asia/Shanghai**，BUILD SUCCESS。
+执行 `.\mvnw.cmd -B --no-transfer-progress clean verify`，Microsoft OpenJDK **21.0.13.1+2**、Maven **3.9.11**，构建完成于 **2026-11-20 01:25:29 Asia/Shanghai**，BUILD SUCCESS。
 
-`target/starworld-0.1.0.jar` SHA256：
+`target/starworld-0.2.0.jar` SHA-256：
 
 ```text
-7e962b132c474519fea4f7d2d215ae07766baf6e3e2b1a48b0f16ccec9da6040
+3940fdf96c82bcb25be75a30d034615047d23545d48781ea290e4dfcafd654f6
 ```
 
-最终真服验收使用的 JAR 与这个哈希相同。ZIP 全条目 CRC 检查通过，包含 plugin.yml/config.yml/definitions.yml、插件类、SQLite JDBC（含平台原生库）；**不包含** StarCore 类、验收 helper、测试替身或测试类。
+源码 JAR 与当前全部 Java 源码逐字节一致。主插件 ZIP CRC 正常，包含插件描述符、六份内置资源、SQLite JDBC 及原生库；没有打包 StarCore 类、验收夹具、测试替身或测试类。`life.yml` 由完整默认值首次生成，配置示例随包交付。
 
 ## 自动化测试
 
-| 测试组 | 数量 | 范围 |
-|---|---:|---|
-| ConfigLoaderTest | 9 | 默认定义、版本迁移备份、非法版本/引用/数量/倍率/锚点、配置自定义数据 |
-| SimulationTest | 13 | 三条完整链、六地形、两文明、三个事件与余波、重启/同周期/回拨、同/双连接并发、失地/转国停产、矿藏耗尽、维护与容量、失败全回滚、共享地区恢复一次、缺内容停用 |
-| CustomItemsTest | 6 | 可选依赖降级、CE 精确身份、特殊原版元数据保护、失败关闭、返回副本 |
-| StarCoreBridgeTest | 12 | 经审计公开方法签名、核心存在性、成员/市长/国家创始人授权、双领土、真实科技/政策/繁荣倍率、缺模块/线程边界 |
-| WorldStoreTest | 10 | SQLite事务、Error回滚、独立子进程 Runtime.halt(23) 后 WAL 恢复、真实缺v2表/索引的v1迁移、高版本拒绝、物品凭据重启隔离与单次核对、重复登记不刷新矿藏、全国文明冷却、升级扣费原子性 |
-| WorldRuntimeTest | 11 | 活跃转移拒绝人工核对、权限/归属变化、库存/背包不足、成功存取与分堆、一次身份快照、保存失败隔离 |
-| CityMenuTest | 7 | 底栏/Shift/拖动/非拥有者取消，下一tick操作，换城市/换界面避免旧动作 |
-| **合计** | **68** | **0 失败、0 错误、0 跳过** |
+**172 项，0 失败、0 错误、0 跳过。** 20 组完整结果：
 
-机器摘要：[unit-tests.json](evidence/unit-tests.json)。完整 XML/文本：`target/surefire-reports/`。JaCoCo：`target/site/jacoco/`。核心计算/SQLite 为真实实现；平台服务/物品边界有 Mockito 模拟，不能把这些契约测试视作真实核心已运行。以下另有独立真服证据。
+| 测试组 | 数量 |
+| --- | ---: |
+| ConfigLoaderTest | 9 |
+| SimulationTest | 13 |
+| EvolutionServiceTest | 9 |
+| NationalEvolutionTest | 10 |
+| CustomItemsReflectionTest | 3 |
+| CustomItemsTest | 6 |
+| ResourceOutboxTest | 10 |
+| StarCoreBridgeTest | 12 |
+| StarCoreCombatContributorTest | 6 |
+| StarCoreExtensionsTest | 8 |
+| LifeDefinitionsTest | 3 |
+| LifePlatformTest | 6 |
+| LifeServiceTest | 16 |
+| LogisticsConfigTest | 2 |
+| LogisticsControllerTest | 3 |
+| LogisticsServiceTest | 18 |
+| WorldStoreTest | 14 |
+| ExpansionRuntimeTest | 6 |
+| WorldRuntimeTest | 11 |
+| CityMenuTest | 7 |
 
-## 独立安装与恢复冒烟
+机器摘要：[unit-tests.json](evidence/unit-tests.json)。原始 Surefire XML/文本与 JaCoCo HTML/XML 分别位于 `target/surefire-reports/`、`target/site/jacoco/`，完成最终实服回归后由证据脚本校验并收录到证据包。
 
-实际 Paper **1.21.11 build132** + Java21，无 StarCore/CE/森罗：成功加载 StarWorld、明确报告各依赖降级、执行控制台 `starworld status`、正常关闭、检查 SQLite schema2，第二次启动后验证持久化审计标记仍存在。两次均正常退出。
+覆盖的关键约束包括：实际 SQLite 多连接竞争、事务失败全回滚、独立子进程 Runtime.halt 后 WAL 恢复、旧库与配置迁移、高版本拒绝、同周期/同请求去重、物品隔离凭据、共享地区恢复一次、贸易双向托管与共享运力、战争/归属变化、国家出口失ACK和稳定回执、迟到生活与贸易贡献恰好消费一次、国家专长条件和已解散城市持久排除。周期长度变更保持逻辑 period 与事件时间线；容量下降保留既有物品并允许取出，凭据退款不制造额外资源。
 
-脚本：[smoke-paper.ps1](../tools/smoke-paper.ps1)。示例：
+平台权限、GUI、核心公开API及CE物品/家具边界有 Mockito 契约测试；它们不能替代真实服务器验收。JaCoCo 行覆盖为1800/2333，分支覆盖为1611/2993，覆盖数字不作为功能已验证的替代证据。
 
-```powershell
-.\tools\smoke-paper.ps1 -JavaPath C:/jdk21/bin/java.exe `
-  -ServerJar C:/paper-1.21.11.jar -PluginJar ./target/starworld-0.1.0.jar `
-  -RuntimeDirectory C:/starworld-test -BootstrapDirectory C:/prepared-paper -AgreeEula
-```
+## 当前构建的实服回归状态
 
-仅使用指定本地文件与已核验的 Paper bootstrap 缓存，绑定 localhost；已有非空目录必须有工具自己的 sentinel。脚本不下载依赖，`-AgreeEula` 为显式测试参数。原始日志位于本机 `C:/Users/Administrator/Documents/starworld-tools/smoke-server/smoke-run-1.log` 与 `smoke-run-2.log`，联合验收另提供完整可归档日志。
+本次修复精确绑定 `ItemStackUtils.getBukkitStack(CE Item)`，并将 Tavern 默认消耗改为真实成品 `kaleidoscope_tavern:wine`。当前构建的森罗15阶段与国战扩展20阶段均已全部通过；基础15阶段及独立安装冒烟正在分别收集最终运行证据。
 
-## 真实 StarCore 与客户端联合验收
+## 最终构建的真实 Paper / StarCore 扩展验收
 
-**15 个阶段全部通过**，实际起止 **2026-11-19 20:52–20:55 Asia/Shanghai**。使用真实 Paper 1.21.11-132、真实 StarCore `f769e627` 产物、最终 StarWorld JAR、Mineflayer **4.39.0** 的实际在线协议玩家；没有将测试替身注入 Bukkit 服务。
+**20/20 阶段全部通过**，实际时间 **2026-11-20 07:51:15–07:56:25 Asia/Shanghai**。机器证据：[expansion-client.json](evidence/expansion-client.json)，其中每一步均为passed，实际StarWorld哈希与上文最终构建一致。使用 Paper **1.21.11 build132**、Java21、真实 StarCore `f769e62799e769a18fe51305b545869a17f80cd1`，无核心服务替身。
 
-StarCore JAR SHA256：`953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b`。来源核验与真实运行记录：[provenance](../tools/paper-fixture/starcore-build-provenance.json)。本机相同提交无源码变更的完整产物，在构建进程结束后核验复制，随后由联合启动/玩法验证证明可用。上游源码和权威表未被 StarWorld 修改。
+StarCore JAR SHA-256 为 `953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b`；出处见[构建来源](../tools/paper-fixture/starcore-build-provenance.json)。测试只通过核心公开服务建立国家/城市/双层领土、军团、战争与资源事务，不直接修改权威表。
 
-1. 三个真实插件启用，StarCore 公共 API 连接。
-2. 实际离线协议玩家登录。
-3. 公共 API 建国家、城市及国家/城市双层区块领土。
-4. 实际玩家视线/命令登记三种设施，收到三条成功反馈，查询持久化恰好三座。
-5. 未注入生产物资，经过实际周期，粮食、木板、军工箭真实产出。
-6. 从仓库取出4箭，真实客户端背包看见4箭，存回后箭为0。
-7. 实际 GUI Shift 点击不能拿走展示信标。
-8. 普通国家创始人触发管理员事件被拒绝。
-9. 16普通小麦+7命名小麦，存17失败且不吞道具；存16成功，7命名小麦保留。
-10. 撤销真实国家工坊区块认领后，停产报告出现且连续两个实际结算周期箭数不增加。
-11. 重新认领后，军工箭数再次增长。
-12. 管理员触发干旱，API 快照确认实际持久化。
-13. 第一次正常关服并提交状态。
-14. 重启与客户端重新登录，核心城市ID、3设施、库存/账本恢复，干旱完整时间线不变且仍生效；背包箭0、普通小麦0、命名小麦7，未重放已存物品。
-15. 第二次正常关闭。
+20阶段覆盖两国两城、各四座维护设施、知识/军需/容量、规划/文明/三级升级、国家发展门槛、厨师宴会、国家专长实际增产、真实军团作战扩展、道路/跨国商路、双方实物托管、按地形运时交付和文化传播、资源出口与同事务重放、撤领封锁、真实WarService宣战封锁、停战续运、两次正常关闭及重启恢复。最后通过公开 `CityService.deleteCity` 解散城市，等待正常有界扫描，核对国家知识和全部倾向归零、专长选择保留但加成停止；城市设施/库存/历史保留且跨期不再产出。
 
-机器证据含逐阶段观察、快照、JAR哈希：[paper-client.json](evidence/paper-client.json)。工具：[fixture](../tools/paper-fixture/README.md) 与 [客户端脚本](../tools/paper-client/acceptance.cjs)。完整服务端/客户端日志可随交付归档：`target/StarWorld-0.1.0-evidence.zip`。
+实际观察：三级农场厨师宴会前后小麦 **78→81**，国家农业专长前后 **82→91**。国家出口把真实 `agricultural` 从0增至8，同事务重放保持8，重启后仍有相同持久回执。军队计算包含 `starworld:city_readiness` 来源和受限军需修正；完整输入/输出见机器证据。
 
-隔离测试配置明确区别于默认生产配置：周期10秒、随机事件概率0、干旱12周期+2周期余波（保证重启仍生效）；国家/认领费用0；上游无关 dungeon 模块因 Windows 目录同步错误在此测试禁用、地图 Web 服务关闭。其余国家/城市/科技/政策/繁荣/资源服务使用真实实现。配置/定义哈希已写入机器证据，不把这些调优混入默认资源配置。
+隔离配置明确使用十秒周期、关闭随机事件、零认领/宣战费用与新国家保护、固定锚点群系；夹具只保活十个测试区块，不属于插件加载策略。所有投入均标记为fixture seed，物品必须经过真实玩家背包存入，不能将投入算作产量。每次新世界/新DB，配置和JAR指纹写入机器证据。
 
-首个联合尝试因测试 helper 同tick连续传送导致前两次登记读到最终视线而失败，保留失败日志；修正 helper 每座登记分tick后，从全新隔离世界重新进行上述完整验收。没有以 command dispatched 代替成功观察，也没有为通过测试放宽生产权限。
+## 森罗真实联调
 
-## 验证限度
+**15/15阶段全部通过**，实际时间 **2026-11-20 07:46:44–07:51:13 Asia/Shanghai**，实际StarWorld JAR哈希与上文一致。机器证据：[senluo-client.json](evidence/senluo-client.json)。固定最新审计 `SenLuo_Plugin@6a432fe54097a3ebf22ba5757e016b602c711f28`，Cookery/Tavern/Deco/Music候选及原始内容包逐个匹配报告哈希，在真实CE26.9.1/Paper132/Java21独立隔离服验证；没有转引上游PASS。
 
-第一阶段默认原版产业链已真服验证。CE/Cookery/Tavern 公共物品签名已源码审计并做边界契约测试，但**没有安装整套森罗内容做多人真服验收**；Deco/Music 自动贡献明确不可用。道路、市场、港口、文化传播、完整生活职业与更大规模文明系统属于后续设计。Folia 仅完成调度规划与明确停用边界，未声明可运行兼容。
+真实背包物品经玩家命令入库；Cookery宴会消耗4包子+1油并增加25文化，Tavern消耗成品葡萄酒+4面包并增加20文化。真实橡木椅登记扣4木板，维护每期扣1面包并加1文化；撤领连续两周期不收费/不贡献，复领后同家具恢复一次，实际拆除后停止。真实森罗乐器与同城听众完成67732毫秒、14音符/5音高受控演奏，扣8面包、文化47→67；重复完成和重启后的再次完成均不重复奖励，完整库存与职业恢复。两次Paper正常关闭。
 
-JAR shade 对标准 META-INF/MANIFEST.MF 有一次无害重叠提示；无编译/测试错误。未把上游独立模块问题或测试工具初始失败隐去并宣传为全系统无风险。生产服上线前应使用自己的配置/核心版本在测试服复核。
+完整15阶段、独立配置、CE内部映射补齐和测试夹具 `ground,false` 放置入口修正、此前失败与执行中断均见[森罗验收](senluo-acceptance.md)。这些工具/环境修正未修改上游权威数据或放宽产品验证。资源包画面、真人听觉、热重载和Folia仍未验收。
+
+## 第一阶段历史证据
+
+[evidence/paper-client.json](evidence/paper-client.json) 保留 **0.1.0** 的15阶段真实生产/背包/GUI/事件/撤领/重启验收，其 JAR SHA 为 `7e962b132c474519fea4f7d2d215ae07766baf6e3e2b1a48b0f16ccec9da6040`。它不是本次0.2.0最终产物证明。旧版无依赖两次启动冒烟同样只算历史记录。
+
+## 验证边界
+
+Folia完成架构和调度规划，当前因StarCore可变模型缺区域线程契约而明确停用；没有声明Folia可运行。物流采用有限显式节点，不自动识别整图道路或航道。战斗通过核心公共army_combat贡献点接入真实军队计算，核心最高伤害聚合规则可能覆盖减伤；不影响玩家PVP或接管核心补给。
+
+MusicPlus无公开完成API；受控演奏验证StarWorld自己的时长、音高、听众和真实声音调用，不能视为自动监听上游 `/kmusic`。协议客户端不证明资源包GPU画面、真人听觉、CE热重载或所有上游家具玩法。大规模城市性能仍需服主实际负载基线。
+
+主shade仅有标准 `META-INF/MANIFEST.MF` 重叠提示；测试夹具有泛型/注解处理提示。曾因宿主机内存压力使验收夹具编译JVM native allocation失败，原诊断保留在独立工具目录；降低仅本任务编译堆/C1后成功，没有停止其他服务器，也没有把失败冒充通过。

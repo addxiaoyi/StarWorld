@@ -7,7 +7,6 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -152,27 +151,36 @@ public final class CustomItems {
     }
 
     /** Public API calls verified against SenLuo's CE 26.9.1 baseline. */
-    private static final class ReflectiveAccess implements Access {
+    static final class ReflectiveAccess implements Access {
         private final Method customId;
         private final Method keyOf;
+        private final Method keyAsString;
         private final Method managerInstance;
         private final Method getBuildable;
-        private final Class<?> stackUtils;
+        private final Method buildItem;
+        private final Method bukkitStack;
 
         ReflectiveAccess(ClassLoader loader) throws ReflectiveOperationException {
             Class<?> items = Class.forName("net.momirealms.craftengine.bukkit.api.CraftEngineItems", true, loader);
             Class<?> key = Class.forName("net.momirealms.craftengine.core.util.Key", true, loader);
             Class<?> manager = Class.forName("net.momirealms.craftengine.bukkit.item.BukkitItemManager", true, loader);
-            stackUtils = Class.forName("net.momirealms.craftengine.bukkit.util.ItemStackUtils", true, loader);
+            Class<?> stackUtils = Class.forName("net.momirealms.craftengine.bukkit.util.ItemStackUtils", true, loader);
+            Class<?> buildable = Class.forName("net.momirealms.craftengine.core.item.BuildableItem", true, loader);
+            Class<?> item = Class.forName("net.momirealms.craftengine.core.item.Item", true, loader);
+            Class<?> player = Class.forName("net.momirealms.craftengine.core.entity.player.Player", true, loader);
             customId = items.getMethod("getCustomItemId", ItemStack.class);
             keyOf = key.getMethod("of", String.class);
+            keyAsString = key.getMethod("asString");
             managerInstance = manager.getMethod("instance");
             getBuildable = manager.getMethod("getBuildableItem", key);
+            buildItem = buildable.getMethod("buildItem", player);
+            // The Object overload expects a native Minecraft stack, not a CE Item wrapper.
+            bukkitStack = stackUtils.getMethod("getBukkitStack", item);
         }
 
         @Override public String id(ItemStack stack) throws ReflectiveOperationException {
             Object key = customId.invoke(null, stack);
-            return key == null ? null : (String) key.getClass().getMethod("asString").invoke(key);
+            return key == null ? null : (String) keyAsString.invoke(key);
         }
 
         private Optional<?> definition(String id) throws ReflectiveOperationException {
@@ -184,24 +192,9 @@ public final class CustomItems {
         @Override public ItemStack create(String id) throws ReflectiveOperationException {
             Object definition = definition(id).orElse(null);
             if (definition == null) return null;
-            Method build = null;
-            for (Method method : definition.getClass().getMethods()) {
-                if (method.getName().equals("buildItem") && method.getParameterCount() == 1
-                        && method.getParameterTypes()[0].getName().equals("net.momirealms.craftengine.core.entity.player.Player")) {
-                    build = method;
-                    break;
-                }
-            }
-            if (build == null) throw new NoSuchMethodException("CE buildItem(Player)");
-            Object item = build.invoke(definition, new Object[]{null});
+            Object item = buildItem.invoke(definition, new Object[]{null});
             if (item == null) return null;
-            for (Method method : stackUtils.getMethods()) {
-                if (method.getName().equals("getBukkitStack") && Modifier.isStatic(method.getModifiers())
-                        && method.getParameterCount() == 1 && method.getParameterTypes()[0].isInstance(item)) {
-                    return (ItemStack) method.invoke(null, item);
-                }
-            }
-            throw new NoSuchMethodException("CE ItemStackUtils.getBukkitStack(Item)");
+            return (ItemStack) bukkitStack.invoke(null, item);
         }
     }
 }

@@ -55,7 +55,7 @@ public record LifeDefinitions(int professionCooldownPeriods, int playerCulturePe
                         "artisan", new Profession("artisan", "装饰工匠"), "musician", new Profession("musician", "乐师")),
                 Map.of("community", new Feast("community", "城市聚餐", "chef", Map.of("minecraft:bread", 8L), 12, 0.04, 3),
                         "cookery", new Feast("cookery", "森罗菜肴宴会", "chef", Map.of("kaleidoscopecookery:baozi", 4L, "kaleidoscopecookery:oil", 1L), 25, 0.08, 4),
-                        "tavern", new Feast("tavern", "酒馆宴会", "brewer", Map.of("kaleidoscope_tavern:barrel/wine", 1L, "minecraft:bread", 4L), 20, 0.07, 4)),
+                        "tavern", new Feast("tavern", "酒馆宴会", "brewer", Map.of("kaleidoscope_tavern:wine", 1L, "minecraft:bread", 4L), 20, 0.07, 4)),
                 new DecorationRules("artisan", Set.of("kaleidoscope_deco:chair/oak", "kaleidoscope_deco:cook_stool/oak"),
                         Map.of("minecraft:oak_planks", 4L), Map.of("minecraft:bread", 1L), 8, 1, 0.005),
                 new ConcertRules("musician", Set.of("minecraft:note_block", "musicplus:handheld_instrument"), Map.of("minecraft:bread", 8L),

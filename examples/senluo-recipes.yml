@@ -10,6 +10,6 @@ recipes:
 #   workshop:
 #     upkeep: {kaleidoscopecookery:baozi: 1}
 # Audited Tavern content examples:
-# kaleidoscope_tavern:barrel/wine
+# kaleidoscope_tavern:wine
 # kaleidoscope_tavern:barrel/honey_wine
 # No reward from cancellable extraction or DrinkCreatedEvent.

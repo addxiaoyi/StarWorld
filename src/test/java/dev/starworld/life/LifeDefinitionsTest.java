@@ -16,6 +16,7 @@ class LifeDefinitionsTest {
         LifeDefinitions.writeDefaults(path.toFile());assertTrue(Files.readString(path).endsWith("# administrator marker\n"));
         assertTrue(LifeDefinitions.defaults().itemIds().contains("musicplus:handheld_instrument"));
         assertTrue(LifeDefinitions.defaults().feasts().get("cookery").inputs().containsKey("kaleidoscopecookery:baozi"));
+        assertEquals(Map.of("kaleidoscope_tavern:wine",1L,"minecraft:bread",4L),LifeDefinitions.defaults().feasts().get("tavern").inputs(),"Use the actual catalog output item, not its barrel/wine recipe ID");
     }
     @Test void unknownVersionProfessionFractionalInputsAndUnboundedBonusAreRejected()throws Exception {
         Path path=temp.resolve("life.yml");LifeDefinitions.writeDefaults(path.toFile());YamlConfiguration y=YamlConfiguration.loadConfiguration(path.toFile());

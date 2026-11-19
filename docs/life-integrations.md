@@ -7,7 +7,7 @@
 1. 加入 StarCore 城市。城市管理员准备仓库物资；普通生活职业不会自动取得支配公共仓库的权限。
 2. `/sw profession chef` 选择厨师。`brewer`、`artisan`、`musician` 分别为酿酒师、装饰工匠和乐师。换职业冷却为六个生产周期。
 3. `/sw feast community` 消耗八个仓库面包，获得 12 文化与三周期的 4% 产业加成。需要厨师职业及城市管理权限。
-4. `/sw feast cookery` 消耗实际已入库的四个 `kaleidoscopecookery:baozi` 与一个 `kaleidoscopecookery:oil`，获得 25 文化与四周期的 8% 加成。缺少 CE 内容定义时拒绝执行，不扣仓库。`/sw feast tavern` 由酿酒师消耗一份 `kaleidoscope_tavern:barrel/wine` 和四个面包。
+4. `/sw feast cookery` 消耗实际已入库的四个 `kaleidoscopecookery:baozi` 与一个 `kaleidoscopecookery:oil`，获得 25 文化与四周期的 8% 加成。缺少 CE 内容定义时拒绝执行，不扣仓库。`/sw feast tavern` 由酿酒师消耗一份 `kaleidoscope_tavern:wine` 和四个面包。
 5. 装饰工匠看向六格内城市领土中的已加载家具，运行 `/sw decoration register`；默认允许真实 Deco ID `kaleidoscope_deco:chair/oak` 与 `kaleidoscope_deco:cook_stool/oak`。登记消耗四个橡木板，没有登记奖励。`/sw decoration list` 查看 UUID，`/sw decoration remove <家具UUID>` 注销且不退款。
 6. 乐师在自己城市领土内使用 `/sw concert start`，以城市管理权限消耗八个仓库面包。记下返回的会话 UUID；手持原版音符盒或已经加载的 `musicplus:handheld_instrument`，使用 `/sw concert note <会话UUID> <0–24>` 发出真实声音。八格内至少需要一位在线同城听众。每个音符间隔须为 0.75–10 秒，演奏至少持续 60 秒、累计至少 12 个音符并使用至少五种音高，且须在五分钟内结束。`/sw concert finish <会话UUID>` 产生 20 文化及四周期的 6% 产业加成。`list` 可找回进行中的会话，`cancel <会话UUID>` 结束且不退款。
 

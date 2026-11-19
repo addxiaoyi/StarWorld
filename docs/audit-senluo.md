@@ -128,7 +128,7 @@ ItemStack stack = ItemStackUtils.getBukkitStack(item).clone();
 
 命名空间为 `kaleidoscopecookery:*`、`kaleidoscope_tavern:*`、`kaleidoscope_deco:*`（Deco 还包含分类来源命名空间，必须以实际 CE 加载目录为准）、`musicplus:handheld_instrument`。Cookery 的确切前缀见 `item/ItemKeys.java:9`，不能误写成 `kaleidoscope_cookery`。不能仅用命名空间推断物品已加载；应做存在性检查。
 
-可用于 StarWorld 自定义配置的实际 ID 样例：`kaleidoscopecookery:baozi`（包子）、`kaleidoscopecookery:oil`（油）、`kaleidoscope_tavern:barrel/wine`、`kaleidoscope_tavern:barrel/honey_wine`。后两项来自 Tavern `src/main/resources/catalog.json`；这些仍须安装对应 CE 内容包并完成成功加载。Cookery 和 Tavern 产物均通过 CE 自定义物品表示，不是仅凭显示名区分的原版物品。
+可用于 StarWorld 自定义配置的实际 ID 样例：`kaleidoscopecookery:baozi`（包子）、`kaleidoscopecookery:oil`（油）、`kaleidoscope_tavern:wine`、`kaleidoscope_tavern:honey_wine`。后两项为 Tavern `src/main/resources/catalog.json` 中配方的 `output` 物品 ID；`kaleidoscope_tavern:barrel/wine` 等带 `barrel/` 的 ID 是配方 ID，不能用于构造物品。这些仍须安装对应 CE 内容包并完成成功加载。Cookery 和 Tavern 产物均通过 CE 自定义物品表示，不是仅凭显示名区分的原版物品。
 
 ## 数据与线程规则
 

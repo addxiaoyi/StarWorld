@@ -1,0 +1,16 @@
+{
+  "source_repository": "https://github.com/addxiaoyi/starcore",
+  "source_commit": "f769e62799e769a18fe51305b545869a17f80cd1",
+  "source_checkout": "C:\\Users\\Administrator\\Documents\\starsupply-deps\\starcore",
+  "source_tracked_changes": false,
+  "producer_pid": 5264,
+  "producer_terminal_confirmed": true,
+  "producer_exit_code": "unavailable (separate task)",
+  "source_jar": "C:\\Users\\Administrator\\Documents\\starsupply-deps\\starcore\\target\\starcore-1.0.0.jar",
+  "verified_copy": "C:\\Users\\Administrator\\Documents\\starworld-tools\\verified-starcore-f769e627.jar",
+  "sha256": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
+  "bytes": 19507082,
+  "zip_crc_check": "all entries passed",
+  "main_class_major": 65,
+  "runtime_verification": "passed: 15 real protocol-client checks with StarWorld, see docs/evidence/paper-client.json"
+}

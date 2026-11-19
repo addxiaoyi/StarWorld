@@ -1,0 +1,91 @@
+{
+  "build_command": "./mvnw -B --no-transfer-progress clean verify",
+  "built_at": "2026-11-19T20:51:32+08:00",
+  "java": "Microsoft OpenJDK 21.0.13.1+2",
+  "maven": "3.9.11",
+  "artifact": "starworld-0.1.0.jar",
+  "artifact_sha256": "7e962b132c474519fea4f7d2d215ae07766baf6e3e2b1a48b0f16ccec9da6040",
+  "totals": {
+    "tests": 68,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "suites": [
+    {
+      "suite": "dev.starworld.config.ConfigLoaderTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.domain.SimulationTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.integration.CustomItemsTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.integration.StarCoreBridgeTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.persistence.WorldStoreTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.runtime.WorldRuntimeTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.ui.CityMenuTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "jacoco": {
+    "INSTRUCTION": {
+      "missed": 3018,
+      "covered": 5800
+    },
+    "BRANCH": {
+      "missed": 355,
+      "covered": 449
+    },
+    "LINE": {
+      "missed": 223,
+      "covered": 516
+    },
+    "COMPLEXITY": {
+      "missed": 359,
+      "covered": 330
+    },
+    "METHOD": {
+      "missed": 110,
+      "covered": 169
+    },
+    "CLASS": {
+      "missed": 7,
+      "covered": 23
+    }
+  }
+}

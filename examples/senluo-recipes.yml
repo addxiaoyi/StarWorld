@@ -1,0 +1,15 @@
+# Merge into plugins/StarWorld/definitions.yml, NOT an independently loaded file.
+# Confirm actual CE content IDs and restart after edits.
+recipes:
+  make_baozi:
+    building: farm
+    inputs: {minecraft:wheat: 8, kaleidoscopecookery:oil: 1}
+    outputs: {kaleidoscopecookery:baozi: 2}
+# Alternative upkeep (merge into the existing building, don't remove its other fields):
+# buildings:
+#   workshop:
+#     upkeep: {kaleidoscopecookery:baozi: 1}
+# Audited Tavern content examples:
+# kaleidoscope_tavern:barrel/wine
+# kaleidoscope_tavern:barrel/honey_wine
+# No reward from cancellable extraction or DrinkCreatedEvent.

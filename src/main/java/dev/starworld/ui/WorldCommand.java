@@ -1,0 +1,43 @@
+package dev.starworld.ui;
+
+import dev.starworld.runtime.WorldRuntime;
+import java.util.*;
+import org.bukkit.command.*;
+import org.bukkit.entity.Player;
+
+public final class WorldCommand implements CommandExecutor,TabCompleter {
+    private final WorldRuntime runtime;private final CityMenu menu;
+    public WorldCommand(WorldRuntime runtime,CityMenu menu){this.runtime=runtime;this.menu=menu;}
+    @Override public boolean onCommand(CommandSender sender,Command command,String label,String[] args){
+        if(!sender.hasPermission("starworld.use")){sender.sendMessage("§c需要 starworld.use 权限");return true;}
+        String sub=args.length==0?"menu":args[0].toLowerCase(Locale.ROOT);
+        try{
+            switch(sub){
+                case "help" -> sender.sendMessage(new String[]{"§6StarWorld 第一阶段", "/sw menu|status|stock|buildings", "/sw register <farm|sawmill|workshop> （看向设施锚点）", "/sw deposit|withdraw <命名空间:物品> <数量>", "/sw civilization <agrarian|industrial>", "/sw upgrade|remove <设施UUID>", "/sw event <drought|blizzard|harvest> （管理员）", "/sw pending /sw resolve <凭据UUID> <credit|discard> （管理员）"});
+                case "status" -> {sender.sendMessage("§6StarWorld "+runtime.version());runtime.integrationStatus().forEach((k,v)->sender.sendMessage("§e"+k+"§f: "+v));}
+                case "menu" -> menu.open(player(sender));
+                case "register" -> {require(args,2);runtime.register(player(sender),args[1]);}
+                case "civilization" -> {require(args,2);runtime.civilization(player(sender),args[1]);}
+                case "upgrade","remove" -> {require(args,2);UUID id=UUID.fromString(args[1]);if(sub.equals("upgrade"))runtime.upgrade(player(sender),id);else runtime.remove(player(sender),id);}
+                case "stock","buildings" -> {Player p=player(sender);var c=runtime.playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入 StarCore 城市"));runtime.reply(p,runtime.open(c),v->{if(sub.equals("stock"))p.sendMessage("§e城市仓储："+v.stock());else {p.sendMessage("§e设施数量："+v.buildings().size());v.buildings().forEach(b->p.sendMessage(b.id()+" "+b.type()+" Lv"+b.level()));}});}
+                case "deposit","withdraw" -> {require(args,3);runtime.transfer(player(sender),args[1],Integer.parseInt(args[2]),sub.equals("deposit"));}
+                case "event" -> {admin(sender);require(args,2);runtime.trigger(player(sender),args[1]);}
+                case "pending" -> {admin(sender);Player p=player(sender);runtime.reply(p,runtime.pending(),list->{p.sendMessage("§e待核对凭据："+list.size());list.forEach(t->p.sendMessage(t.toString()));});}
+                case "resolve" -> {admin(sender);require(args,3);if(!Set.of("credit","discard").contains(args[2]))throw new IllegalArgumentException("使用 credit 或 discard");Player p=player(sender);runtime.reply(p,runtime.resolve(UUID.fromString(args[1]),args[2].equals("credit"),p.getUniqueId().toString()),ok->p.sendMessage("§a凭据已人工核对并记入审计"));}
+                default -> throw new IllegalArgumentException("未知命令，请使用 /sw help");
+            }
+        }catch(Exception e){sender.sendMessage("§cStarWorld: "+e.getMessage());}
+        return true;
+    }
+    private static Player player(CommandSender sender){if(!(sender instanceof Player p))throw new IllegalArgumentException("此命令需要玩家执行");return p;}
+    private static void admin(CommandSender sender){if(!sender.hasPermission("starworld.admin"))throw new IllegalArgumentException("需要管理员权限");}
+    private static void require(String[] args,int n){if(args.length!=n)throw new IllegalArgumentException("参数数量不正确，请使用 /sw help");}
+    @Override public List<String> onTabComplete(CommandSender sender,Command command,String alias,String[] args){
+        if(!sender.hasPermission("starworld.use"))return List.of();
+        List<String> values=List.of();
+        if(args.length==1){values=new ArrayList<>(List.of("menu","help","status","stock","buildings","register","civilization","deposit","withdraw","upgrade","remove"));if(sender.hasPermission("starworld.admin"))values.addAll(List.of("event","pending","resolve"));}
+        else if(args.length==2)values=switch(args[0]){case "register"->runtime.definitions().buildings().keySet().stream().sorted().toList();case "civilization"->runtime.definitions().civilizations().keySet().stream().sorted().toList();case "event"->sender.hasPermission("starworld.admin")?runtime.definitions().events().keySet().stream().sorted().toList():List.of();case "deposit","withdraw"->dev.starworld.config.ConfigLoader.items(runtime.definitions()).stream().sorted().toList();default->List.of();};
+        else if(args.length==3 && args[0].equals("resolve") && sender.hasPermission("starworld.admin"))values=List.of("credit","discard");
+        String prefix=args[args.length-1].toLowerCase(Locale.ROOT);return values.stream().filter(v->v.startsWith(prefix)).sorted().toList();
+    }
+}

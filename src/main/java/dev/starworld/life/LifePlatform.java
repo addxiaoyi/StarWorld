@@ -13,13 +13,16 @@ import org.bukkit.plugin.java.JavaPlugin;
 /** World operations stay on the Paper owning thread. No chunk loading, private upstream access or entity scan. */
 public final class LifePlatform {
     private final JavaPlugin plugin; private final CoreBridge core; private final CustomItems items; private final LifeDefinitions definitions;
-    private final Method furnitureLookup;
+    private final Method furnitureLookup,furnitureRayTrace;
     public LifePlatform(JavaPlugin plugin,CoreBridge core,CustomItems items,LifeDefinitions definitions) {
-        this(plugin,core,items,definitions,lookup(plugin));
+        this(plugin,core,items,definitions,lookup(plugin),rayTrace(plugin));
     }
     LifePlatform(JavaPlugin plugin,CoreBridge core,CustomItems items,LifeDefinitions definitions,Method furnitureLookup) {
+        this(plugin,core,items,definitions,furnitureLookup,null);
+    }
+    LifePlatform(JavaPlugin plugin,CoreBridge core,CustomItems items,LifeDefinitions definitions,Method furnitureLookup,Method furnitureRayTrace) {
         this.plugin=Objects.requireNonNull(plugin);this.core=Objects.requireNonNull(core);this.items=Objects.requireNonNull(items);this.definitions=Objects.requireNonNull(definitions);
-        this.furnitureLookup=furnitureLookup;
+        this.furnitureLookup=furnitureLookup;this.furnitureRayTrace=furnitureRayTrace;
     }
     private static Method lookup(JavaPlugin plugin) {
         Method lookup=null;Plugin ce=plugin.getServer().getPluginManager().getPlugin("CraftEngine");
@@ -27,13 +30,28 @@ public final class LifePlatform {
         catch(ReflectiveOperationException|LinkageError|RuntimeException failure){plugin.getLogger().warning("CE furniture API unavailable: "+failure.getClass().getSimpleName());}
         return lookup;
     }
+    private static Method rayTrace(JavaPlugin plugin) {
+        Plugin ce=plugin.getServer().getPluginManager().getPlugin("CraftEngine");
+        if(ce!=null && ce.isEnabled())try {return Class.forName("net.momirealms.craftengine.bukkit.api.CraftEngineFurniture",true,ce.getClass().getClassLoader()).getMethod("rayTrace",Player.class,double.class);}
+        catch(ReflectiveOperationException|LinkageError|RuntimeException failure){plugin.getLogger().warning("CE furniture targeting API unavailable: "+failure.getClass().getSimpleName());}
+        return null;
+    }
     public Map<String,String> status() {
-        return Map.of("Deco",furnitureAvailable()?"CE 公共家具 API：显式登记并按周期复核已加载家具":"CE 家具 API 不可用：装饰登记和加成停用",
+        return Map.of("Deco",furnitureAvailable() && furnitureRayTrace!=null?"CE 公共家具 API：显式登记并按周期复核已加载家具":"CE 家具 API 不可用：装饰登记停用；现有装饰仅在身份复核通过时结算",
                 "MusicPlus","上游无公开完成 API；仅使用真实 CE 乐器；/sw concert 为 StarWorld 独立现场演奏",
                 "Concert","原版音符盒或已加载 CE 乐器；逐音符声音、现场听众和完成回执");
     }
     public Set<String> availableItems() {
         owningThread();Set<String> available=new HashSet<>();for(String id:definitions.itemIds())if(items.create(id,1)!=null)available.add(id);return Set.copyOf(available);
+    }
+    /** CE owns furniture hitboxes; a Bukkit entity raycast may hit a collider or miss a zero-size display. */
+    public Optional<DecorationEvidence> inspectTargetDecoration(Player player,UUID cityId) {
+        owningThread();if(!furnitureAvailable() || furnitureRayTrace==null || !player.isOnline())return Optional.empty();
+        try {
+            Object target=furnitureRayTrace.invoke(null,player,6d);Optional<Furniture> hit=identity(target);if(hit.isEmpty())return Optional.empty();
+            Entity meta=(Entity)target.getClass().getMethod("getBukkitEntity").invoke(target);
+            return inspectDecoration(player,cityId,meta).filter(e->e.furnitureId().equals(hit.get().uuid()) && e.itemId().equals(hit.get().id()));
+        }catch(ReflectiveOperationException|LinkageError|RuntimeException unavailable){return Optional.empty();}
     }
     public Optional<DecorationEvidence> inspectDecoration(Player player,UUID cityId,Entity entity) {
         owningThread();if(!furnitureAvailable() || entity==null || !entity.isValid() || !player.isOnline())return Optional.empty();
@@ -87,7 +105,12 @@ public final class LifePlatform {
     }
     private Optional<Furniture> resolve(Entity entity) {
         try {
-            Object furniture=furnitureLookup.invoke(null,entity);if(furniture==null || !Boolean.TRUE.equals(furniture.getClass().getMethod("isValid").invoke(furniture)))return Optional.empty();
+            return identity(furnitureLookup.invoke(null,entity));
+        }catch(ReflectiveOperationException|LinkageError|RuntimeException unavailable){return Optional.empty();}
+    }
+    private Optional<Furniture> identity(Object furniture) {
+        try {
+            if(furniture==null || !Boolean.TRUE.equals(furniture.getClass().getMethod("isValid").invoke(furniture)))return Optional.empty();
             UUID id=(UUID)furniture.getClass().getMethod("uuid").invoke(furniture);Object key=furniture.getClass().getMethod("id").invoke(furniture);
             String item=(String)key.getClass().getMethod("asString").invoke(key);return id==null?Optional.empty():Optional.of(new Furniture(id,item));
         }catch(ReflectiveOperationException|LinkageError|RuntimeException unavailable){return Optional.empty();}

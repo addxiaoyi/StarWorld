@@ -17,7 +17,7 @@ world.city(starCoreCityId).thenAccept(result -> {
 | `definitions()` | 不可变地区/文明/设施/产业/事件配置 |
 | `city(UUID)` | `Future<Optional<CityView>>`；已登记扩展城市、库存、设施、事件和最后报告 |
 | `development(UUID)` | `Future<Optional<Profile>>`；规划/专长、城市繁荣、稳定、知识、军需、文化、倾向 |
-| `nationDevelopment(UUID)` | `Future<Optional<NationalEvolution.NationDevelopment>>`；当前归属城市聚合的国家倾向、知识/文化、主导方向和专长；入参为StarCore国家UUID |
+| `nationDevelopment(UUID)` | `Future<Optional<NationalEvolution.NationDevelopment>>`；最近核心复核的有效归属城市聚合的国家倾向、知识/文化、主导方向和专长；入参为StarCore国家UUID |
 | `culture(UUID)` | `Future<List<Culture>>`；已登记地区各文明传统与影响值 |
 | `life(UUID)` | `Future<Optional<LifeView>>`；累计生活文化、当前有限倍率、家具和活动会话 |
 | `routes(UUID,int,int)` | `Future<List<Route>>`；有限分页查询城市相关商路 |
@@ -54,7 +54,7 @@ public void onIndustry(IndustrySettledEvent event) {
 
 国家生产倍率为 `clamp((1+speed)*(1+policyGlobal+policyProduction)*prosperity,0,10)`，再组合本地地理/文明/规划/文化/事件/生活效果并有限裁剪。军事/贸易使用对应scope，实体物品不被当作抽象国家资源的别名。
 
-`NationalEvolution` 只保存国家专长选择与转型周期，农业/工业/贸易/军需/文化和知识来自本国当前归属城市的已提交演化状态。`view(nation)` 不创建StarCore国家；`choose(nation,id,period,actor)` 要求调用方先在Paper线程证明国家创始人/管理员权限；`multipliers(nation)` 在行为/知识条件不再满足时返回空效果。专长倍率受0.85–1.15界限限制，并和城市规划等共同裁剪。
+`NationalEvolution` 只保存国家专长选择与转型周期，农业/工业/贸易/军需/文化和知识来自本国最近核心复核为有效的归属城市已提交演化状态。`city_authority` 排除核心已确认缺失或无法证明存在的城市，重启保留失效标记；有效核心快照可恢复。归属变化最多需要一次城市分页轮转及IO排队后反映，不在API查询时扫描全服。`view(nation)` 不创建StarCore国家；`choose(nation,id,period,actor)` 要求调用方先在Paper线程证明国家创始人/管理员权限；`multipliers(nation)` 在行为/知识条件不再满足时返回空效果。专长倍率受0.85–1.15界限限制，并和城市规划等共同裁剪。
 
 审计基线真实资源ID为 `mineral/agricultural/energy/luxury/industrial/chemical/strategic`，由 `ResourceModule` 注册；默认显式兑换配方输出 `agricultural/industrial/strategic`，执行前仍通过 `ResourceService.availableResourceTypes()` 验证，不读取legacy具体商品名。`Category.OTHER` 是事务用途分类。`ResourceOutbox` 按稳定business key产生持久事务ID，成本和队列同事务写入；主线程调用 `NationResourceTransactionService` 后核实匹配receipt，本地再ACK。详见[国家扩展文档](core-extension.md)。
 

@@ -20,7 +20,7 @@ final class ExpansionFixture {
     private final Set<UUID> registering=new HashSet<>();
     ExpansionFixture(JavaPlugin owner){this.owner=owner;}
     boolean execute(String[] args)throws Exception {
-        if(args.length<2)throw new IllegalArgumentException("swfixture exp-<setup|register|node|seed|snapshot|unclaim|reclaim|war|peace|receipt|replay> <player> [slot|peer|transaction]");
+        if(args.length<2)throw new IllegalArgumentException("swfixture exp-<setup|register|node|seed|snapshot|history|delete-city|unclaim|reclaim|war|peace|receipt|replay> <player> [slot|peer|transaction|city]");
         String action=args[0];Player p=Objects.requireNonNull(Bukkit.getPlayerExact(args[1]),"Connected player required");
         switch(action){
             case "exp-setup"->setup(p,slot(args));
@@ -28,6 +28,8 @@ final class ExpansionFixture {
             case "exp-node"->register(p,slot(args),true);
             case "exp-seed"->seed(p);
             case "exp-snapshot"->snapshot(p);
+            case "exp-delete-city"->deleteCity(p);
+            case "exp-history"->history(p,UUID.fromString(args[2]));
             case "exp-unclaim","exp-reclaim"->claimChange(p,slot(args),action.equals("exp-reclaim"));
             case "exp-war","exp-peace"->war(p,Objects.requireNonNull(Bukkit.getPlayerExact(args[2]),"Connected peer required"),action.equals("exp-war"));
             case "exp-receipt","exp-replay"->receipt(p,args[2],action.equals("exp-replay"));
@@ -113,6 +115,31 @@ final class ExpansionFixture {
                 }).whenComplete((report,failure)->Bukkit.getScheduler().runTask(owner,()->{if(failure!=null)failed(failure);else emit("exp-snapshot",p,report);}));
             }catch(Exception failure){failed(failure);}
         }));
+    }
+    private void deleteCity(Player p)throws Exception {
+        Object cities=coreService("module.city.CityService"),city=Objects.requireNonNull(unwrap(invoke(cities,"getPlayerCity",new Class<?>[]{UUID.class},p.getUniqueId())),"Actual player city missing");
+        UUID cityId=(UUID)call(city,"id"),nationId=(UUID)call(call(city,"nationId"),"value");long period=((Number)call(world(),"currentPeriod")).longValue();
+        boolean deleted=Boolean.TRUE.equals(invoke(cities,"deleteCity",new Class<?>[]{UUID.class},cityId));
+        boolean cityPresent=unwrap(invoke(cities,"getCity",new Class<?>[]{UUID.class},cityId))!=null,playerPresent=unwrap(invoke(cities,"getPlayerCity",new Class<?>[]{UUID.class},p.getUniqueId()))!=null;
+        if(!deleted||cityPresent||playerPresent)throw new IllegalStateException("Public core CityService.deleteCity did not delete the actual city and membership");
+        emit("exp-delete-city",p,Map.of("cityId",cityId,"nationId",nationId,"deleted",true,"coreCityPresent",false,"playerCityPresent",false,"deletedAtPeriod",period,"entryPoint","CityService.deleteCity"));
+    }
+    /** Public API still exposes historical city goods after authoritative StarCore deletion. */
+    private void history(Player p,UUID cityId)throws Exception {
+        Object runtime=world(),expansion=unwrap(call(runtime,"expansion"));UUID nationId=(UUID)call(call(nation(p),"id"),"value");
+        boolean coreCityPresent=unwrap(invoke(coreService("module.city.CityService"),"getCity",new Class<?>[]{UUID.class},cityId))!=null;
+        long period=((Number)call(runtime,"currentPeriod")).longValue();
+        CompletableFuture<?> cityFuture=(CompletableFuture<?>)invoke(runtime,"city",new Class<?>[]{UUID.class},cityId),nationalFuture=(CompletableFuture<?>)invoke(runtime,"nationDevelopment",new Class<?>[]{UUID.class},nationId);
+        CompletableFuture.allOf(cityFuture,nationalFuture).whenComplete((ignored,error)->{
+            try{if(error!=null)throw new IllegalStateException(error);Object historicalCity=unwrap(cityFuture.join()),nationalDevelopment=unwrap(nationalFuture.join());
+                async(runtime,()->{
+                    Map<String,Object> report=new LinkedHashMap<>();report.put("city",historicalCity);report.put("nationalDevelopment",nationalDevelopment);
+                    report.put("development",invoke(call(expansion,"evolution"),"profile",new Class<?>[]{UUID.class},cityId));
+                    report.put("nationalMultipliers",invoke(call(expansion,"national"),"multipliers",new Class<?>[]{UUID.class},nationId));
+                    report.put("coreCityPresent",coreCityPresent);report.put("currentPeriod",period);return report;
+                }).whenComplete((report,failure)->Bukkit.getScheduler().runTask(owner,()->{if(failure!=null)failed(failure);else emit("exp-history",p,report);}));
+            }catch(Exception failure){Bukkit.getScheduler().runTask(owner,()->failed(failure));}
+        });
     }
     private void war(Player p,Player peer,boolean begin)throws Exception {
         Object a=call(nation(p),"id"),b=call(nation(peer),"id"),wars=coreService("module.war.WarService");Class<?> id=a.getClass();

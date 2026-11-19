@@ -2,7 +2,7 @@
 
 持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **0.2.0**。
 
-代码仓库：[addxiaoyi/StarWorld](https://github.com/addxiaoyi/StarWorld)。技术基线：Java 21、Paper **1.21.11**，CraftEngine **26.9.1** 为可选内容依赖。审计固定 StarCore `f769e62799e769a18fe51305b545869a17f80cd1` 与 SenLuo `7a676978f9c4a825275a9f905c3f860ac05a6827`，见 [StarCore 审计](docs/audit-starcore.md)、[森罗审计](docs/audit-senluo.md)。
+代码仓库：[addxiaoyi/StarWorld](https://github.com/addxiaoyi/StarWorld)。技术基线：Java 21、Paper **1.21.11**，CraftEngine **26.9.1** 为可选内容依赖。审计固定 StarCore `f769e62799e769a18fe51305b545869a17f80cd1` 与 SenLuo 最新提交 `6a432fe54097a3ebf22ba5757e016b602c711f28`，见 [StarCore 审计](docs/audit-starcore.md)、[森罗审计](docs/audit-senluo.md)。
 
 **Folia 仍为兼容规划。** 当前 StarCore 可变服务缺少区域线程安全契约，本版检测 Folia 后明确停用。缺 StarCore 时可独立安装、生成配置和数据库并显示降级原因；城市玩法需要真实 StarCore 国家/城市模块，不会自动建立替代国家。森罗模块或 CE 缺失时保留原版产业、贸易和音符盒演奏；缺失内容或 API 明确停用。
 

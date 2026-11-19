@@ -32,6 +32,8 @@ fixture 输出一行 `SW_FIXTURE_EXPANSION {schema:2,action,player,observed}`。
 
 国家专长验收等待真实农场累积农业倾向、学院实际消耗纸张产生足够知识，核对国家聚合与单城实际指标一致；创始人命令选择农业专长后，下一周期实际小麦产量增加，并继续服从总倍率上限。重启验证国家选择、方向、知识和倾向不丢失，不用 seed 模拟国家分数。
 
+全部重启恢复断言完成后，测试通过公开 `CityService.deleteCity(UUID)` 删除第一座真实核心城市，核对核心城市与玩家城市映射均消失。至少一个结算周期后，公开国家发展 API 必须去掉该国唯一城市的全部知识和倾向，并停止国家专长加成；公开 `StarWorldApi.city` 仍须保留历史建筑、库存与发展。再次跨过结算周期，历史城市的结算周期、库存和发展不得继续增加。fixture 不调用 StarWorld 的内部失效方法，也不直接修改任何数据库。
+
 国家出口必须得到真实 `NationResourceTransactionService` 的 GRANT/OTHER 回执，默认粮食契约增加 `agricultural:8`。同一事务通过公开 `StarCoreExtensions.deliver` 重放时，核心库存前后必须相同，并且本地 outbox 为 ACKED。重启后检查同一回执及货单、文明、规划、知识、职业、文化和资源存续。核心存储将 Instant 按 epoch 毫秒持久化，重启前后严格比较交易载荷，应用时间只在这个真实存储精度上比较。
 
 军事扩展通过公开 `ArmyService.createArmy` 付费创建真实、持久军团，再由 `ExtensionRegistry.execute("army_combat", CombatContext)` 执行真实扩展点。结果必须包含 `starworld:city_readiness` 来源及军需修饰，伤害必须受默认上限约束。此项证明实际军团计算使用城市军需；不声称 StarCore 原有军队维护会消费 StarWorld 出口资源。

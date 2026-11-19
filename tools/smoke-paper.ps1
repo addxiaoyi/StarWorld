@@ -11,7 +11,7 @@ and the Paper EULA gate is checked. -AgreeEula explicitly writes eula=true for t
 No gameplay, CraftEngine, StarCore, or Folia integration is inferred from a startup check.
 .EXAMPLE
 ./tools/smoke-paper.ps1 -JavaPath C:/jdk21/bin/java.exe -ServerJar C:/paper.jar `
-  -PluginJar ./target/starworld-0.1.0.jar -RuntimeDirectory C:/starworld-test `
+  -PluginJar ./target/starworld-0.2.0.jar -RuntimeDirectory C:/starworld-test `
   -BootstrapDirectory C:/prepared-paper -AgreeEula
 #>
 [CmdletBinding()]

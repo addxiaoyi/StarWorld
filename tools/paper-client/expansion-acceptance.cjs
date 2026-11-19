@@ -23,7 +23,8 @@ bounded platforms/plains anchor biomes, and explicitly seeds each player's inven
 Seeded goods are recorded separately from real production. It verifies actual commands,
 warehouse upkeep, knowledge, military supply, life contribution/production, actual national
 development/specialization, two-sided escrow, terrain travel, culture, national resource
-receipt replay, blockade and restart across nineteen stages. Ten fixture chunks stay loaded.
+receipt replay, blockade, restart and authoritative city deletion across twenty stages.
+Ten fixture chunks stay loaded.
 Evidence is written to runtime/expansion-acceptance/<timestamp>; no download or config edit.
 `;
 
@@ -66,6 +67,16 @@ async function snapshot(server, bot) {
 async function poll(server, bot, predicate, timeout, description) {
   const deadline = Date.now() + timeout; let current;
   while (Date.now() < deadline) { current = await snapshot(server, bot); if (predicate(current)) return current; await delay(1200); }
+  throw new Error(`Timeout ${description}; latest ${JSON.stringify(current)}`);
+}
+async function pollHistory(server, bot, cityId, predicate, timeout, description) {
+  const deadline = Date.now() + timeout; let current;
+  while (Date.now() < deadline) {
+    current = await fixture(server, 'exp-history', bot, cityId);
+    assert(current.city && current.development && current.nationalDevelopment, 'Missing public historical city/development snapshot');
+    if (predicate(current)) return current;
+    await delay(1200);
+  }
   throw new Error(`Timeout ${description}; latest ${JSON.stringify(current)}`);
 }
 async function register(server, bot, slot, node) {
@@ -292,6 +303,27 @@ async function main() {
       assert.equal(after.a.profession.profession, 'chef'); assert.equal(after.a.life.culture, preRestart.a.life.culture);
       assert.deepEqual(durableReceipt(after.receipt.receipt), durableReceipt(preRestart.receipt.receipt)); const replay = await fixture(server, 'exp-replay', a, exportId); assert.deepEqual(replay.stockBefore, replay.stockAfter);
       await botMessage(a, '/sw outbox', new RegExp(`${exportId} ACKED`)); return { before: preRestart, after, replay };
+    });
+    await stage('public core city deletion removes national contributions while preserving local history', async () => {
+      const before = await snapshot(server, a);
+      assert(before.nationalDevelopment.knowledge > 0 && before.nationalDevelopment.tendencies.agriculture > 0);
+      assert.equal(before.nationalDevelopment.specialty, 'agriculture'); assert.equal(before.nationalMultipliers.farm, 1.15);
+      const deletion = await fixture(server, 'exp-delete-city', a);
+      assert.equal(deletion.entryPoint, 'CityService.deleteCity'); assert.equal(deletion.deleted, true);
+      assert.equal(deletion.cityId, before.city.id); assert.equal(deletion.nationId, before.city.nationId);
+      assert.equal(deletion.coreCityPresent, false); assert.equal(deletion.playerCityPresent, false);
+      const after = await pollHistory(server, a, before.city.id, value => value.currentPeriod > deletion.deletedAtPeriod
+        && value.nationalDevelopment.knowledge === 0 && Object.values(value.nationalDevelopment.tendencies).every(score => score === 0)
+        && Object.keys(value.nationalMultipliers).length === 0, 35000, 'bounded tick removes deleted city from actual national aggregates');
+      assert.equal(after.coreCityPresent, false); assert.equal(after.city.id, before.city.id);
+      assert.deepEqual(after.city.buildings, before.city.buildings); assert(after.development.knowledge >= before.development.knowledge);
+      assert.equal(after.nationalDevelopment.specialty, 'agriculture', 'Retain the historical decision while disabling its benefits');
+      assert.equal(after.nationalDevelopment.direction, 'balanced');
+      const later = await pollHistory(server, a, before.city.id, value => value.currentPeriod > after.currentPeriod, 20000, 'deleted historical city stops producing');
+      assert.equal(later.coreCityPresent, false); assert.equal(later.city.lastPeriod, after.city.lastPeriod);
+      assert.deepEqual(later.city.stock, after.city.stock); assert.deepEqual(later.development, after.development);
+      assert.equal(later.nationalDevelopment.knowledge, 0); assert.deepEqual(later.nationalMultipliers, {});
+      return { before, deletion, after, later };
     });
     await stage('second owned Paper process cleanly shuts down', async () => { for (const bot of [a, b]) { bot.quit(); await bot.finishTranscript(); } a = b = null; await server.stop(); return { cleanExit: true }; });
     evidence.status = 'passed'; evidence.finishedAt = new Date().toISOString(); save(); console.log(`PASS ${evidence.steps.length} expansion checks: ${path.join(directory, 'evidence.json')}`);

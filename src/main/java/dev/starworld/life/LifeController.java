@@ -53,8 +53,8 @@ public final class LifeController {
         }
         if(args.length==2 && args[1].equalsIgnoreCase("register")) {
             UUID actor=p.getUniqueId();runtime.reply(p,runtime.async(()->life.profession(actor)),profile->{
-                try {if(!sameCity(p,city,true))return;CoreCity fresh=requireCity(p,true);Entity entity=p.getTargetEntity(6);
-                    DecorationEvidence evidence=platform.inspectDecoration(p,fresh.cityId(),entity).orElseThrow(()->new IllegalArgumentException("请看向六格内、领土内且在 life.yml 允许列表的已加载 CE 家具实体"));long period=runtime.currentPeriod();
+                try {if(!sameCity(p,city,true))return;CoreCity fresh=requireCity(p,true);
+                    DecorationEvidence evidence=platform.inspectTargetDecoration(p,fresh.cityId()).orElseThrow(()->new IllegalArgumentException("请看向六格内、领土内且在 life.yml 允许列表的已加载 CE 家具实体"));long period=runtime.currentPeriod();
                     runtime.reply(p,runtime.async(()->life.registerDecoration(fresh,actor,evidence,period)),v->p.sendMessage("§a装饰已登记："+v.furnitureId()+"；每期现场复核并消耗维护品"));
                 }catch(RuntimeException e){p.sendMessage("§cStarWorld: "+e.getMessage());}});return;
         }

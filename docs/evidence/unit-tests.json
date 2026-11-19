@@ -1,12 +1,12 @@
 {
   "schema": 2,
   "version": "0.2.0",
-  "recorded_at": "2026-11-19T15:17:05.128051+00:00",
-  "command": "./mvnw.cmd -B --no-transfer-progress verify",
+  "recorded_at": "2026-11-19T15:30:01.242323+00:00",
+  "command": "./mvnw.cmd -B --no-transfer-progress clean verify",
   "java": "21.0.13.1+2",
-  "artifact_sha256": "96872663790064f77b3f5366c1f586123a4bf7913ea573137b6471cf41fbaf35",
+  "artifact_sha256": "7c5de80372c0474a6d65e07e53d85ec3854153c3081bcdd62263344692cc37a3",
   "totals": {
-    "tests": 162,
+    "tests": 169,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -35,7 +35,7 @@
     },
     {
       "suite": "dev.starworld.evolution.NationalEvolutionTest",
-      "tests": 8,
+      "tests": 10,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -84,7 +84,7 @@
     },
     {
       "suite": "dev.starworld.life.LifePlatformTest",
-      "tests": 4,
+      "tests": 6,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -126,7 +126,7 @@
     },
     {
       "suite": "dev.starworld.runtime.ExpansionRuntimeTest",
-      "tests": 3,
+      "tests": 6,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -148,24 +148,24 @@
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 23516,
-      "missed": 10513
+      "covered": 23692,
+      "missed": 10587
     },
     "BRANCH": {
-      "covered": 1591,
-      "missed": 1398
+      "covered": 1605,
+      "missed": 1408
     },
     "LINE": {
-      "covered": 1754,
-      "missed": 565
+      "covered": 1770,
+      "missed": 568
     },
     "COMPLEXITY": {
-      "covered": 1093,
-      "missed": 1448
+      "covered": 1109,
+      "missed": 1454
     },
     "METHOD": {
-      "covered": 627,
-      "missed": 388
+      "covered": 636,
+      "missed": 389
     },
     "CLASS": {
       "covered": 98,

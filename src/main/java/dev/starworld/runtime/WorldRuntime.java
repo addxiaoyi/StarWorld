@@ -138,10 +138,13 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
             if(error!=null){failure(error);return;}
             scheduler.global(()->{
                 List<CompletableFuture<?>> jobs=new ArrayList<>();long period=currentPeriod();
-                try{for(CityView view:views){Optional<CoreCity> current=core.city(view.id());if(current.isEmpty())continue;
+                try{Map<UUID,CoreCity> currentCities=new HashMap<>();for(CityView view:views)core.city(view.id()).ifPresent(city->currentCities.put(view.id(),city));
+                    // Reconcile the entire captured batch before any city can use national contributions.
+                    CompletableFuture<Void> authority=async(()->store.tx(s->{for(CityView view:views){CoreCity city=currentCities.get(view.id());if(city==null)s.invalidateCity(view.id());else s.ensureCity(city);}return null;}));jobs.add(authority);
+                    for(CityView view:views){CoreCity current=currentCities.get(view.id());if(current==null)continue;
                     Set<UUID> valid=verifiedBuildings(view);
-                    Optional<CoreExtensionPort.NationSnapshot> nation=expansion==null?Optional.empty():expansion.nation(current.get().nationId());
-                    CompletableFuture<Settlement> job=async(()->expansion==null?simulation.settle(current.get(),period,valid):expansion.settle(current.get(),period,valid,nation,simulation));jobs.add(job);
+                    Optional<CoreExtensionPort.NationSnapshot> nation=expansion==null?Optional.empty():expansion.nation(current.nationId());
+                    CompletableFuture<Settlement> job=authority.thenCompose(ignored->async(()->expansion==null?simulation.settle(current,period,valid):expansion.settle(current,period,valid,nation,simulation)));jobs.add(job);
                     job.thenAccept(settlement->{if(settlement.applied()){scheduler.global(()->Bukkit.getPluginManager().callEvent(new IndustrySettledEvent(settlement)));if(expansion!=null)expansion.afterSettlement(view.id());}});
                     jobs.add(job.thenCompose(result->city(view.id())).thenAccept(updated->updated.ifPresent(next->{if(!Objects.equals(view.event(),next.event()))scheduler.global(()->Bukkit.getPluginManager().callEvent(new WorldEvolutionEvent(view.id(),view.event(),next.event())));})));
                 }}catch(Exception e){failure(e);return;}

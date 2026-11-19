@@ -54,6 +54,21 @@ class NationalEvolutionTest {
             assertThrows(UnsupportedOperationException.class,()->n.specialties().clear());
         }
     }
+    @Test void absentCoreCityStopsContributingAcrossRestartAndValidSnapshotCanReactivateIt()throws Exception{
+        Path db=temp.resolve("absent-city.db");UUID nation=UUID.randomUUID();CoreCity missing=city(nation),remaining=city(nation);
+        try(WorldStore store=new WorldStore(db,100000)){EvolutionService e=evolution(store);cityScores(store,e,missing,30,30,20,20,10,20);cityScores(store,e,remaining,1,1,1,1,1,1);store.stock(missing.cityId(),"minecraft:bread",7);NationalEvolution n=national(store);n.choose(nation,"industry",10,"founder");assertFalse(n.multipliers(nation).isEmpty());
+            store.invalidateCity(missing.cityId());var after=n.view(nation);assertEquals(1,after.knowledge());assertEquals(1,after.culture());for(long score:after.tendencies().values())assertEquals(1,score);assertTrue(n.multipliers(nation).isEmpty());assertEquals("industry",after.specialty());assertEquals(7,store.stock(missing.cityId()).get("minecraft:bread"));assertEquals(30,e.profile(missing.cityId()).tendencies().get("industry"),"Historical development remains intact");
+        }
+        try(WorldStore store=new WorldStore(db,100000)){evolution(store);NationalEvolution n=national(store);assertEquals(1,n.view(nation).knowledge());assertTrue(n.multipliers(nation).isEmpty());assertTrue(store.view(missing.cityId()).isPresent());
+            store.ensureCity(missing);assertEquals(11,n.view(nation).knowledge());assertEquals(31,n.view(nation).tendencies().get("industry"));assertEquals(1.15,n.multipliers(nation).get("workshop"));assertEquals(10,n.view(nation).changedPeriod());assertEquals(7,store.stock(missing.cityId()).get("minecraft:bread"));
+        }
+    }
+    @Test void legacyCitiesMigrateAsActiveWithoutRevivingPreviouslyInvalidatedCities()throws Exception{
+        Path db=temp.resolve("authority-migration.db");UUID nation=UUID.randomUUID();CoreCity city=city(nation);
+        try(WorldStore store=new WorldStore(db,100000)){cityScores(store,evolution(store),city,30,0,0,0,8,3);store.execute("DROP TABLE city_authority");}
+        try(WorldStore store=new WorldStore(db,100000)){evolution(store);NationalEvolution n=national(store);assertEquals(30,n.view(nation).tendencies().get("agriculture"));assertEquals(8,n.view(nation).knowledge());store.invalidateCity(city.cityId());}
+        try(WorldStore store=new WorldStore(db,100000)){evolution(store);NationalEvolution n=national(store);assertEquals(0,n.view(nation).knowledge());assertEquals("balanced",n.view(nation).direction());}
+    }
     @Test void failedAuditWriteRollsBackNationalChoiceAndCanRetry()throws Exception {
         try(WorldStore store=new WorldStore(temp.resolve("rollback.db"),100000)){EvolutionService e=evolution(store);UUID nation=UUID.randomUUID();cityScores(store,e,city(nation),100,0,0,0,10,0);NationalEvolution n=national(store);store.execute("CREATE TRIGGER reject_national_audit BEFORE INSERT ON audit BEGIN SELECT RAISE(ABORT,'disk write boundary'); END");assertThrows(SQLException.class,()->n.choose(nation,"agriculture",10,"founder"));assertEquals("",n.view(nation).specialty());assertTrue(n.multipliers(nation).isEmpty());store.execute("DROP TRIGGER reject_national_audit");assertEquals("agriculture",n.choose(nation,"agriculture",10,"founder").specialty());}
     }

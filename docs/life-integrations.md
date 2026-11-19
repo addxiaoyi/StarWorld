@@ -17,7 +17,7 @@
 
 **Cookery/Tavern：实际商品消费。** 公开取菜事件在物品交付前触发，Tavern 的 `DrinkCreatedEvent` 没有玩家、地点或稳定交易 ID。StarWorld 不将这些通知当作完成生产。真实 CE 物品身份由 `CustomItems` 验证，入库后才可由上述宴会消费；不存在“安装了插件就加产出”的分支。默认物品 ID 取自已审计上游的 `ItemKeys`、配方与 `catalog.json`，仍须相应 CE 内容包成功加载。
 
-**Deco：真实公共 CE 家具 API。** 只使用 `CraftEngineFurniture.getLoadedFurnitureByMetaEntity(Entity)`，核对家具 `uuid()`、`id()`、`isValid()`、元实体 UUID、世界及坐标和 StarCore 领土归属。默认家具 ID 取自上游 `WoodenSeats.java`。不访问 Deco 私有目录、控制器或 NBT。每城市最多登记八个家具，每结算周期只验证这些已知 UUID；不扫描实体、不加载区块。已卸载、被移动、强制删除、替换身份、国家归属变化或不再位于本城市领土的家具本周期没有贡献。
+**Deco：真实公共 CE 家具 API。** 登记先通过 `CraftEngineFurniture.rayTrace(Player,6d)` 取得玩家看向的家具，再用 `getBukkitEntity()` 和 `getLoadedFurnitureByMetaEntity(Entity)` 交叉核对相同的家具 `uuid()`、`id()`、`isValid()`、元实体 UUID、世界及坐标和 StarCore 领土归属。默认家具 ID 取自上游 `WoodenSeats.java`。不访问 Deco 私有目录、控制器或 NBT。每城市最多登记八个家具，每结算周期只验证这些已知 UUID；不扫描实体、不加载区块。已卸载、被移动、强制删除、替换身份、国家归属变化或不再位于本城市领土的家具本周期没有贡献。
 
 每个有效家具每周期消耗一个面包，贡献一文化和当周期 0.5% 产业加成。其登记工匠仍须是装饰工匠，且维护费与个人/城市额度均足够。重复结算同一周期不再收费或奖励。卸除或注销家具不能刷新登记文化奖励；注销立即清除当前装饰加成，下一周期再重新评估现存家具。家具离线期间不积累补算。
 
@@ -49,7 +49,7 @@
 
 `LifeDefinitions.defaults/load/writeDefaults` 管理完整的可配置职业、活动、消耗、额度、允许家具、乐器与演奏要求。`LifeState.DecorationEvidence` 和 `NoteReceipt` 仅有包级构造器；受信平台验证后才能产生，不能由公共 API 提交任意 Bukkit 对象代替。
 
-`LifePlatform(JavaPlugin, CoreBridge, CustomItems, LifeDefinitions)` 的 `inspectDecoration`、`validateDecoration`、`playNote`、`validatePerformer` 和 `availableItems` 必须在 Paper 主线程执行。它们不在数据库工作线程读取玩家、家具或世界。`LifeController(JavaPlugin, WorldRuntime, CoreBridge, CustomItems, LifeService, LifePlatform)` 提供 `boolean execute(Player,String[])`，接受完整参数数组；存储回调通过 `WorldRuntime.reply` 回到玩家线程后，再核实城市、权限和现场位置。具体数据库动作只携带 UUID、数字、字符串和不可变值。
+`LifePlatform(JavaPlugin, CoreBridge, CustomItems, LifeDefinitions)` 的 `inspectTargetDecoration`、`inspectDecoration`、`validateDecoration`、`playNote`、`validatePerformer` 和 `availableItems` 必须在 Paper 主线程执行。它们不在数据库工作线程读取玩家、家具或世界。`LifeController(JavaPlugin, WorldRuntime, CoreBridge, CustomItems, LifeService, LifePlatform)` 提供 `boolean execute(Player,String[])`，接受完整参数数组；存储回调通过 `WorldRuntime.reply` 回到玩家线程后，再核实城市、权限和现场位置。具体数据库动作只携带 UUID、数字、字符串和不可变值。
 
 当前 StarCore 公共服务不保证区域线程安全，因此整个插件仍明确拒绝 Folia。生活模块也不会绕过此门禁；后续应在 StarCore 发布安全快照服务后，将家具验证放在锚点区域调度器、玩家音符和 GUI 放在玩家实体调度器，跨区域听众使用不可变快照汇聚。
 

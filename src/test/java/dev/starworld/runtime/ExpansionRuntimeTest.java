@@ -4,8 +4,10 @@ import dev.starworld.config.ConfigLoader;
 import dev.starworld.domain.*;
 import dev.starworld.domain.WorldState.*;
 import dev.starworld.integration.*;
+import dev.starworld.logistics.LogisticsState.*;
 import dev.starworld.persistence.WorldStore;
 import java.nio.file.*;
+import java.sql.SQLException;
 import java.util.*;
 import org.bukkit.Material;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,6 +27,40 @@ class ExpansionRuntimeTest {
     }
     ExpansionRuntime expansion(WorldStore store)throws Exception{JavaPlugin plugin=mock(JavaPlugin.class);org.bukkit.Server server=mock(org.bukkit.Server.class);when(plugin.getServer()).thenReturn(server);when(server.getPluginManager()).thenReturn(mock(org.bukkit.plugin.PluginManager.class));return new ExpansionRuntime(plugin,mock(WorldRuntime.class),definitions,mock(CoreBridge.class),mock(CustomItems.class),store,temp.toFile());}
     CoreCity city(){return new CoreCity(UUID.randomUUID(),UUID.randomUUID(),"城市","国家",1.1,"public API");}
+    AuthoritySnapshot tradeAuthority(CoreCity a,CoreCity b,long period,Set<String> anchors,Set<UUID> nodes){return new AuthoritySnapshot(a.cityId(),period,Map.of(a.cityId(),a.nationId(),b.cityId(),b.nationId()),Set.of(a.cityId(),b.cityId()),anchors,nodes,Set.of(TradePair.of(a.cityId(),b.cityId())));}
+    void completePhysicalTrade(WorldStore s,ExpansionRuntime x,CoreCity a,CoreCity b,long period)throws Exception{
+        for(CoreCity c:List.of(a,b)){s.ensureCity(c);for(String item:List.of("minecraft:bread","minecraft:iron_ingot","minecraft:oak_planks"))s.stock(c.cityId(),item,100);}
+        UUID world=UUID.randomUUID();Site first=new Site(world,"world",0,64,0),second=new Site(world,"world",32,64,0);Set<String> anchors=Set.of(first.anchorKey(),second.anchorKey());
+        var logistics=x.logistics();AuthoritySnapshot registration=tradeAuthority(a,b,period-1,anchors,Set.of());
+        Node left=logistics.registerNode(UUID.randomUUID(),a.cityId(),NodeType.ROAD,first,"plains",registration),right=logistics.registerNode(UUID.randomUUID(),b.cityId(),NodeType.ROAD,second,"plains",registration);
+        Set<UUID> nodes=Set.of(left.id(),right.id());AuthoritySnapshot managers=tradeAuthority(a,b,period-1,anchors,nodes);
+        Route route=logistics.createRoute(UUID.randomUUID(),a.cityId(),b.cityId(),List.of(left.id(),right.id()),Mode.LAND,managers);
+        var order=logistics.createOffer(UUID.randomUUID(),route.id(),Map.of("minecraft:bread",10L),Map.of("minecraft:iron_ingot",2L),managers);logistics.accept(order.id(),managers);
+        assertEquals(1,logistics.settle(tradeAuthority(a,b,period,anchors,nodes),10).completed());assertEquals(OrderStatus.COMPLETED,logistics.order(order.id()).orElseThrow().status());
+    }
+    long tradeActions(WorldStore s,UUID city)throws Exception{return s.query("SELECT COUNT(*) FROM evolution_trade_action WHERE city=?",r->r.getLong(1),city).getFirst();}
+    @Test void completedTradeContributesOnceAcrossLaterCyclesAndRestart()throws Exception{
+        Path db=temp.resolve("trade-once.db");CoreCity a=city(),b=city();
+        try(WorldStore s=new WorldStore(db,definitions.stockLimit())){ExpansionRuntime x=expansion(s);completePhysicalTrade(s,x,a,b,10);Simulation sim=new Simulation(s,definitions);
+            assertTrue(x.settle(a,11,Set.of(),Optional.empty(),sim).applied());assertEquals(1,x.evolution().profile(a.cityId()).tendencies().get("commerce"));assertEquals(1,tradeActions(s,a.cityId()));
+            assertFalse(x.settle(a,11,Set.of(),Optional.empty(),sim).applied());assertTrue(x.settle(a,12,Set.of(),Optional.empty(),sim).applied());assertEquals(1,x.evolution().profile(a.cityId()).tendencies().get("commerce"));
+            assertTrue(x.settle(b,12,Set.of(),Optional.empty(),sim).applied());assertEquals(1,x.evolution().profile(b.cityId()).tendencies().get("commerce"));assertEquals(1,tradeActions(s,b.cityId()),"Each legitimate endpoint consumes its own contribution once");
+        }
+        try(WorldStore s=new WorldStore(db,definitions.stockLimit())){ExpansionRuntime x=expansion(s);assertTrue(x.settle(a,13,Set.of(),Optional.empty(),new Simulation(s,definitions)).applied());assertEquals(1,x.evolution().profile(a.cityId()).tendencies().get("commerce"));assertEquals(1,tradeActions(s,a.cityId()));}
+    }
+    @Test void failedSettlementDoesNotConsumeTradeReceiptAndRestartCanRetryExactlyOnce()throws Exception{
+        Path db=temp.resolve("trade-rollback.db");CoreCity a=city(),b=city();
+        try(WorldStore s=new WorldStore(db,definitions.stockLimit())){ExpansionRuntime x=expansion(s);completePhysicalTrade(s,x,a,b,10);s.execute("CREATE TRIGGER reject_trade_settlement BEFORE INSERT ON settlement BEGIN SELECT RAISE(ABORT,'trade receipt crash boundary'); END");
+            assertThrows(SQLException.class,()->x.settle(a,11,Set.of(),Optional.empty(),new Simulation(s,definitions)));assertEquals(0,tradeActions(s,a.cityId()));assertEquals(0,x.evolution().profile(a.cityId()).tendencies().get("commerce"));assertFalse(s.settled(a.cityId(),11));
+        }
+        try(WorldStore s=new WorldStore(db,definitions.stockLimit())){ExpansionRuntime x=expansion(s);assertEquals(0,tradeActions(s,a.cityId()));s.execute("DROP TRIGGER reject_trade_settlement");Simulation sim=new Simulation(s,definitions);assertTrue(x.settle(a,11,Set.of(),Optional.empty(),sim).applied());assertTrue(x.settle(a,12,Set.of(),Optional.empty(),sim).applied());assertEquals(1,x.evolution().profile(a.cityId()).tendencies().get("commerce"));assertEquals(1,tradeActions(s,a.cityId()));}
+    }
+    @Test void priorNationTradeCannotCreditConqueringNationAndRemainsAvailableToOriginalOwner()throws Exception{
+        try(WorldStore s=new WorldStore(temp.resolve("trade-ownership.db"),definitions.stockLimit())){ExpansionRuntime x=expansion(s);CoreCity a=city(),b=city();completePhysicalTrade(s,x,a,b,10);CoreCity conquered=new CoreCity(a.cityId(),UUID.randomUUID(),a.cityName(),"新国",1,"current core snapshot");Simulation sim=new Simulation(s,definitions);
+            assertTrue(x.settle(conquered,11,Set.of(),Optional.empty(),sim).applied());assertEquals(0,x.evolution().profile(a.cityId()).tendencies().get("commerce"));assertEquals(0,tradeActions(s,a.cityId()));assertEquals(0,x.national().view(conquered.nationId()).tendencies().get("commerce"));
+            assertTrue(x.settle(a,12,Set.of(),Optional.empty(),sim).applied());assertEquals(1,x.evolution().profile(a.cityId()).tendencies().get("commerce"));assertEquals(1,tradeActions(s,a.cityId()));
+        }
+    }
     @Test void lateLifeContributionIsAppliedOnNextSettlementAndDuplicateTickCannotDrainIt()throws Exception{
         try(WorldStore s=new WorldStore(temp.resolve("late.db"),definitions.stockLimit())){CoreCity c=city();s.ensureCity(c);ExpansionRuntime x=expansion(s);Simulation sim=new Simulation(s,definitions);
             x.settle(c,10,Set.of(),Optional.empty(),sim);s.stock(c.cityId(),"minecraft:bread",30);UUID chef=UUID.randomUUID();x.life().chooseProfession(chef,"chef",10);x.life().feast(UUID.randomUUID(),c,chef,"community",10,Set.of("minecraft:bread"));

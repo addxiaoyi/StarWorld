@@ -40,6 +40,8 @@ public final class WorldStore implements AutoCloseable {
             execute("CREATE INDEX IF NOT EXISTS building_city ON building(city)");
             execute("CREATE INDEX IF NOT EXISTS transfer_pending ON transfer(state)");
             execute("CREATE TABLE IF NOT EXISTS city_capacity(city TEXT PRIMARY KEY REFERENCES city_state(id),limit_per_item INTEGER NOT NULL CHECK(limit_per_item>=64))");
+            execute("CREATE TABLE IF NOT EXISTS city_authority(city TEXT PRIMARY KEY REFERENCES city_state(id),active INTEGER NOT NULL CHECK(active IN (0,1)))");
+            execute("INSERT OR IGNORE INTO city_authority(city,active) SELECT id,1 FROM city_state");
             execute("PRAGMA user_version=2");
             return null;
         });
@@ -64,7 +66,10 @@ public final class WorldStore implements AutoCloseable {
         execute("INSERT OR IGNORE INTO nation_state(id) VALUES(?)",city.nationId());
         execute("INSERT INTO city_state(id,nation,name) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET nation=excluded.nation,name=excluded.name",city.cityId(),city.nationId(),city.cityName());
         execute("UPDATE city_state SET civilization=(SELECT civilization FROM nation_state WHERE id=?) WHERE id=?",city.nationId(),city.cityId());
+        execute("INSERT INTO city_authority(city,active) VALUES(?,1) ON CONFLICT(city) DO UPDATE SET active=1",city.cityId());
     }
+    /** A missing/unavailable core city loses authority without deleting its historical state or goods. */
+    public synchronized void invalidateCity(UUID city) throws SQLException { execute("UPDATE city_authority SET active=0 WHERE city=?",city); }
     public synchronized List<UUID> cities(int limit,int offset) throws SQLException { return query("SELECT id FROM city_state ORDER BY id LIMIT ? OFFSET ?",r->UUID.fromString(r.getString(1)),limit,offset); }
     public synchronized List<UUID> cities() throws SQLException { return query("SELECT id FROM city_state ORDER BY id",r->UUID.fromString(r.getString(1))); }
     public synchronized Optional<CityView> view(UUID id) throws SQLException {

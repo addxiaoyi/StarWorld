@@ -39,7 +39,7 @@
 | WorldRuntimeTest | 11 |
 | CityMenuTest | 7 |
 
-机器摘要：[unit-tests.json](evidence/unit-tests.json)。原始 Surefire XML/文本与 JaCoCo HTML/XML 分别位于 `target/surefire-reports/`、`target/site/jacoco/`，完成最终实服回归后由证据脚本校验并收录到证据包。
+机器摘要：[unit-tests.json](evidence/unit-tests.json)。原始 Surefire XML/文本与 JaCoCo HTML/XML 分别位于 `target/surefire-reports/`、`target/site/jacoco/`，由证据脚本核对当前JAR、逐组计数和覆盖率后收录到证据包。
 
 覆盖的关键约束包括：实际 SQLite 多连接竞争、事务失败全回滚、独立子进程 Runtime.halt 后 WAL 恢复、旧库与配置迁移、高版本拒绝、同周期/同请求去重、物品隔离凭据、共享地区恢复一次、贸易双向托管与共享运力、战争/归属变化、国家出口失ACK和稳定回执、迟到生活与贸易贡献恰好消费一次、国家专长条件和已解散城市持久排除。周期长度变更保持逻辑 period 与事件时间线；容量下降保留既有物品并允许取出，凭据退款不制造额外资源。
 
@@ -47,7 +47,7 @@
 
 ## 当前构建的实服回归状态
 
-本次修复精确绑定 `ItemStackUtils.getBukkitStack(CE Item)`，并将 Tavern 默认消耗改为真实成品 `kaleidoscope_tavern:wine`。当前构建的森罗15阶段与国战扩展20阶段均已全部通过；基础15阶段及独立安装冒烟正在分别收集最终运行证据。
+本次修复精确绑定 `ItemStackUtils.getBukkitStack(CE Item)`，并将 Tavern 默认消耗改为真实成品 `kaleidoscope_tavern:wine`。当前构建已通过172项自动化测试、20阶段国战扩展、15阶段森罗联调、15阶段基础玩法，以及无依赖两次启动/SQLite恢复冒烟。以下所有当前证据均对应上文同一JAR哈希。
 
 ## 最终构建的真实 Paper / StarCore 扩展验收
 
@@ -68,6 +68,16 @@ StarCore JAR SHA-256 为 `953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3
 真实背包物品经玩家命令入库；Cookery宴会消耗4包子+1油并增加25文化，Tavern消耗成品葡萄酒+4面包并增加20文化。真实橡木椅登记扣4木板，维护每期扣1面包并加1文化；撤领连续两周期不收费/不贡献，复领后同家具恢复一次，实际拆除后停止。真实森罗乐器与同城听众完成67732毫秒、14音符/5音高受控演奏，扣8面包、文化47→67；重复完成和重启后的再次完成均不重复奖励，完整库存与职业恢复。两次Paper正常关闭。
 
 完整15阶段、独立配置、CE内部映射补齐和测试夹具 `ground,false` 放置入口修正、此前失败与执行中断均见[森罗验收](senluo-acceptance.md)。这些工具/环境修正未修改上游权威数据或放宽产品验证。资源包画面、真人听觉、热重载和Folia仍未验收。
+
+## 最终构建的基础玩法回归
+
+**15/15阶段全部通过**，实际时间 **2026-11-20 07:56:33–07:58:53 Asia/Shanghai**，JAR与上文同一SHA。机器证据：[baseline-client.json](evidence/baseline-client.json)。全新世界/城市/库存，无初始生产物资，真实玩家视线命令登记农场、林场、工坊后，实际周期形成粮食、木板和军工箭三链。取4箭进入客户端背包、存回后背包归零；GUI Shift不能抽走展示物，普通创始人不能触发管理员事件；16普通小麦与7命名小麦的存入流程保留特殊物品。
+
+真实国家撤领使工坊连续两个周期停产，复领后恢复；管理员干旱事件实际持久化。正常关闭并重启后，同一核心城市、设施/仓储/结算账本、完整事件时间线和背包状态恢复，已存物品没有重放。两次Paper正常退出。周期10秒、随机事件0、干旱12周期和2周期余波均为隔离测试配置，原始指纹在机器证据中。
+
+## 无依赖独立安装与恢复
+
+**两次启动全部通过**，实际时间 **2026-11-20 07:58:53–08:00:13 Asia/Shanghai**。全新隔离Paper132目录只放最终StarWorld JAR，缺StarCore/CE/四森罗插件；成功加载、生成配置与SQLite、执行控制台status并明确降级，两次均正常关闭。第一次关闭后仅在本插件DB插入唯一测试审计标记，重启后只读核对schema2及该标记恰好一条；这是持久化探针，不是游戏资源种子。机器证据：[no-dependency-smoke.json](evidence/no-dependency-smoke.json)。两份原始日志和SHA收录于证据包，复现工具为[smoke-paper.ps1](../tools/smoke-paper.ps1)。缺核心时不创建替代国家，城市玩法等待真实StarCore。
 
 ## 第一阶段历史证据
 

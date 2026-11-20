@@ -95,6 +95,6 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 
 [需求映射](docs/requirements.md) · [架构](docs/architecture.md) · [Java API](docs/API.md) · [玩法验收](docs/gameplay.md) · [交通贸易](docs/logistics.md) · [国家服务](docs/core-extension.md) · [战斗联动](docs/combat.md) · [生活联动](docs/life-integrations.md) · [测试结果](docs/test-results.md) · [后续边界](docs/roadmap.md)
 
-当前 JAR 已通过 **172 项自动化测试**，包括直接运行 CE 反射适配器的精确重载契约测试。同一最终JAR已完成20阶段真实Paper/StarCore双人扩展验收和15阶段CE/森罗联调，覆盖实物贸易、军队计算、国家回执、领土变化、生活成本和重启去重。`clean verify` 生成 `target/surefire-reports/` 与 `target/site/jacoco/`。当前 JAR 哈希、实服回归状态及完整观察见[测试结果](docs/test-results.md)和[机器证据](docs/evidence/unit-tests.json)；CE/森罗独立联调以[森罗验收](docs/senluo-acceptance.md)的实际结果为准，Folia 仍为兼容规划。
+当前 JAR 已通过 **172 项自动化测试**，包括直接运行 CE 反射适配器的精确重载契约测试。同一最终JAR已完成20阶段真实Paper/StarCore双人扩展验收、15阶段CE/森罗联调、15阶段基础玩法及无依赖两次启动恢复，覆盖实物贸易、军队计算、国家回执、领土变化、生活成本和重启去重。`clean verify` 生成 `target/surefire-reports/` 与 `target/site/jacoco/`。当前 JAR 哈希、实服回归状态及完整观察见[测试结果](docs/test-results.md)和[机器证据](docs/evidence/unit-tests.json)；CE/森罗独立联调以[森罗验收](docs/senluo-acceptance.md)的实际结果为准，Folia 仍为兼容规划。
 
 生成完整交付包前，先用 `python tools/package-evidence.py --expansion-dir <实际验收目录> --senluo-dir <实际验收目录>` 生成证据 ZIP；可追加同一最终 JAR 的 `--baseline-dir`、`--smoke-dir`。再运行 `./tools/package-release.ps1`。脚本会核对单测、JAR、源码与证据清单的 SHA256，拒绝缺失、失败或其他构建的证据。

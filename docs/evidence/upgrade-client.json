@@ -1,52 +1,52 @@
 {
   "schema": 1,
-  "suite": "real-paper-upgrade-03-to-04",
+  "suite": "real-paper-upgrade-04-to-05",
   "status": "passed",
-  "startedAt": "2026-11-20T06:13:02.290Z",
-  "sourceVersion": "0.3.0",
-  "targetVersion": "0.4.0",
-  "sourcePluginSha256": "15946f82e248d08cabba45f4389d23297a9e27f574468658faa7edf6426382e1",
+  "startedAt": "2026-11-20T07:50:16.090Z",
+  "sourceVersion": "0.4.0",
+  "targetVersion": "0.5.0",
+  "sourcePluginSha256": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
   "paperSha256": "5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba",
   "pluginJars": {
     "StarCore.jar": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
-    "StarWorld.jar": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
-    "StarWorldFixture.jar": "00f0914bced06d153f707574b3cbdc9300f4d4d6fb2abc03802dd1a08d87bfbb"
+    "StarWorld.jar": "096013edfdb8a3ca56654b15966cc0e319f336043ff8ed9ef0f8ef6d825bc5e7",
+    "StarWorldFixture.jar": "ce2aaaeeb8c34b870eefa2572444db2cf60b0d804d31fcf24b19a72b41e3e22b"
   },
   "beforeProvenance": {
     "schema": 1,
-    "sourceRuntime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\baseline-final-09",
-    "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\upgrade04-server01",
-    "sourceVersion": "0.3.0",
-    "targetVersion": "0.4.0",
-    "sourcePluginSha256": "15946f82e248d08cabba45f4389d23297a9e27f574468658faa7edf6426382e1",
-    "targetPluginSha256": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
+    "sourceRuntime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\baseline04-server01",
+    "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\upgrade05-server01",
+    "sourceVersion": "0.4.0",
+    "targetVersion": "0.5.0",
+    "sourcePluginSha256": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
+    "targetPluginSha256": "096013edfdb8a3ca56654b15966cc0e319f336043ff8ed9ef0f8ef6d825bc5e7",
     "preparationStatus": "running",
     "processStarted": true,
-    "preparedAt": "2026-11-20T13:07:48.697735+08:00",
+    "preparedAt": "2026-11-20T15:49:51.127857+08:00",
     "sourceEvidence": {
-      "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\baseline-final-09\\client-acceptance\\2026-11-20T03-34-21-383Z",
-      "jsonSha256": "4169544ed726b88ea835f4709edf1a5ad7120f1ea6cdf7f67e08a5dfdd776e33",
+      "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\baseline04-server01\\client-acceptance\\2026-11-20T06-50-00-375Z",
+      "jsonSha256": "8a95f25be64e8ebf94d0ab8e0bf661f8da21b9c203b71042163ede4aa35f91de",
       "status": "passed",
       "steps": 15,
-      "pluginSha256": "15946f82e248d08cabba45f4389d23297a9e27f574468658faa7edf6426382e1",
-      "finishedAt": "2026-11-20T03:36:42.321Z"
+      "pluginSha256": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
+      "finishedAt": "2026-11-20T06:52:21.275Z"
     },
     "sourceCriticalFiles": {
-      "plugins/StarWorld/starworld.db": "b9d0388de3dc69cd80681a688da66dc61170e3854f446c8589d7c3c0620517bc",
-      "plugins/StarCore/starcore.db": "d7cd3cb943a21b5e99774e424732cda3c870a120b979bf011ed5b4714ec417db",
+      "plugins/StarWorld/starworld.db": "c142bc6c92868e34d70cd13ce5790b5e8e28fade1cba22ceb7aaa181079fbfec",
+      "plugins/StarCore/starcore.db": "365b53483c928540ef02a17a9dd5431e152a93a4af1fde3bdd057b28d93b2d87",
       "plugins/StarCore.jar": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
-      "plugins/StarWorldFixture.jar": "00f0914bced06d153f707574b3cbdc9300f4d4d6fb2abc03802dd1a08d87bfbb",
-      "baseline-final09/level.dat": "fd3358c3dc25132b6a85596ce1059df588912b3f19709d0022beaefdb2ae2818",
-      "baseline-final09/level.dat_old": "441f8cfa02009f30b3a6228b4dde6e884e2e2b5f5d365808ddc12923f8f577e9",
-      "baseline-final09/uid.dat": "96dc463e8cb1de54a07906fc41854f38a90476c84b36e42b8fa29e3f33f92538",
-      "baseline-final09/playerdata/363cb761-f442-3a44-b511-0ffbf8720f97.dat": "3f4565915bef3faa2587c8bf20ad4363bc682bfbf3d7200ae01be18db1a53996",
-      "baseline-final09/playerdata/363cb761-f442-3a44-b511-0ffbf8720f97.dat_old": "64173ccb14d4656fb3f6cce5df9efdf48d808c92bc9b8a8f412d9adbbdeb60fa",
-      "baseline-final09_nether/level.dat": "8fd73afc156fcfd29245b37970873d4d169346c25468a26a45639f5a91f531e8",
-      "baseline-final09_nether/level.dat_old": "9d2c4bac314bfbb700252f1bea2963e0ef6296f0b1dcd7854347f197d10f5b57",
-      "baseline-final09_nether/uid.dat": "049fe73f27fa4ad31d5d06b79f2d0eb6dbc61bc9bed24d259e117db41ef8f3e3",
-      "baseline-final09_the_end/level.dat": "43d3da15c9689e09e13f8038728819c58c8ba55a28a7c58f25bb96817f6975dc",
-      "baseline-final09_the_end/level.dat_old": "298cb44953be4a1db4210fb049199068fb73e90e75ad9a4529c728fdbcadb983",
-      "baseline-final09_the_end/uid.dat": "8dcba1086bd7148fee1072725c6f8c700a75f69765b691282bc525c5af00833e"
+      "plugins/StarWorldFixture.jar": "ce2aaaeeb8c34b870eefa2572444db2cf60b0d804d31fcf24b19a72b41e3e22b",
+      "baseline04-world/level.dat": "c982705080af8a33623fbef1309df649a399a54ca6c3a4a7c610efa620289934",
+      "baseline04-world/level.dat_old": "c2a27fe3c44809ed0a31e8d3227c01e413b90d507334dce36b8e699e415973da",
+      "baseline04-world/uid.dat": "ad990423c80ef7b0ddc5fcb9a66b108d52b308d866773f699e37142b27a7169d",
+      "baseline04-world/playerdata/363cb761-f442-3a44-b511-0ffbf8720f97.dat": "409506b8cdd8e5a6a3838b5f59fee502ed00f397c628764c676e41a1b258f2c1",
+      "baseline04-world/playerdata/363cb761-f442-3a44-b511-0ffbf8720f97.dat_old": "e7b7d8acdf39c36bfd941de1ef402d7c61d4988506800b7478493654acb2f1a1",
+      "baseline04-world_nether/level.dat": "22a261ff3a523a45c86b8dad8ff60efae2e1f64fe9b330666f6072ac2ab270be",
+      "baseline04-world_nether/level.dat_old": "9b0f33098461b480dea12195ff05b92de51e45b2663800c63ec0e2994e5df9e7",
+      "baseline04-world_nether/uid.dat": "ed12455ef680e0bb0281d0ff1f54ea2ba13408f1f47ebe8e1f9bbc450fcb63a0",
+      "baseline04-world_the_end/level.dat": "b7ff7fd87811e6d769a286bb5d0323c0250f59f52a6ce41712232aa7d73e9602",
+      "baseline04-world_the_end/level.dat_old": "279b368fbf6495f5ff5945311a45f9d16c14c321a2212937cb6b4ef6f38af151",
+      "baseline04-world_the_end/uid.dat": "21ec28a4b09d8b4b2cb93f98069bea95ea512c883d38c5a0b9c8ae3a2e2fbba4"
     },
     "oldConfigurationSha256": {
       "plugins/StarWorld/config.yml": "33eb3a42c8e4bdcfa913c753d6a5b6e8ab9b521e77fbf9174084da7e17740cbe",
@@ -100,6 +100,10 @@
           "logistics_route_node",
           "logistics_route_usage",
           "market_clock",
+          "market_delivery_clock",
+          "market_delivery_receipt",
+          "market_delivery_schema",
+          "market_delivery_stat",
           "market_expiry_check",
           "market_history",
           "market_listing",
@@ -118,55 +122,55 @@
           "stock",
           "transfer"
         ],
-        "database_sha256": "b9d0388de3dc69cd80681a688da66dc61170e3854f446c8589d7c3c0620517bc",
+        "database_sha256": "c142bc6c92868e34d70cd13ce5790b5e8e28fade1cba22ceb7aaa181079fbfec",
         "rows": {
           "city_state": [
             {
-              "id": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-              "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+              "id": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
               "name": "SWCityStarWorldQA",
               "civilization": "agrarian",
-              "last_period": 179514575,
-              "last_report": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
+              "last_period": 179515750,
+              "last_report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
               "event_type": "drought",
-              "event_start": 179514575,
-              "event_end": 179514587,
-              "aftermath_end": 179514589
+              "event_start": 179515750,
+              "event_end": 179515762,
+              "aftermath_end": 179515764
             }
           ],
           "building": [
             {
-              "id": "18f6fb77-997b-4851-bc8b-085bd96c5df1",
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-              "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
-              "type": "farm",
-              "world": "150a6127-175d-4238-95aa-e0cc2a0a3ec1",
-              "world_name": "baseline-final09",
-              "x": 8,
-              "y": 80,
-              "z": 8,
-              "level": 1
-            },
-            {
-              "id": "1a2244a3-6aa0-44d7-9404-406bd05cd404",
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-              "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+              "id": "05c67786-de3b-45b4-af5b-5a0628ca706f",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
               "type": "sawmill",
-              "world": "150a6127-175d-4238-95aa-e0cc2a0a3ec1",
-              "world_name": "baseline-final09",
+              "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+              "world_name": "baseline04-world",
               "x": 24,
               "y": 80,
               "z": 8,
               "level": 1
             },
             {
-              "id": "afda74e9-9d12-4df8-b14b-dc3de2cfde0a",
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-              "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+              "id": "4893f8b1-28c7-487e-afce-79a8d2ca5b61",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
               "type": "workshop",
-              "world": "150a6127-175d-4238-95aa-e0cc2a0a3ec1",
-              "world_name": "baseline-final09",
+              "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+              "world_name": "baseline04-world",
               "x": 40,
+              "y": 80,
+              "z": 8,
+              "level": 1
+            },
+            {
+              "id": "a26ee39f-9381-462c-a32f-bd53026be3c8",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+              "type": "farm",
+              "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+              "world_name": "baseline04-world",
+              "x": 8,
               "y": 80,
               "z": 8,
               "level": 1
@@ -174,173 +178,173 @@
           ],
           "stock": [
             {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
               "item": "minecraft:arrow",
-              "amount": 39
+              "amount": 26
             },
             {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
               "item": "minecraft:bread",
-              "amount": 8
+              "amount": 15
             },
             {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
               "item": "minecraft:iron_ingot",
               "amount": 0
             },
             {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
               "item": "minecraft:oak_log",
-              "amount": 15
+              "amount": 13
             },
             {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
               "item": "minecraft:oak_planks",
-              "amount": 66
+              "amount": 56
             },
             {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
               "item": "minecraft:paper",
-              "amount": 24
+              "amount": 20
             },
             {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
               "item": "minecraft:raw_iron",
-              "amount": 3
+              "amount": 2
             },
             {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
               "item": "minecraft:wheat",
-              "amount": 120
+              "amount": 124
             }
           ],
           "transfer": [
             {
-              "id": "1f9a7a3d-59c3-4413-a9e0-a8a299cca64a",
+              "id": "02409d6a-4870-4718-b440-7637c409b8dc",
               "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "direction": "DEPOSIT",
+              "item": "minecraft:arrow",
+              "amount": 4,
+              "state": "COMPLETED",
+              "created": 1795157467768,
+              "decision": "runtime"
+            },
+            {
+              "id": "6fd61d4d-f3c1-4229-8f50-b6b721574d1d",
+              "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
               "direction": "DEPOSIT",
               "item": "minecraft:wheat",
               "amount": 16,
               "state": "COMPLETED",
-              "created": 1795145717856,
+              "created": 1795157469444,
               "decision": "runtime"
             },
             {
-              "id": "4ed2d3c1-6192-4cc9-9c53-1bf57bd1cdd9",
+              "id": "932c70d3-b555-4aa0-a26b-80cfc79f34f5",
               "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-              "direction": "DEPOSIT",
-              "item": "minecraft:arrow",
-              "amount": 4,
-              "state": "COMPLETED",
-              "created": 1795145716310,
-              "decision": "runtime"
-            },
-            {
-              "id": "68b543b3-c7aa-45bd-8bb6-3a2c9cb0c459",
-              "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
               "direction": "DEPOSIT",
               "item": "minecraft:wheat",
               "amount": 17,
               "state": "CANCELLED",
-              "created": 1795145717653,
+              "created": 1795157469242,
               "decision": "no inventory mutation"
             },
             {
-              "id": "dc6bd16a-05de-43b5-9f00-07157ceb37f1",
+              "id": "d26a8f7a-20c5-48c6-ac7e-b66ce24bf43c",
               "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
               "direction": "WITHDRAW",
               "item": "minecraft:arrow",
               "amount": 4,
               "state": "COMPLETED",
-              "created": 1795145716213,
+              "created": 1795157467571,
               "decision": "runtime"
             }
           ],
           "nation_state": [
             {
-              "id": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+              "id": "914c4e27-efa3-46f1-be09-23197a3e9334",
               "civilization": "agrarian",
               "changed_period": -1000000
             }
           ],
           "national_evolution": [
             {
-              "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+              "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
               "specialty": "",
               "changed_period": -1000000
             }
           ],
           "region": [
             {
-              "id": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+              "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
               "terrain": "plains",
-              "last_regen": 179514575
+              "last_regen": 179515750
             },
             {
-              "id": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+              "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
               "terrain": "plains",
-              "last_regen": 179514575
+              "last_regen": 179515750
             },
             {
-              "id": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+              "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
               "terrain": "plains",
-              "last_regen": 179514575
+              "last_regen": 179515750
             }
           ],
           "reserve": [
             {
-              "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
               "resource": "fertility",
               "amount": 688
             },
             {
-              "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
               "resource": "ore",
               "amount": 100
             },
             {
-              "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
               "resource": "timber",
               "amount": 160
             },
             {
-              "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
               "resource": "fertility",
               "amount": 700
             },
             {
-              "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
               "resource": "ore",
               "amount": 100
             },
             {
-              "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
               "resource": "timber",
-              "amount": 122
+              "amount": 128
             },
             {
-              "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
               "resource": "fertility",
               "amount": 700
             },
             {
-              "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
               "resource": "ore",
-              "amount": 82
+              "amount": 88
             },
             {
-              "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
               "resource": "timber",
               "amount": 160
             }
           ],
           "city_authority": [
             {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
               "active": 1
             }
           ],
@@ -348,40 +352,40 @@
             {
               "id": 1,
               "period_seconds": 10,
-              "epoch_origin": 1795145707,
-              "period_origin": 179514570
+              "epoch_origin": 1795157455,
+              "period_origin": 179515745
             }
           ],
           "settlement": [
             {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-              "period": 179514570,
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "period": 179515745,
+              "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；林场与锯木厂: 维护食物不足；矿场与军工作坊: 维护食物不足"
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "period": 179515746,
               "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
             },
             {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-              "period": 179514571,
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "period": 179515747,
+              "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "period": 179515748,
+              "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "period": 179515749,
+              "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "period": 179515750,
               "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
-            },
-            {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-              "period": 179514572,
-              "report": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产"
-            },
-            {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-              "period": 179514573,
-              "report": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产"
-            },
-            {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-              "period": 179514574,
-              "report": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产"
-            },
-            {
-              "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-              "period": 179514575,
-              "report": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；"
             }
           ],
           "resource_outbox": [],
@@ -393,11 +397,25 @@
           "life_audience": [],
           "life_evolution_action": [],
           "life_decoration": [],
+          "market_delivery_schema": [
+            {
+              "id": 1,
+              "version": 1
+            }
+          ],
+          "market_delivery_clock": [
+            {
+              "id": 1,
+              "sequence": 0
+            }
+          ],
+          "market_delivery_receipt": [],
+          "market_delivery_stat": [],
           "market_schema": [
             {
               "id": 1,
               "version": 1,
-              "namespace": "0a371fd7-aa23-479e-b2a6-845f301875b5"
+              "namespace": "3ade6b50-0bb9-457b-bd14-5351a22f5d8b"
             }
           ],
           "market_listing": [],
@@ -411,16 +429,16 @@
           ],
           "culture_decay": [
             {
-              "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
-              "last_period": 179514570
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+              "last_period": 179515745
             },
             {
-              "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
-              "last_period": 179514570
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+              "last_period": 179515746
             },
             {
-              "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
-              "last_period": 179514570
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+              "last_period": 179515746
             }
           ],
           "logistics_reroute": [],
@@ -548,7 +566,7 @@
           "weather_weather_state_meta",
           "zone_state"
         ],
-        "database_sha256": "d7cd3cb943a21b5e99774e424732cda3c870a120b979bf011ed5b4714ec417db",
+        "database_sha256": "365b53483c928540ef02a17a9dd5431e152a93a4af1fde3bdd057b28d93b2d87",
         "rows": {
           "starcore_nation_state": [
             {
@@ -561,7 +579,7 @@
             },
             {
               "property_key": "nation.0.capitalLocation",
-              "property_value": "baseline-final09,8.00,64.00,8.00,0.00,0.00"
+              "property_value": "baseline04-world,8.00,64.00,8.00,0.00,0.00"
             },
             {
               "property_key": "nation.0.experience",
@@ -569,7 +587,7 @@
             },
             {
               "property_key": "nation.0.foundedAt",
-              "property_value": "1795145712223"
+              "property_value": "1795157460267"
             },
             {
               "property_key": "nation.0.founderId",
@@ -581,7 +599,7 @@
             },
             {
               "property_key": "nation.0.id",
-              "property_value": "dca0479b-0fe5-4043-9ed2-f1689b068a38"
+              "property_value": "914c4e27-efa3-46f1-be09-23197a3e9334"
             },
             {
               "property_key": "nation.0.kind",
@@ -593,11 +611,11 @@
             },
             {
               "property_key": "nation.0.member.0.joinedAt",
-              "property_value": "1795145712227"
+              "property_value": "1795157460270"
             },
             {
               "property_key": "nation.0.member.0.lastSeen",
-              "property_value": "1795145712227"
+              "property_value": "1795157460270"
             },
             {
               "property_key": "nation.0.member.0.name",
@@ -675,14 +693,14 @@
         },
         "integrity": "ok"
       },
-      "pluginVersion": "0.3.0"
+      "pluginVersion": "0.4.0"
     },
     "serverHost": "127.0.0.1",
-    "serverPort": 25613,
-    "serverPropertiesSha256": "1fcc83048d3a39ac653f94c78c3f448d6dd61067e5c904e64b1480608ab49280",
-    "note": "Copied only the original stopped, accepted 0.3 source save, worlds, players and authority. No prior 0.4 database or player state used. Installed StarWorld.jar is the original 0.3 placeholder; final 0.4 artifact hash must be bound before any start. No Java process was started by preparation."
+    "serverPort": 25621,
+    "serverPropertiesSha256": "8edb91ee065b8425bc444cbf3891f98606d2aa024237c51274e3f7f0c58b592e",
+    "note": "Copied only the original stopped, accepted 0.4 source save, worlds, players and authority. No prior 0.5 database or player state used. Installed StarWorld.jar is the original 0.4 placeholder; final 0.5 artifact hash must be bound before any start. No Java process was started by preparation."
   },
-  "scope": "Upgrade a copy of an actually accepted stopped 0.3 save; no SQL mutation, seeded goods, new city or warehouse commands. Natural production is bounded by actual new settlement receipts; transfers are preserved exactly.",
+  "scope": "Upgrade a copy of an actually accepted stopped 0.4 save; no SQL mutation, seeded goods, new city or warehouse commands. Natural production is bounded by actual new settlement receipts; transfers are preserved exactly.",
   "testTuning": {
     "jvmArgs": [
       "-Xms128m",
@@ -706,8 +724,8 @@
   },
   "steps": [
     {
-      "name": "stopped accepted 0.3 save and copied database fingerprints match provenance",
-      "startedAt": "2026-11-20T06:13:03.038Z",
+      "name": "stopped accepted 0.4 save and copied database fingerprints match provenance",
+      "startedAt": "2026-11-20T07:50:16.579Z",
       "observed": {
         "world": {
           "schema": 2,
@@ -751,6 +769,10 @@
             "logistics_route_node",
             "logistics_route_usage",
             "market_clock",
+            "market_delivery_clock",
+            "market_delivery_receipt",
+            "market_delivery_schema",
+            "market_delivery_stat",
             "market_expiry_check",
             "market_history",
             "market_listing",
@@ -769,55 +791,55 @@
             "stock",
             "transfer"
           ],
-          "database_sha256": "b9d0388de3dc69cd80681a688da66dc61170e3854f446c8589d7c3c0620517bc",
+          "database_sha256": "c142bc6c92868e34d70cd13ce5790b5e8e28fade1cba22ceb7aaa181079fbfec",
           "rows": {
             "city_state": [
               {
-                "id": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                "id": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
                 "name": "SWCityStarWorldQA",
                 "civilization": "agrarian",
-                "last_period": 179514575,
-                "last_report": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
+                "last_period": 179515750,
+                "last_report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
                 "event_type": "drought",
-                "event_start": 179514575,
-                "event_end": 179514587,
-                "aftermath_end": 179514589
+                "event_start": 179515750,
+                "event_end": 179515762,
+                "aftermath_end": 179515764
               }
             ],
             "building": [
               {
-                "id": "18f6fb77-997b-4851-bc8b-085bd96c5df1",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
-                "type": "farm",
-                "world": "150a6127-175d-4238-95aa-e0cc2a0a3ec1",
-                "world_name": "baseline-final09",
-                "x": 8,
-                "y": 80,
-                "z": 8,
-                "level": 1
-              },
-              {
-                "id": "1a2244a3-6aa0-44d7-9404-406bd05cd404",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                "id": "05c67786-de3b-45b4-af5b-5a0628ca706f",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
                 "type": "sawmill",
-                "world": "150a6127-175d-4238-95aa-e0cc2a0a3ec1",
-                "world_name": "baseline-final09",
+                "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                "world_name": "baseline04-world",
                 "x": 24,
                 "y": 80,
                 "z": 8,
                 "level": 1
               },
               {
-                "id": "afda74e9-9d12-4df8-b14b-dc3de2cfde0a",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                "id": "4893f8b1-28c7-487e-afce-79a8d2ca5b61",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
                 "type": "workshop",
-                "world": "150a6127-175d-4238-95aa-e0cc2a0a3ec1",
-                "world_name": "baseline-final09",
+                "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                "world_name": "baseline04-world",
                 "x": 40,
+                "y": 80,
+                "z": 8,
+                "level": 1
+              },
+              {
+                "id": "a26ee39f-9381-462c-a32f-bd53026be3c8",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "type": "farm",
+                "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                "world_name": "baseline04-world",
+                "x": 8,
                 "y": 80,
                 "z": 8,
                 "level": 1
@@ -825,173 +847,173 @@
             ],
             "stock": [
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:arrow",
-                "amount": 39
+                "amount": 26
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:bread",
-                "amount": 8
+                "amount": 15
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:iron_ingot",
                 "amount": 0
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:oak_log",
-                "amount": 15
+                "amount": 13
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:oak_planks",
-                "amount": 66
+                "amount": 56
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:paper",
-                "amount": 24
+                "amount": 20
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:raw_iron",
-                "amount": 3
+                "amount": 2
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:wheat",
-                "amount": 120
+                "amount": 124
               }
             ],
             "transfer": [
               {
-                "id": "1f9a7a3d-59c3-4413-a9e0-a8a299cca64a",
+                "id": "02409d6a-4870-4718-b440-7637c409b8dc",
                 "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "direction": "DEPOSIT",
+                "item": "minecraft:arrow",
+                "amount": 4,
+                "state": "COMPLETED",
+                "created": 1795157467768,
+                "decision": "runtime"
+              },
+              {
+                "id": "6fd61d4d-f3c1-4229-8f50-b6b721574d1d",
+                "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "direction": "DEPOSIT",
                 "item": "minecraft:wheat",
                 "amount": 16,
                 "state": "COMPLETED",
-                "created": 1795145717856,
+                "created": 1795157469444,
                 "decision": "runtime"
               },
               {
-                "id": "4ed2d3c1-6192-4cc9-9c53-1bf57bd1cdd9",
+                "id": "932c70d3-b555-4aa0-a26b-80cfc79f34f5",
                 "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "direction": "DEPOSIT",
-                "item": "minecraft:arrow",
-                "amount": 4,
-                "state": "COMPLETED",
-                "created": 1795145716310,
-                "decision": "runtime"
-              },
-              {
-                "id": "68b543b3-c7aa-45bd-8bb6-3a2c9cb0c459",
-                "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "direction": "DEPOSIT",
                 "item": "minecraft:wheat",
                 "amount": 17,
                 "state": "CANCELLED",
-                "created": 1795145717653,
+                "created": 1795157469242,
                 "decision": "no inventory mutation"
               },
               {
-                "id": "dc6bd16a-05de-43b5-9f00-07157ceb37f1",
+                "id": "d26a8f7a-20c5-48c6-ac7e-b66ce24bf43c",
                 "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "direction": "WITHDRAW",
                 "item": "minecraft:arrow",
                 "amount": 4,
                 "state": "COMPLETED",
-                "created": 1795145716213,
+                "created": 1795157467571,
                 "decision": "runtime"
               }
             ],
             "nation_state": [
               {
-                "id": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                "id": "914c4e27-efa3-46f1-be09-23197a3e9334",
                 "civilization": "agrarian",
                 "changed_period": -1000000
               }
             ],
             "national_evolution": [
               {
-                "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
                 "specialty": "",
                 "changed_period": -1000000
               }
             ],
             "region": [
               {
-                "id": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+                "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
                 "terrain": "plains",
-                "last_regen": 179514575
+                "last_regen": 179515750
               },
               {
-                "id": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+                "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
                 "terrain": "plains",
-                "last_regen": 179514575
+                "last_regen": 179515750
               },
               {
-                "id": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+                "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
                 "terrain": "plains",
-                "last_regen": 179514575
+                "last_regen": 179515750
               }
             ],
             "reserve": [
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
                 "resource": "fertility",
                 "amount": 688
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
                 "resource": "ore",
                 "amount": 100
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
                 "resource": "timber",
                 "amount": 160
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
                 "resource": "fertility",
                 "amount": 700
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
                 "resource": "ore",
                 "amount": 100
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
                 "resource": "timber",
-                "amount": 122
+                "amount": 128
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
                 "resource": "fertility",
                 "amount": 700
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
                 "resource": "ore",
-                "amount": 82
+                "amount": 88
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
                 "resource": "timber",
                 "amount": 160
               }
             ],
             "city_authority": [
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "active": 1
               }
             ],
@@ -999,40 +1021,40 @@
               {
                 "id": 1,
                 "period_seconds": 10,
-                "epoch_origin": 1795145707,
-                "period_origin": 179514570
+                "epoch_origin": 1795157455,
+                "period_origin": 179515745
               }
             ],
             "settlement": [
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179514570,
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515745,
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；林场与锯木厂: 维护食物不足；矿场与军工作坊: 维护食物不足"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515746,
                 "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179514571,
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515747,
+                "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515748,
+                "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515749,
+                "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515750,
                 "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
-              },
-              {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179514572,
-                "report": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产"
-              },
-              {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179514573,
-                "report": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产"
-              },
-              {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179514574,
-                "report": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产"
-              },
-              {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179514575,
-                "report": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；"
               }
             ],
             "resource_outbox": [],
@@ -1044,11 +1066,25 @@
             "life_audience": [],
             "life_evolution_action": [],
             "life_decoration": [],
+            "market_delivery_schema": [
+              {
+                "id": 1,
+                "version": 1
+              }
+            ],
+            "market_delivery_clock": [
+              {
+                "id": 1,
+                "sequence": 0
+              }
+            ],
+            "market_delivery_receipt": [],
+            "market_delivery_stat": [],
             "market_schema": [
               {
                 "id": 1,
                 "version": 1,
-                "namespace": "0a371fd7-aa23-479e-b2a6-845f301875b5"
+                "namespace": "3ade6b50-0bb9-457b-bd14-5351a22f5d8b"
               }
             ],
             "market_listing": [],
@@ -1062,16 +1098,16 @@
             ],
             "culture_decay": [
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
-                "last_period": 179514570
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                "last_period": 179515745
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
-                "last_period": 179514570
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                "last_period": 179515746
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
-                "last_period": 179514570
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                "last_period": 179515746
               }
             ],
             "logistics_reroute": [],
@@ -1199,7 +1235,7 @@
             "weather_weather_state_meta",
             "zone_state"
           ],
-          "database_sha256": "d7cd3cb943a21b5e99774e424732cda3c870a120b979bf011ed5b4714ec417db",
+          "database_sha256": "365b53483c928540ef02a17a9dd5431e152a93a4af1fde3bdd057b28d93b2d87",
           "rows": {
             "starcore_nation_state": [
               {
@@ -1212,7 +1248,7 @@
               },
               {
                 "property_key": "nation.0.capitalLocation",
-                "property_value": "baseline-final09,8.00,64.00,8.00,0.00,0.00"
+                "property_value": "baseline04-world,8.00,64.00,8.00,0.00,0.00"
               },
               {
                 "property_key": "nation.0.experience",
@@ -1220,7 +1256,7 @@
               },
               {
                 "property_key": "nation.0.foundedAt",
-                "property_value": "1795145712223"
+                "property_value": "1795157460267"
               },
               {
                 "property_key": "nation.0.founderId",
@@ -1232,7 +1268,7 @@
               },
               {
                 "property_key": "nation.0.id",
-                "property_value": "dca0479b-0fe5-4043-9ed2-f1689b068a38"
+                "property_value": "914c4e27-efa3-46f1-be09-23197a3e9334"
               },
               {
                 "property_key": "nation.0.kind",
@@ -1244,11 +1280,11 @@
               },
               {
                 "property_key": "nation.0.member.0.joinedAt",
-                "property_value": "1795145712227"
+                "property_value": "1795157460270"
               },
               {
                 "property_key": "nation.0.member.0.lastSeen",
-                "property_value": "1795145712227"
+                "property_value": "1795157460270"
               },
               {
                 "property_key": "nation.0.member.0.name",
@@ -1326,32 +1362,32 @@
           },
           "integrity": "ok"
         },
-        "pluginVersion": "0.4.0"
+        "pluginVersion": "0.5.0"
       },
       "status": "passed",
-      "finishedAt": "2026-11-20T06:13:03.199Z"
+      "finishedAt": "2026-11-20T07:50:16.650Z"
     },
     {
       "name": "new plugin loads original core city facilities inventory and national authority",
-      "startedAt": "2026-11-20T06:13:03.202Z",
+      "startedAt": "2026-11-20T07:50:16.651Z",
       "observed": {
         "city": {
-          "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-          "lastPeriod": 179515524,
+          "cityId": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+          "lastPeriod": 179515750,
           "stock": {
-            "minecraft:oak_planks": 76,
-            "minecraft:oak_log": 17,
-            "minecraft:paper": 28,
-            "minecraft:raw_iron": 4,
+            "minecraft:oak_planks": 56,
+            "minecraft:oak_log": 13,
+            "minecraft:paper": 20,
+            "minecraft:raw_iron": 2,
             "minecraft:iron_ingot": 0,
-            "minecraft:arrow": 52,
-            "minecraft:bread": 9,
-            "minecraft:wheat": 138
+            "minecraft:arrow": 26,
+            "minecraft:bread": 15,
+            "minecraft:wheat": 124
           },
           "buildings": 3,
-          "event": null,
+          "event": "EventState[type=drought, startPeriod=179515750, endPeriod=179515762, aftermathEndPeriod=179515764]",
           "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
-          "raw": "[14:14:09 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179515524,\"stock\":{\"minecraft:oak_planks\":76,\"minecraft:oak_log\":17,\"minecraft:paper\":28,\"minecraft:raw_iron\":4,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":52,\"minecraft:bread\":9,\"minecraft:wheat\":138},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
+          "raw": "[15:51:06 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"e5c52bca-38b8-48a4-bc83-76f3a8e98f1a\",\"lastPeriod\":179515750,\"stock\":{\"minecraft:oak_planks\":56,\"minecraft:oak_log\":13,\"minecraft:paper\":20,\"minecraft:raw_iron\":2,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":26,\"minecraft:bread\":15,\"minecraft:wheat\":124},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179515750, endPeriod\\u003d179515762, aftermathEndPeriod\\u003d179515764]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
         },
         "inventory": {
           "player": "StarWorldQA",
@@ -1371,14 +1407,14 @@
           ],
           "action": "inventory"
         },
-        "nation": "StarCore 公共快照：NationSnapshot[nationId=dca0479b-0fe5-4043-9ed2-f1689b068a38, name=SWTestStarWorldQA, capturedAt=2026-11-20T06:14:09.790836700Z, weather=clear, weatherResourceMultipliers={mineral=1.0, energy=1.0, agricultural=1.2, luxury=1.0}, epoch=Epoch[enabled=true, number=20778, start=2026-11-20T00:00:00Z, nextStart=2026-11-21T00:00:00Z], technologies=[], technologyModifiers={military_strength=0.0, crop_growth=0.0, transport_speed=0.0, production_speed=0.0, trade_bonus=0.0, resource_yield=0.0}, policy=, policyModifiers={military_bonus=0.0, trade_bonus=0.0, production_bonus=0.0}, resourceStock={strategic=0, energy=0, luxury=0, agricultural=0, mineral=0, chemical=0, industrial=0}, prosperity=51.0, warOpponents=[], diplomacy={}, processingRecipes=[ProcessingRecipe[id=recipe_advanced_food, inputs={timber=3, food=5}, outputs={food=15}, seconds=480], ProcessingRecipe[id=recipe_bulk_ore, inputs={ore=10}, outputs={rare_metal=1, ore=8}, seconds=1200], ProcessingRecipe[id=recipe_ore_to_rare_metal, inputs={ore=3}, outputs={rare_metal=1}, seconds=600], ProcessingRecipe[id=recipe_timber_to_food, inputs={timber=2}, outputs={food=5}, seconds=300], ProcessingRecipe[id=recipe_oil_processing, inputs={oil=5}, outputs={rare_metal=2, food=2}, seconds=900]], factoryCount=0, capabilities={policy=available, prosperity=available, war=available, diplomacy=available, resources=available, prosperity-submit=公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献, policy-effects=available, weather=available, technology-effects=available, technology=available, epoch=available, resource-transactions=available, processing=available, folia=核心可变模型无跨区域快照契约；仅Paper主线程捕获, factories=available}]"
+        "nation": "StarCore 公共快照：NationSnapshot[nationId=914c4e27-efa3-46f1-be09-23197a3e9334, name=SWTestStarWorldQA, capturedAt=2026-11-20T07:51:06.946540200Z, weather=clear, weatherResourceMultipliers={mineral=1.0, energy=1.0, agricultural=1.2, luxury=1.0}, epoch=Epoch[enabled=true, number=20778, start=2026-11-20T00:00:00Z, nextStart=2026-11-21T00:00:00Z], technologies=[], technologyModifiers={trade_bonus=0.0, resource_yield=0.0, military_strength=0.0, crop_growth=0.0, transport_speed=0.0, production_speed=0.0}, policy=, policyModifiers={production_bonus=0.0, military_bonus=0.0, trade_bonus=0.0}, resourceStock={industrial=0, strategic=0, energy=0, luxury=0, agricultural=0, mineral=0, chemical=0}, prosperity=51.0, warOpponents=[], diplomacy={}, processingRecipes=[ProcessingRecipe[id=recipe_advanced_food, inputs={timber=3, food=5}, outputs={food=15}, seconds=480], ProcessingRecipe[id=recipe_bulk_ore, inputs={ore=10}, outputs={rare_metal=1, ore=8}, seconds=1200], ProcessingRecipe[id=recipe_ore_to_rare_metal, inputs={ore=3}, outputs={rare_metal=1}, seconds=600], ProcessingRecipe[id=recipe_timber_to_food, inputs={timber=2}, outputs={food=5}, seconds=300], ProcessingRecipe[id=recipe_oil_processing, inputs={oil=5}, outputs={rare_metal=2, food=2}, seconds=900]], factoryCount=0, capabilities={processing=available, folia=核心可变模型无跨区域快照契约；仅Paper主线程捕获, factories=available, policy=available, prosperity=available, war=available, diplomacy=available, resources=available, prosperity-submit=公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献, policy-effects=available, weather=available, technology-effects=available, technology=available, epoch=available, resource-transactions=available}]"
       },
       "status": "passed",
-      "finishedAt": "2026-11-20T06:14:09.886Z"
+      "finishedAt": "2026-11-20T07:51:07.011Z"
     },
     {
       "name": "existing atlas and market remain usable without replacing seven old configurations",
-      "startedAt": "2026-11-20T06:14:09.888Z",
+      "startedAt": "2026-11-20T07:51:07.012Z",
       "observed": {
         "market": "实体商品挂牌（整批价格由国家创始人确认付款）",
         "atlasTitle": {
@@ -1397,47 +1433,47 @@
         "retainedMarketConfigurationSha256": "4392dc8d43011fcf9419b8c172824ebd178de0640117e1eb643123261fe4a438"
       },
       "status": "passed",
-      "finishedAt": "2026-11-20T06:14:10.152Z"
+      "finishedAt": "2026-11-20T07:51:07.148Z"
     },
     {
       "name": "normal new periods produce without replaying old transfers or offline catchup",
-      "startedAt": "2026-11-20T06:14:10.153Z",
+      "startedAt": "2026-11-20T07:51:07.149Z",
       "observed": {
         "initial": {
-          "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-          "lastPeriod": 179515524,
+          "cityId": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+          "lastPeriod": 179515750,
           "stock": {
-            "minecraft:oak_planks": 76,
-            "minecraft:oak_log": 17,
-            "minecraft:paper": 28,
-            "minecraft:raw_iron": 4,
+            "minecraft:oak_planks": 56,
+            "minecraft:oak_log": 13,
+            "minecraft:paper": 20,
+            "minecraft:raw_iron": 2,
             "minecraft:iron_ingot": 0,
-            "minecraft:arrow": 52,
-            "minecraft:bread": 9,
-            "minecraft:wheat": 138
+            "minecraft:arrow": 26,
+            "minecraft:bread": 15,
+            "minecraft:wheat": 124
           },
           "buildings": 3,
-          "event": null,
+          "event": "EventState[type=drought, startPeriod=179515750, endPeriod=179515762, aftermathEndPeriod=179515764]",
           "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
-          "raw": "[14:14:10 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179515524,\"stock\":{\"minecraft:oak_planks\":76,\"minecraft:oak_log\":17,\"minecraft:paper\":28,\"minecraft:raw_iron\":4,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":52,\"minecraft:bread\":9,\"minecraft:wheat\":138},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
+          "raw": "[15:51:07 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"e5c52bca-38b8-48a4-bc83-76f3a8e98f1a\",\"lastPeriod\":179515750,\"stock\":{\"minecraft:oak_planks\":56,\"minecraft:oak_log\":13,\"minecraft:paper\":20,\"minecraft:raw_iron\":2,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":26,\"minecraft:bread\":15,\"minecraft:wheat\":124},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179515750, endPeriod\\u003d179515762, aftermathEndPeriod\\u003d179515764]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
         },
         "later": {
-          "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-          "lastPeriod": 179515525,
+          "cityId": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+          "lastPeriod": 179516106,
           "stock": {
-            "minecraft:oak_planks": 86,
-            "minecraft:oak_log": 19,
-            "minecraft:paper": 32,
-            "minecraft:raw_iron": 5,
+            "minecraft:oak_planks": 66,
+            "minecraft:oak_log": 15,
+            "minecraft:paper": 24,
+            "minecraft:raw_iron": 3,
             "minecraft:iron_ingot": 0,
-            "minecraft:arrow": 65,
-            "minecraft:bread": 10,
-            "minecraft:wheat": 156
+            "minecraft:arrow": 39,
+            "minecraft:bread": 16,
+            "minecraft:wheat": 142
           },
           "buildings": 3,
           "event": null,
           "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
-          "raw": "[14:14:17 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179515525,\"stock\":{\"minecraft:oak_planks\":86,\"minecraft:oak_log\":19,\"minecraft:paper\":32,\"minecraft:raw_iron\":5,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":65,\"minecraft:bread\":10,\"minecraft:wheat\":156},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
+          "raw": "[15:51:07 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"e5c52bca-38b8-48a4-bc83-76f3a8e98f1a\",\"lastPeriod\":179516106,\"stock\":{\"minecraft:oak_planks\":66,\"minecraft:oak_log\":15,\"minecraft:paper\":24,\"minecraft:raw_iron\":3,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":39,\"minecraft:bread\":16,\"minecraft:wheat\":142},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
         },
         "inventory": {
           "player": "StarWorldQA",
@@ -1459,11 +1495,11 @@
         }
       },
       "status": "passed",
-      "finishedAt": "2026-11-20T06:14:17.491Z"
+      "finishedAt": "2026-11-20T07:51:07.653Z"
     },
     {
       "name": "first normal shutdown commits additive schemas and preserves durable old receipts",
-      "startedAt": "2026-11-20T06:14:17.492Z",
+      "startedAt": "2026-11-20T07:51:07.654Z",
       "observed": {
         "state": {
           "world": {
@@ -1478,6 +1514,10 @@
               "culture_decay",
               "culture_dynamics_schema",
               "culture_exchange",
+              "disaster_recovery_ledger",
+              "disaster_response",
+              "disaster_response_history",
+              "disaster_response_schema",
               "evolution_city",
               "evolution_event",
               "evolution_facility",
@@ -1530,15 +1570,15 @@
               "stock",
               "transfer"
             ],
-            "database_sha256": "c0b12bd22bd063546ca627804577b4a4b2095332b12e428f3f0e4c6659f056c0",
+            "database_sha256": "f54415181f5f7620af83de0ac02b58217e4ab8873b511dad03c3aa2acd41ed41",
             "rows": {
               "city_state": [
                 {
-                  "id": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                  "id": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
                   "name": "SWCityStarWorldQA",
                   "civilization": "agrarian",
-                  "last_period": 179515525,
+                  "last_period": 179516106,
                   "last_report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
                   "event_type": null,
                   "event_start": null,
@@ -1548,37 +1588,37 @@
               ],
               "building": [
                 {
-                  "id": "18f6fb77-997b-4851-bc8b-085bd96c5df1",
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
-                  "type": "farm",
-                  "world": "150a6127-175d-4238-95aa-e0cc2a0a3ec1",
-                  "world_name": "baseline-final09",
-                  "x": 8,
-                  "y": 80,
-                  "z": 8,
-                  "level": 1
-                },
-                {
-                  "id": "1a2244a3-6aa0-44d7-9404-406bd05cd404",
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                  "id": "05c67786-de3b-45b4-af5b-5a0628ca706f",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
                   "type": "sawmill",
-                  "world": "150a6127-175d-4238-95aa-e0cc2a0a3ec1",
-                  "world_name": "baseline-final09",
+                  "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                  "world_name": "baseline04-world",
                   "x": 24,
                   "y": 80,
                   "z": 8,
                   "level": 1
                 },
                 {
-                  "id": "afda74e9-9d12-4df8-b14b-dc3de2cfde0a",
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                  "id": "4893f8b1-28c7-487e-afce-79a8d2ca5b61",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
                   "type": "workshop",
-                  "world": "150a6127-175d-4238-95aa-e0cc2a0a3ec1",
-                  "world_name": "baseline-final09",
+                  "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                  "world_name": "baseline04-world",
                   "x": 40,
+                  "y": 80,
+                  "z": 8,
+                  "level": 1
+                },
+                {
+                  "id": "a26ee39f-9381-462c-a32f-bd53026be3c8",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                  "type": "farm",
+                  "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                  "world_name": "baseline04-world",
+                  "x": 8,
                   "y": 80,
                   "z": 8,
                   "level": 1
@@ -1586,173 +1626,173 @@
               ],
               "stock": [
                 {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                   "item": "minecraft:arrow",
-                  "amount": 65
+                  "amount": 39
                 },
                 {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                   "item": "minecraft:bread",
-                  "amount": 10
+                  "amount": 16
                 },
                 {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                   "item": "minecraft:iron_ingot",
                   "amount": 0
                 },
                 {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                   "item": "minecraft:oak_log",
-                  "amount": 19
+                  "amount": 15
                 },
                 {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                   "item": "minecraft:oak_planks",
-                  "amount": 86
+                  "amount": 66
                 },
                 {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                   "item": "minecraft:paper",
-                  "amount": 32
+                  "amount": 24
                 },
                 {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                   "item": "minecraft:raw_iron",
-                  "amount": 5
+                  "amount": 3
                 },
                 {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                   "item": "minecraft:wheat",
-                  "amount": 156
+                  "amount": 142
                 }
               ],
               "transfer": [
                 {
-                  "id": "1f9a7a3d-59c3-4413-a9e0-a8a299cca64a",
+                  "id": "02409d6a-4870-4718-b440-7637c409b8dc",
                   "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "direction": "DEPOSIT",
+                  "item": "minecraft:arrow",
+                  "amount": 4,
+                  "state": "COMPLETED",
+                  "created": 1795157467768,
+                  "decision": "runtime"
+                },
+                {
+                  "id": "6fd61d4d-f3c1-4229-8f50-b6b721574d1d",
+                  "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                   "direction": "DEPOSIT",
                   "item": "minecraft:wheat",
                   "amount": 16,
                   "state": "COMPLETED",
-                  "created": 1795145717856,
+                  "created": 1795157469444,
                   "decision": "runtime"
                 },
                 {
-                  "id": "4ed2d3c1-6192-4cc9-9c53-1bf57bd1cdd9",
+                  "id": "932c70d3-b555-4aa0-a26b-80cfc79f34f5",
                   "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "direction": "DEPOSIT",
-                  "item": "minecraft:arrow",
-                  "amount": 4,
-                  "state": "COMPLETED",
-                  "created": 1795145716310,
-                  "decision": "runtime"
-                },
-                {
-                  "id": "68b543b3-c7aa-45bd-8bb6-3a2c9cb0c459",
-                  "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                   "direction": "DEPOSIT",
                   "item": "minecraft:wheat",
                   "amount": 17,
                   "state": "CANCELLED",
-                  "created": 1795145717653,
+                  "created": 1795157469242,
                   "decision": "no inventory mutation"
                 },
                 {
-                  "id": "dc6bd16a-05de-43b5-9f00-07157ceb37f1",
+                  "id": "d26a8f7a-20c5-48c6-ac7e-b66ce24bf43c",
                   "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                   "direction": "WITHDRAW",
                   "item": "minecraft:arrow",
                   "amount": 4,
                   "state": "COMPLETED",
-                  "created": 1795145716213,
+                  "created": 1795157467571,
                   "decision": "runtime"
                 }
               ],
               "nation_state": [
                 {
-                  "id": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                  "id": "914c4e27-efa3-46f1-be09-23197a3e9334",
                   "civilization": "agrarian",
                   "changed_period": -1000000
                 }
               ],
               "national_evolution": [
                 {
-                  "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                  "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
                   "specialty": "",
                   "changed_period": -1000000
                 }
               ],
               "region": [
                 {
-                  "id": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+                  "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
                   "terrain": "plains",
-                  "last_regen": 179515525
+                  "last_regen": 179516106
                 },
                 {
-                  "id": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+                  "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
                   "terrain": "plains",
-                  "last_regen": 179515525
+                  "last_regen": 179516106
                 },
                 {
-                  "id": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+                  "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
                   "terrain": "plains",
-                  "last_regen": 179515525
+                  "last_regen": 179516106
                 }
               ],
               "reserve": [
                 {
-                  "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
                   "resource": "fertility",
                   "amount": 688
                 },
                 {
-                  "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
                   "resource": "ore",
                   "amount": 100
                 },
                 {
-                  "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
                   "resource": "timber",
                   "amount": 160
                 },
                 {
-                  "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
                   "resource": "fertility",
                   "amount": 700
                 },
                 {
-                  "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
                   "resource": "ore",
                   "amount": 100
                 },
                 {
-                  "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
                   "resource": "timber",
-                  "amount": 110
+                  "amount": 122
                 },
                 {
-                  "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
                   "resource": "fertility",
                   "amount": 700
                 },
                 {
-                  "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
                   "resource": "ore",
-                  "amount": 70
+                  "amount": 82
                 },
                 {
-                  "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
                   "resource": "timber",
                   "amount": 160
                 }
               ],
               "city_authority": [
                 {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                   "active": 1
                 }
               ],
@@ -1760,49 +1800,44 @@
                 {
                   "id": 1,
                   "period_seconds": 10,
-                  "epoch_origin": 1795145707,
-                  "period_origin": 179514570
+                  "epoch_origin": 1795157455,
+                  "period_origin": 179515745
                 }
               ],
               "settlement": [
                 {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "period": 179514570,
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179515745,
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；林场与锯木厂: 维护食物不足；矿场与军工作坊: 维护食物不足"
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179515746,
                   "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
                 },
                 {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "period": 179514571,
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179515747,
+                  "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179515748,
+                  "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179515749,
+                  "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179515750,
                   "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
                 },
                 {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "period": 179514572,
-                  "report": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产"
-                },
-                {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "period": 179514573,
-                  "report": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产"
-                },
-                {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "period": 179514574,
-                  "report": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产"
-                },
-                {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "period": 179514575,
-                  "report": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；"
-                },
-                {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "period": 179515524,
-                  "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
-                },
-                {
-                  "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                  "period": 179515525,
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179516106,
                   "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
                 }
               ],
@@ -1829,11 +1864,20 @@
               ],
               "market_delivery_receipt": [],
               "market_delivery_stat": [],
+              "disaster_response_schema": [
+                {
+                  "id": 1,
+                  "version": 1
+                }
+              ],
+              "disaster_response": [],
+              "disaster_response_history": [],
+              "disaster_recovery_ledger": [],
               "market_schema": [
                 {
                   "id": 1,
                   "version": 1,
-                  "namespace": "0a371fd7-aa23-479e-b2a6-845f301875b5"
+                  "namespace": "3ade6b50-0bb9-457b-bd14-5351a22f5d8b"
                 }
               ],
               "market_listing": [],
@@ -1847,16 +1891,16 @@
               ],
               "culture_decay": [
                 {
-                  "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
-                  "last_period": 179515524
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                  "last_period": 179516106
                 },
                 {
-                  "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
-                  "last_period": 179515524
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                  "last_period": 179516106
                 },
                 {
-                  "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
-                  "last_period": 179515524
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                  "last_period": 179516106
                 }
               ],
               "logistics_reroute": [],
@@ -1984,7 +2028,7 @@
               "weather_weather_state_meta",
               "zone_state"
             ],
-            "database_sha256": "6d0280598f0a77f17474ee31f270e4fa5e43ee72327a929ee31847e6e2a20c42",
+            "database_sha256": "1aeb7e06e4732aff0b6b9c7e7098360350a4f583e42190b32ef519541f525a13",
             "rows": {
               "starcore_nation_state": [
                 {
@@ -1997,7 +2041,7 @@
                 },
                 {
                   "property_key": "nation.0.capitalLocation",
-                  "property_value": "baseline-final09,8.00,64.00,8.00,0.00,0.00"
+                  "property_value": "baseline04-world,8.00,64.00,8.00,0.00,0.00"
                 },
                 {
                   "property_key": "nation.0.experience",
@@ -2005,7 +2049,7 @@
                 },
                 {
                   "property_key": "nation.0.foundedAt",
-                  "property_value": "1795145712223"
+                  "property_value": "1795157460267"
                 },
                 {
                   "property_key": "nation.0.founderId",
@@ -2017,7 +2061,7 @@
                 },
                 {
                   "property_key": "nation.0.id",
-                  "property_value": "dca0479b-0fe5-4043-9ed2-f1689b068a38"
+                  "property_value": "914c4e27-efa3-46f1-be09-23197a3e9334"
                 },
                 {
                   "property_key": "nation.0.kind",
@@ -2029,11 +2073,11 @@
                 },
                 {
                   "property_key": "nation.0.member.0.joinedAt",
-                  "property_value": "1795145712227"
+                  "property_value": "1795157460270"
                 },
                 {
                   "property_key": "nation.0.member.0.lastSeen",
-                  "property_value": "1795145712227"
+                  "property_value": "1795157460270"
                 },
                 {
                   "property_key": "nation.0.member.0.name",
@@ -2111,40 +2155,35 @@
             },
             "integrity": "ok"
           },
-          "pluginVersion": "0.4.0"
+          "pluginVersion": "0.5.0"
         },
         "newSettlements": [
           {
-            "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-            "period": 179515524,
-            "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
-          },
-          {
-            "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-            "period": 179515525,
+            "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+            "period": 179516106,
             "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
           }
         ],
-        "elapsedSeconds": 77.183,
+        "elapsedSeconds": 53.308,
         "oldStock": {
+          "minecraft:arrow": 26,
+          "minecraft:bread": 15,
+          "minecraft:iron_ingot": 0,
+          "minecraft:oak_log": 13,
+          "minecraft:oak_planks": 56,
+          "minecraft:paper": 20,
+          "minecraft:raw_iron": 2,
+          "minecraft:wheat": 124
+        },
+        "currentStock": {
           "minecraft:arrow": 39,
-          "minecraft:bread": 8,
+          "minecraft:bread": 16,
           "minecraft:iron_ingot": 0,
           "minecraft:oak_log": 15,
           "minecraft:oak_planks": 66,
           "minecraft:paper": 24,
           "minecraft:raw_iron": 3,
-          "minecraft:wheat": 120
-        },
-        "currentStock": {
-          "minecraft:arrow": 65,
-          "minecraft:bread": 10,
-          "minecraft:iron_ingot": 0,
-          "minecraft:oak_log": 19,
-          "minecraft:oak_planks": 86,
-          "minecraft:paper": 32,
-          "minecraft:raw_iron": 5,
-          "minecraft:wheat": 156
+          "minecraft:wheat": 142
         },
         "perPeriodUpperBound": {
           "minecraft:wheat": 360,
@@ -2159,29 +2198,29 @@
         }
       },
       "status": "passed",
-      "finishedAt": "2026-11-20T06:14:19.476Z"
+      "finishedAt": "2026-11-20T07:51:09.402Z"
     },
     {
       "name": "second startup restores the same upgraded city and protected player inventory",
-      "startedAt": "2026-11-20T06:14:19.477Z",
+      "startedAt": "2026-11-20T07:51:09.403Z",
       "observed": {
         "city": {
-          "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-          "lastPeriod": 179515525,
+          "cityId": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+          "lastPeriod": 179516106,
           "stock": {
-            "minecraft:oak_planks": 86,
-            "minecraft:oak_log": 19,
-            "minecraft:paper": 32,
-            "minecraft:raw_iron": 5,
+            "minecraft:oak_planks": 66,
+            "minecraft:oak_log": 15,
+            "minecraft:paper": 24,
+            "minecraft:raw_iron": 3,
             "minecraft:iron_ingot": 0,
-            "minecraft:arrow": 65,
-            "minecraft:bread": 10,
-            "minecraft:wheat": 156
+            "minecraft:arrow": 39,
+            "minecraft:bread": 16,
+            "minecraft:wheat": 142
           },
           "buildings": 3,
           "event": null,
           "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
-          "raw": "[14:14:47 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179515525,\"stock\":{\"minecraft:oak_planks\":86,\"minecraft:oak_log\":19,\"minecraft:paper\":32,\"minecraft:raw_iron\":5,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":65,\"minecraft:bread\":10,\"minecraft:wheat\":156},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
+          "raw": "[15:51:38 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"e5c52bca-38b8-48a4-bc83-76f3a8e98f1a\",\"lastPeriod\":179516106,\"stock\":{\"minecraft:oak_planks\":66,\"minecraft:oak_log\":15,\"minecraft:paper\":24,\"minecraft:raw_iron\":3,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":39,\"minecraft:bread\":16,\"minecraft:wheat\":142},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
         },
         "inventory": {
           "player": "StarWorldQA",
@@ -2203,11 +2242,11 @@
         }
       },
       "status": "passed",
-      "finishedAt": "2026-11-20T06:14:47.216Z"
+      "finishedAt": "2026-11-20T07:51:39.066Z"
     },
     {
       "name": "second normal shutdown preserves payment and transfer tombstones with no invented market orders",
-      "startedAt": "2026-11-20T06:14:47.218Z",
+      "startedAt": "2026-11-20T07:51:39.067Z",
       "observed": {
         "world": {
           "schema": 2,
@@ -2221,6 +2260,10 @@
             "culture_decay",
             "culture_dynamics_schema",
             "culture_exchange",
+            "disaster_recovery_ledger",
+            "disaster_response",
+            "disaster_response_history",
+            "disaster_response_schema",
             "evolution_city",
             "evolution_event",
             "evolution_facility",
@@ -2273,15 +2316,15 @@
             "stock",
             "transfer"
           ],
-          "database_sha256": "7449f77b7fc0bd2c094d0292dcfc9a84063f159d0ce49af41f8c21bf99f4acb5",
+          "database_sha256": "11edae79989c36d85886576b886c5b477e38fe8dfc95e948916d3b756d71ebba",
           "rows": {
             "city_state": [
               {
-                "id": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                "id": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
                 "name": "SWCityStarWorldQA",
                 "civilization": "agrarian",
-                "last_period": 179515525,
+                "last_period": 179516106,
                 "last_report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
                 "event_type": null,
                 "event_start": null,
@@ -2291,37 +2334,37 @@
             ],
             "building": [
               {
-                "id": "18f6fb77-997b-4851-bc8b-085bd96c5df1",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
-                "type": "farm",
-                "world": "150a6127-175d-4238-95aa-e0cc2a0a3ec1",
-                "world_name": "baseline-final09",
-                "x": 8,
-                "y": 80,
-                "z": 8,
-                "level": 1
-              },
-              {
-                "id": "1a2244a3-6aa0-44d7-9404-406bd05cd404",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                "id": "05c67786-de3b-45b4-af5b-5a0628ca706f",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
                 "type": "sawmill",
-                "world": "150a6127-175d-4238-95aa-e0cc2a0a3ec1",
-                "world_name": "baseline-final09",
+                "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                "world_name": "baseline04-world",
                 "x": 24,
                 "y": 80,
                 "z": 8,
                 "level": 1
               },
               {
-                "id": "afda74e9-9d12-4df8-b14b-dc3de2cfde0a",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                "id": "4893f8b1-28c7-487e-afce-79a8d2ca5b61",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
                 "type": "workshop",
-                "world": "150a6127-175d-4238-95aa-e0cc2a0a3ec1",
-                "world_name": "baseline-final09",
+                "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                "world_name": "baseline04-world",
                 "x": 40,
+                "y": 80,
+                "z": 8,
+                "level": 1
+              },
+              {
+                "id": "a26ee39f-9381-462c-a32f-bd53026be3c8",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "type": "farm",
+                "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                "world_name": "baseline04-world",
+                "x": 8,
                 "y": 80,
                 "z": 8,
                 "level": 1
@@ -2329,173 +2372,173 @@
             ],
             "stock": [
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:arrow",
-                "amount": 65
+                "amount": 39
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:bread",
-                "amount": 10
+                "amount": 16
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:iron_ingot",
                 "amount": 0
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:oak_log",
-                "amount": 19
+                "amount": 15
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:oak_planks",
-                "amount": 86
+                "amount": 66
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:paper",
-                "amount": 32
+                "amount": 24
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:raw_iron",
-                "amount": 5
+                "amount": 3
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "item": "minecraft:wheat",
-                "amount": 156
+                "amount": 142
               }
             ],
             "transfer": [
               {
-                "id": "1f9a7a3d-59c3-4413-a9e0-a8a299cca64a",
+                "id": "02409d6a-4870-4718-b440-7637c409b8dc",
                 "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "direction": "DEPOSIT",
+                "item": "minecraft:arrow",
+                "amount": 4,
+                "state": "COMPLETED",
+                "created": 1795157467768,
+                "decision": "runtime"
+              },
+              {
+                "id": "6fd61d4d-f3c1-4229-8f50-b6b721574d1d",
+                "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "direction": "DEPOSIT",
                 "item": "minecraft:wheat",
                 "amount": 16,
                 "state": "COMPLETED",
-                "created": 1795145717856,
+                "created": 1795157469444,
                 "decision": "runtime"
               },
               {
-                "id": "4ed2d3c1-6192-4cc9-9c53-1bf57bd1cdd9",
+                "id": "932c70d3-b555-4aa0-a26b-80cfc79f34f5",
                 "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "direction": "DEPOSIT",
-                "item": "minecraft:arrow",
-                "amount": 4,
-                "state": "COMPLETED",
-                "created": 1795145716310,
-                "decision": "runtime"
-              },
-              {
-                "id": "68b543b3-c7aa-45bd-8bb6-3a2c9cb0c459",
-                "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "direction": "DEPOSIT",
                 "item": "minecraft:wheat",
                 "amount": 17,
                 "state": "CANCELLED",
-                "created": 1795145717653,
+                "created": 1795157469242,
                 "decision": "no inventory mutation"
               },
               {
-                "id": "dc6bd16a-05de-43b5-9f00-07157ceb37f1",
+                "id": "d26a8f7a-20c5-48c6-ac7e-b66ce24bf43c",
                 "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "direction": "WITHDRAW",
                 "item": "minecraft:arrow",
                 "amount": 4,
                 "state": "COMPLETED",
-                "created": 1795145716213,
+                "created": 1795157467571,
                 "decision": "runtime"
               }
             ],
             "nation_state": [
               {
-                "id": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                "id": "914c4e27-efa3-46f1-be09-23197a3e9334",
                 "civilization": "agrarian",
                 "changed_period": -1000000
               }
             ],
             "national_evolution": [
               {
-                "nation": "dca0479b-0fe5-4043-9ed2-f1689b068a38",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
                 "specialty": "",
                 "changed_period": -1000000
               }
             ],
             "region": [
               {
-                "id": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+                "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
                 "terrain": "plains",
-                "last_regen": 179515525
+                "last_regen": 179516106
               },
               {
-                "id": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+                "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
                 "terrain": "plains",
-                "last_regen": 179515525
+                "last_regen": 179516106
               },
               {
-                "id": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+                "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
                 "terrain": "plains",
-                "last_regen": 179515525
+                "last_regen": 179516106
               }
             ],
             "reserve": [
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
                 "resource": "fertility",
                 "amount": 688
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
                 "resource": "ore",
                 "amount": 100
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
                 "resource": "timber",
                 "amount": 160
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
                 "resource": "fertility",
                 "amount": 700
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
                 "resource": "ore",
                 "amount": 100
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
                 "resource": "timber",
-                "amount": 110
+                "amount": 122
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
                 "resource": "fertility",
                 "amount": 700
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
                 "resource": "ore",
-                "amount": 70
+                "amount": 82
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
                 "resource": "timber",
                 "amount": 160
               }
             ],
             "city_authority": [
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
                 "active": 1
               }
             ],
@@ -2503,49 +2546,44 @@
               {
                 "id": 1,
                 "period_seconds": 10,
-                "epoch_origin": 1795145707,
-                "period_origin": 179514570
+                "epoch_origin": 1795157455,
+                "period_origin": 179515745
               }
             ],
             "settlement": [
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179514570,
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515745,
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；林场与锯木厂: 维护食物不足；矿场与军工作坊: 维护食物不足"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515746,
                 "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179514571,
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515747,
+                "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515748,
+                "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515749,
+                "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515750,
                 "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
               },
               {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179514572,
-                "report": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产"
-              },
-              {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179514573,
-                "report": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产"
-              },
-              {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179514574,
-                "report": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产"
-              },
-              {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179514575,
-                "report": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；"
-              },
-              {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179515524,
-                "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
-              },
-              {
-                "city": "0722184b-a3be-4da1-b5cc-f148d69898b2",
-                "period": 179515525,
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179516106,
                 "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
               }
             ],
@@ -2572,11 +2610,20 @@
             ],
             "market_delivery_receipt": [],
             "market_delivery_stat": [],
+            "disaster_response_schema": [
+              {
+                "id": 1,
+                "version": 1
+              }
+            ],
+            "disaster_response": [],
+            "disaster_response_history": [],
+            "disaster_recovery_ledger": [],
             "market_schema": [
               {
                 "id": 1,
                 "version": 1,
-                "namespace": "0a371fd7-aa23-479e-b2a6-845f301875b5"
+                "namespace": "3ade6b50-0bb9-457b-bd14-5351a22f5d8b"
               }
             ],
             "market_listing": [],
@@ -2590,16 +2637,16 @@
             ],
             "culture_decay": [
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:0:0",
-                "last_period": 179515524
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                "last_period": 179516106
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:1:0",
-                "last_period": 179515524
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                "last_period": 179516106
               },
               {
-                "region": "150a6127-175d-4238-95aa-e0cc2a0a3ec1:2:0",
-                "last_period": 179515524
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                "last_period": 179516106
               }
             ],
             "logistics_reroute": [],
@@ -2727,7 +2774,7 @@
             "weather_weather_state_meta",
             "zone_state"
           ],
-          "database_sha256": "2c7f82eac704288a02798efe826aec471454f5bdfd444b068f5e08d4c2f740d2",
+          "database_sha256": "7d208653ceb6a0ed480939bd477c3702dbb587a30196cae345d87796865df989",
           "rows": {
             "starcore_nation_state": [
               {
@@ -2740,7 +2787,7 @@
               },
               {
                 "property_key": "nation.0.capitalLocation",
-                "property_value": "baseline-final09,8.00,64.00,8.00,0.00,0.00"
+                "property_value": "baseline04-world,8.00,64.00,8.00,0.00,0.00"
               },
               {
                 "property_key": "nation.0.experience",
@@ -2748,7 +2795,7 @@
               },
               {
                 "property_key": "nation.0.foundedAt",
-                "property_value": "1795145712223"
+                "property_value": "1795157460267"
               },
               {
                 "property_key": "nation.0.founderId",
@@ -2760,7 +2807,7 @@
               },
               {
                 "property_key": "nation.0.id",
-                "property_value": "dca0479b-0fe5-4043-9ed2-f1689b068a38"
+                "property_value": "914c4e27-efa3-46f1-be09-23197a3e9334"
               },
               {
                 "property_key": "nation.0.kind",
@@ -2772,11 +2819,11 @@
               },
               {
                 "property_key": "nation.0.member.0.joinedAt",
-                "property_value": "1795145712227"
+                "property_value": "1795157460270"
               },
               {
                 "property_key": "nation.0.member.0.lastSeen",
-                "property_value": "1795145712227"
+                "property_value": "1795157460270"
               },
               {
                 "property_key": "nation.0.member.0.name",
@@ -2854,11 +2901,11 @@
           },
           "integrity": "ok"
         },
-        "pluginVersion": "0.4.0"
+        "pluginVersion": "0.5.0"
       },
       "status": "passed",
-      "finishedAt": "2026-11-20T06:14:48.904Z"
+      "finishedAt": "2026-11-20T07:51:41.740Z"
     }
   ],
-  "finishedAt": "2026-11-20T06:14:48.906Z"
+  "finishedAt": "2026-11-20T07:51:41.742Z"
 }

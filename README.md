@@ -1,6 +1,6 @@
 # StarWorld
 
-持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **0.4.0**。
+持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **0.5.0**。
 
 代码仓库：[addxiaoyi/StarWorld](https://github.com/addxiaoyi/StarWorld)。技术基线：Java 21、Paper **1.21.11**，CraftEngine **26.9.1** 为可选内容依赖。审计固定 StarCore `f769e62799e769a18fe51305b545869a17f80cd1` 与本轮 SenLuo 提交 `3e774d00567deb9cb65eee8da6de8a65254e5b8e`，见 [StarCore 审计](docs/audit-starcore.md)、[森罗审计](docs/audit-senluo.md)。
 
@@ -14,11 +14,11 @@
 
 Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME` 指向 JDK 21。Maven Wrapper 使用 Maven 3.9.11；插件包含 SQLite JDBC，不打包外部核心或森罗实现。
 
-产物为 `target/starworld-0.4.0.jar` 和 `target/starworld-0.4.0-sources.jar`；发布脚本生成 `target/StarWorld-0.4.0.zip`，包含插件、源码、配置、文档与校验和。只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
+产物为 `target/starworld-0.5.0.jar` 和 `target/starworld-0.5.0-sources.jar`；发布脚本仅在同一JAR的完整套件均通过后生成完整ZIP；0.5当前为中间里程碑，原0.4完整交付包已单独保留。只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
 
 1. 正常关服，备份整个 `plugins/StarWorld/`。升级时保留数据库和持久配置 ID。
 2. 放置插件 JAR，使用 Paper 1.21.11 和审计兼容的 StarCore 启动。
-3. 首次生成 `config.yml`、`definitions.yml`、`evolution.yml`、`logistics.yml`、`exports.yml`、`life.yml`、`market.yml` 及 `starworld.db`。
+3. 首次生成 `config.yml`、`definitions.yml`、`evolution.yml`、`logistics.yml`、`exports.yml`、`life.yml`、`market.yml`、`disaster-response.yml` 及 `starworld.db`。
 4. `/sw status` 查看真实能力；用 StarCore 自身命令建立国家、城市和国家/城市**两层区块领土**。
 5. 放置堆肥桶、切石机、高炉，看向六格内本城锚点，执行 `/sw register farm|sawmill|workshop`。先积累粮食，再供应林业和军工。
 
@@ -26,7 +26,7 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 
 ## 已实现的世界玩法
 
-| 系统 | 0.4.0 行为 |
+| 系统 | 当前行为 |
 | --- | --- |
 | 六类地理 | 山脉、河流、平原、森林、沙漠、雪原；农业/运输/军事属性；地区矿藏/林木/肥力及恢复率 |
 | 基础产业 | 肥力→小麦→面包；面包维护+林木→原木→木板；面包维护+矿藏→粗铁→铁锭→箭；新增造纸、食品加工与盾牌 |
@@ -52,11 +52,14 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 
 默认五分钟一周期，停服和未加载区块不补发。产业需要维护和投入，注销登记不刷新矿藏。设施损坏、区块卸载、城市/国家丢领或转国会停产。失去资源地会切断原料；战争可暂停商路，军工城市需要粮食与材料补给。
 
+0.5 增加六种灾害应对策略和治理GUI：真实物资成本、同事件/请求去重、次期缓解、有总预算的地区恢复及损坏/失地暂停，见[灾害治理](docs/disaster-governance.md)。
+
 ## 常用命令
 
 ```text
 /sw menu|develop|status|stock|buildings|development|history|culture|nation
-/sw atlas|regions|market-menu
+/sw atlas|regions|market-menu|disaster-menu
+/sw disaster options|respond <策略ID> <requestUUID>|status [页]|history [页]
 /sw market help
 /sw register <设施ID>
 /sw deposit|withdraw <物品ID> <1–2304>
@@ -98,6 +101,7 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 | [exports.yml](src/main/resources/exports.yml) | 国家资源出口契约及有效设施要求 |
 | [life.yml示例](examples/life.yml) | 首次由完整默认值生成；职业、宴会、家具、乐器、限额及效果 |
 | [market.yml示例](examples/market.yml) | 首次生成；实物商品白名单、整批数量/价格限制、付款批量与挂牌期限 |
+| [disaster-response.yml](src/main/resources/disaster-response.yml) | 六种救灾策略、真实成本、恢复总预算、期限和有效设施要求 |
 
 自定义物品须为真实 CE ID；未知/未加载 ID 不静默替换。Cookery 菜肴和 Tavern 饮品以实际入库商品参与宴会，不用提交前事件刷奖励。Deco 通过公共 CE 家具 API 对登记 UUID 逐期复核。MusicPlus 没有公开完成 API；`/sw concert` 是 StarWorld 自己控制的现场演奏，可用真实森罗乐器，不自动奖励 `/kmusic`。见[生活联动](docs/life-integrations.md)、[森罗配方示例](examples/senluo-recipes.yml)。
 
@@ -105,7 +109,7 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 
 [需求映射](docs/requirements.md) · [架构](docs/architecture.md) · [Java API](docs/API.md) · [玩法验收](docs/gameplay.md) · [地区地图册](docs/geography.md) · [交通贸易](docs/logistics.md) · [国库实物市场](docs/market.md) · [国家服务](docs/core-extension.md) · [战斗联动](docs/combat.md) · [生活联动](docs/life-integrations.md) · [森罗实服验收](docs/senluo-acceptance.md) · [存档维护](docs/storage-maintenance.md) · [千城基线](docs/scale.md) · [测试结果](docs/test-results.md) · [后续边界](docs/roadmap.md)
 
-0.4.0 在既有六系统上增加路线维护成本规划、真实到货统计和在线备份。同一最终JAR已通过245项自动化测试、117个实服阶段及缺依赖两次启动；其中经营套件29阶段、三次启动，升级与最新森罗候选回归均已完成，见[测试结果](docs/test-results.md)。用户选择继续深化原始六系统，后续版本见[开发计划](docs/development-plan.md)。0.3.0已交付的232项测试和88阶段实服结果保留在[历史报告](docs/history/test-results-0.3.0.md)，不作为新JAR通过证明。
+0.5.0 在既有六系统上深化灾害治理与地区恢复，已通过291项自动化测试、22阶段新实服和7阶段0.4升级。最近完整六系统回归为[0.4历史报告](docs/history/test-results-0.4.0.md)；最终1.0会重新核对最终JAR全部证据。用户选择继续深化原始六系统，后续版本见[开发计划](docs/development-plan.md)。0.3.0已交付的232项测试和88阶段实服结果保留在[历史报告](docs/history/test-results-0.3.0.md)，不作为新JAR通过证明。
 
 生成完整交付包前，先运行以下命令；各参数必须指向同一最终 JAR 的实际完整通过目录：
 

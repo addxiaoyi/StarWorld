@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "version": "0.4.0",
-  "recorded_at": "2026-11-20T05:12:44.602870+00:00",
-  "command": "./mvnw.cmd -B --no-transfer-progress -Dstarworld.testHeap=256m clean verify",
+  "version": "0.5.0",
+  "recorded_at": "2026-11-20T07:56:09.695789+00:00",
+  "command": "./mvnw.cmd -B --no-transfer-progress -Dstarworld.testHeap=256m verify",
   "java": "21.0.13.1+2",
-  "artifact_sha256": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
+  "artifact_sha256": "096013edfdb8a3ca56654b15966cc0e319f336043ff8ed9ef0f8ef6d825bc5e7",
   "totals": {
-    "tests": 245,
+    "tests": 291,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -20,8 +20,22 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.disaster.DisasterResponseDefinitionsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.disaster.DisasterResponseServiceTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.domain.SimulationTest",
-      "tests": 13,
+      "tests": 16,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -209,8 +223,15 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.runtime.DisasterControllerTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.runtime.ExpansionRuntimeTest",
-      "tests": 7,
+      "tests": 11,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -228,32 +249,39 @@
       "failures": 0,
       "errors": 0,
       "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.ui.DisasterMenuTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
     }
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 34136,
-      "missed": 13360
+      "covered": 39814,
+      "missed": 13778
     },
     "BRANCH": {
-      "covered": 2235,
-      "missed": 1836
+      "covered": 2693,
+      "missed": 2082
     },
     "LINE": {
-      "covered": 2336,
-      "missed": 615
+      "covered": 2593,
+      "missed": 613
     },
     "COMPLEXITY": {
-      "covered": 1561,
-      "missed": 1899
+      "covered": 1814,
+      "missed": 2146
     },
     "METHOD": {
-      "covered": 896,
-      "missed": 485
+      "covered": 1027,
+      "missed": 492
     },
     "CLASS": {
-      "covered": 149,
-      "missed": 14
+      "covered": 164,
+      "missed": 13
     }
   }
 }

@@ -28,7 +28,11 @@ async function fixture(server,action,bot,suffix=''){
     for(const line of lines){const i=line.indexOf('SW_FIXTURE_EXPANSION ');if(i<0)continue;const parsed=JSON.parse(line.slice(i+'SW_FIXTURE_EXPANSION '.length));if(parsed.action===action&&parsed.player===bot.username)return parsed.observed;}return null;
   },20000,`fixture ${action} ${bot.username}`);
 }
-async function snapshot(server,bot){const s=await fixture(server,'exp-progress',bot);assert(s.city&&s.atlas&&s.geography&&s.development&&s.nation);assert.match(s.version,/^0\.3\./);for(const n of Object.values(s.city.stock))assert(Number.isSafeInteger(n)&&n>=0);return s;}
+async function snapshot(server,bot){return waitUntil(async()=>{const s=await fixture(server,'exp-progress',bot);assert(s.city&&s.atlas&&s.geography&&s.development&&s.nation);assert.match(s.version,/^0\.3\./);for(const n of Object.values(s.city.stock))assert(Number.isSafeInteger(n)&&n>=0);
+  // Public city/atlas Futures precede the fixture's profile+culture IO job. A normal
+  // settlement can commit between those reads, so only compare one coherent period.
+  const period=s.city.lastPeriod;if(s.development.lastPeriod!==period||s.atlas.cityLastPeriod!==period||s.geography.cityLastPeriod!==period){console.log(`[RETRY] mixed snapshot ${bot.username}: city=${period}, development=${s.development.lastPeriod}, atlas=${s.atlas.cityLastPeriod}, geography=${s.geography.cityLastPeriod}`);return false;}return s;
+},20000,'consistent city development atlas and culture snapshot',()=>{server.check();if(bot.failure)throw bot.failure;});}
 async function poll(server,bot,predicate,timeout=45000,description='progression state'){
   let latest;return waitUntil(async()=>{latest=await snapshot(server,bot);return predicate(latest)?latest:false;},timeout,description,()=>{server.check();if(bot.failure)throw bot.failure;});
 }

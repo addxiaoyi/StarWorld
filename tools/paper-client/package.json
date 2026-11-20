@@ -1,9 +1,9 @@
 {
   "name": "starworld-paper-client-acceptance",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Real offline protocol client acceptance against a disposable Paper/StarCore/StarWorld server",
   "engines": { "node": ">=22" },
-  "scripts": { "acceptance": "node acceptance.cjs", "expansion": "node expansion-acceptance.cjs" },
+  "scripts": { "acceptance": "node acceptance.cjs", "expansion": "node expansion-acceptance.cjs", "progression": "node progression-acceptance.cjs", "upgrade": "node upgrade-acceptance.cjs", "border": "node border-acceptance.cjs" },
   "dependencies": { "mineflayer": "4.39.0" }
 }

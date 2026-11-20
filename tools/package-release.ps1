@@ -79,13 +79,25 @@ try {
         }
     }
     if ($evidenceArchive.Entries.Count -ne $seenEvidence.Count + 1) { throw 'Evidence archive has unlisted payloads.' }
-    foreach ($suite in @('expansion', 'senluo')) {
+    foreach ($suite in @('expansion', 'senluo', 'baseline', 'progression', 'upgrade', 'border')) {
         $entry = $evidenceArchive.GetEntry("runtime/$suite/evidence.json")
         if (!$entry) { throw "Evidence archive lacks the required $suite run." }
         $run = [Text.Encoding]::UTF8.GetString((Read-ZipEntryBytes $entry)) | ConvertFrom-Json
         if ($run.status -ne 'passed' -or $run.pluginJars.'StarWorld.jar' -ne $pluginHash -or
             @($run.steps).Count -eq 0 -or @($run.steps | Where-Object status -ne 'passed').Count -ne 0) {
             throw "Evidence archive contains an incomplete or mismatched $suite run."
+        }
+    }
+    $smokeEntry = $evidenceArchive.GetEntry('runtime/smoke/smoke-evidence.json')
+    if (!$smokeEntry) { throw 'Evidence archive lacks the required standalone run.' }
+    $smoke = [Text.Encoding]::UTF8.GetString((Read-ZipEntryBytes $smokeEntry)) | ConvertFrom-Json
+    if ($smoke.status -ne 'passed' -or $smoke.artifact_sha256 -ne $pluginHash) {
+        throw 'Standalone evidence is incomplete or describes another plugin.'
+    }
+    foreach ($name in @('smoke-run-1.log', 'smoke-run-2.log')) {
+        $logEntry = $evidenceArchive.GetEntry("runtime/smoke/$name")
+        if (!$logEntry -or (Get-BytesSha256 (Read-ZipEntryBytes $logEntry)) -ne $smoke.logs.$name) {
+            throw "Standalone log is missing or differs from its evidence: $name"
         }
     }
 } finally { $evidenceArchive.Dispose() }
@@ -112,7 +124,10 @@ try {
     foreach ($required in @('plugin.yml', 'config.yml', 'definitions.yml', 'evolution.yml', 'logistics.yml', 'exports.yml',
         'dev/starworld/StarWorldPlugin.class', 'dev/starworld/evolution/EvolutionService.class',
         'dev/starworld/logistics/LogisticsService.class', 'dev/starworld/life/LifeService.class',
-        'dev/starworld/integration/ResourceOutbox.class', 'dev/starworld/integration/StarCoreCombatContributor.class', 'org/sqlite/JDBC.class')) {
+        'dev/starworld/integration/ResourceOutbox.class', 'dev/starworld/integration/StarCoreCombatContributor.class',
+        'dev/starworld/evolution/RegionAtlas.class', 'dev/starworld/evolution/CultureDynamics.class',
+        'dev/starworld/integration/BorderConflictCapture.class',
+        'dev/starworld/market/MarketService.class', 'dev/starworld/persistence/LedgerMaintenance.class', 'org/sqlite/JDBC.class')) {
         if ($jarNames -notcontains $required) { throw "Plugin artifact lacks $required" }
     }
     if ($jarNames | Where-Object { $_ -match '^(dev/starcore/|dev/starworld/fixture/|net/momirealms/)' -or $_ -match 'Test\.class$' }) {
@@ -136,7 +151,7 @@ try {
     }
     $sourceRoot = Join-Path $staging 'source'
     New-Item -ItemType Directory -Path $sourceRoot | Out-Null
-    $rootFiles = @('pom.xml', 'mvnw', 'mvnw.cmd', '.gitignore', '.gitattributes', 'LICENSE', 'README.md')
+    $rootFiles = @('pom.xml', 'mvnw', 'mvnw.cmd', '.gitignore', '.gitattributes', 'LICENSE', 'README.md', 'CHANGELOG.md')
     foreach ($file in $rootFiles) { Copy-AllowedFile $file $sourceRoot }
     # Only these directories contain project source. Nested generated or linked
     # directories are rejected/filtered before any file is copied.
@@ -159,7 +174,7 @@ try {
         'tools/paper-fixture/pom.xml', 'tools/paper-fixture/plugin.yml',
         'tools/paper-fixture/README.md', 'tools/paper-fixture/starcore-build-provenance.json',
         'tools/paper-client/package.json', 'tools/paper-client/acceptance.cjs',
-        'tools/paper-client/expansion-acceptance.cjs', 'tools/paper-client/README.md',
+        'tools/paper-client/expansion-acceptance.cjs', 'tools/paper-client/progression-acceptance.cjs', 'tools/paper-client/upgrade-acceptance.cjs', 'tools/paper-client/border-acceptance.cjs', 'tools/paper-client/README.md',
         'tools/senluo-fixture/pom.xml', 'tools/senluo-fixture/README.md',
         'tools/senluo-fixture/acceptance.cjs'
     )
@@ -186,6 +201,7 @@ try {
         Copy-Item -LiteralPath (Join-Path $RepositoryRoot "src/main/resources/$file") -Destination (Join-Path $staging "config-examples/$file")
     }
     Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'examples/life.yml') -Destination (Join-Path $staging 'config-examples/life.yml')
+    Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'examples/market.yml') -Destination (Join-Path $staging 'config-examples/market.yml')
     Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'README.md') -Destination (Join-Path $staging 'README.md')
     Copy-Item -LiteralPath (Join-Path $RepositoryRoot 'LICENSE') -Destination (Join-Path $staging 'LICENSE')
     Copy-Item -LiteralPath (Join-Path $sourceRoot 'docs') -Destination (Join-Path $staging 'docs') -Recurse

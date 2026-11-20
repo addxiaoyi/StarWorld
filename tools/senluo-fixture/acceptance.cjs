@@ -22,9 +22,12 @@ async function main(){
   assert.equal(configuredNumber(lifeConfig,'minimum-duration-millis'),60000,'Concert duration must remain default');
   const localRequire=createRequire(path.resolve(args['client-deps'],'package.json')),mineflayer=localRequire('mineflayer');
   const directory=path.join(options.runtime,'senluo-acceptance',new Date().toISOString().replace(/[:.]/g,'-'));fs.mkdirSync(directory,{recursive:true});
-  const evidence={schema:1,status:'running',startedAt:new Date().toISOString(),minecraft:'1.21.11',senluoAuditCommit:'6a432fe54097a3ebf22ba5757e016b602c711f28',paperSha256:hash(options.paper),pluginJars:{},
+  const preparationFile=requireFile(path.join(options.runtime,'PREPARATION.json'));
+  const assetPreparation=JSON.parse(fs.readFileSync(preparationFile,'utf8').replace(/^\uFEFF/,''));
+  assert.equal(assetPreparation.upstreamAuditCommit,'c3642ae22fc5252bf6da22ae745cd39be994b054','Current upstream candidate preparation required');
+  const evidence={schema:1,status:'running',startedAt:new Date().toISOString(),minecraft:'1.21.11',senluoAuditCommit:'c3642ae22fc5252bf6da22ae745cd39be994b054',paperSha256:hash(options.paper),pluginJars:{},assetPreparation:{fileSha256:hash(preparationFile),...assetPreparation},
     scope:'Real CE player inventory deposits, feast warehouse consumption, actual furniture lifecycle, StarWorld-controlled concert with a real same-city listener, restart. No upstream kmusic completion, resource-pack visual/audio or Folia claim.',
-    testTuning:{periodSeconds:10,randomEventChance:0,professionCooldownPeriods:1,concertMinimumDurationMillis:60000,lifeConfigSha256:hash(lifeConfig),jvmArgs:options.jvmArgs,paperSparkEnabled:false},steps:[]};
+    testTuning:{periodSeconds:10,randomEventChance:0,professionCooldownPeriods:1,concertMinimumDurationMillis:60000,lifeConfigSha256:hash(lifeConfig),jvmArgs:options.jvmArgs,nodeArgs:process.execArgv,nodeVersion:process.version,paperSparkEnabled:false},steps:[]};
   for(const name of fs.readdirSync(path.join(options.runtime,'plugins')))if(name.endsWith('.jar'))evidence.pluginJars[name]=hash(path.join(options.runtime,'plugins',name));
   const save=()=>fs.writeFileSync(path.join(directory,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');
   const stage=async(name,run)=>{console.log(`RUN ${name}`);const row={name,startedAt:new Date().toISOString()};evidence.steps.push(row);save();try{row.result=await run();row.status='passed';}catch(error){row.status='failed';row.error=error.stack;throw error;}finally{row.finishedAt=new Date().toISOString();save();}};

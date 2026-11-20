@@ -114,7 +114,8 @@ async function main() {
     minecraft: '1.21.11', mineflayer: localRequire('mineflayer/package.json').version, runtime: options.runtime,
     paperSha256: hash(options.paper), pluginJars: {}, configSha256: {}, steps: [], seeds: [],
     testTuning: { periodSeconds: 10, eventChance: 0, newNationProtectionDays: 0, anchorBiome: 'plains', slots: [20, 52],
-      fixtureForceLoadedChunks: [20, 21, 22, 23, 24, 52, 53, 54, 55, 56], explicitPlayerInventorySeeds: true } };
+      fixtureForceLoadedChunks: [20, 21, 22, 23, 24, 52, 53, 54, 55, 56], explicitPlayerInventorySeeds: true,
+      nodeVersion: process.version, nodeExecArgv: process.execArgv, javaOptionsEnvironment: process.env._JAVA_OPTIONS || '' } };
   for (const file of fs.readdirSync(path.join(options.runtime, 'plugins'))) if (/\.jar$/i.test(file)) evidence.pluginJars[file] = hash(path.join(options.runtime, 'plugins', file));
   for (const file of ['config.yml', 'definitions.yml', 'evolution.yml', 'exports.yml', 'life.yml', 'logistics.yml']) if (fs.existsSync(path.join(configDir, file))) evidence.configSha256[file] = hash(path.join(configDir, file));
   evidence.configSha256['StarCore/config.yml'] = hash(path.join(options.runtime, 'plugins', 'StarCore', 'config.yml'));

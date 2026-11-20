@@ -243,7 +243,8 @@ async function main() {
   const evidence = { schema: 1, startedAt: new Date().toISOString(), status: 'running', node: process.version,
     mineflayer: localRequire('mineflayer/package.json').version, minecraft: '1.21.11', runtime: options.runtime,
     paperSha256: hash(options.paper), pluginJars: {},
-    testTuning: { periodSeconds: options.periodSeconds, eventChance, configSha256: hash(worldConfig), definitionsSha256: hash(worldDefinitions) },
+    testTuning: { periodSeconds: options.periodSeconds, eventChance, configSha256: hash(worldConfig), definitionsSha256: hash(worldDefinitions),
+      nodeVersion: process.version, nodeExecArgv: process.execArgv, javaOptionsEnvironment: process.env._JAVA_OPTIONS || '' },
     steps: [], snapshots: [] };
   for (const file of fs.readdirSync(path.join(options.runtime, 'plugins'))) if (/\.jar$/i.test(file)) evidence.pluginJars[file] = hash(path.join(options.runtime, 'plugins', file));
   const save = () => fs.writeFileSync(path.join(directory, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n');

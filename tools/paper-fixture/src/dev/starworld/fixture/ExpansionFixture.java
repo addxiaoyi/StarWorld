@@ -35,6 +35,17 @@ final class ExpansionFixture {
             case "exp-receipt","exp-replay"->receipt(p,args[2],action.equals("exp-replay"));
             case "exp-armies"->armies(p,Objects.requireNonNull(Bukkit.getPlayerExact(args[2]),"Connected peer required"),Integer.parseInt(args[3]),Integer.parseInt(args[4]));
             case "exp-combat"->combat(p,Objects.requireNonNull(Bukkit.getPlayerExact(args[2]),"Connected peer required"));
+            case "exp-progress"->progress(p);
+            case "exp-progress-seed"->progressSeed(p);
+            case "exp-alt-node"->alternateNode(p,slot(args));
+            case "exp-fund"->fund(p,new java.math.BigDecimal(args[2]));
+            case "exp-policy"->policy(p,args[2]);
+            case "exp-market-receipt","exp-market-replay"->marketReceipt(p,UUID.fromString(args[2]),action.equals("exp-market-replay"));
+            case "exp-reroute-proof"->rerouteProof(p,UUID.fromString(args[2]));
+            case "exp-border-setup"->borderSetup(p,slot(args));
+            case "exp-border-register"->borderRegister(p,slot(args));
+            case "exp-border-state"->borderState(p);
+            case "exp-border-claim","exp-border-unclaim"->borderClaim(p,Objects.requireNonNull(Bukkit.getPlayerExact(args[2]),"Connected resource-city player required"),action.equals("exp-border-claim"));
             default->throw new IllegalArgumentException("Unknown expansion fixture action");
         }return true;
     }
@@ -63,6 +74,51 @@ final class ExpansionFixture {
         Object claim=unwrap(invoke(nations,"claimAt",new Class<?>[]{String.class,int.class,int.class},p.getWorld().getName(),chunk,0));
         if(claim==null||!nationId.toString().equals(call(claim,"ownerId")))throw new IllegalStateException("National claim not owned by expected nation");
     }
+    /** Border-only worlds use four anchors total and ordinary player chunk loading. */
+    private void borderSetup(Player p,int slot)throws Exception {
+        Object nations=coreService("module.nation.NationService"),cities=coreService("module.city.CityService");
+        Object nation=unwrap(invoke(nations,"nationOf",new Class<?>[]{UUID.class},p.getUniqueId()));
+        if(nation==null)nation=invoke(nations,"createNation",new Class<?>[]{UUID.class,String.class,String.class},p.getUniqueId(),p.getName(),"SWBorder"+p.getName());
+        Object id=call(nation,"id");int start=base(slot);Object city=unwrap(invoke(cities,"getPlayerCity",new Class<?>[]{UUID.class},p.getUniqueId()));
+        if(city==null){Object created=invoke(cities,"createCity",new Class<?>[]{id.getClass(),String.class,UUID.class,Location.class},id,"Border"+p.getName(),p.getUniqueId(),new Location(p.getWorld(),start*16+8,80,8));if(!Boolean.TRUE.equals(call(created,"success")))throw new IllegalStateException(String.valueOf(call(created,"message")));city=call(created,"city");}
+        UUID cityId=(UUID)call(city,"id");
+        for(int chunk=start;chunk<=start+1;chunk++){claim(nations,p,id,chunk);invoke(cities,"addClaim",new Class<?>[]{UUID.class,String.class,int.class,int.class},cityId,p.getWorld().getName(),chunk,0);if(!Boolean.TRUE.equals(invoke(city,"hasClaim",new Class<?>[]{String.class,int.class,int.class},p.getWorld().getName(),chunk,0)))throw new IllegalStateException("Actual border city claim missing");platform(p.getWorld(),chunk*16+8,false);}
+        p.teleport(new Location(p.getWorld(),start*16+8.5,80,5.5));
+        emit("exp-border-setup",p,Map.of("slot",slot,"cityId",cityId,"nationId",call(id,"value"),"chunks",List.of(start,start+1),"chunkZ",0,"anchorBiome","plains","forceLoadedChunks",List.of()));
+    }
+    private void borderRegister(Player p,int slot){
+        if(!registering.add(p.getUniqueId()))throw new IllegalStateException("Fixture registration already running");
+        registerStep(p,slot,false,new String[]{"sw register farm","sw register sawmill"},new Material[]{Material.COMPOSTER,Material.STONECUTTER},0,"exp-border-register");
+    }
+    /** No location/block/chunk access: the public national API owns this real adjacent claim. */
+    private void borderClaim(Player owner,Player resourcePlayer,boolean create)throws Exception {
+        Object nations=coreService("module.nation.NationService"),cities=coreService("module.city.CityService"),id=call(nation(owner),"id");
+        Object runtime=world(),resourceCity=unwrap(invoke(runtime,"playerCity",new Class<?>[]{Player.class},resourcePlayer));
+        if(resourceCity==null)throw new IllegalStateException("Actual resource city required");
+        Object coreCity=unwrap(invoke(cities,"getPlayerCity",new Class<?>[]{UUID.class},resourcePlayer.getUniqueId()));
+        int x=base(0),z=1;String world=resourcePlayer.getWorld().getName();
+        if(!Boolean.TRUE.equals(invoke(coreCity,"hasClaim",new Class<?>[]{String.class,int.class,int.class},world,x,0)))throw new IllegalStateException("Fixed border fixture resource region not claimed by city");
+        boolean beforeLoaded=resourcePlayer.getWorld().isChunkLoaded(x,z);
+        Object before=unwrap(invoke(nations,"claimAt",new Class<?>[]{String.class,int.class,int.class},world,x,z));
+        if(create&&before!=null)throw new IllegalStateException("Expected unclaimed neighbor");
+        if(!create&&(before==null||!id.toString().equals(call(before,"ownerId"))))throw new IllegalStateException("Expected the fixture peer national claim");
+        boolean changed=Boolean.TRUE.equals(invoke(nations,create?"claimCurrentChunk":"unclaimCurrentChunk",new Class<?>[]{UUID.class,String.class,int.class,int.class},owner.getUniqueId(),world,x,z));
+        Object after=unwrap(invoke(nations,"claimAt",new Class<?>[]{String.class,int.class,int.class},world,x,z));
+        if(!changed||(create?(after==null||!id.toString().equals(call(after,"ownerId"))):after!=null))throw new IllegalStateException("Public national neighbor claim operation rejected");
+        Map<String,Object> report=new LinkedHashMap<>();report.put("entryPoint",create?"NationService.claimCurrentChunk":"NationService.unclaimCurrentChunk");report.put("resourceCity",call(resourceCity,"cityId"));report.put("resourceNation",call(resourceCity,"nationId"));report.put("peerNation",call(id,"value"));report.put("worldId",resourcePlayer.getWorld().getUID());report.put("worldName",world);report.put("chunkX",x);report.put("chunkZ",0);report.put("neighborChunkX",x);report.put("neighborChunkZ",z);report.put("nationalClaimPresent",after!=null);report.put("neighborLoadedBefore",beforeLoaded);report.put("neighborLoadedAfter",resourcePlayer.getWorld().isChunkLoaded(x,z));report.put("forcedChunkLoad",false);
+        emit(create?"exp-border-claim":"exp-border-unclaim",owner,report);
+    }
+    /** Call the exact production capture entry point; never construct synthetic witnesses. */
+    private void borderState(Player p)throws Exception {
+        Object runtime=world(),expansion=unwrap(call(runtime,"expansion")),initial=unwrap(invoke(runtime,"playerCity",new Class<?>[]{Player.class},p));UUID id=(UUID)call(initial,"cityId");
+        CompletableFuture<?> future=(CompletableFuture<?>)invoke(runtime,"city",new Class<?>[]{UUID.class},id);
+        future.whenComplete((optional,error)->Bukkit.getScheduler().runTask(owner,()->{try{
+            if(error!=null)throw new IllegalStateException(error);Object view=unwrap(optional),current=unwrap(invoke(runtime,"playerCity",new Class<?>[]{Player.class},p));
+            if(current==null||!id.equals(call(current,"cityId")))throw new IllegalStateException("Resource city authority changed");
+            Object valid=invoke(runtime,"verifiedBuildings",new Class<?>[]{view.getClass()},view),capture=invoke(expansion,"captureBorderEvidence",new Class<?>[]{current.getClass(),view.getClass(),Set.class},current,view,valid);long period=((Number)call(runtime,"currentPeriod")).longValue();
+            async(runtime,()->{Map<String,Object> report=new LinkedHashMap<>();report.put("entryPoint","ExpansionRuntime.captureBorderEvidence");report.put("city",view);report.put("captured",capture);report.put("verifiedBuildings",valid);report.put("currentPeriod",period);report.put("history",invoke(call(expansion,"evolution"),"history",new Class<?>[]{UUID.class},id));report.put("atlas",invoke(call(expansion,"atlas"),"page",new Class<?>[]{UUID.class,String.class,int.class},id,"",16));return report;}).whenComplete((result,failure)->Bukkit.getScheduler().runTask(owner,()->{if(failure!=null)failed(failure);else emit("exp-border-state",p,result);}));
+        }catch(Exception failure){failed(failure);}}));
+    }
     private void claimChange(Player p,int slot,boolean restore)throws Exception {
         Object nations=coreService("module.nation.NationService"),nation=nation(p);Object id=call(nation,"id");int chunk=base(slot)+4;
         if(restore)claim(nations,p,id,chunk);else invoke(nations,"unclaimCurrentChunk",new Class<?>[]{UUID.class,String.class,int.class,int.class},p.getUniqueId(),p.getWorld().getName(),chunk,0);
@@ -77,7 +133,10 @@ final class ExpansionFixture {
         registerStep(p,slot,node,commands,anchors,0);
     }
     private void registerStep(Player p,int slot,boolean node,String[] commands,Material[] anchors,int index){
-        if(index==commands.length){registering.remove(p.getUniqueId());emit(node?"exp-node":"exp-register",p,Map.of("dispatched",commands.length,"slot",slot));return;}
+        registerStep(p,slot,node,commands,anchors,index,node?"exp-node":"exp-register");
+    }
+    private void registerStep(Player p,int slot,boolean node,String[] commands,Material[] anchors,int index,String completedAction){
+        if(index==commands.length){registering.remove(p.getUniqueId());emit(completedAction,p,Map.of("dispatched",commands.length,"slot",slot));return;}
         try{
             int x=(base(slot)+(node?4:index))*16+8;p.getWorld().getBlockAt(x,80,8).setType(anchors[index]);
             Location start=new Location(p.getWorld(),x+.5,80,5.5);start.setDirection(new Vector(x+.5,80.5,8.5).subtract(start.toVector().add(new Vector(0,p.getEyeHeight(),0))));
@@ -85,7 +144,7 @@ final class ExpansionFixture {
             Bukkit.getScheduler().runTaskLater(owner,()->{
                 try{if(!p.isOnline()||p.getTargetBlockExact(6)==null||p.getTargetBlockExact(6).getType()!=anchors[index])throw new IllegalStateException("Actual raycast misses fixture anchor");
                     if(!p.performCommand(commands[index]))throw new IllegalStateException("Actual command not handled");
-                    Bukkit.getScheduler().runTaskLater(owner,()->registerStep(p,slot,node,commands,anchors,index+1),3);
+                    Bukkit.getScheduler().runTaskLater(owner,()->registerStep(p,slot,node,commands,anchors,index+1,completedAction),3);
                 }catch(Exception failure){registering.remove(p.getUniqueId());failed(failure);}
             },3);
         }catch(Exception failure){registering.remove(p.getUniqueId());failed(failure);}
@@ -95,6 +154,52 @@ final class ExpansionFixture {
         Map<String,Integer> provided=new LinkedHashMap<>();for(var entry:quantities.entrySet()){for(int remaining=entry.getValue();remaining>0;){int batch=Math.min(64,remaining);if(!p.getInventory().addItem(new ItemStack(entry.getKey(),batch)).isEmpty())throw new IllegalStateException("Seed inventory overflow");remaining-=batch;}provided.put(entry.getKey().getKey().toString(),entry.getValue());}p.saveData();
         emit("exp-seed",p,Map.of("source","explicit-fixture-player-inventory","items",provided,"productionEvidence",false));
     }
+    private void progressSeed(Player p){
+        Map<Material,Integer> quantities=new LinkedHashMap<>();quantities.put(Material.BREAD,256);quantities.put(Material.OAK_PLANKS,512);quantities.put(Material.IRON_INGOT,128);quantities.put(Material.OAK_LOG,64);quantities.put(Material.PAPER,128);quantities.put(Material.ARROW,256);quantities.put(Material.WHEAT,64);
+        Map<String,Integer> provided=new LinkedHashMap<>();for(var entry:quantities.entrySet()){for(int remaining=entry.getValue();remaining>0;){int batch=Math.min(64,remaining);if(!p.getInventory().addItem(new ItemStack(entry.getKey(),batch)).isEmpty())throw new IllegalStateException("Progression seed inventory overflow");remaining-=batch;}provided.put(entry.getKey().getKey().toString(),entry.getValue());}p.saveData();emit("exp-progress-seed",p,Map.of("source","explicit-progression-fixture-player-inventory","items",provided,"productionEvidence",false));
+    }
+    /** New-version read proof uses only public API Futures and bounded extension queries. */
+    private void progress(Player p)throws Exception {
+        Object runtime=world(),expansion=unwrap(call(runtime,"expansion")),coreCity=unwrap(invoke(runtime,"playerCity",new Class<?>[]{Player.class},p));
+        UUID city=(UUID)call(coreCity,"cityId"),actor=p.getUniqueId();Object nationId=call(nation(p),"id"),treasury=coreService("module.treasury.TreasuryService");
+        Object balance=invoke(treasury,"balance",new Class<?>[]{nationId.getClass()},nationId),national=unwrap(invoke(expansion,"nation",new Class<?>[]{UUID.class},call(nationId,"value")));long period=((Number)call(runtime,"currentPeriod")).longValue();
+        CompletableFuture<?> cityFuture=(CompletableFuture<?>)invoke(runtime,"city",new Class<?>[]{UUID.class},city),atlasFuture=(CompletableFuture<?>)invoke(runtime,"regions",new Class<?>[]{UUID.class,String.class,int.class},city,"",16),summaryFuture=(CompletableFuture<?>)invoke(runtime,"geography",new Class<?>[]{UUID.class},city);
+        CompletableFuture.allOf(cityFuture,atlasFuture,summaryFuture).whenComplete((ignored,error)->{
+            try{if(error!=null)throw new IllegalStateException(error);Object view=unwrap(cityFuture.join()),atlas=unwrap(atlasFuture.join()),summary=unwrap(summaryFuture.join());
+                async(runtime,()->{Object evolution=call(expansion,"evolution"),logistics=call(expansion,"logistics"),market=call(expansion,"market");Map<String,Object> result=new LinkedHashMap<>();
+                    result.put("version",call(runtime,"version"));result.put("city",view);result.put("atlas",atlas);result.put("geography",summary);result.put("treasury",balance);result.put("nation",national);result.put("currentPeriod",period);
+                    result.put("development",invoke(evolution,"profile",new Class<?>[]{UUID.class},city));result.put("cultureSettings",call(evolution,"cultureSettings"));result.put("culture",invoke(evolution,"cultures",new Class<?>[]{UUID.class},city));
+                    result.put("nodes",invoke(logistics,"cityNodes",new Class<?>[]{UUID.class},city));Object routes=invoke(logistics,"cityRoutes",new Class<?>[]{UUID.class,int.class,int.class},city,100,0);result.put("routes",routes);
+                    List<Object> traffic=new ArrayList<>();for(Object route:(Collection<?>)routes)traffic.add(invoke(logistics,"transportStatus",new Class<?>[]{UUID.class,long.class},call(route,"id"),period));result.put("traffic",traffic);
+                    result.put("orders",invoke(logistics,"cityOrders",new Class<?>[]{UUID.class,int.class,int.class},city,100,0));result.put("reroutes",invoke(logistics,"pendingReroutes",new Class<?>[]{UUID.class,int.class,int.class},city,100,0));
+                    result.put("listings",invoke(market,"listings",new Class<?>[]{UUID.class,int.class,int.class},city,100,0));result.put("purchases",invoke(market,"purchases",new Class<?>[]{UUID.class,int.class,int.class},city,100,0));result.put("prices",invoke(market,"history",new Class<?>[]{String.class,int.class,int.class},null,100,0));result.put("actor",actor);return result;
+                }).whenComplete((value,failure)->Bukkit.getScheduler().runTask(owner,()->{if(failure!=null)failed(failure);else emit("exp-progress",p,value);}));
+            }catch(Exception failure){Bukkit.getScheduler().runTask(owner,()->failed(failure));}
+        });
+    }
+    private void alternateNode(Player p,int slot){
+        int x=(base(slot)+4)*16+11,z=12;for(int dx=-1;dx<=1;dx++)for(int dz=-4;dz<=1;dz++){p.getWorld().getBlockAt(x+dx,79,z+dz).setType(Material.STONE);for(int y=80;y<=83;y++)p.getWorld().getBlockAt(x+dx,y,z+dz).setType(Material.AIR);}
+        p.getWorld().getBlockAt(x,80,z).setType(Material.LODESTONE);p.getWorld().setBiome(x,80,z,org.bukkit.block.Biome.PLAINS);Location start=new Location(p.getWorld(),x+.5,80,z-2.5);start.setDirection(new Vector(x+.5,80.5,z+.5).subtract(start.toVector().add(new Vector(0,p.getEyeHeight(),0))));p.teleport(start);
+        Bukkit.getScheduler().runTaskLater(owner,()->{try{if(p.getTargetBlockExact(6)==null||p.getTargetBlockExact(6).getX()!=x||p.getTargetBlockExact(6).getZ()!=z)throw new IllegalStateException("Alternate-node raycast missed");p.performCommand("sw node register road");emit("exp-alt-node",p,Map.of("dispatched",1,"x",x,"z",z,"chunk",base(slot)+4));}catch(Exception failure){failed(failure);}},4);
+    }
+    private void fund(Player p,java.math.BigDecimal amount)throws Exception {
+        if(amount.signum()<=0||amount.compareTo(new java.math.BigDecimal("10000"))>0)throw new IllegalArgumentException("Bounded fixture treasury seed required");Object treasury=coreService("module.treasury.TreasuryService"),id=call(nation(p),"id");Object before=invoke(treasury,"balance",new Class<?>[]{id.getClass()},id);invoke(treasury,"deposit",new Class<?>[]{id.getClass(),java.math.BigDecimal.class},id,amount);
+        emit("exp-fund",p,Map.of("source","explicit-public-TreasuryService-test-seed","productionEvidence",false,"nation",call(id,"value"),"before",before,"seed",amount,"after",invoke(treasury,"balance",new Class<?>[]{id.getClass()},id)));
+    }
+    private void policy(Player p,String key)throws Exception {
+        if(!key.equals("open_diplomacy"))throw new IllegalArgumentException("Fixture only activates audited open_diplomacy");Object id=call(nation(p),"id"),policies=coreService("module.policy.PolicyService"),treasury=coreService("module.treasury.TreasuryService");Class<?> contract=type("StarCore",CORE+"module.policy.PolicyService");Object before=invoke(treasury,"balance",new Class<?>[]{id.getClass()},id);
+        Object result=contract.getMethod("activatePolicy",id.getClass(),String.class).invoke(policies,id,key);if(!Boolean.TRUE.equals(call(result,"successful")))throw new IllegalStateException("Actual policy activation rejected: "+call(result,"message"));
+        emit("exp-policy",p,Map.of("entryPoint","PolicyService.activatePolicy","result",result,"policy",unwrap(contract.getMethod("activePolicy",id.getClass()).invoke(policies,id)),"balanceBefore",before,"balanceAfter",invoke(treasury,"balance",new Class<?>[]{id.getClass()},id)));
+    }
+    private void marketReceipt(Player p,UUID purchaseId,boolean replay)throws Exception {
+        Object runtime=world(),expansion=unwrap(call(runtime,"expansion"));async(runtime,()->unwrap(invoke(call(expansion,"market"),"purchase",new Class<?>[]{UUID.class},purchaseId))).whenComplete((purchase,error)->Bukkit.getScheduler().runTask(owner,()->{try{
+            if(error!=null||purchase==null)throw new IllegalStateException("Missing purchase",error);String tx=(String)call(purchase,"transactionId");Object id=call(nation(p),"id"),treasury=coreService("module.treasury.TreasuryService");Class<?> nationId=id.getClass();Object payer=nationId.getMethod("of",UUID.class).invoke(null,call(purchase,"buyerNation")),receiver=nationId.getMethod("of",UUID.class).invoke(null,call(purchase,"sellerNation"));
+            Object adapter=type("StarWorld","dev.starworld.integration.StarCoreTreasuryTransfers").getConstructor(JavaPlugin.class).newInstance(Bukkit.getPluginManager().getPlugin("StarWorld"));Object receipt=unwrap(invoke(adapter,"receipt",new Class<?>[]{String.class},tx));Map<String,Object> result=new LinkedHashMap<>();result.put("transactionId",tx);result.put("purchase",purchase);result.put("receipt",receipt);result.put("entryPoint","NationTransferService.transferReceipt");result.put("payerBefore",invoke(treasury,"balance",new Class<?>[]{nationId},payer));result.put("receiverBefore",invoke(treasury,"balance",new Class<?>[]{nationId},receiver));
+            if(replay){Object request=call(purchase,"request");result.put("replay",invoke(adapter,"transfer",new Class<?>[]{request.getClass()},request));}
+            result.put("payerAfter",invoke(treasury,"balance",new Class<?>[]{nationId},payer));result.put("receiverAfter",invoke(treasury,"balance",new Class<?>[]{nationId},receiver));emit(replay?"exp-market-replay":"exp-market-receipt",p,result);
+        }catch(Exception failure){failed(failure);}}));
+    }
+    private void rerouteProof(Player p,UUID request)throws Exception{Object runtime=world(),expansion=unwrap(call(runtime,"expansion"));async(runtime,()->unwrap(invoke(call(expansion,"logistics"),"reroute",new Class<?>[]{UUID.class},request))).whenComplete((value,error)->Bukkit.getScheduler().runTask(owner,()->{if(error!=null)failed(error);else emit("exp-reroute-proof",p,value);}));}
     private void snapshot(Player p)throws Exception {
         Object runtime=world(),expansion=unwrap(call(runtime,"expansion"));Object coreCity=unwrap(invoke(runtime,"playerCity",new Class<?>[]{Player.class},p));UUID cityId=(UUID)call(coreCity,"cityId"),actorId=p.getUniqueId();Object nationId=call(nation(p),"id");
         Object nationSnapshot=unwrap(invoke(expansion,"nation",new Class<?>[]{UUID.class},call(nationId,"value")));
@@ -206,7 +311,8 @@ final class ExpansionFixture {
         return value.toString();
     }
     private void failed(Throwable failure){owner.getLogger().log(java.util.logging.Level.SEVERE,"SW_FIXTURE_FAILED expansion",failure);}
-    private static void platform(World world,int x){for(int dx=-2;dx<=2;dx++)for(int dz=-4;dz<=2;dz++){world.getBlockAt(x+dx,79,8+dz).setType(Material.STONE);for(int y=80;y<=83;y++)world.getBlockAt(x+dx,y,8+dz).setType(Material.AIR);}world.setBiome(x,80,8,org.bukkit.block.Biome.PLAINS);world.getChunkAt(x>>4,0).setForceLoaded(true);}
+    private static void platform(World world,int x){platform(world,x,true);}
+    private static void platform(World world,int x,boolean keepLoaded){for(int dx=-2;dx<=2;dx++)for(int dz=-4;dz<=2;dz++){world.getBlockAt(x+dx,79,8+dz).setType(Material.STONE);for(int y=80;y<=83;y++)world.getBlockAt(x+dx,y,8+dz).setType(Material.AIR);}world.setBiome(x,80,8,org.bukkit.block.Biome.PLAINS);if(keepLoaded)world.getChunkAt(x>>4,0).setForceLoaded(true);}
     private static Object call(Object target,String method)throws Exception{return invoke(target,method,new Class<?>[0]);}
     private static Object invoke(Object target,String method,Class<?>[] types,Object... args)throws Exception{return target.getClass().getMethod(method,types).invoke(target,args);}
     private static Object unwrap(Object value){return ((Optional<?>)value).orElse(null);}

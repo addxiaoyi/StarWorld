@@ -74,8 +74,11 @@ def main() -> int:
     parser.add_argument("--repository-root", type=Path, default=Path(__file__).absolute().parent.parent)
     parser.add_argument("--expansion-dir", type=Path, required=True, help="Passed expansion run directory containing evidence.json and complete transcripts")
     parser.add_argument("--senluo-dir", type=Path, required=True, help="Passed optional integration run directory containing evidence.json and complete transcripts")
-    parser.add_argument("--baseline-dir", type=Path, help="Optional baseline run on the same final plugin JAR")
-    parser.add_argument("--smoke-dir", type=Path, help="Optional no-dependency runtime containing smoke-evidence.json and both smoke-run logs")
+    parser.add_argument("--baseline-dir", type=Path, help="Required for 0.3: baseline run on the same final plugin JAR")
+    parser.add_argument("--progression-dir", type=Path, help="Required 0.3 geography, reroute and treasury market runtime suite")
+    parser.add_argument("--upgrade-dir", type=Path, help="Required 0.3 migration from a verified 0.2 server state")
+    parser.add_argument("--border-dir", type=Path, help="Required 0.3 real neighboring-resource dispute regression")
+    parser.add_argument("--smoke-dir", type=Path, help="Required for 0.3: no-dependency runtime containing smoke-evidence.json and both smoke-run logs")
     parser.add_argument("--check-only", action="store_true", help="Validate all inputs and print the planned archive without writing")
     args = parser.parse_args()
     root = absolute_directory(args.repository_root)
@@ -109,7 +112,13 @@ def main() -> int:
             "Unit evidence contains failures/errors/skips or no tests")
     for file in machine_files:
         data = regular_file(file, machine_dir)
-        read_json(data, str(file))
+        proof = read_json(data, str(file))
+        recorded_hash = proof.get("artifact_sha256") or proof.get("pluginJars", {}).get("StarWorld.jar")
+        require(recorded_hash == plugin_hash, f"Current machine evidence describes another artifact: {file.name}; move historical evidence under history/")
+        if "version" in proof:
+            require(proof["version"] == version, f"Current machine evidence describes another version: {file.name}")
+        if "status" in proof:
+            require(proof["status"] == "passed", f"Current machine evidence is incomplete or failed: {file.name}")
         add(f"machine/{file.name}", data)
 
     reports = absolute_directory(target / "surefire-reports")
@@ -145,11 +154,29 @@ def main() -> int:
                   ("senluo", args.senluo_dir, "tools/senluo-fixture/acceptance.cjs")]
     if args.baseline_dir:
         run_inputs.append(("baseline", args.baseline_dir, "tools/paper-client/acceptance.cjs"))
+    if tuple(map(int, version.split("-")[0].split("."))) >= (0, 3, 0):
+        require(args.baseline_dir is not None, "0.3 delivery requires the final basic gameplay regression")
+        require(args.smoke_dir is not None, "0.3 delivery requires the final two-start standalone regression")
+        require(args.progression_dir is not None, "0.3 delivery requires final progression runtime evidence")
+        run_inputs.append(("progression", args.progression_dir, "tools/paper-client/progression-acceptance.cjs"))
+        require(args.upgrade_dir is not None, "0.3 delivery requires real upgrade and restart evidence")
+        run_inputs.append(("upgrade", args.upgrade_dir, "tools/paper-client/upgrade-acceptance.cjs"))
+        require(args.border_dir is not None, "0.3 delivery requires real border-resource dispute evidence")
+        run_inputs.append(("border", args.border_dir, "tools/paper-client/border-acceptance.cjs"))
+        scale_data = regular_file(target / "scale-results.json", target)
+        scale = read_json(scale_data, "scale-results.json")
+        require(scale.get("cities", 0) >= 1000 and scale.get("settlements", 0) >= 3000 and scale.get("replayedAfterRestart", 0) >= 1000 and scale.get("failures") == 0,
+                "Missing successful thousand-city storage baseline")
+        require(any("WorldScaleTest" in suite["suite"] and suite["tests"] > 0 for suite in unit["suites"]), "Scale report has no matching verified test suite")
+        add("scale/scale-results.json", scale_data)
     transcript_pattern = re.compile(r"(?:paper-run-[1-9][0-9]*|client-run-[A-Za-z0-9_-]+)\.log")
     expected_clients = {
         "expansion": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
         "senluo": {"client-run-1.log", "client-run-listener-1.log", "client-run-2.log"},
         "baseline": {"client-run-1.log", "client-run-2.log"},
+        "progression": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
+        "upgrade": {"client-run-1.log", "client-run-2.log"},
+        "border": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
     }
     for label, raw_directory, script_name in run_inputs:
         directory = absolute_directory(raw_directory)
@@ -165,6 +192,14 @@ def main() -> int:
                 all(s.get("status") == "passed" for s in steps), f"{label} run does not prove every current fixture stage")
         require(evidence.get("startedAt") and evidence.get("finishedAt"), f"{label} run has no completed timespan")
         add(f"runtime/{label}/evidence.json", data)
+        preparation_name = "UPGRADE-PROVENANCE.json" if label == "upgrade" else "PREPARATION.json"
+        preparation = directory.parent.parent / preparation_name
+        if preparation.is_file():
+            preparation_data = regular_file(preparation, directory.parent.parent)
+            read_json(preparation_data, str(preparation))
+            add(f"runtime/{label}/{preparation_name}", preparation_data)
+        else:
+            require(label not in {"upgrade", "senluo"}, f"{label} run lacks its source/preparation provenance")
         transcripts = sorted(file for file in directory.iterdir() if transcript_pattern.fullmatch(file.name))
         names = {file.name for file in transcripts}
         required_logs = {"paper-run-1.log", "paper-run-2.log"} | expected_clients[label]
@@ -194,7 +229,7 @@ def main() -> int:
 
     manifest = {"schema": 1, "version": version, "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
                 "plugin_sha256": plugin_hash, "unit_tests": totals, "runtime_runs": runs,
-                "scope": "Allowlisted evidence only; historical machine JSON retains its original version and hash. Runtime inputs above use the final plugin. Manifest hashes cover all payload entries; manifest.json is excluded from its own self-reference.",
+                "scope": "Allowlisted evidence only; current machine and runtime inputs use the final plugin. Historical observations remain under docs/evidence/history in the source delivery. Manifest hashes cover all payload entries; manifest.json is excluded from its own self-reference.",
                 "entries": [{"path": name, "bytes": len(data), "sha256": sha256(data)} for name, data in sorted(entries.items())]}
     add("manifest.json", (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
     output = target / f"StarWorld-{version}-evidence.zip"

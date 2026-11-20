@@ -14,4 +14,6 @@ The script starts and cleanly stops only its own server child. It requires two r
 
 Every stage, exact plugin SHA-256, source baseline, tuning and complete server/client transcripts are preserved under `<runtime>/senluo-acceptance/<timestamp>/`. A partial or failed run stays failed. See [acceptance scope](../../docs/senluo-acceptance.md).
 
+The current 0.3.0 suite requires `PREPARATION.json` in the disposable runtime with `upstreamAuditCommit` equal to `c3642ae22fc5252bf6da22ae745cd39be994b054`. It records the complete preparation and its SHA-256 alongside actual installed plugin hashes. Use the matching latest Cookery JAR and `kitchen-crops-2.zip` configuration/resources; retain previous assets outside CraftEngine's loaded resource directory. This source baseline adds crops but does not change StarWorld's delivered-food, furniture or instrument contract. Upstream crop gameplay acceptance remains separate.
+
 The optional suite records its constrained JVM arguments (768 MiB heap, C1, SerialGC, one logical CPU, bounded stacks/metaspace/code cache). Disable Spark in the disposable Paper global config to avoid unrelated sampling overhead. This tuning is for the isolated integration scenario; use actual load measurements for production sizing.

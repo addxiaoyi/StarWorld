@@ -18,4 +18,9 @@ public interface StarWorldApi {
     default CompletableFuture<List<dev.starworld.logistics.LogisticsState.Order>> orders(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
     default CompletableFuture<Optional<dev.starworld.evolution.EvolutionState.Readiness>> readiness(UUID cityId){return CompletableFuture.completedFuture(Optional.empty());}
     default CompletableFuture<Optional<dev.starworld.evolution.NationalEvolution.NationDevelopment>> nationDevelopment(UUID nationId){return CompletableFuture.completedFuture(Optional.empty());}
+    default CompletableFuture<Optional<dev.starworld.evolution.RegionAtlas.Page>> regions(UUID cityId,String after,int limit){return CompletableFuture.completedFuture(Optional.empty());}
+    default CompletableFuture<Optional<dev.starworld.evolution.RegionAtlas.Summary>> geography(UUID cityId){return CompletableFuture.completedFuture(Optional.empty());}
+    default CompletableFuture<Optional<dev.starworld.logistics.LogisticsState.TransportStatus>> transport(UUID routeId){return CompletableFuture.completedFuture(Optional.empty());}
+    default CompletableFuture<List<dev.starworld.market.MarketState.Listing>> marketListings(int limit,int offset){return CompletableFuture.completedFuture(List.of());}
+    default CompletableFuture<List<dev.starworld.market.MarketState.Purchase>> marketPurchases(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
 }

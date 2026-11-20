@@ -12,7 +12,11 @@ public final class EvolutionService {
     private final WorldStore store;
     private final Definitions definitions;
     private final EvolutionDefinitions options;
+    private final CultureDynamics cultureDynamics;
     public EvolutionService(WorldStore store,Definitions definitions,EvolutionDefinitions options)throws SQLException {
+        this(store,definitions,options,CultureDynamics.Settings.defaults());
+    }
+    public EvolutionService(WorldStore store,Definitions definitions,EvolutionDefinitions options,CultureDynamics.Settings cultureSettings)throws SQLException {
         this.store=store;this.definitions=definitions;this.options=options;
         store.tx(s->{
             s.execute("CREATE TABLE IF NOT EXISTS evolution_schema(id INTEGER PRIMARY KEY CHECK(id=1),version INTEGER NOT NULL)");
@@ -27,8 +31,10 @@ public final class EvolutionService {
             s.execute("CREATE TABLE IF NOT EXISTS evolution_facility(city TEXT NOT NULL REFERENCES city_state(id),building TEXT NOT NULL,period INTEGER NOT NULL,PRIMARY KEY(city,building,period))");
             s.execute("CREATE TABLE IF NOT EXISTS evolution_readiness(city TEXT PRIMARY KEY REFERENCES city_state(id),nation TEXT NOT NULL,period INTEGER NOT NULL,provided INTEGER NOT NULL,required INTEGER NOT NULL,terrain REAL NOT NULL,readiness REAL NOT NULL)");return null;
         });
+        cultureDynamics=new CultureDynamics(store,cultureSettings);
     }
     public EvolutionDefinitions options(){return options;}
+    public CultureDynamics.Settings cultureSettings(){return cultureDynamics.settings();}
     public Profile profile(UUID city)throws SQLException {
         if(store.view(city).isEmpty())throw new IllegalArgumentException("城市尚未登记");
         store.execute("INSERT OR IGNORE INTO evolution_city(city) VALUES(?)",city);
@@ -57,6 +63,9 @@ public final class EvolutionService {
     }
     public Optional<Readiness> readiness(UUID city)throws SQLException{return store.query("SELECT * FROM evolution_readiness WHERE city=?",r->new Readiness(city,UUID.fromString(r.getString("nation")),r.getLong("period"),r.getLong("provided"),r.getLong("required"),r.getDouble("terrain"),r.getDouble("readiness")),city).stream().findFirst();}
     public Simulation.Hooks cycle(CoreCity core,CityView city,long period,Set<UUID> valid,Context context)throws SQLException {
+        return cycle(core,city,period,valid,context,"");
+    }
+    public Simulation.Hooks cycle(CoreCity core,CityView city,long period,Set<UUID> valid,Context context,String policyId)throws SQLException {
         Profile p=profile(city.id());EvolutionDefinitions.Plan plan=options.plans().get(p.plan());
         if(plan==null)throw new IllegalStateException("Unknown saved plan "+p.plan());
         EvolutionDefinitions.Specialty specialty=options.specialties().get(p.specialty());
@@ -79,7 +88,7 @@ public final class EvolutionService {
             }
             @Override public boolean filterEvents(){return true;}
             @Override public Map<String,Double> eventWeights(CityView c,long t)throws SQLException{return candidates(c,p,t,context,verified);}
-            @Override public void completed(CoreCity c,CityView previous,long t,Map<String,Long> produced,Set<UUID> maintained)throws SQLException{complete(c,previous,t,produced,maintained,context,p);}
+            @Override public void completed(CoreCity c,CityView previous,long t,Map<String,Long> produced,Set<UUID> maintained)throws SQLException{complete(c,previous,t,produced,maintained,context,p,policyId);}
         };
     }
     private Map<String,Double> candidates(CityView city,Profile p,long period,Context context,Set<UUID> valid)throws SQLException {
@@ -105,7 +114,7 @@ public final class EvolutionService {
             };if(allowed)weights.put(entry.getKey(),rule.weight());
         }return Map.copyOf(weights);
     }
-    private void complete(CoreCity core,CityView city,long period,Map<String,Long> produced,Set<UUID> maintained,Context context,Profile before)throws SQLException {
+    private void complete(CoreCity core,CityView city,long period,Map<String,Long> produced,Set<UUID> maintained,Context context,Profile before,String policyId)throws SQLException {
         if(before.lastPeriod()>=period)return;
         List<Building> active=city.buildings().stream().filter(b->maintained.contains(b.id())).toList();
         for(Building building:active)store.execute("INSERT OR IGNORE INTO evolution_facility(city,building,period) VALUES(?,?,?)",city.id(),building.id(),period);
@@ -136,7 +145,9 @@ public final class EvolutionService {
         }
         long agriculture=produced.getOrDefault("minecraft:wheat",0L),industry=produced.getOrDefault("minecraft:iron_ingot",0L)+produced.getOrDefault("minecraft:oak_planks",0L);
         store.execute("UPDATE evolution_city SET last_period=?,prosperity=?,stability=?,knowledge=?,supply=?,culture=?,agriculture=MIN(1000000000,agriculture+?),industry=MIN(1000000000,industry+?),commerce=MIN(1000000000,commerce+?),military=MIN(1000000000,military+?) WHERE city=?",period,prosperity,stability,knowledge,supply,culture,Math.min(1000,agriculture),Math.min(1000,industry),Math.min(100,context.successfulTrades()),supply,city.id());
-        Set<String> regions=new HashSet<>();for(Building b:active)if(regions.add(b.site().regionKey()))addCulture(b.site().regionKey(),city.civilization(),1+Math.min(5,academy));
+        Set<String> regions=new HashSet<>();for(Building b:active)regions.add(b.site().regionKey());
+        cultureDynamics.advance(regions,period);
+        for(String region:regions)addCulture(region,city.civilization(),cultureDynamics.contribution(1+Math.min(5,academy),policyId));
         CityView settled=new CityView(city.id(),city.nationId(),city.name(),city.civilization(),period,city.stock(),city.buildings(),city.event(),city.lastReport());
         store.cityCapacity(city.id(),capacity(settled,maintained));
         history(city.id(),period,"city","active="+active.size()+" food="+fed+" prosperity="+prosperity+" knowledge="+knowledge+" militarySupply="+supply);

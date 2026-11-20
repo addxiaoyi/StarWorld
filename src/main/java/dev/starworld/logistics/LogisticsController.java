@@ -148,7 +148,16 @@ public final class LogisticsController {
                 require(args.length == 3, "/sw route " + op + " <商路UUID>"); UUID id = UUID.fromString(args[2]);
                 load(p, () -> contextForRoute(id), c -> act(p, c, Set.of(), a -> service.setRouteEnabled(id, op.equals("enable"), a), r -> p.sendMessage("§a商路已" + (r.enabled() ? "启用" : "停用"))));
             }
-            default -> { p.sendMessage("§e/sw route create <目标城市UUID> <land|sea> <起点UUID,途经UUID,终点UUID>"); p.sendMessage("§e/sw route list [页码] · enable|disable <商路UUID>"); }
+            case "status" -> {
+                require(args.length==3,"/sw route status <商路UUID>");UUID id=UUID.fromString(args[2]);CoreCity city=current(p);long period=runtime.currentPeriod();
+                runtime.reply(p,runtime.async(()->{Route route=service.route(id).orElseThrow();require(route.originCity().equals(city.cityId())||route.targetCity().equals(city.cityId()),"仅商路双方城市可查询");return service.transportStatus(id,period);}),status->{
+                    p.sendMessage("§e持久运力观察 · 周期"+status.period()+" · 剩余"+status.available()+"/"+status.capacity()+" · 待运"+status.waitingOrders()+" 暂停"+status.pausedOrders());
+                    p.sendMessage("§7世界锚点与外交仍以结算现场复核为准；瓶颈 "+status.bottlenecks());
+                    for(NodeTraffic node:status.nodes())p.sendMessage("§7"+node.nodeId()+" "+node.type()+" 可用"+node.remaining()+"/"+node.capacity()+" 本期维护"+(node.maintenancePaid()?"已支付":"未支付"));
+                    status.pausedReasons().forEach((reason,count)->p.sendMessage("§c"+count+"单 · "+reason));
+                });
+            }
+            default -> { p.sendMessage("§e/sw route create <目标城市UUID> <land|sea> <起点UUID,途经UUID,终点UUID>"); p.sendMessage("§e/sw route list [页码] · enable|disable|status <商路UUID>"); }
         }
     }
 
@@ -168,7 +177,23 @@ public final class LogisticsController {
                 require(args.length <= 3, "/sw trade list [页码]"); CoreCity city = current(p); int offset = offset(args, 2);
                 runtime.reply(p, runtime.async(() -> service.cityOrders(city.cityId(), 10, offset)), orders -> orders.forEach(o -> { p.sendMessage("§e" + o.id() + " " + o.status() + " " + o.progressedPeriods() + "/" + o.travelPeriods() + " " + o.reason()); p.sendMessage("§7付出 " + o.offered() + " ⇄ 索要 " + o.requested()); }));
             }
-            default -> { p.sendMessage("§e/sw trade offer <商路UUID> <minecraft:bread=16> <minecraft:iron_ingot=4>"); p.sendMessage("§e/sw trade accept|cancel <货单UUID> · list [页码]；逗号分隔多个物品"); }
+            case "alternatives" -> {
+                require(args.length==3,"/sw trade alternatives <货单UUID>");UUID id=UUID.fromString(args[2]);
+                load(p,()->contextForAlternatives(id),context->act(p,context,Set.of(),auth->service.alternativeRoutes(id,auth,16),routes->{p.sendMessage("§e已登记的同方向替代商路（最多十六条；改道需双方确认）");for(Route r:routes)p.sendMessage("§f"+r.id()+" "+r.travelPeriods()+"周期 / 容量"+r.capacity());}));
+            }
+            case "reroute" -> {
+                require(args.length==4,"/sw trade reroute <货单UUID> <新商路UUID>");UUID order=UUID.fromString(args[2]),route=UUID.fromString(args[3]),request=UUID.randomUUID();
+                load(p,()->merge(contextForOrder(order),contextForRoute(route)),context->act(p,context,Set.of(),auth->service.proposeReroute(request,order,route,auth),proposal->p.sendMessage("§a改道提议 "+proposal.id()+"；另一方管理者 /sw trade reroute-accept "+proposal.id()+" · 确认后完整新行程重计")));
+            }
+            case "reroute-accept", "reroute-cancel" -> {
+                require(args.length==3,"/sw trade "+op+" <改道请求UUID>");UUID id=UUID.fromString(args[2]);
+                load(p,()->{Reroute proposal=service.reroute(id).orElseThrow();return merge(contextForOrder(proposal.orderId()),contextForRoute(proposal.proposedRouteId()));},context->act(p,context,Set.of(),auth->op.equals("reroute-accept")?service.acceptReroute(id,auth):service.cancelReroute(id,auth),proposal->p.sendMessage("§a改道请求 "+proposal.id()+" · "+proposal.status())));
+            }
+            case "reroutes" -> {
+                require(args.length<=3,"/sw trade reroutes [页码]");CoreCity city=current(p);int offset=offset(args,2);long period=runtime.currentPeriod();
+                runtime.reply(p,runtime.async(()->service.pendingReroutes(city.cityId(),10,offset)),proposals->{for(Reroute proposal:proposals)p.sendMessage("§e"+proposal.id()+" 货单"+proposal.orderId()+" → "+proposal.proposedRouteId()+" "+(period>=proposal.expiresPeriod()?"已到期":"待另一方确认，到期周期"+proposal.expiresPeriod()));});
+            }
+            default -> { p.sendMessage("§e/sw trade offer <商路UUID> <minecraft:bread=16> <minecraft:iron_ingot=4>"); p.sendMessage("§e/sw trade accept|cancel <货单UUID> · list [页码]；逗号分隔多个物品");p.sendMessage("§e/sw trade alternatives <货单UUID> · reroute <货单UUID> <商路UUID> · reroute-accept|reroute-cancel <请求UUID> · reroutes"); }
         }
     }
 
@@ -204,6 +229,8 @@ public final class LogisticsController {
         return new Context(nodes, List.of(r), List.of());
     }
     private Context contextForOrder(UUID id) throws Exception { Order order = service.order(id).orElseThrow(() -> new IllegalArgumentException("未知货单")); Context c = contextForRoute(order.routeId()); return new Context(c.nodes(), c.routes(), List.of(order)); }
+    private Context contextForAlternatives(UUID id)throws Exception{Context result=contextForOrder(id);for(Route route:service.declaredAlternatives(id,16))result=merge(result,contextForRoute(route.id()));return result;}
+    private static Context merge(Context first,Context second){Map<UUID,Node> nodes=new LinkedHashMap<>();Map<UUID,Route> routes=new LinkedHashMap<>();Map<UUID,Order> orders=new LinkedHashMap<>();for(Context context:List.of(first,second)){for(Node n:context.nodes())nodes.put(n.id(),n);for(Route r:context.routes())routes.put(r.id(),r);for(Order o:context.orders())orders.put(o.id(),o);}return new Context(new ArrayList<>(nodes.values()),new ArrayList<>(routes.values()),new ArrayList<>(orders.values()));}
     private void load(Player p, WorldRuntime.Work<Context> work, Consumer<Context> action) { runtime.reply(p, runtime.async(work), c -> { try { action.accept(c); } catch (IllegalArgumentException e) { p.sendMessage("§c" + e.getMessage()); } }); }
     private <T> void act(Player p, Context context, Set<UUID> extra, Action<T> action, Consumer<T> success) { run(p, capture(p.getUniqueId(), context.nodes(), context.routes(), extra, p), action, success); }
     private <T> void run(Player p, Captured captured, Action<T> action, Consumer<T> success) { runtime.reply(p, ensure(captured).thenCompose(ignored -> runtime.async(() -> action.run(captured.authority()))), success); }

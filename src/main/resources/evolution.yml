@@ -1,5 +1,11 @@
 # Additive expansion: an ID already present in definitions.yml wins.
 expansion-version: 1
+culture:
+  decay-interval: 12
+  decay-basis-points: 500
+  policy-influence:
+    open_diplomacy: 1.25
+    fortified_borders: 0.75
 combat:
   enabled: true
   max-attack: 0.30

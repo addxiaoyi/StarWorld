@@ -19,7 +19,7 @@ public final class CityMenu implements Listener {
     public CityMenu(WorldRuntime runtime,String title){this.runtime=runtime;this.title=title;}
     private static final class Holder implements InventoryHolder {
         private Inventory inventory; private final UUID viewer,city;
-        private final Map<Integer,String[]> commands=new HashMap<>();private boolean development;
+        private final Map<Integer,String[]> commands=new HashMap<>();private boolean development,atlas,market;private String nextCursor="";private int marketOffset;
         Holder(UUID viewer,UUID city){this.viewer=viewer;this.city=city;}
         @Override public Inventory getInventory(){return inventory;}
     }
@@ -56,7 +56,31 @@ public final class CityMenu implements Listener {
             String[] names={"生活与职业","城市货单","城市商路","地区文化","国家状态","历史记录"};Material[] icons={Material.BREAD,Material.CHEST,Material.COMPASS,Material.PAINTING,Material.NETHER_STAR,Material.BOOK};String[][] commands={{"feast"},{"trade","list"},{"route","list"},{"culture"},{"nation"},{"history"}};
             for(int i=0;i<names.length;i++){inv.setItem(37+i,item(icons[i],names[i],List.of("点击查看；更多操作 /sw help")));h.commands.put(37+i,commands[i]);}
             inv.setItem(43,item(Material.GOLDEN_HELMET,"国家倾向与专长",List.of("本国城市的真实产出、贸易、军需和文化共同积累","/sw national-specialty <ID> （国家创始人）")));h.commands.put(43,new String[]{"nation-development"});
+            inv.setItem(44,item(Material.FILLED_MAP,"地区地图册",List.of("地形、资源稀缺、恢复与文化分布","查看已登记设施所在地区")));h.commands.put(44,new String[]{"atlas"});
+            inv.setItem(45,item(Material.GOLD_INGOT,"实物金币市场",List.of("真实商品托管、国库付款和商路交货","整批限价挂牌与成交记录")));h.commands.put(45,new String[]{"market-menu"});
             inv.setItem(49,item(Material.ARROW,"返回城市产业",List.of()));inv.setItem(53,item(Material.SUNFLOWER,"刷新发展状态",List.of()));p.openInventory(inv);
+        });
+    }
+    public void openMarket(Player p,int offset){
+        if(offset<0||offset>100000)throw new IllegalArgumentException("市场页码超限");CoreCity city=runtime.playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入城市"));
+        runtime.reply(p,runtime.marketListings(28,offset),rows->{if(runtime.playerCity(p).filter(c->c.cityId().equals(city.cityId())&&c.nationId().equals(city.nationId())).isEmpty())return;
+            Holder h=new Holder(p.getUniqueId(),city.cityId());h.market=true;h.marketOffset=offset;h.inventory=Bukkit.createInventory(h,54,Component.text("StarWorld · 实物金币市场"));
+            int slot=0;for(var listing:rows){Material icon=Material.matchMaterial(listing.item());if(icon==null||!icon.isItem())icon=Material.CHEST;
+                h.inventory.setItem(slot,item(icon,listing.item()+" ×"+listing.units(),List.of("单价："+listing.unitPrice()+"；整批："+listing.total(),"卖方城市："+listing.sellerCity(),"挂牌："+listing.id(),"点击显示购买指令；付款须国家创始人","需要由卖城通向本城的有效商路")));h.commands.put(slot++,new String[]{"market","buy",listing.id().toString()});}
+            h.inventory.setItem(45,item(Material.ARROW,"上一页",List.of()));h.inventory.setItem(49,item(Material.BOOK,"返回发展面板",List.of("/sw market sell <物品ID> <数量> <单价>","/sw market orders 查看付款和物流凭据")));if(rows.size()==28)h.inventory.setItem(53,item(Material.SUNFLOWER,"下一页",List.of()));p.openInventory(h.inventory);
+        });
+    }
+    public void openAtlas(Player p,String after){
+        CoreCity city=runtime.playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入城市"));
+        runtime.reply(p,runtime.open(city).thenCompose(v->runtime.regions(city.cityId(),after,45)),result->{
+            if(runtime.playerCity(p).filter(c->c.cityId().equals(city.cityId())&&c.nationId().equals(city.nationId())).isEmpty()||result.isEmpty())return;
+            var page=result.get();Holder h=new Holder(p.getUniqueId(),city.cityId());h.atlas=true;h.nextCursor=page.nextCursor();h.inventory=Bukkit.createInventory(h,54,Component.text("StarWorld · 地区地图册"));
+            int slot=0;for(var region:page.regions()){
+                Material icon=switch(region.terrain()){case "mountains"->Material.IRON_ORE;case "river"->Material.WATER_BUCKET;case "forest"->Material.OAK_LOG;case "desert"->Material.SAND;case "snow"->Material.SNOW_BLOCK;default->Material.WHEAT;};
+                List<String> lore=new ArrayList<>(List.of(region.worldName()+" 区块 "+region.chunkX()+","+region.chunkZ(),"农业 / 运输 / 防御："+region.agriculture()+" / "+region.transport()+" / "+region.defense(),"剩余："+region.reserves(),"初始容量："+region.initialCapacities(),"每期恢复："+region.regeneration(),"设施："+region.facilities().stream().map(f->f.type()+" Lv"+f.level()).toList()));
+                region.culture().stream().limit(6).forEach(c->lore.add("文化 "+c.tradition()+"："+c.influence()));h.inventory.setItem(slot++,item(icon,region.terrainName()+" · "+region.chunkX()+","+region.chunkZ(),lore));
+            }
+            h.inventory.setItem(45,item(Material.ARROW,"第一页",List.of()));h.inventory.setItem(49,item(Material.BOOK,"返回发展面板",List.of("只显示已登记地区；不扫描或加载世界","归属来自最近一次有界核心复核")));if(!h.nextCursor.isEmpty())h.inventory.setItem(53,item(Material.SUNFLOWER,"下一页",List.of()));p.openInventory(h.inventory);
         });
     }
     @EventHandler(priority=EventPriority.HIGHEST,ignoreCancelled=false)
@@ -70,9 +94,9 @@ public final class CityMenu implements Listener {
             if(!p.isOnline())return;
             if(p.getOpenInventory().getTopInventory().getHolder()!=holder)return;
             if(runtime.playerCity(p).map(c->!c.cityId().equals(holder.city)).orElse(true)){p.closeInventory();return;}
-            try{if(holder.development){
+            try{if(holder.market){if(slot==45)openMarket(p,Math.max(0,holder.marketOffset-28));else if(slot==49)openDevelopment(p);else if(slot==53)openMarket(p,holder.marketOffset+28);else if(holder.commands.containsKey(slot)){p.closeInventory();p.sendMessage("§e/sw market buy "+holder.commands.get(slot)[2]+" <卖城至本城商路UUID>");}return;}if(holder.atlas){if(slot==45)openAtlas(p,"");else if(slot==49)openDevelopment(p);else if(slot==53&&!holder.nextCursor.isEmpty())openAtlas(p,holder.nextCursor);return;}if(holder.development){
                 if(slot==49){open(p);return;}if(slot==53){openDevelopment(p);return;}String[] command=holder.commands.get(slot);if(command==null)return;p.closeInventory();
-                if(command[0].equals("register"))runtime.register(p,command[1]);else if(command[0].equals("civilization"))runtime.civilization(p,command[1]);else runtime.expansionCommand(p,command);return;
+                if(command[0].equals("register"))runtime.register(p,command[1]);else if(command[0].equals("civilization"))runtime.civilization(p,command[1]);else if(command[0].equals("atlas"))openAtlas(p,"");else if(command[0].equals("market-menu"))openMarket(p,0);else runtime.expansionCommand(p,command);return;
             }switch(slot){
                 case 45 -> {if(!holder.development)openDevelopment(p);}
                 case 10,12,14 -> {p.closeInventory();runtime.register(p,slot==10?"farm":slot==12?"sawmill":"workshop");}

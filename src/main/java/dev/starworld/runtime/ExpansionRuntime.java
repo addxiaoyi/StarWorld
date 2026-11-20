@@ -11,6 +11,8 @@ import dev.starworld.life.*;
 import dev.starworld.life.LifeState.*;
 import dev.starworld.logistics.*;
 import dev.starworld.persistence.WorldStore;
+import dev.starworld.persistence.LedgerMaintenance;
+import dev.starworld.market.*;
 import java.io.File;
 import java.sql.SQLException;
 import java.util.*;
@@ -27,6 +29,9 @@ public final class ExpansionRuntime {
     private final WorldStore store;private final SchedulerGate scheduler;private final CustomItems items;
     private final EvolutionService evolution;private final ExportDefinitions exports;
     private final NationalEvolution national;
+    private final RegionAtlas atlas;private final LedgerMaintenance maintenance;
+    private final MarketService market;private final MarketController marketplace;
+    private long maintenanceTick;private volatile LedgerMaintenance.Result lastMaintenance;
     private final LogisticsService logistics;private final LogisticsController transport;
     private final LifeService life;private final LifePlatform lifePlatform;private final LifeController lifestyle;
     private final ResourceOutbox outbox;private final CoreExtensionPort extensions;
@@ -38,24 +43,29 @@ public final class ExpansionRuntime {
         EvolutionDefinitions options=EvolutionDefinitions.load(new File(folder,"evolution.yml"),definitions);exports=ExportDefinitions.load(new File(folder,"exports.yml"));
         LifeDefinitions.writeDefaults(new File(folder,"life.yml"));LifeDefinitions lifeDefinitions=LifeDefinitions.load(new File(folder,"life.yml"));
         YamlConfiguration transportConfig=new YamlConfiguration();transportConfig.load(new File(folder,"logistics.yml"));
-        evolution=new EvolutionService(store,definitions,options);logistics=new LogisticsService(store,LogisticsConfig.load(transportConfig));
+        evolution=new EvolutionService(store,definitions,options,CultureDynamics.Settings.load(new File(folder,"evolution.yml")));logistics=new LogisticsService(store,LogisticsConfig.load(transportConfig));
+        atlas=new RegionAtlas(store,definitions);YamlConfiguration mainConfig=new YamlConfiguration();mainConfig.load(new File(folder,"config.yml"));maintenance=new LedgerMaintenance(store,LedgerMaintenance.Settings.load(mainConfig));
         national=new NationalEvolution(store,definitions,new File(folder,"evolution.yml"));
         life=new LifeService(store,lifeDefinitions);life.initialize();lifePlatform=new LifePlatform(plugin,core,items,lifeDefinitions);
         lifestyle=new LifeController(plugin,runtime,core,items,life,lifePlatform);outbox=new ResourceOutbox(store);extensions=new StarCoreExtensions(plugin);
         YamlConfiguration evolutionConfig=new YamlConfiguration();evolutionConfig.load(new File(folder,"evolution.yml"));combat=new StarCoreCombatContributor(plugin,core,runtime::currentPeriod,StarCoreCombatContributor.Settings.load(evolutionConfig));
         transport=new LogisticsController(plugin,runtime,core,extensions,logistics);
+        MarketDefinitions.writeDefaults(new File(folder,"market.yml"));market=new MarketService(store,logistics,MarketDefinitions.load(new File(folder,"market.yml")));marketplace=new MarketController(plugin,runtime,core,extensions,logistics,market,new StarCoreTreasuryTransfers(plugin));
         Set<String> ids=new HashSet<>(lifeDefinitions.itemIds());exports.contracts().values().forEach(c->ids.addAll(c.costs().keySet()));
-        logistics.definitions().nodes().values().forEach(n->{ids.addAll(n.construction().keySet());ids.addAll(n.maintenance().keySet());});itemIds=Set.copyOf(ids);items.validate(itemIds);
+        logistics.definitions().nodes().values().forEach(n->{ids.addAll(n.construction().keySet());ids.addAll(n.maintenance().keySet());});ids.addAll(market.definitions().items());itemIds=Set.copyOf(ids);items.validate(itemIds);
         for(var c:exports.contracts().values())if(!definitions.buildings().containsKey(c.facility()))throw new IllegalArgumentException("Unknown export facility "+c.facility());
     }
     public EvolutionService evolution(){return evolution;}
     public NationalEvolution national(){return national;}
+    public RegionAtlas atlas(){return atlas;}
+    public LedgerMaintenance maintenance(){return maintenance;}
+    public MarketService market(){return market;}
     public LogisticsService logistics(){return logistics;}
     public LifeService life(){return life;}
     public Set<String> itemIds(){return itemIds;}
     public void start(){combat.register();}
-    public void close(){combat.close();}
-    public Map<String,String> status(){Map<String,String> status=new LinkedHashMap<>(lifePlatform.status());status.put("Logistics","节点、双向托管、地形运时与战争封锁已启用");status.put("Core exports","幂等国家资源事务 + 持久 outbox");status.put("Core combat",combat.status());return Map.copyOf(status);}
+    public void close(){marketplace.close();combat.close();}
+    public Map<String,String> status(){Map<String,String> status=new LinkedHashMap<>(lifePlatform.status());status.put("Logistics","节点、托管、改道确认、运力瓶颈与战争封锁已启用");status.put("Market",marketplace.status());status.put("Core exports","幂等国家资源事务 + 持久 outbox");status.put("Core combat",combat.status());return Map.copyOf(status);}
     public Optional<NationSnapshot> nation(UUID id){return extensions.snapshot(id,Set.of());}
     public Settlement settle(CoreCity core,long period,Set<UUID> valid,Optional<NationSnapshot> nation,Simulation simulation)throws SQLException {
         return store.tx(s->{s.ensureCity(core);CityView city=s.view(core.cityId()).orElseThrow();
@@ -68,7 +78,7 @@ public final class ExpansionRuntime {
         for(String receipt:tradeActions)store.execute("INSERT INTO evolution_trade_action(city,receipt,period) VALUES(?,?,?)",city.id(),receipt,period);
         long trades=tradeActions.size();
         Context context=new Context(nation.map(NationSnapshot::weather).orElse("unknown"),nation.map(n->n.epoch()==null?"unknown":Long.toString(n.epoch().number())).orElse("unknown"),nation.map(n->!n.warOpponents().isEmpty()).orElse(false),nation.map(n->n.diplomacy().values().stream().anyMatch(v->v.equals("HOSTILE")||v.equals("WAR"))).orElse(false),trades,life.drainEvolutionCulture(city.id(),period),life.productionMultiplier(city.id(),period));
-        Simulation.Hooks cityHooks=evolution.cycle(core,city,period,valid,context);Map<String,Double> nationalMultipliers=national.multipliers(core.nationId());
+        Simulation.Hooks cityHooks=evolution.cycle(core,city,period,valid,context,nation.map(NationSnapshot::policy).orElse(""));Map<String,Double> nationalMultipliers=national.multipliers(core.nationId());
         return new Simulation.Hooks(){
             @Override public double multiplier(Building b)throws SQLException{return cityHooks.multiplier(b)*nationalMultipliers.getOrDefault(b.type(),1.0);}
             @Override public long capacity(String item){return cityHooks.capacity(item);}
@@ -90,7 +100,9 @@ public final class ExpansionRuntime {
             try{List<CompletableFuture<?>> jobs=new ArrayList<>();for(var dispatch:dispatches){Delivery result=extensions.deliver(dispatch.entry().request());jobs.add(runtime.async(()->outbox.finish(dispatch,result,System.currentTimeMillis())));}CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new)).whenComplete((v,e)->{if(e==null)done.complete(null);else done.completeExceptionally(e);});}catch(Exception e){done.completeExceptionally(e);}
         });return done;});
         CompletableFuture<?> decorations=settleDecorations();
-        CompletableFuture.allOf(trades,resources,decorations).thenCompose(v->spreadCulture()).whenComplete((v,e)->{ticking.set(false);if(e!=null)plugin.getLogger().warning("Extension tick failed; durable work retained: "+root(e));});
+        CompletableFuture<?> payments=marketplace.tickFuture();
+        CompletableFuture<?> storage=++maintenanceTick%30==0?runtime.async(()->lastMaintenance=maintenance.sweep(runtime.currentPeriod(),System.currentTimeMillis())):CompletableFuture.completedFuture(null);
+        CompletableFuture.allOf(trades,resources,decorations,storage,payments).thenCompose(v->spreadCulture()).whenComplete((v,e)->{ticking.set(false);if(e!=null)plugin.getLogger().warning("Extension tick failed; durable work retained: "+root(e));});
     }
     private record Exchanges(List<dev.starworld.logistics.LogisticsState.TradeReceipt> receipts,Map<UUID,CityView> cities){}
     private CompletableFuture<Void> spreadCulture(){
@@ -110,9 +122,10 @@ public final class ExpansionRuntime {
         });return result;});
     }
     public boolean command(Player p,String[] args){
-        if(lifestyle.execute(p,args)||transport.execute(p,args))return true;
+        if(lifestyle.execute(p,args)||transport.execute(p,args)||marketplace.execute(p,args))return true;
         String sub=args[0].toLowerCase(Locale.ROOT);
-        if(!Set.of("development","plan","specialty","history","culture","export","outbox","nation","nation-development","national-specialty").contains(sub))return false;
+        if(sub.equals("maintenance")){if(!p.hasPermission("starworld.admin"))throw new IllegalArgumentException("需要管理员权限");runtime.reply(p,runtime.async(()->maintenance.archives(0,20)),rows->{p.sendMessage("§e最近存档维护："+lastMaintenance);for(var row:rows)p.sendMessage("§7审计归档 "+row.id()+"："+row.rows()+" 条，"+row.bytes()+" bytes；SHA "+row.sha256());});return true;}
+        if(!Set.of("development","plan","specialty","history","culture","export","outbox","nation","nation-development","national-specialty","regions").contains(sub))return false;
         CoreCity city=runtime.playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入 StarCore 城市"));
         switch(sub){
             case "development"->{runtime.reply(p,runtime.open(city).thenCompose(v->runtime.async(()->evolution.profile(city.cityId()))),profile->p.sendMessage("§e城市发展："+profile+"\n§e规划："+evolution.options().plans().keySet()+"；专长："+evolution.options().specialties().keySet()));}
@@ -120,6 +133,7 @@ public final class ExpansionRuntime {
             case "specialty"->{require(args,2);manager(p,city);runtime.reply(p,runtime.open(city),view->{CoreCity fresh=runtime.playerCity(p).filter(c->c.cityId().equals(city.cityId())&&c.nationId().equals(city.nationId())).orElseThrow(()->new IllegalArgumentException("城市归属已变化"));manager(p,fresh);Set<UUID> valid=runtime.verifiedBuildings(view);runtime.reply(p,runtime.async(()->evolution.specialize(fresh,args[1],runtime.currentPeriod(),valid,p.getUniqueId().toString())),v->p.sendMessage("§a城市专长："+v.specialty()));});}
             case "history"->runtime.reply(p,runtime.async(()->evolution.history(city.cityId())),rows->rows.forEach(h->p.sendMessage("§e"+h.period()+" "+h.kind()+" §f"+h.detail())));
             case "culture"->runtime.reply(p,runtime.async(()->evolution.cultures(city.cityId())),rows->rows.forEach(c->p.sendMessage("§e"+c.region()+" §f"+c.tradition()+": "+c.influence())));
+            case "regions"->runtime.reply(p,runtime.open(city).thenCompose(v->runtime.async(()->atlas.summary(city.cityId()))),summary->p.sendMessage("§e已登记地区："+summary.regions()+"；地形："+summary.terrains()+"\n§e剩余储量："+summary.reserves()+"；初始容量："+summary.initialCapacities()+"；每期恢复："+summary.regeneration()+"\n§7/sw atlas 查看地图册；数据来自最近有效城市复核，不探测未登记世界"));
             case "nation"->p.sendMessage("§eStarCore 公共快照："+nation(city.nationId()).map(Object::toString).orElse("不可用"));
             case "nation-development"->runtime.reply(p,runtime.open(city).thenCompose(v->runtime.async(()->national.view(city.nationId()))),v->p.sendMessage("§e国家发展："+v+"\n§e国家专长："+national.specialties()));
             case "national-specialty"->{require(args,2);if(!p.hasPermission("starworld.admin")&&!core.canGovern(p.getUniqueId(),city.cityId()))throw new IllegalArgumentException("国家专长需要国家创始人权限");runtime.reply(p,runtime.open(city),v->{CoreCity fresh=runtime.playerCity(p).filter(c->c.cityId().equals(city.cityId())&&c.nationId().equals(city.nationId())).orElseThrow(()->new IllegalArgumentException("城市归属已变化"));if(!p.hasPermission("starworld.admin")&&!core.canGovern(p.getUniqueId(),fresh.cityId()))throw new IllegalArgumentException("国家治理权限已变化");runtime.reply(p,runtime.async(()->national.choose(fresh.nationId(),args[1],runtime.currentPeriod(),p.getUniqueId().toString())),profile->p.sendMessage("§a国家专长："+profile.specialty()));});}

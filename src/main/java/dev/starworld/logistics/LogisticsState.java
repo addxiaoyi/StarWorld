@@ -9,6 +9,7 @@ public final class LogisticsState {
     public enum NodeType { ROAD, BRIDGE, PORT, PASS }
     public enum Mode { LAND, SEA }
     public enum OrderStatus { OFFERED, IN_TRANSIT, PAUSED, COMPLETED, CANCELLED, EXPIRED }
+    public enum RerouteStatus { PENDING, APPLIED, CANCELLED, EXPIRED }
 
     /**
      * Captured for exactly one current period on the Paper main thread. controlledAnchors means
@@ -67,4 +68,17 @@ public final class LogisticsState {
     }
     public record SupplyDemand(UUID cityId, String item, long available, long desired, long surplus, long shortage) {}
     public record BatchResult(long period, int inspected, int progressed, int completed, int paused, int expired) {}
+
+    /** Both cities must consent before accepted escrow starts a different complete journey. */
+    public record Reroute(UUID id, UUID orderId, UUID previousRouteId, UUID proposedRouteId, UUID proposerCity,
+                          long createdPeriod, long expiresPeriod, RerouteStatus status, long appliedPeriod) {}
+
+    /** Persisted traffic observations only; this is not proof that a chunk, anchor or nation is still valid. */
+    public record NodeTraffic(UUID nodeId, UUID cityId, NodeType type, long capacity, long used, long remaining,
+                              long maintenancePeriod, boolean maintenancePaid, boolean enabled) {}
+    public record TransportStatus(UUID routeId, long period, long capacity, long routeUsed, long available,
+                                  List<NodeTraffic> nodes, List<UUID> bottlenecks, int waitingOrders,
+                                  int pausedOrders, Map<String, Integer> pausedReasons, boolean routeEnabled) {
+        public TransportStatus { nodes=List.copyOf(nodes);bottlenecks=List.copyOf(bottlenecks);pausedReasons=Map.copyOf(pausedReasons); }
+    }
 }

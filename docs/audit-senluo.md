@@ -4,6 +4,14 @@
 
 审计日期：2026-11-19（Asia/Shanghai）。审计方式：读取 Git 远端当前代码、README、Gradle 定义、插件描述符、公开 API、事件触发点、状态与调度代码。本审计不把上游 README 的历史验收范围扩大为 StarWorld 的运行验收。
 
+## 1.0.0 最新源码审计与运行基线
+
+2026-11-20 通过 GitHub 远端确认 `7b8ef80d19e4f6e1a2703016e3ce898bcdd23f66` 为当时最新 HEAD。最后一次提交只整理功能清单；与 0.4 审计的 `3e774d00567deb9cb65eee8da6de8a65254e5b8e` 完整比较，则有 10 个提交、50 个变更路径。基线仍为 Paper 1.21.11、Java 21、CraftEngine 26.9.1。根 Gradle 增加 Mojang 测试运行依赖，系列插件源码、描述符及 Cookery 公共 API 没有变化。
+
+新的 Cookery `CookeryFoodItems` 使生成食物药水效果的 ambient 标志符合原生数据；原生镰刀更新目标分类、重置、工具损耗和事件验证；村庄更新新增村庄厨屋模板来源与迁移实现。这些变化没有为 StarWorld 提供持久、可去重的食材生产回执，也没有改变现有 CE 物品识别接口或为 MusicPlus 增加公开的 `/kmusic` 完成事件。1.0 城市需求仍只认可 StarWorld 已提交的宴会、每期真实家具维护与受控演奏的完成凭据。
+
+1.0 隔离服继续固定下文 `3e774d0…` 所对应已核对的 Cookery 候选和 `kitchen-crops-3.zip`；同时记录最新源码审计提交、候选生产源码基线以及各自的匹配证据。森罗开发工作区仍有进行中的改动，未从中直接拷贝新构建覆盖已固定候选。1.0 运行验收范围见[森罗联调验证](senluo-acceptance.md)；不将镰刀、村庄、最新候选二进制或客户端视听效果列为 StarWorld 已验证项。
+
 ## 0.4.0 最新代码与候选复审
 
 2026-11-20 通过 GitHub 远端提交接口复核，StarCore 仍为 `f769e62799e769a18fe51305b545869a17f80cd1`，森罗物语远端 HEAD 为 `3e774d00567deb9cb65eee8da6de8a65254e5b8e`（2026-11-20 13:20:32 +08:00，`Match exported food components to production item encoding`）。StarWorld 自己的干净审计 checkout 固定此提交；没有改动森罗开发工作区，也没有启动 Java、构建或服务器。相对下文 `c3642ae…` 新增 8 次提交、32 个文件变化；Paper `1.21.11`、Java 21 主目标、CraftEngine `26.9.1` 和两个 Gradle 工程的依赖基线不变。
@@ -23,7 +31,7 @@ StarWorld `CustomItems` 通过 CE 公共 `CraftEngineItems.getCustomItemId(ItemS
 
 既有 `village-crops-integrated-1.log` 记录 `BUILD SUCCESSFUL` 且执行 `shadowJar`；`food-canonical-java-1.log` 记录 `BUILD SUCCESSFUL`、`shadowJar UP-TO-DATE`，现有 Java XML 报告为 662 项、82 套件、零失败/错误/跳过；`food-canonical-python-1.log` 记录 252 项通过。审计未重跑这些测试。候选 JAR 未嵌入源码提交；与本地编译生产类比较为 543 类相同、零缺失、9 类不同，差异位于插件主类、`InteractGuard` 和七个 NMS 适配类，其所在构建有 Shadow 重定位，因此不能宣称全 JAR 与编译输出逐字节一致，也不能据此宣称可重复构建。最新重载/村庄桥接类、资源 `plugin.yml` 和 `village-loot.json` 已与现有编译输出核对。完整本机来源记录在 StarWorld 工具区 `upstream-senluo-04-provenance.json`。
 
-**这组新候选的 StarWorld 实服验收尚未运行。** 上游先前严格 PDC 比较曾失败，新包不能继承旧包的运行通过结论；下文 0.3.0 的 15/15 记录只适用于 `fc81eaf8…` 与 `kitchen-crops-2.zip`。0.4.0 联调须另建世界和 StarWorld 数据库，固定 StarWorld JAR 哈希，安装上表两件匹配候选及不变系列候选，移除同名旧厨房包，保留 CE 自带内容；先验证精确物品 ID 与原始 CE/生产 BASE 的组件一致性，再执行生活联动、家具生命周期、失地复核、演奏和正常重启去重。须保存 PREP 清单、完整日志及两次正常停服证据；不据此扩大到画面/音频、完整作物玩法或 Folia 安全。
+这组候选随后通过了 [0.4.0 StarWorld 隔离服 15 项联调](history/senluo-acceptance-0.4.0.md)。上游先前严格 PDC 比较曾失败；下文 0.3.0 的 15/15 记录只适用于 `fc81eaf8…` 与 `kitchen-crops-2.zip`。不同组合的运行证据分别保存，不据此扩大到画面/音频、完整作物玩法或 Folia 安全。
 
 ## 0.3.0 历史代码复审
 

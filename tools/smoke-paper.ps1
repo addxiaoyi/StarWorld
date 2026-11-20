@@ -38,6 +38,16 @@ function Resolve-LocalFile([string] $Path) {
 $JavaPath = Resolve-LocalFile $JavaPath
 $ServerJar = Resolve-LocalFile $ServerJar
 $PluginJar = Resolve-LocalFile $PluginJar
+$pluginArchive = [IO.Compression.ZipFile]::OpenRead($PluginJar)
+try {
+    $descriptorEntry = $pluginArchive.GetEntry('plugin.yml')
+    if (!$descriptorEntry) { throw 'Plugin JAR lacks plugin.yml.' }
+    $descriptorReader = [IO.StreamReader]::new($descriptorEntry.Open())
+    try { $descriptor = $descriptorReader.ReadToEnd() } finally { $descriptorReader.Dispose() }
+    $versionMatch = [regex]::Match($descriptor, '(?m)^version:\s*(.+)\s*$')
+    $pluginVersion = $versionMatch.Groups[1].Value.Trim().Trim([char[]]@([char]39,[char]34))
+    if ($pluginVersion -notmatch '^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$') { throw 'Plugin JAR has an unsupported version.' }
+} finally { $pluginArchive.Dispose() }
 $RuntimeDirectory = [IO.Path]::GetFullPath($RuntimeDirectory)
 if ($RuntimeDirectory -eq [IO.Path]::GetPathRoot($RuntimeDirectory)) { throw 'A filesystem root cannot be a smoke runtime.' }
 if (Test-Path -LiteralPath $RuntimeDirectory -PathType Leaf) { throw 'RuntimeDirectory is a file.' }
@@ -180,7 +190,7 @@ motd=StarWorld isolated smoke test
             if ($process.ExitCode -ne 0 -or $combined -match 'StarWorld startup failed|Could not flush StarWorld storage|Error occurred while enabling StarWorld') {
                 throw "Paper/StarWorld failed; inspect smoke-run-$Run.log."
             }
-            if ($combined -notmatch 'StarWorld ready:.*transactional schema 2' -or $combined -notmatch 'StarWorld 0\.') {
+            if ($combined -notmatch 'StarWorld ready:.*transactional schema 2' -or $combined -notmatch ('StarWorld '+[regex]::Escape($pluginVersion)+'(?:\s|$)')) {
                 throw "Missing plugin schema/status output in smoke-run-$Run.log."
             }
             Write-Output "Paper startup, console status and clean shutdown passed (run $Run)."

@@ -32,6 +32,11 @@ world.city(starCoreCityId).thenAccept(result -> {
 | `disasterResponse(UUID)` | `Future<Optional<DisasterState.Response>>`；按稳定请求 UUID 读取救灾成本、生效/到期、原事件身份、恢复步骤与预算快照 |
 | `disasterResponses(UUID,int,int)` | `Future<List<DisasterState.Response>>`；按城市分页读取救灾回执，含已完成/到期记录，不重新扣料或赋予权限；limit 为 1 至配置 `limits.max-page`（最多128），offset 为 0–1,000,000 |
 | `disasterHistory(UUID,int,int)` | `Future<List<DisasterState.History>>`；按城市分页读取请求与已提交恢复历史，分页边界同上 |
+| `publicWorks(UUID,int,int)` | `Future<List<PublicWorksState.Project>>`；城市各原国家的工程参数快照、施工进度、最近维护水位；limit不超过配置 `max-page`，offset为0–1,000,000 |
+| `publicWorksHistory(UUID,int,int)` | `Future<List<PublicWorksState.History>>`；有界工程施工、完成、运行和暂停历史；同工程分页边界 |
+| `civicNeeds(UUID,int,int)` | `Future<List<CivicNeedsState.Request>>`；需求参数快照、请求/到期/完成周期和保存状态；limit与offset遵从独立需求配置 |
+| `civicHistory(UUID,int,int)` | `Future<List<CivicNeedsState.History>>`；已提交的需求请求和完成历史；同需求分页边界 |
+| `civicReceipt(UUID)` | `Future<Optional<CivicNeedsState.Receipt>>`；只返回已完成需求的实际动作UUID、实付材料和封顶奖励，`applied=false`；不存在或未完成返回空，不执行完成或认领 |
 | `readiness(UUID)` | `Future<Optional<Readiness>>`；城市/国家/周期、provided/required军需、terrainDefense及readiness |
 | `integrationStatus()` | 真实能力/降级原因；涉及StarCore读取，须在Paper主线程调用 |
 
@@ -101,3 +106,13 @@ public void onIndustry(IndustrySettledEvent event) {
 幂等重试先核对持久城市的当前 nation 与 active 状态，再匹配原请求的 city/nation/strategy；调用边界仍须证明当前权限。同权限历史重试允许旧事件、旧请求周期并返回原回执，当前归属变化或城市失效会拒绝，不会借原 UUID 修改新事件。`remainingBudget` 同时覆盖稳定、繁荣与自然资源，按该顺序消耗；属性按实际封顶增量 `ceil` 收费，已满100不消耗预算，资源按实际恢复量收费。上限或余额不足时返回实际恢复量，history 记录实际变化。
 
 `Simulation.Hooks.eventFactor(building,event,period,base)` 在实际事件推进后、地理和其他生产倍率组合前调用。默认原样返回；对于 `base < 1` 只能返回 `[base,1]`，对于 `base >= 1` 必须原样返回。无效值使整期回滚，不能以救灾制造正向事件增益。`ExpansionRuntime` 将有效响应接入该钩子，并在正常城市演化完成后、最终结算回执之前调用响应恢复。库存、地区储量、稳定/繁荣与救灾历史/步骤在同一个 `WorldStore` 事务提交；失败回滚，重复周期不执行恢复。跨期恢复每个实际结算至多一步，不补算离线周期；失去原国家归属或必需设施时暂停，资源只恢复配置允许的可再生容量，不恢复矿石。
+
+## 公共工程与城市需求
+
+`/sw governance` 打开独立注册的 `GovernanceMenu`；`/sw works-menu`、`/sw civic-menu` 分别打开工程与需求状态，城市主界面和发展界面的空槽也提供治理入口。原城市、市场、地区和灾害菜单保留。治理菜单展示当前库存缺口、工程门槛/起建成本/逐期施工与运行维护、已提交进度和暂停原因，以及真实 `LifeView` 累计文化/家具登记/演奏会话。生活快照只是参考，不能宣称这些动作仍可被某项需求认领。
+
+`PublicWorksController.startFromPreview` 和 `CivicNeedsController.requestFromPreview/completeFromPreview` 在 Paper 主线程核实在线、使用/管理权限、当前成员、实时核心城市与国家，并在只读城市查询后重新捕获实际有效锚点。控制器不调用 `ensureCity` 或 `runtime.open` 重新激活权限。`ExpansionRuntime.startPublicWorks/requestCivicNeed/completeCivicNeed` 是上述受控入口的转发；GUI 确认页始终保留同一个请求 UUID，旧国家或旧界面不能回放操作。Civic 请求幂等重试先查询原请求周期，再让服务核对原 actor/type/city/nation；请求本身不扣材料、不发奖励，完成才选取真实已提交且未认领的请求后生活凭据并同事务扣料。公共空间需要不同真实家具的维护，缺少 CE 家具 API 时暂停，登记不能代替维护。
+
+`PublicWorksService` 在演化服务之后初始化，`CivicNeedsService` 在生活服务建表之后初始化，各自配置和物品ID独立加入扩展存入白名单。正常城市结算由 `works.atomicSettlement` 包住整个 `ensureCity`、重复周期检查、扩展周期和 `Simulation.settle`。工程运行维护在 Simulation 读取库存之前扣除，工程倍率与既有城市/国家倍率组合并继续受总上限约束；建设推进在正常演化和救灾恢复之后、最终结算回执之前执行，完成当期不享受运行倍率。即使外层调用方捕获异常并继续提交其他工作，工程 savepoint 也会回滚该失败结算的库存、储量、演化、生活消费、救灾与工程水位。
+
+工程/需求公开 Future 方法仅调用相应仓储的只读列表、历史和完成回执查询，不推进施工、收维护费、完成需求或生成生活凭据。Civic 完成更新已提交 profile，后续正常结算从新 profile 捕获，不用旧快照覆盖有限奖励。内部 `cycle`/`completed` 必须遵守上述完整结算事务，不是查询 API。详情见[公共工程](public-works.md)和[城市需求](civic-needs.md)。

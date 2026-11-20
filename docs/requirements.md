@@ -1,6 +1,6 @@
 # 原始需求与实现、验证映射
 
-此表按开发任务逐项对应0.3.0源码，不以“有设计”代替运行实现。自动化组名指 `src/test/java/dev/starworld/` 下测试；通过数、真实服务端流程、最终JAR哈希及未验证项以 [test-results.md](test-results.md) 为准。
+此表按开发任务逐项对应 1.0.0 源码。自动化组名指 `src/test/java/dev/starworld/` 下测试；通过数、真实服务端流程、JAR 哈希及未验证项以 [test-results.md](test-results.md) 为准。
 
 ## 项目、环境和复用
 
@@ -82,13 +82,13 @@
 | 不直接修改核心权威表 | WorldStore只保存插件目录starworld.db；资源出口走公开TransactionService | 源码审计、outbox端口/回执测试 |
 | 独立持久化、重启恢复 | WAL+FULL、事务、last_period、settlement、logistics/life/evolution/outbox表 | 真SQLite、并发、独立进程中断、重开与迁移测试；有界无损审计归档保留关键业务去重凭据 |
 | 公开JavaAPI和事件 | StarWorldApi查询、IndustrySettled/WorldEvolution/CityDevelopment事件 | Future值不可变，提交后通知；事件非可靠支付队列 |
-| 可配置数据和GUI | 七个配置文件、九设施/文明/规划/地区/实物市场GUI及命令入口 | `ConfigLoaderTest`、Life/Logistics配置测试、`CityMenuTest` |
-| 防重复产出 | 城市/地区period账本、货单/文化/生活/国家transaction稳定ID | 同周期/同请求/并发/崩溃/失ACK场景 |
+| 可配置数据和GUI | 十份配置；设施、文明、规划、地区、市场、灾害、公共工程及生活需求界面与命令入口 | `ConfigLoaderTest`、Life/Logistics 配置测试、`CityMenuTest`、`GovernanceMenuTest` |
+| 防重复产出 | 城市/地区周期账本；货单、文化、生活、国家事务、工程与城市需求均有稳定 ID | 同周期、同请求、并发、崩溃、失去 ACK；城市需求同时全局去重已认领动作 |
 | 不持续扫区块/大量实体 | 城市分页、有限登记锚点/节点/家具、空间听众查询 | 不加载区块、有限批量和不重叠任务；已有千城/两千设施真实SQLite基线，Paper世界负载/TPS仍需实际测量 |
 | Folia区域调度正确 | SchedulerGate预留Global/Entity/Region边界，当前检测停用 | 上游不满足前不虚报兼容，正式Folia真服未验收 |
 | 森罗可选依赖、明确降级 | 正确插件名softdepend、CustomItems/平台能力诊断 | 缺CE或内容停相关动作，原版链继续；不伪造完成API |
 | 安装/升级/迁移 | 首次配置、旧ID优先、版本拒绝、备份与加法DDL | 配置/基础schema迁移、各模块识别的未来版本拒绝测试；降级用备份 |
-| 第一阶段6地理/3链/3设施/2文明/3事件 | 已包含于当前6/完整基础3链/9设施/5文明/11事件 | 当前JAR的20阶段扩展、15阶段森罗与基础回归证据分别记录，详细见测试结果 |
+| 第一阶段6地理/3链/3设施/2文明/3事件 | 已包含于当前6/完整基础3链/9设施/5文明/11事件 | 各版本真实服务端验收与自动化报告见测试结果 |
 | 国家状态、持久化、配置、GUI、自动测试 | 上述实际模块与测试、客户端工具、GitHub CI | 最终通过数和JAR哈希不在此硬编码，避免旧结果冒充新版本 |
 
 ## 0.4 交通规划增量
@@ -97,6 +97,15 @@
 | --- | --- |
 | 已声明路线成本比较 | `RoutePlan` 不可变查询、`StarWorldApi.routePlans`、`/sw route compare`；按周期/距离/容量/节点数/UUID稳定排序，停用路线仍可比较；`TransportPlanningTest` 覆盖10项测试 |
 | 第三国过境 | 明确保持拒绝；StarCore公开API未提供通道许可、过境回执或第三国外交授权，现有服务拒绝第三城市节点，未复制核心权威 |
+
+## 0.5 至 1.0 深化
+
+| 增量 | 实现与验证 |
+| --- | --- |
+| 救灾与长期恢复 | [灾害治理](disaster-governance.md)：3 类灾害各 2 种策略，收取真实材料，次期缓解；稳定、繁荣、可再生资源共享有限恢复预算 |
+| 公共工程和分工 | [公共工程](public-works.md)：3 类投资依赖有效设施、文明和城市发展；每期单独付费，失地或缺料暂停，完成后持续维护才加成 |
+| 生活需求 | [城市生活需求](civic-needs.md)：事务同时扣库存、认领请求后真实宴会/家具维护/演奏凭据并记录奖励；重放返还同回执 |
+| 连续世界与升级 | 独立隔离服覆盖三城、三次启停、战时暂停、和平交付和进口救灾；真实 0.5 备份用于验证加法式迁移。通过状态见[测试结果](test-results.md) |
 
 ## 玩家决策如何落实
 

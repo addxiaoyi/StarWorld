@@ -1,106 +1,112 @@
 {
   "schema": 1,
-  "startedAt": "2026-11-19T23:56:33.827Z",
+  "startedAt": "2026-11-20T03:34:21.404Z",
   "status": "passed",
   "node": "v24.22.3",
   "mineflayer": "4.39.0",
   "minecraft": "1.21.11",
-  "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\baseline-final-07",
+  "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\baseline-final-09",
   "paperSha256": "5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba",
   "pluginJars": {
     "StarCore.jar": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
-    "StarWorld.jar": "3940fdf96c82bcb25be75a30d034615047d23545d48781ea290e4dfcafd654f6",
-    "StarWorldTestFixture.jar": "1ef9fdc464722933556c08771392330fb7e176da8491fe1b333331984f7a981f"
+    "StarWorld.jar": "15946f82e248d08cabba45f4389d23297a9e27f574468658faa7edf6426382e1",
+    "StarWorldFixture.jar": "00f0914bced06d153f707574b3cbdc9300f4d4d6fb2abc03802dd1a08d87bfbb"
   },
   "testTuning": {
     "periodSeconds": 10,
     "eventChance": 0,
     "configSha256": "33eb3a42c8e4bdcfa913c753d6a5b6e8ab9b521e77fbf9174084da7e17740cbe",
     "definitionsSha256": "870218ae9beb6bcb7d20ff52e3ae41bdc9c58ed6ce73f2a354d2d2109d25c1af",
+    "nodeVersion": "v24.22.3",
+    "nodeExecArgv": [
+      "--max-old-space-size=128",
+      "--max-semi-space-size=4"
+    ],
+    "javaOptionsEnvironment": "-Xms128m -Xmx512m -Xss512k -XX:MaxMetaspaceSize=192m -XX:MaxDirectMemorySize=64m -XX:ReservedCodeCacheSize=64m -XX:TieredStopAtLevel=1 -XX:ActiveProcessorCount=1 -XX:+UseSerialGC -Dio.netty.eventLoopThreads=2",
     "droughtDurationPeriods": 12,
     "droughtAftermathPeriods": 2
   },
   "steps": [
     {
       "name": "real Paper, StarCore and StarWorld startup",
-      "startedAt": "2026-11-19T23:56:34.227Z",
+      "startedAt": "2026-11-20T03:34:21.756Z",
       "status": "passed",
       "observed": {
         "loaded": true,
-        "serverPid": 16220
+        "serverPid": 1072
       },
-      "finishedAt": "2026-11-19T23:57:26.488Z"
+      "finishedAt": "2026-11-20T03:35:08.579Z"
     },
     {
       "name": "real offline player login",
-      "startedAt": "2026-11-19T23:57:26.492Z",
+      "startedAt": "2026-11-20T03:35:08.581Z",
       "status": "passed",
       "observed": {
         "uuid": "363cb761-f442-3a44-b511-0ffbf8720f97",
         "username": "StarWorldQA"
       },
-      "finishedAt": "2026-11-19T23:57:31.164Z"
+      "finishedAt": "2026-11-20T03:35:12.188Z"
     },
     {
       "name": "public StarCore country, city and dual claims",
-      "startedAt": "2026-11-19T23:57:31.169Z",
+      "startedAt": "2026-11-20T03:35:12.189Z",
       "status": "passed",
-      "observed": "[07:57:31 INFO]: [StarWorldFixture] SW_FIXTURE_SETUP city=633e798c-5a18-4670-8eb7-763352802c7d nation=68c29b68-fb48-4f4e-bf1c-691f5b04d328 player=363cb761-f442-3a44-b511-0ffbf8720f97",
-      "finishedAt": "2026-11-19T23:57:31.381Z"
+      "observed": "[11:35:12 INFO]: [StarWorldFixture] SW_FIXTURE_SETUP city=0722184b-a3be-4da1-b5cc-f148d69898b2 nation=dca0479b-0fe5-4043-9ed2-f1689b068a38 player=363cb761-f442-3a44-b511-0ffbf8720f97",
+      "finishedAt": "2026-11-20T03:35:12.391Z"
     },
     {
       "name": "three real raycast facility registrations",
-      "startedAt": "2026-11-19T23:57:31.383Z",
+      "startedAt": "2026-11-20T03:35:12.391Z",
       "status": "passed",
       "observed": {
-        "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
+        "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
         "lastPeriod": -1,
         "stock": {},
         "buildings": 3,
         "event": null,
         "lastReport": "",
-        "raw": "[07:57:32 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":-1,\"stock\":{},\"buildingCount\":3,\"event\":null,\"lastReport\":\"\"}"
+        "raw": "[11:35:13 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":-1,\"stock\":{},\"buildingCount\":3,\"event\":null,\"lastReport\":\"\"}"
       },
-      "finishedAt": "2026-11-19T23:57:32.529Z"
+      "finishedAt": "2026-11-20T03:35:13.499Z"
     },
     {
       "name": "food, timber and military supply chains actually produce",
-      "startedAt": "2026-11-19T23:57:32.531Z",
+      "startedAt": "2026-11-20T03:35:13.499Z",
       "status": "passed",
       "observed": {
-        "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-        "lastPeriod": 179513265,
+        "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+        "lastPeriod": 179514570,
         "stock": {
-          "minecraft:raw_iron": 4,
-          "minecraft:paper": 8,
-          "minecraft:oak_log": 5,
-          "minecraft:oak_planks": 22,
-          "minecraft:wheat": 36,
-          "minecraft:bread": 2,
+          "minecraft:oak_planks": 10,
+          "minecraft:wheat": 18,
+          "minecraft:bread": 1,
           "minecraft:arrow": 13,
-          "minecraft:iron_ingot": 0
+          "minecraft:iron_ingot": 0,
+          "minecraft:raw_iron": 1,
+          "minecraft:paper": 4,
+          "minecraft:oak_log": 2
         },
         "buildings": 3,
         "event": null,
         "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
-        "raw": "[07:57:37 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513265,\"stock\":{\"minecraft:raw_iron\":4,\"minecraft:paper\":8,\"minecraft:oak_log\":5,\"minecraft:oak_planks\":22,\"minecraft:wheat\":36,\"minecraft:bread\":2,\"minecraft:arrow\":13,\"minecraft:iron_ingot\":0},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
+        "raw": "[11:35:16 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514570,\"stock\":{\"minecraft:oak_planks\":10,\"minecraft:wheat\":18,\"minecraft:bread\":1,\"minecraft:arrow\":13,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":1,\"minecraft:paper\":4,\"minecraft:oak_log\":2},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
       },
-      "finishedAt": "2026-11-19T23:57:37.855Z"
+      "finishedAt": "2026-11-20T03:35:16.202Z"
     },
     {
       "name": "real arrow withdrawal and deposit conserve player items",
-      "startedAt": "2026-11-19T23:57:37.859Z",
+      "startedAt": "2026-11-20T03:35:16.202Z",
       "status": "passed",
       "observed": {
         "before": 0,
         "delivered": 4,
         "afterDeposit": 0
       },
-      "finishedAt": "2026-11-19T23:57:38.070Z"
+      "finishedAt": "2026-11-20T03:35:16.406Z"
     },
     {
       "name": "GUI shift click cannot extract display items",
-      "startedAt": "2026-11-19T23:57:38.073Z",
+      "startedAt": "2026-11-20T03:35:16.407Z",
       "status": "passed",
       "observed": {
         "title": {
@@ -110,21 +116,23 @@
         "beaconCountBefore": 0,
         "beaconCountAfter": 0
       },
-      "finishedAt": "2026-11-19T23:57:39.114Z"
+      "finishedAt": "2026-11-20T03:35:17.444Z"
     },
     {
       "name": "ordinary founder cannot trigger administrator events",
-      "startedAt": "2026-11-19T23:57:39.117Z",
+      "startedAt": "2026-11-20T03:35:17.445Z",
       "status": "passed",
       "observed": "StarWorld: 需要管理员权限",
-      "finishedAt": "2026-11-19T23:57:39.234Z"
+      "finishedAt": "2026-11-20T03:35:17.547Z"
     },
     {
       "name": "special named items survive real warehouse deposits",
-      "startedAt": "2026-11-19T23:57:39.239Z",
+      "startedAt": "2026-11-20T03:35:17.547Z",
       "status": "passed",
       "observed": {
         "seeded": {
+          "player": "StarWorldQA",
+          "action": "seed",
           "items": [
             {
               "slot": 0,
@@ -144,11 +152,11 @@
               "amount": 7,
               "named": true
             }
-          ],
-          "player": "StarWorldQA",
-          "action": "seed"
+          ]
         },
         "rejected": {
+          "player": "StarWorldQA",
+          "action": "inventory",
           "items": [
             {
               "slot": 0,
@@ -168,196 +176,10 @@
               "amount": 7,
               "named": true
             }
-          ],
-          "player": "StarWorldQA",
-          "action": "inventory"
+          ]
         },
         "deposited": {
-          "items": [
-            {
-              "slot": 0,
-              "type": "minecraft:written_book",
-              "amount": 1,
-              "named": true
-            },
-            {
-              "slot": 2,
-              "type": "minecraft:wheat",
-              "amount": 7,
-              "named": true
-            }
-          ],
           "player": "StarWorldQA",
-          "action": "inventory"
-        }
-      },
-      "finishedAt": "2026-11-19T23:57:39.759Z"
-    },
-    {
-      "name": "lost national territory halts military production",
-      "startedAt": "2026-11-19T23:57:39.762Z",
-      "status": "passed",
-      "observed": {
-        "first": {
-          "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-          "lastPeriod": 179513266,
-          "stock": {
-            "minecraft:raw_iron": 4,
-            "minecraft:paper": 12,
-            "minecraft:oak_log": 8,
-            "minecraft:oak_planks": 34,
-            "minecraft:wheat": 69,
-            "minecraft:bread": 4,
-            "minecraft:arrow": 13,
-            "minecraft:iron_ingot": 0
-          },
-          "buildings": 3,
-          "event": null,
-          "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产",
-          "raw": "[07:57:48 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513266,\"stock\":{\"minecraft:raw_iron\":4,\"minecraft:paper\":12,\"minecraft:oak_log\":8,\"minecraft:oak_planks\":34,\"minecraft:wheat\":69,\"minecraft:bread\":4,\"minecraft:arrow\":13,\"minecraft:iron_ingot\":0},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:bread\\u003d3, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:wheat\\u003d23}；workshop: 领土/建筑失效，停产\"}"
-        },
-        "after": {
-          "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-          "lastPeriod": 179513268,
-          "stock": {
-            "minecraft:raw_iron": 4,
-            "minecraft:paper": 20,
-            "minecraft:oak_log": 14,
-            "minecraft:oak_planks": 58,
-            "minecraft:wheat": 103,
-            "minecraft:bread": 8,
-            "minecraft:arrow": 13,
-            "minecraft:iron_ingot": 0
-          },
-          "buildings": 3,
-          "event": null,
-          "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产",
-          "raw": "[07:58:06 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513268,\"stock\":{\"minecraft:raw_iron\":4,\"minecraft:paper\":20,\"minecraft:oak_log\":14,\"minecraft:oak_planks\":58,\"minecraft:wheat\":103,\"minecraft:bread\":8,\"minecraft:arrow\":13,\"minecraft:iron_ingot\":0},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:bread\\u003d3, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:wheat\\u003d23}；workshop: 领土/建筑失效，停产\"}"
-        }
-      },
-      "finishedAt": "2026-11-19T23:58:06.706Z"
-    },
-    {
-      "name": "reclaimed territory resumes military production",
-      "startedAt": "2026-11-19T23:58:06.708Z",
-      "status": "passed",
-      "observed": {
-        "before": {
-          "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-          "lastPeriod": 179513268,
-          "stock": {
-            "minecraft:raw_iron": 4,
-            "minecraft:paper": 20,
-            "minecraft:oak_log": 14,
-            "minecraft:oak_planks": 58,
-            "minecraft:wheat": 103,
-            "minecraft:bread": 8,
-            "minecraft:arrow": 13,
-            "minecraft:iron_ingot": 0
-          },
-          "buildings": 3,
-          "event": null,
-          "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产",
-          "raw": "[07:58:06 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513268,\"stock\":{\"minecraft:raw_iron\":4,\"minecraft:paper\":20,\"minecraft:oak_log\":14,\"minecraft:oak_planks\":58,\"minecraft:wheat\":103,\"minecraft:bread\":8,\"minecraft:arrow\":13,\"minecraft:iron_ingot\":0},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:bread\\u003d3, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:wheat\\u003d23}；workshop: 领土/建筑失效，停产\"}"
-        },
-        "after": {
-          "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-          "lastPeriod": 179513269,
-          "stock": {
-            "minecraft:raw_iron": 5,
-            "minecraft:paper": 24,
-            "minecraft:oak_log": 16,
-            "minecraft:oak_planks": 68,
-            "minecraft:wheat": 120,
-            "minecraft:bread": 8,
-            "minecraft:arrow": 26,
-            "minecraft:iron_ingot": 0
-          },
-          "buildings": 3,
-          "event": null,
-          "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
-          "raw": "[07:58:17 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513269,\"stock\":{\"minecraft:raw_iron\":5,\"minecraft:paper\":24,\"minecraft:oak_log\":16,\"minecraft:oak_planks\":68,\"minecraft:wheat\":120,\"minecraft:bread\":8,\"minecraft:arrow\":26,\"minecraft:iron_ingot\":0},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
-        }
-      },
-      "finishedAt": "2026-11-19T23:58:17.422Z"
-    },
-    {
-      "name": "administrator world event is actually persisted",
-      "startedAt": "2026-11-19T23:58:17.424Z",
-      "status": "passed",
-      "observed": {
-        "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-        "lastPeriod": 179513269,
-        "stock": {
-          "minecraft:raw_iron": 5,
-          "minecraft:paper": 24,
-          "minecraft:oak_log": 16,
-          "minecraft:oak_planks": 68,
-          "minecraft:wheat": 120,
-          "minecraft:bread": 8,
-          "minecraft:arrow": 26,
-          "minecraft:iron_ingot": 0
-        },
-        "buildings": 3,
-        "event": "EventState[type=drought, startPeriod=179513269, endPeriod=179513281, aftermathEndPeriod=179513283]",
-        "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
-        "raw": "[07:58:17 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513269,\"stock\":{\"minecraft:raw_iron\":5,\"minecraft:paper\":24,\"minecraft:oak_log\":16,\"minecraft:oak_planks\":68,\"minecraft:wheat\":120,\"minecraft:bread\":8,\"minecraft:arrow\":26,\"minecraft:iron_ingot\":0},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179513269, endPeriod\\u003d179513281, aftermathEndPeriod\\u003d179513283]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
-      },
-      "finishedAt": "2026-11-19T23:58:17.885Z"
-    },
-    {
-      "name": "first server shuts down and flushes extension state",
-      "startedAt": "2026-11-19T23:58:17.887Z",
-      "status": "passed",
-      "observed": {
-        "cleanExit": true
-      },
-      "finishedAt": "2026-11-19T23:58:19.788Z"
-    },
-    {
-      "name": "same world and real core city recover after restart",
-      "startedAt": "2026-11-19T23:58:19.791Z",
-      "status": "passed",
-      "observed": {
-        "before": {
-          "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-          "lastPeriod": 179513269,
-          "stock": {
-            "minecraft:raw_iron": 5,
-            "minecraft:paper": 24,
-            "minecraft:oak_log": 16,
-            "minecraft:oak_planks": 68,
-            "minecraft:wheat": 120,
-            "minecraft:bread": 8,
-            "minecraft:arrow": 26,
-            "minecraft:iron_ingot": 0
-          },
-          "buildings": 3,
-          "event": "EventState[type=drought, startPeriod=179513269, endPeriod=179513281, aftermathEndPeriod=179513283]",
-          "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
-          "raw": "[07:58:17 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513269,\"stock\":{\"minecraft:raw_iron\":5,\"minecraft:paper\":24,\"minecraft:oak_log\":16,\"minecraft:oak_planks\":68,\"minecraft:wheat\":120,\"minecraft:bread\":8,\"minecraft:arrow\":26,\"minecraft:iron_ingot\":0},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179513269, endPeriod\\u003d179513281, aftermathEndPeriod\\u003d179513283]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
-        },
-        "after": {
-          "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-          "lastPeriod": 179513269,
-          "stock": {
-            "minecraft:bread": 8,
-            "minecraft:arrow": 26,
-            "minecraft:iron_ingot": 0,
-            "minecraft:raw_iron": 5,
-            "minecraft:paper": 24,
-            "minecraft:oak_log": 16,
-            "minecraft:oak_planks": 68,
-            "minecraft:wheat": 120
-          },
-          "buildings": 3,
-          "event": "EventState[type=drought, startPeriod=179513269, endPeriod=179513281, aftermathEndPeriod=179513283]",
-          "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
-          "raw": "[07:58:51 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513269,\"stock\":{\"minecraft:bread\":8,\"minecraft:arrow\":26,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":5,\"minecraft:paper\":24,\"minecraft:oak_log\":16,\"minecraft:oak_planks\":68,\"minecraft:wheat\":120},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179513269, endPeriod\\u003d179513281, aftermathEndPeriod\\u003d179513283]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
-        },
-        "currentPeriod": 179513273,
-        "clientArrowCount": 0,
-        "inventory": {
           "action": "inventory",
           "items": [
             {
@@ -372,140 +194,324 @@
               "amount": 7,
               "named": true
             }
-          ],
-          "player": "StarWorldQA"
+          ]
         }
       },
-      "finishedAt": "2026-11-19T23:58:51.407Z"
+      "finishedAt": "2026-11-20T03:35:18.055Z"
     },
     {
-      "name": "second server cleanly stops",
-      "startedAt": "2026-11-19T23:58:51.412Z",
+      "name": "lost national territory halts military production",
+      "startedAt": "2026-11-20T03:35:18.056Z",
+      "status": "passed",
+      "observed": {
+        "first": {
+          "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+          "lastPeriod": 179514572,
+          "stock": {
+            "minecraft:oak_planks": 32,
+            "minecraft:wheat": 69,
+            "minecraft:bread": 4,
+            "minecraft:arrow": 26,
+            "minecraft:iron_ingot": 0,
+            "minecraft:raw_iron": 2,
+            "minecraft:paper": 12,
+            "minecraft:oak_log": 7
+          },
+          "buildings": 3,
+          "event": null,
+          "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产",
+          "raw": "[11:35:28 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514572,\"stock\":{\"minecraft:oak_planks\":32,\"minecraft:wheat\":69,\"minecraft:bread\":4,\"minecraft:arrow\":26,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":2,\"minecraft:paper\":12,\"minecraft:oak_log\":7},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:bread\\u003d3, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:wheat\\u003d23}；workshop: 领土/建筑失效，停产\"}"
+        },
+        "after": {
+          "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+          "lastPeriod": 179514574,
+          "stock": {
+            "minecraft:oak_planks": 56,
+            "minecraft:wheat": 103,
+            "minecraft:bread": 8,
+            "minecraft:arrow": 26,
+            "minecraft:iron_ingot": 0,
+            "minecraft:raw_iron": 2,
+            "minecraft:paper": 20,
+            "minecraft:oak_log": 13
+          },
+          "buildings": 3,
+          "event": null,
+          "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产",
+          "raw": "[11:35:49 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514574,\"stock\":{\"minecraft:oak_planks\":56,\"minecraft:wheat\":103,\"minecraft:bread\":8,\"minecraft:arrow\":26,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":2,\"minecraft:paper\":20,\"minecraft:oak_log\":13},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:bread\\u003d3, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:wheat\\u003d23}；workshop: 领土/建筑失效，停产\"}"
+        }
+      },
+      "finishedAt": "2026-11-20T03:35:49.568Z"
+    },
+    {
+      "name": "reclaimed territory resumes military production",
+      "startedAt": "2026-11-20T03:35:49.569Z",
+      "status": "passed",
+      "observed": {
+        "before": {
+          "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+          "lastPeriod": 179514574,
+          "stock": {
+            "minecraft:oak_planks": 56,
+            "minecraft:wheat": 103,
+            "minecraft:bread": 8,
+            "minecraft:arrow": 26,
+            "minecraft:iron_ingot": 0,
+            "minecraft:raw_iron": 2,
+            "minecraft:paper": 20,
+            "minecraft:oak_log": 13
+          },
+          "buildings": 3,
+          "event": null,
+          "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产",
+          "raw": "[11:35:49 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514574,\"stock\":{\"minecraft:oak_planks\":56,\"minecraft:wheat\":103,\"minecraft:bread\":8,\"minecraft:arrow\":26,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":2,\"minecraft:paper\":20,\"minecraft:oak_log\":13},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:bread\\u003d3, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:wheat\\u003d23}；workshop: 领土/建筑失效，停产\"}"
+        },
+        "after": {
+          "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+          "lastPeriod": 179514575,
+          "stock": {
+            "minecraft:oak_planks": 66,
+            "minecraft:wheat": 120,
+            "minecraft:bread": 8,
+            "minecraft:arrow": 39,
+            "minecraft:iron_ingot": 0,
+            "minecraft:raw_iron": 3,
+            "minecraft:paper": 24,
+            "minecraft:oak_log": 15
+          },
+          "buildings": 3,
+          "event": null,
+          "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
+          "raw": "[11:36:00 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514575,\"stock\":{\"minecraft:oak_planks\":66,\"minecraft:wheat\":120,\"minecraft:bread\":8,\"minecraft:arrow\":39,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":3,\"minecraft:paper\":24,\"minecraft:oak_log\":15},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
+        }
+      },
+      "finishedAt": "2026-11-20T03:36:00.276Z"
+    },
+    {
+      "name": "administrator world event is actually persisted",
+      "startedAt": "2026-11-20T03:36:00.277Z",
+      "status": "passed",
+      "observed": {
+        "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+        "lastPeriod": 179514575,
+        "stock": {
+          "minecraft:oak_planks": 66,
+          "minecraft:wheat": 120,
+          "minecraft:bread": 8,
+          "minecraft:arrow": 39,
+          "minecraft:iron_ingot": 0,
+          "minecraft:raw_iron": 3,
+          "minecraft:paper": 24,
+          "minecraft:oak_log": 15
+        },
+        "buildings": 3,
+        "event": "EventState[type=drought, startPeriod=179514575, endPeriod=179514587, aftermathEndPeriod=179514589]",
+        "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
+        "raw": "[11:36:00 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514575,\"stock\":{\"minecraft:oak_planks\":66,\"minecraft:wheat\":120,\"minecraft:bread\":8,\"minecraft:arrow\":39,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":3,\"minecraft:paper\":24,\"minecraft:oak_log\":15},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179514575, endPeriod\\u003d179514587, aftermathEndPeriod\\u003d179514589]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
+      },
+      "finishedAt": "2026-11-20T03:36:00.728Z"
+    },
+    {
+      "name": "first server shuts down and flushes extension state",
+      "startedAt": "2026-11-20T03:36:00.729Z",
       "status": "passed",
       "observed": {
         "cleanExit": true
       },
-      "finishedAt": "2026-11-19T23:58:53.018Z"
+      "finishedAt": "2026-11-20T03:36:03.745Z"
+    },
+    {
+      "name": "same world and real core city recover after restart",
+      "startedAt": "2026-11-20T03:36:03.746Z",
+      "status": "passed",
+      "observed": {
+        "before": {
+          "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+          "lastPeriod": 179514575,
+          "stock": {
+            "minecraft:oak_planks": 66,
+            "minecraft:wheat": 120,
+            "minecraft:bread": 8,
+            "minecraft:arrow": 39,
+            "minecraft:iron_ingot": 0,
+            "minecraft:raw_iron": 3,
+            "minecraft:paper": 24,
+            "minecraft:oak_log": 15
+          },
+          "buildings": 3,
+          "event": "EventState[type=drought, startPeriod=179514575, endPeriod=179514587, aftermathEndPeriod=179514589]",
+          "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
+          "raw": "[11:36:00 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514575,\"stock\":{\"minecraft:oak_planks\":66,\"minecraft:wheat\":120,\"minecraft:bread\":8,\"minecraft:arrow\":39,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":3,\"minecraft:paper\":24,\"minecraft:oak_log\":15},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179514575, endPeriod\\u003d179514587, aftermathEndPeriod\\u003d179514589]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
+        },
+        "after": {
+          "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+          "lastPeriod": 179514575,
+          "stock": {
+            "minecraft:bread": 8,
+            "minecraft:wheat": 120,
+            "minecraft:oak_planks": 66,
+            "minecraft:oak_log": 15,
+            "minecraft:paper": 24,
+            "minecraft:raw_iron": 3,
+            "minecraft:iron_ingot": 0,
+            "minecraft:arrow": 39
+          },
+          "buildings": 3,
+          "event": "EventState[type=drought, startPeriod=179514575, endPeriod=179514587, aftermathEndPeriod=179514589]",
+          "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
+          "raw": "[11:36:38 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514575,\"stock\":{\"minecraft:bread\":8,\"minecraft:wheat\":120,\"minecraft:oak_planks\":66,\"minecraft:oak_log\":15,\"minecraft:paper\":24,\"minecraft:raw_iron\":3,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":39},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179514575, endPeriod\\u003d179514587, aftermathEndPeriod\\u003d179514589]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
+        },
+        "currentPeriod": 179514579,
+        "clientArrowCount": 0,
+        "inventory": {
+          "player": "StarWorldQA",
+          "items": [
+            {
+              "slot": 0,
+              "type": "minecraft:written_book",
+              "amount": 1,
+              "named": true
+            },
+            {
+              "slot": 2,
+              "type": "minecraft:wheat",
+              "amount": 7,
+              "named": true
+            }
+          ],
+          "action": "inventory"
+        }
+      },
+      "finishedAt": "2026-11-20T03:36:39.204Z"
+    },
+    {
+      "name": "second server cleanly stops",
+      "startedAt": "2026-11-20T03:36:39.205Z",
+      "status": "passed",
+      "observed": {
+        "cleanExit": true
+      },
+      "finishedAt": "2026-11-20T03:36:42.320Z"
     }
   ],
   "snapshots": [
     {
-      "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
+      "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
       "lastPeriod": -1,
       "stock": {},
       "buildings": 3,
       "event": null,
       "lastReport": "",
-      "raw": "[07:57:32 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":-1,\"stock\":{},\"buildingCount\":3,\"event\":null,\"lastReport\":\"\"}"
+      "raw": "[11:35:13 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":-1,\"stock\":{},\"buildingCount\":3,\"event\":null,\"lastReport\":\"\"}"
     },
     {
-      "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-      "lastPeriod": 179513265,
+      "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+      "lastPeriod": 179514570,
       "stock": {
-        "minecraft:raw_iron": 4,
-        "minecraft:paper": 8,
-        "minecraft:oak_log": 5,
-        "minecraft:oak_planks": 22,
-        "minecraft:wheat": 36,
-        "minecraft:bread": 2,
+        "minecraft:oak_planks": 10,
+        "minecraft:wheat": 18,
+        "minecraft:bread": 1,
         "minecraft:arrow": 13,
-        "minecraft:iron_ingot": 0
+        "minecraft:iron_ingot": 0,
+        "minecraft:raw_iron": 1,
+        "minecraft:paper": 4,
+        "minecraft:oak_log": 2
       },
       "buildings": 3,
       "event": null,
       "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
-      "raw": "[07:57:37 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513265,\"stock\":{\"minecraft:raw_iron\":4,\"minecraft:paper\":8,\"minecraft:oak_log\":5,\"minecraft:oak_planks\":22,\"minecraft:wheat\":36,\"minecraft:bread\":2,\"minecraft:arrow\":13,\"minecraft:iron_ingot\":0},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
+      "raw": "[11:35:16 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514570,\"stock\":{\"minecraft:oak_planks\":10,\"minecraft:wheat\":18,\"minecraft:bread\":1,\"minecraft:arrow\":13,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":1,\"minecraft:paper\":4,\"minecraft:oak_log\":2},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
     },
     {
-      "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-      "lastPeriod": 179513266,
+      "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+      "lastPeriod": 179514572,
       "stock": {
-        "minecraft:raw_iron": 4,
-        "minecraft:paper": 12,
-        "minecraft:oak_log": 8,
-        "minecraft:oak_planks": 34,
+        "minecraft:oak_planks": 32,
         "minecraft:wheat": 69,
         "minecraft:bread": 4,
-        "minecraft:arrow": 13,
-        "minecraft:iron_ingot": 0
+        "minecraft:arrow": 26,
+        "minecraft:iron_ingot": 0,
+        "minecraft:raw_iron": 2,
+        "minecraft:paper": 12,
+        "minecraft:oak_log": 7
       },
       "buildings": 3,
       "event": null,
       "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产",
-      "raw": "[07:57:48 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513266,\"stock\":{\"minecraft:raw_iron\":4,\"minecraft:paper\":12,\"minecraft:oak_log\":8,\"minecraft:oak_planks\":34,\"minecraft:wheat\":69,\"minecraft:bread\":4,\"minecraft:arrow\":13,\"minecraft:iron_ingot\":0},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:bread\\u003d3, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:wheat\\u003d23}；workshop: 领土/建筑失效，停产\"}"
+      "raw": "[11:35:28 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514572,\"stock\":{\"minecraft:oak_planks\":32,\"minecraft:wheat\":69,\"minecraft:bread\":4,\"minecraft:arrow\":26,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":2,\"minecraft:paper\":12,\"minecraft:oak_log\":7},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:bread\\u003d3, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:wheat\\u003d23}；workshop: 领土/建筑失效，停产\"}"
     },
     {
-      "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-      "lastPeriod": 179513268,
+      "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+      "lastPeriod": 179514574,
       "stock": {
-        "minecraft:raw_iron": 4,
-        "minecraft:paper": 20,
-        "minecraft:oak_log": 14,
-        "minecraft:oak_planks": 58,
+        "minecraft:oak_planks": 56,
         "minecraft:wheat": 103,
-        "minecraft:bread": 8,
-        "minecraft:arrow": 13,
-        "minecraft:iron_ingot": 0
-      },
-      "buildings": 3,
-      "event": null,
-      "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产",
-      "raw": "[07:58:06 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513268,\"stock\":{\"minecraft:raw_iron\":4,\"minecraft:paper\":20,\"minecraft:oak_log\":14,\"minecraft:oak_planks\":58,\"minecraft:wheat\":103,\"minecraft:bread\":8,\"minecraft:arrow\":13,\"minecraft:iron_ingot\":0},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:bread\\u003d3, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:wheat\\u003d23}；workshop: 领土/建筑失效，停产\"}"
-    },
-    {
-      "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-      "lastPeriod": 179513269,
-      "stock": {
-        "minecraft:raw_iron": 5,
-        "minecraft:paper": 24,
-        "minecraft:oak_log": 16,
-        "minecraft:oak_planks": 68,
-        "minecraft:wheat": 120,
-        "minecraft:bread": 8,
-        "minecraft:arrow": 26,
-        "minecraft:iron_ingot": 0
-      },
-      "buildings": 3,
-      "event": null,
-      "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
-      "raw": "[07:58:17 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513269,\"stock\":{\"minecraft:raw_iron\":5,\"minecraft:paper\":24,\"minecraft:oak_log\":16,\"minecraft:oak_planks\":68,\"minecraft:wheat\":120,\"minecraft:bread\":8,\"minecraft:arrow\":26,\"minecraft:iron_ingot\":0},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
-    },
-    {
-      "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-      "lastPeriod": 179513269,
-      "stock": {
-        "minecraft:raw_iron": 5,
-        "minecraft:paper": 24,
-        "minecraft:oak_log": 16,
-        "minecraft:oak_planks": 68,
-        "minecraft:wheat": 120,
-        "minecraft:bread": 8,
-        "minecraft:arrow": 26,
-        "minecraft:iron_ingot": 0
-      },
-      "buildings": 3,
-      "event": "EventState[type=drought, startPeriod=179513269, endPeriod=179513281, aftermathEndPeriod=179513283]",
-      "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
-      "raw": "[07:58:17 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513269,\"stock\":{\"minecraft:raw_iron\":5,\"minecraft:paper\":24,\"minecraft:oak_log\":16,\"minecraft:oak_planks\":68,\"minecraft:wheat\":120,\"minecraft:bread\":8,\"minecraft:arrow\":26,\"minecraft:iron_ingot\":0},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179513269, endPeriod\\u003d179513281, aftermathEndPeriod\\u003d179513283]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
-    },
-    {
-      "cityId": "633e798c-5a18-4670-8eb7-763352802c7d",
-      "lastPeriod": 179513269,
-      "stock": {
         "minecraft:bread": 8,
         "minecraft:arrow": 26,
         "minecraft:iron_ingot": 0,
-        "minecraft:raw_iron": 5,
-        "minecraft:paper": 24,
-        "minecraft:oak_log": 16,
-        "minecraft:oak_planks": 68,
-        "minecraft:wheat": 120
+        "minecraft:raw_iron": 2,
+        "minecraft:paper": 20,
+        "minecraft:oak_log": 13
       },
       "buildings": 3,
-      "event": "EventState[type=drought, startPeriod=179513269, endPeriod=179513281, aftermathEndPeriod=179513283]",
+      "event": null,
+      "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=23}；workshop: 领土/建筑失效，停产",
+      "raw": "[11:35:49 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514574,\"stock\":{\"minecraft:oak_planks\":56,\"minecraft:wheat\":103,\"minecraft:bread\":8,\"minecraft:arrow\":26,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":2,\"minecraft:paper\":20,\"minecraft:oak_log\":13},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:bread\\u003d3, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:wheat\\u003d23}；workshop: 领土/建筑失效，停产\"}"
+    },
+    {
+      "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+      "lastPeriod": 179514575,
+      "stock": {
+        "minecraft:oak_planks": 66,
+        "minecraft:wheat": 120,
+        "minecraft:bread": 8,
+        "minecraft:arrow": 39,
+        "minecraft:iron_ingot": 0,
+        "minecraft:raw_iron": 3,
+        "minecraft:paper": 24,
+        "minecraft:oak_log": 15
+      },
+      "buildings": 3,
+      "event": null,
       "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
-      "raw": "[07:58:51 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"633e798c-5a18-4670-8eb7-763352802c7d\",\"lastPeriod\":179513269,\"stock\":{\"minecraft:bread\":8,\"minecraft:arrow\":26,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":5,\"minecraft:paper\":24,\"minecraft:oak_log\":16,\"minecraft:oak_planks\":68,\"minecraft:wheat\":120},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179513269, endPeriod\\u003d179513281, aftermathEndPeriod\\u003d179513283]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
+      "raw": "[11:36:00 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514575,\"stock\":{\"minecraft:oak_planks\":66,\"minecraft:wheat\":120,\"minecraft:bread\":8,\"minecraft:arrow\":39,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":3,\"minecraft:paper\":24,\"minecraft:oak_log\":15},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
+    },
+    {
+      "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+      "lastPeriod": 179514575,
+      "stock": {
+        "minecraft:oak_planks": 66,
+        "minecraft:wheat": 120,
+        "minecraft:bread": 8,
+        "minecraft:arrow": 39,
+        "minecraft:iron_ingot": 0,
+        "minecraft:raw_iron": 3,
+        "minecraft:paper": 24,
+        "minecraft:oak_log": 15
+      },
+      "buildings": 3,
+      "event": "EventState[type=drought, startPeriod=179514575, endPeriod=179514587, aftermathEndPeriod=179514589]",
+      "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
+      "raw": "[11:36:00 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514575,\"stock\":{\"minecraft:oak_planks\":66,\"minecraft:wheat\":120,\"minecraft:bread\":8,\"minecraft:arrow\":39,\"minecraft:iron_ingot\":0,\"minecraft:raw_iron\":3,\"minecraft:paper\":24,\"minecraft:oak_log\":15},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179514575, endPeriod\\u003d179514587, aftermathEndPeriod\\u003d179514589]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
+    },
+    {
+      "cityId": "0722184b-a3be-4da1-b5cc-f148d69898b2",
+      "lastPeriod": 179514575,
+      "stock": {
+        "minecraft:bread": 8,
+        "minecraft:wheat": 120,
+        "minecraft:oak_planks": 66,
+        "minecraft:oak_log": 15,
+        "minecraft:paper": 24,
+        "minecraft:raw_iron": 3,
+        "minecraft:iron_ingot": 0,
+        "minecraft:arrow": 39
+      },
+      "buildings": 3,
+      "event": "EventState[type=drought, startPeriod=179514575, endPeriod=179514587, aftermathEndPeriod=179514589]",
+      "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=3, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=23}；",
+      "raw": "[11:36:38 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"0722184b-a3be-4da1-b5cc-f148d69898b2\",\"lastPeriod\":179514575,\"stock\":{\"minecraft:bread\":8,\"minecraft:wheat\":120,\"minecraft:oak_planks\":66,\"minecraft:oak_log\":15,\"minecraft:paper\":24,\"minecraft:raw_iron\":3,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":39},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179514575, endPeriod\\u003d179514587, aftermathEndPeriod\\u003d179514589]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d3, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d23}；\"}"
     }
   ],
-  "finishedAt": "2026-11-19T23:58:53.021Z"
+  "finishedAt": "2026-11-20T03:36:42.321Z"
 }

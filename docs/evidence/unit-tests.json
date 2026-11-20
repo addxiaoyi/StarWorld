@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "version": "0.2.0",
-  "recorded_at": "2026-11-19T17:26:34.901429+00:00",
-  "command": "./mvnw.cmd -B --no-transfer-progress clean verify",
+  "version": "0.3.0",
+  "recorded_at": "2026-11-20T02:20:25.145845+00:00",
+  "command": "./mvnw.cmd -B --no-transfer-progress -Dstarworld.testHeap=256m clean verify",
   "java": "21.0.13.1+2",
-  "artifact_sha256": "3940fdf96c82bcb25be75a30d034615047d23545d48781ea290e4dfcafd654f6",
+  "artifact_sha256": "15946f82e248d08cabba45f4389d23297a9e27f574468658faa7edf6426382e1",
   "totals": {
-    "tests": 172,
+    "tests": 232,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -27,6 +27,20 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.evolution.BorderResourceEventTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.evolution.CultureDynamicsTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.evolution.EvolutionServiceTest",
       "tests": 9,
       "failures": 0,
@@ -36,6 +50,20 @@
     {
       "suite": "dev.starworld.evolution.NationalEvolutionTest",
       "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.evolution.RegionAtlasTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.integration.BorderConflictCaptureTest",
+      "tests": 5,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -63,7 +91,7 @@
     },
     {
       "suite": "dev.starworld.integration.StarCoreBridgeTest",
-      "tests": 12,
+      "tests": 14,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -78,6 +106,20 @@
     {
       "suite": "dev.starworld.integration.StarCoreExtensionsTest",
       "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.integration.StarCoreTreasuryTransfersTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.integration.TreasuryMoneyTest",
+      "tests": 3,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -125,6 +167,41 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.logistics.TransportPlanningTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.market.MarketControllerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.market.MarketServiceTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.persistence.LedgerMaintenanceTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.persistence.WorldScaleTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.persistence.WorldStoreTest",
       "tests": 14,
       "failures": 0,
@@ -133,7 +210,7 @@
     },
     {
       "suite": "dev.starworld.runtime.ExpansionRuntimeTest",
-      "tests": 6,
+      "tests": 7,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -155,28 +232,28 @@
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 23901,
-      "missed": 10329
+      "covered": 32498,
+      "missed": 12936
     },
     "BRANCH": {
-      "covered": 1611,
-      "missed": 1382
+      "covered": 2122,
+      "missed": 1746
     },
     "LINE": {
-      "covered": 1800,
-      "missed": 533
+      "covered": 2229,
+      "missed": 596
     },
     "COMPLEXITY": {
-      "covered": 1117,
-      "missed": 1436
+      "covered": 1494,
+      "missed": 1818
     },
     "METHOD": {
-      "covered": 641,
-      "missed": 384
+      "covered": 862,
+      "missed": 474
     },
     "CLASS": {
-      "covered": 99,
-      "missed": 12
+      "covered": 142,
+      "missed": 14
     }
   }
 }

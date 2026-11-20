@@ -1,8 +1,8 @@
 # StarWorld
 
-持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **0.2.0**。
+持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **0.3.0**。
 
-代码仓库：[addxiaoyi/StarWorld](https://github.com/addxiaoyi/StarWorld)。技术基线：Java 21、Paper **1.21.11**，CraftEngine **26.9.1** 为可选内容依赖。审计固定 StarCore `f769e62799e769a18fe51305b545869a17f80cd1` 与 SenLuo 最新提交 `6a432fe54097a3ebf22ba5757e016b602c711f28`，见 [StarCore 审计](docs/audit-starcore.md)、[森罗审计](docs/audit-senluo.md)。
+代码仓库：[addxiaoyi/StarWorld](https://github.com/addxiaoyi/StarWorld)。技术基线：Java 21、Paper **1.21.11**，CraftEngine **26.9.1** 为可选内容依赖。审计固定 StarCore `f769e62799e769a18fe51305b545869a17f80cd1` 与本轮 SenLuo 最新提交 `c3642ae22fc5252bf6da22ae745cd39be994b054`，见 [StarCore 审计](docs/audit-starcore.md)、[森罗审计](docs/audit-senluo.md)。
 
 **Folia 仍为兼容规划。** 当前 StarCore 可变服务缺少区域线程安全契约，本版检测 Folia 后明确停用。缺 StarCore 时可独立安装、生成配置和数据库并显示降级原因；城市玩法需要真实 StarCore 国家/城市模块，不会自动建立替代国家。森罗模块或 CE 缺失时保留原版产业、贸易和音符盒演奏；缺失内容或 API 明确停用。
 
@@ -14,11 +14,11 @@
 
 Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME` 指向 JDK 21。Maven Wrapper 使用 Maven 3.9.11；插件包含 SQLite JDBC，不打包外部核心或森罗实现。
 
-产物为 `target/starworld-0.2.0.jar` 和 `target/starworld-0.2.0-sources.jar`；发布脚本生成 `target/StarWorld-0.2.0.zip`，包含插件、源码、配置、文档与校验和。只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
+产物为 `target/starworld-0.3.0.jar` 和 `target/starworld-0.3.0-sources.jar`；发布脚本生成 `target/StarWorld-0.3.0.zip`，包含插件、源码、配置、文档与校验和。只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
 
 1. 正常关服，备份整个 `plugins/StarWorld/`。升级时保留数据库和持久配置 ID。
 2. 放置插件 JAR，使用 Paper 1.21.11 和审计兼容的 StarCore 启动。
-3. 首次生成 `config.yml`、`definitions.yml`、`evolution.yml`、`logistics.yml`、`exports.yml`、`life.yml` 及 `starworld.db`。
+3. 首次生成 `config.yml`、`definitions.yml`、`evolution.yml`、`logistics.yml`、`exports.yml`、`life.yml`、`market.yml` 及 `starworld.db`。
 4. `/sw status` 查看真实能力；用 StarCore 自身命令建立国家、城市和国家/城市**两层区块领土**。
 5. 放置堆肥桶、切石机、高炉，看向六格内本城锚点，执行 `/sw register farm|sawmill|workshop`。先积累粮食，再供应林业和军工。
 
@@ -26,7 +26,7 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 
 ## 已实现的世界玩法
 
-| 系统 | 0.2.0 行为 |
+| 系统 | 0.3.0 行为 |
 | --- | --- |
 | 六类地理 | 山脉、河流、平原、森林、沙漠、雪原；农业/运输/军事属性；地区矿藏/林木/肥力及恢复率 |
 | 基础产业 | 肥力→小麦→面包；面包维护+林木→原木→木板；面包维护+矿藏→粗铁→铁锭→箭；新增造纸、食品加工与盾牌 |
@@ -41,6 +41,10 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 | 国家资源出口 | 配置实物成本兑换已有国家抽象资源分类；outbox、稳定事务 ID、核心持久回执、退避重试 |
 | 核心军队战斗 | 已提交真实军需与地形通过公开army_combat贡献点影响有效设施区块的军队伤害 |
 | GUI/API | 城市仓储/设施与发展GUI，生活/贸易命令入口；不可变 Future 查询及提交后事件 |
+| 地区地图册 | 有界分页地形、资源余量/初始容量/恢复、文化与设施；全国政策影响新增文化，活跃地区按周期有限衰减 |
+| 商路调度 | 同端点替代商路、双方确认改道、共享运力瓶颈；改道重计完整运时，原当期占用不退款 |
+| 国库实物市场 | 整批限价挂牌，实体货物先托管；国家创始人通过核心原子幂等转账付款，确认回执后实际商路交货 |
+| 长期存档 | 有界无损审计压缩归档、旧报表清理；付款/货物/生活活动的关键去重凭据永久保留 |
 
 运输路径是管理者声明的有限节点路线，不证明沿途铺满道路。兵营实际消耗箭形成军需；当前或前一周期的有效供给通过核心公开扩展点提供最多30%军需增伤、20%额外地形减伤，只限有效设施区块。核心取贡献者最高伤害，其他插件可覆盖减伤；不修改真人PVP或核心军队补给。见[战斗联动](docs/combat.md)。城市繁荣为本地属性，不重复写无幂等回执的国家繁荣。
 
@@ -50,6 +54,8 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 
 ```text
 /sw menu|develop|status|stock|buildings|development|history|culture|nation
+/sw atlas|regions|market-menu
+/sw market help
 /sw register <设施ID>
 /sw deposit|withdraw <物品ID> <1–2304>
 /sw upgrade|remove <设施UUID>
@@ -88,13 +94,20 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 | [logistics.yml](src/main/resources/logistics.yml) | 节点、成本、容量、运输和批量限制 |
 | [exports.yml](src/main/resources/exports.yml) | 国家资源出口契约及有效设施要求 |
 | [life.yml示例](examples/life.yml) | 首次由完整默认值生成；职业、宴会、家具、乐器、限额及效果 |
+| [market.yml示例](examples/market.yml) | 首次生成；实物商品白名单、整批数量/价格限制、付款批量与挂牌期限 |
 
 自定义物品须为真实 CE ID；未知/未加载 ID 不静默替换。Cookery 菜肴和 Tavern 饮品以实际入库商品参与宴会，不用提交前事件刷奖励。Deco 通过公共 CE 家具 API 对登记 UUID 逐期复核。MusicPlus 没有公开完成 API；`/sw concert` 是 StarWorld 自己控制的现场演奏，可用真实森罗乐器，不自动奖励 `/kmusic`。见[生活联动](docs/life-integrations.md)、[森罗配方示例](examples/senluo-recipes.yml)。
 
 ## 文档与验证证据
 
-[需求映射](docs/requirements.md) · [架构](docs/architecture.md) · [Java API](docs/API.md) · [玩法验收](docs/gameplay.md) · [交通贸易](docs/logistics.md) · [国家服务](docs/core-extension.md) · [战斗联动](docs/combat.md) · [生活联动](docs/life-integrations.md) · [测试结果](docs/test-results.md) · [后续边界](docs/roadmap.md)
+[需求映射](docs/requirements.md) · [架构](docs/architecture.md) · [Java API](docs/API.md) · [玩法验收](docs/gameplay.md) · [地区地图册](docs/geography.md) · [交通贸易](docs/logistics.md) · [国库实物市场](docs/market.md) · [国家服务](docs/core-extension.md) · [战斗联动](docs/combat.md) · [生活联动](docs/life-integrations.md) · [森罗实服验收](docs/senluo-acceptance.md) · [存档维护](docs/storage-maintenance.md) · [千城基线](docs/scale.md) · [测试结果](docs/test-results.md) · [后续边界](docs/roadmap.md)
 
-当前 JAR 已通过 **172 项自动化测试**，包括直接运行 CE 反射适配器的精确重载契约测试。同一最终JAR已完成20阶段真实Paper/StarCore双人扩展验收、15阶段CE/森罗联调、15阶段基础玩法及无依赖两次启动恢复，覆盖实物贸易、军队计算、国家回执、领土变化、生活成本和重启去重。`clean verify` 生成 `target/surefire-reports/` 与 `target/site/jacoco/`。当前 JAR 哈希、实服回归状态及完整观察见[测试结果](docs/test-results.md)和[机器证据](docs/evidence/unit-tests.json)；CE/森罗独立联调以[森罗验收](docs/senluo-acceptance.md)的实际结果为准，Folia 仍为兼容规划。
+0.3.0 新增地区地图册、文化衰减与政策影响、双方确认改道、运输瓶颈、国库金币实物市场、无损审计归档和真实边境资源争端。已通过232项自动化测试、千城真实SQLite基线、88阶段真实Paper客户端验收，以及无依赖两次正常启动/SQLite恢复。逐项[完成核对](docs/completion-audit.md)、[测试结果](docs/test-results.md)与证据均绑定同一最终JAR。0.2.0已交付结果保留在[历史报告](docs/history/test-results-0.2.0.md)，不作为新JAR已通过证明。
 
-生成完整交付包前，先用 `python tools/package-evidence.py --expansion-dir <实际验收目录> --senluo-dir <实际验收目录>` 生成证据 ZIP；可追加同一最终 JAR 的 `--baseline-dir`、`--smoke-dir`。再运行 `./tools/package-release.ps1`。脚本会核对单测、JAR、源码与证据清单的 SHA256，拒绝缺失、失败或其他构建的证据。
+生成完整交付包前，先运行以下命令；各参数必须指向同一最终 JAR 的实际完整通过目录：
+
+```sh
+python tools/package-evidence.py --expansion-dir <扩展目录> --senluo-dir <森罗目录> --baseline-dir <基础目录> --progression-dir <进阶目录> --upgrade-dir <升级目录> --border-dir <边境目录> --smoke-dir <独立安装目录>
+```
+
+再运行 `./tools/package-release.ps1`。脚本会核对单测、规模报告、六套实服流程、无依赖两次启动、JAR、源码与证据清单的 SHA256，拒绝缺失、失败或其他构建的证据。

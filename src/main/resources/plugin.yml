@@ -1,0 +1,18 @@
+name: StarWorld
+version: '1.0.0'
+main: dev.starworld.StarWorldPlugin
+api-version: '1.21.11'
+description: 动态文明与地区产业扩展
+authors: [addxiaoyi]
+website: https://github.com/addxiaoyi/StarWorld
+softdepend: [StarCore, CraftEngine, KaleidoscopeCookeryPlugin, KaleidoscopeTavernPlugin, KaleidoscopeDecoPlugin, KaleidoscopeMusicPlugin]
+commands:
+  starworld:
+    aliases: [sw]
+    description: 城市产业、文明与世界事件
+    usage: /sw help
+permissions:
+  starworld.use:
+    default: true
+  starworld.admin:
+    default: op

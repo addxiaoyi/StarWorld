@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "cities": 1000,
+  "facilities": 2000,
+  "settlements": 3000,
+  "replayedAfterRestart": 1000,
+  "failures": 0,
+  "seedMillis": 534,
+  "settlementMillis": 17413,
+  "pagedQueryMillis": 68,
+  "databaseBytes": 4247552,
+  "scope": "real SQLite and pure production paths; not Paper tick or world load throughput",
+  "version": "0.4.0",
+  "artifact_sha256": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
+  "java": "21.0.13.1+2",
+  "test_heap": "256m",
+  "maven_heap": "192m",
+  "command": "./mvnw.cmd -B --no-transfer-progress -Dstarworld.testHeap=256m clean verify"
+}

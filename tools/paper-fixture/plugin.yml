@@ -1,0 +1,8 @@
+name: StarWorldFixture
+version: '0.1.0-test'
+main: dev.starworld.fixture.StarWorldFixture
+api-version: '1.21.11'
+depend: [StarCore, StarWorld]
+commands:
+  swfixture:
+    description: Isolated console-only live integration fixture

@@ -1,0 +1,22 @@
+export-version: 1
+# StarCore owns national resource definitions and rejects unavailable resource IDs.
+# These are intentional conversion recipes, not aliases for an ItemStack.
+contracts:
+  grain:
+    name: 国家粮食征购
+    facility: warehouse
+    costs: {minecraft:wheat: 32}
+    resources: {agricultural: 8}
+    max-batches: 10
+  steel:
+    name: 国家钢材供给
+    facility: warehouse
+    costs: {minecraft:iron_ingot: 16, minecraft:oak_log: 8}
+    resources: {industrial: 4}
+    max-batches: 10
+  armaments:
+    name: 国家军需供给
+    facility: barracks
+    costs: {minecraft:arrow: 64, minecraft:shield: 2}
+    resources: {strategic: 4}
+    max-batches: 10

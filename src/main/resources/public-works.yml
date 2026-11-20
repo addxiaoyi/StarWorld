@@ -1,0 +1,48 @@
+# Projects consume real city stock. All requirements and costs freeze when a slot is allocated.
+# One permanent slot per city and owning nation; completion never grants free goods.
+schema-version: 1
+limits:
+  max-page: 64
+  max-evidence-facilities: 64
+  # Display history is bounded; permanent project watermarks are never pruned.
+  history-limit: 200
+projects:
+  irrigation_network:
+    name: 灌溉水网
+    build-periods: 3
+    upfront-costs: {minecraft:oak_planks: 24, minecraft:stone: 16, minecraft:bread: 8}
+    construction-costs: {minecraft:oak_planks: 8, minecraft:bread: 4}
+    upkeep-costs: {minecraft:oak_planks: 2, minecraft:bread: 2}
+    facilities: [farm, well, warehouse]
+    terrains: [plains, river]
+    plans: [balanced, agriculture]
+    civilizations: [agrarian, mercantile, scholarly]
+    knowledge: 2
+    culture: 0
+    multipliers: {farm: 1.15, workshop: 0.95}
+  arsenal_district:
+    name: 军工作坊区
+    build-periods: 5
+    upfront-costs: {minecraft:iron_ingot: 24, minecraft:oak_planks: 24, minecraft:bread: 12}
+    construction-costs: {minecraft:iron_ingot: 4, minecraft:oak_planks: 6, minecraft:bread: 4}
+    upkeep-costs: {minecraft:iron_ingot: 1, minecraft:bread: 3}
+    facilities: [workshop, barracks, warehouse]
+    terrains: [mountains, forest, plains]
+    plans: [industry, military]
+    civilizations: [industrial, martial]
+    knowledge: 8
+    culture: 0
+    multipliers: {workshop: 1.15, farm: 0.95}
+  cultural_quarter:
+    name: 文化街区
+    build-periods: 4
+    upfront-costs: {minecraft:oak_planks: 20, minecraft:paper: 24, minecraft:bread: 8}
+    construction-costs: {minecraft:paper: 6, minecraft:oak_planks: 4, minecraft:bread: 3}
+    upkeep-costs: {minecraft:paper: 2, minecraft:bread: 2}
+    facilities: [academy, kitchen, market]
+    terrains: [plains, river, forest]
+    plans: [culture, commerce]
+    civilizations: [scholarly, mercantile, agrarian]
+    knowledge: 5
+    culture: 5
+    multipliers: {kitchen: 1.15, farm: 1.05, workshop: 0.95}

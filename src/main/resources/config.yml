@@ -1,0 +1,17 @@
+# StarWorld schema 2. World state is in starworld.db, never StarCore's database.
+config-version: 2
+simulation:
+  period-seconds: 300
+  max-buildings-per-city: 12
+  max-cities-per-pass: 20
+  stock-limit: 1000000
+  event-chance: 0.08
+  # No offline catch-up: restart settles only the current period.
+gui:
+  title: 'StarWorld · 城市产业'
+
+# Archives are compressed losslessly in the same transaction; payment receipts remain permanent.
+maintenance:
+  audit-days: 30
+  retain-periods: 1000
+  batch-rows: 100

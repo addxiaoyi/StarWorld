@@ -1,0 +1,2911 @@
+{
+  "schema": 1,
+  "suite": "real-paper-upgrade-04-to-05",
+  "status": "passed",
+  "startedAt": "2026-11-20T07:50:16.090Z",
+  "sourceVersion": "0.4.0",
+  "targetVersion": "0.5.0",
+  "sourcePluginSha256": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
+  "paperSha256": "5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba",
+  "pluginJars": {
+    "StarCore.jar": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
+    "StarWorld.jar": "096013edfdb8a3ca56654b15966cc0e319f336043ff8ed9ef0f8ef6d825bc5e7",
+    "StarWorldFixture.jar": "ce2aaaeeb8c34b870eefa2572444db2cf60b0d804d31fcf24b19a72b41e3e22b"
+  },
+  "beforeProvenance": {
+    "schema": 1,
+    "sourceRuntime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\baseline04-server01",
+    "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\upgrade05-server01",
+    "sourceVersion": "0.4.0",
+    "targetVersion": "0.5.0",
+    "sourcePluginSha256": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
+    "targetPluginSha256": "096013edfdb8a3ca56654b15966cc0e319f336043ff8ed9ef0f8ef6d825bc5e7",
+    "preparationStatus": "running",
+    "processStarted": true,
+    "preparedAt": "2026-11-20T15:49:51.127857+08:00",
+    "sourceEvidence": {
+      "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\baseline04-server01\\client-acceptance\\2026-11-20T06-50-00-375Z",
+      "jsonSha256": "8a95f25be64e8ebf94d0ab8e0bf661f8da21b9c203b71042163ede4aa35f91de",
+      "status": "passed",
+      "steps": 15,
+      "pluginSha256": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
+      "finishedAt": "2026-11-20T06:52:21.275Z"
+    },
+    "sourceCriticalFiles": {
+      "plugins/StarWorld/starworld.db": "c142bc6c92868e34d70cd13ce5790b5e8e28fade1cba22ceb7aaa181079fbfec",
+      "plugins/StarCore/starcore.db": "365b53483c928540ef02a17a9dd5431e152a93a4af1fde3bdd057b28d93b2d87",
+      "plugins/StarCore.jar": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
+      "plugins/StarWorldFixture.jar": "ce2aaaeeb8c34b870eefa2572444db2cf60b0d804d31fcf24b19a72b41e3e22b",
+      "baseline04-world/level.dat": "c982705080af8a33623fbef1309df649a399a54ca6c3a4a7c610efa620289934",
+      "baseline04-world/level.dat_old": "c2a27fe3c44809ed0a31e8d3227c01e413b90d507334dce36b8e699e415973da",
+      "baseline04-world/uid.dat": "ad990423c80ef7b0ddc5fcb9a66b108d52b308d866773f699e37142b27a7169d",
+      "baseline04-world/playerdata/363cb761-f442-3a44-b511-0ffbf8720f97.dat": "409506b8cdd8e5a6a3838b5f59fee502ed00f397c628764c676e41a1b258f2c1",
+      "baseline04-world/playerdata/363cb761-f442-3a44-b511-0ffbf8720f97.dat_old": "e7b7d8acdf39c36bfd941de1ef402d7c61d4988506800b7478493654acb2f1a1",
+      "baseline04-world_nether/level.dat": "22a261ff3a523a45c86b8dad8ff60efae2e1f64fe9b330666f6072ac2ab270be",
+      "baseline04-world_nether/level.dat_old": "9b0f33098461b480dea12195ff05b92de51e45b2663800c63ec0e2994e5df9e7",
+      "baseline04-world_nether/uid.dat": "ed12455ef680e0bb0281d0ff1f54ea2ba13408f1f47ebe8e1f9bbc450fcb63a0",
+      "baseline04-world_the_end/level.dat": "b7ff7fd87811e6d769a286bb5d0323c0250f59f52a6ce41712232aa7d73e9602",
+      "baseline04-world_the_end/level.dat_old": "279b368fbf6495f5ff5945311a45f9d16c14c321a2212937cb6b4ef6f38af151",
+      "baseline04-world_the_end/uid.dat": "21ec28a4b09d8b4b2cb93f98069bea95ea512c883d38c5a0b9c8ae3a2e2fbba4"
+    },
+    "oldConfigurationSha256": {
+      "plugins/StarWorld/config.yml": "33eb3a42c8e4bdcfa913c753d6a5b6e8ab9b521e77fbf9174084da7e17740cbe",
+      "plugins/StarWorld/definitions.yml": "870218ae9beb6bcb7d20ff52e3ae41bdc9c58ed6ce73f2a354d2d2109d25c1af",
+      "plugins/StarWorld/evolution.yml": "356089c21544c6d49455ad6eb512a2faef16639cbd6eae4266c190e761355e10",
+      "plugins/StarWorld/logistics.yml": "a54f0f86250669c1db25eb297efddc0450c3ab7c10ab41c627c3d322c9bc112f",
+      "plugins/StarWorld/exports.yml": "404834ea15275b775fddae6b8bc3a51ab13ede2b4e172cc854e09acf3ce7d51f",
+      "plugins/StarWorld/life.yml": "63816ff50f1e1a23241451f2d00a1031dda1a02f6386a56fddab996b47ca7532",
+      "plugins/StarWorld/market.yml": "4392dc8d43011fcf9419b8c172824ebd178de0640117e1eb643123261fe4a438"
+    },
+    "before": {
+      "world": {
+        "schema": 2,
+        "tables": [
+          "audit",
+          "audit_archive",
+          "building",
+          "city_authority",
+          "city_capacity",
+          "city_state",
+          "culture_decay",
+          "culture_dynamics_schema",
+          "culture_exchange",
+          "evolution_city",
+          "evolution_event",
+          "evolution_facility",
+          "evolution_history",
+          "evolution_readiness",
+          "evolution_schema",
+          "evolution_trade_action",
+          "extension_meta",
+          "life_action",
+          "life_audience",
+          "life_city",
+          "life_concert",
+          "life_decoration",
+          "life_evolution_action",
+          "life_note",
+          "life_profile",
+          "life_schema",
+          "logistics_cargo",
+          "logistics_clock",
+          "logistics_demand",
+          "logistics_node",
+          "logistics_node_usage",
+          "logistics_order",
+          "logistics_paid_shipment",
+          "logistics_receipt",
+          "logistics_reroute",
+          "logistics_route",
+          "logistics_route_node",
+          "logistics_route_usage",
+          "market_clock",
+          "market_delivery_clock",
+          "market_delivery_receipt",
+          "market_delivery_schema",
+          "market_delivery_stat",
+          "market_expiry_check",
+          "market_history",
+          "market_listing",
+          "market_purchase",
+          "market_schema",
+          "nation_state",
+          "national_evolution",
+          "national_evolution_schema",
+          "region",
+          "region_culture",
+          "reserve",
+          "resource_outbox",
+          "settlement",
+          "simulation_clock",
+          "sqlite_sequence",
+          "stock",
+          "transfer"
+        ],
+        "database_sha256": "c142bc6c92868e34d70cd13ce5790b5e8e28fade1cba22ceb7aaa181079fbfec",
+        "rows": {
+          "city_state": [
+            {
+              "id": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+              "name": "SWCityStarWorldQA",
+              "civilization": "agrarian",
+              "last_period": 179515750,
+              "last_report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
+              "event_type": "drought",
+              "event_start": 179515750,
+              "event_end": 179515762,
+              "aftermath_end": 179515764
+            }
+          ],
+          "building": [
+            {
+              "id": "05c67786-de3b-45b4-af5b-5a0628ca706f",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+              "type": "sawmill",
+              "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+              "world_name": "baseline04-world",
+              "x": 24,
+              "y": 80,
+              "z": 8,
+              "level": 1
+            },
+            {
+              "id": "4893f8b1-28c7-487e-afce-79a8d2ca5b61",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+              "type": "workshop",
+              "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+              "world_name": "baseline04-world",
+              "x": 40,
+              "y": 80,
+              "z": 8,
+              "level": 1
+            },
+            {
+              "id": "a26ee39f-9381-462c-a32f-bd53026be3c8",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+              "type": "farm",
+              "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+              "world_name": "baseline04-world",
+              "x": 8,
+              "y": 80,
+              "z": 8,
+              "level": 1
+            }
+          ],
+          "stock": [
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "item": "minecraft:arrow",
+              "amount": 26
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "item": "minecraft:bread",
+              "amount": 15
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "item": "minecraft:iron_ingot",
+              "amount": 0
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "item": "minecraft:oak_log",
+              "amount": 13
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "item": "minecraft:oak_planks",
+              "amount": 56
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "item": "minecraft:paper",
+              "amount": 20
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "item": "minecraft:raw_iron",
+              "amount": 2
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "item": "minecraft:wheat",
+              "amount": 124
+            }
+          ],
+          "transfer": [
+            {
+              "id": "02409d6a-4870-4718-b440-7637c409b8dc",
+              "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "direction": "DEPOSIT",
+              "item": "minecraft:arrow",
+              "amount": 4,
+              "state": "COMPLETED",
+              "created": 1795157467768,
+              "decision": "runtime"
+            },
+            {
+              "id": "6fd61d4d-f3c1-4229-8f50-b6b721574d1d",
+              "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "direction": "DEPOSIT",
+              "item": "minecraft:wheat",
+              "amount": 16,
+              "state": "COMPLETED",
+              "created": 1795157469444,
+              "decision": "runtime"
+            },
+            {
+              "id": "932c70d3-b555-4aa0-a26b-80cfc79f34f5",
+              "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "direction": "DEPOSIT",
+              "item": "minecraft:wheat",
+              "amount": 17,
+              "state": "CANCELLED",
+              "created": 1795157469242,
+              "decision": "no inventory mutation"
+            },
+            {
+              "id": "d26a8f7a-20c5-48c6-ac7e-b66ce24bf43c",
+              "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "direction": "WITHDRAW",
+              "item": "minecraft:arrow",
+              "amount": 4,
+              "state": "COMPLETED",
+              "created": 1795157467571,
+              "decision": "runtime"
+            }
+          ],
+          "nation_state": [
+            {
+              "id": "914c4e27-efa3-46f1-be09-23197a3e9334",
+              "civilization": "agrarian",
+              "changed_period": -1000000
+            }
+          ],
+          "national_evolution": [
+            {
+              "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+              "specialty": "",
+              "changed_period": -1000000
+            }
+          ],
+          "region": [
+            {
+              "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+              "terrain": "plains",
+              "last_regen": 179515750
+            },
+            {
+              "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+              "terrain": "plains",
+              "last_regen": 179515750
+            },
+            {
+              "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+              "terrain": "plains",
+              "last_regen": 179515750
+            }
+          ],
+          "reserve": [
+            {
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+              "resource": "fertility",
+              "amount": 688
+            },
+            {
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+              "resource": "ore",
+              "amount": 100
+            },
+            {
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+              "resource": "timber",
+              "amount": 160
+            },
+            {
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+              "resource": "fertility",
+              "amount": 700
+            },
+            {
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+              "resource": "ore",
+              "amount": 100
+            },
+            {
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+              "resource": "timber",
+              "amount": 128
+            },
+            {
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+              "resource": "fertility",
+              "amount": 700
+            },
+            {
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+              "resource": "ore",
+              "amount": 88
+            },
+            {
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+              "resource": "timber",
+              "amount": 160
+            }
+          ],
+          "city_authority": [
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "active": 1
+            }
+          ],
+          "simulation_clock": [
+            {
+              "id": 1,
+              "period_seconds": 10,
+              "epoch_origin": 1795157455,
+              "period_origin": 179515745
+            }
+          ],
+          "settlement": [
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "period": 179515745,
+              "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；林场与锯木厂: 维护食物不足；矿场与军工作坊: 维护食物不足"
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "period": 179515746,
+              "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "period": 179515747,
+              "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "period": 179515748,
+              "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "period": 179515749,
+              "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+            },
+            {
+              "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+              "period": 179515750,
+              "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
+            }
+          ],
+          "resource_outbox": [],
+          "logistics_order": [],
+          "logistics_receipt": [],
+          "life_action": [],
+          "life_concert": [],
+          "life_note": [],
+          "life_audience": [],
+          "life_evolution_action": [],
+          "life_decoration": [],
+          "market_delivery_schema": [
+            {
+              "id": 1,
+              "version": 1
+            }
+          ],
+          "market_delivery_clock": [
+            {
+              "id": 1,
+              "sequence": 0
+            }
+          ],
+          "market_delivery_receipt": [],
+          "market_delivery_stat": [],
+          "market_schema": [
+            {
+              "id": 1,
+              "version": 1,
+              "namespace": "3ade6b50-0bb9-457b-bd14-5351a22f5d8b"
+            }
+          ],
+          "market_listing": [],
+          "market_purchase": [],
+          "market_history": [],
+          "culture_dynamics_schema": [
+            {
+              "id": 1,
+              "version": 1
+            }
+          ],
+          "culture_decay": [
+            {
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+              "last_period": 179515745
+            },
+            {
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+              "last_period": 179515746
+            },
+            {
+              "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+              "last_period": 179515746
+            }
+          ],
+          "logistics_reroute": [],
+          "logistics_paid_shipment": []
+        },
+        "integrity": "ok"
+      },
+      "core": {
+        "schema": 0,
+        "tables": [
+          "alliance_members",
+          "audit_logs",
+          "business_nation_index",
+          "business_player_index",
+          "business_transactions",
+          "combat_history",
+          "combat_player_pvp",
+          "combat_player_states",
+          "court_appeals",
+          "court_cases",
+          "court_judges",
+          "court_jury",
+          "court_verdicts",
+          "duel_history",
+          "duel_player_stats",
+          "influence_leaderboard_history",
+          "influence_leaderboard_titles",
+          "influence_sources",
+          "leaderboard_notifications",
+          "lease_contracts",
+          "mercenary_contracts",
+          "parliament",
+          "parliament_bills",
+          "parliament_members",
+          "parliament_votes",
+          "party_alliances",
+          "party_members",
+          "player_influence",
+          "player_reputation",
+          "political_parties",
+          "pvp_elo_history",
+          "pvp_matchmaking_queue",
+          "pvp_season",
+          "relationship_history",
+          "relationships",
+          "reputation_history",
+          "resource_funded_trade_taxes",
+          "shop_auction_listings",
+          "shop_items",
+          "shop_npc_bindings",
+          "shop_shops",
+          "shop_templates",
+          "shop_trade_records",
+          "shop_transactions",
+          "social_activities",
+          "social_activity_participants",
+          "sovereignty_claims",
+          "sovereignty_declarations",
+          "sqlite_sequence",
+          "starcore_achievement_reward_delivered",
+          "starcore_achievement_reward_pending",
+          "starcore_achievement_stats",
+          "starcore_achievements",
+          "starcore_alliance_state",
+          "starcore_alliances",
+          "starcore_bankruptcy_state",
+          "starcore_battlefield_state",
+          "starcore_blacklist",
+          "starcore_budget_state",
+          "starcore_court_debts",
+          "starcore_court_history",
+          "starcore_culture",
+          "starcore_diplomacy_state",
+          "starcore_donations",
+          "starcore_dynasties",
+          "starcore_dynasty_heirs",
+          "starcore_event_state",
+          "starcore_friend_relations",
+          "starcore_friend_requests",
+          "starcore_guild_invites",
+          "starcore_guild_members",
+          "starcore_guilds",
+          "starcore_lease_chunk_index",
+          "starcore_lease_contracts",
+          "starcore_lease_payments",
+          "starcore_mail_attachment_claims",
+          "starcore_mail_attachments",
+          "starcore_mail_v2",
+          "starcore_mail_v2_attachments",
+          "starcore_mails",
+          "starcore_metadata",
+          "starcore_military_alliance_state",
+          "starcore_nation_resource_district_state",
+          "starcore_nation_state",
+          "starcore_officer_state",
+          "starcore_parties",
+          "starcore_party_invites",
+          "starcore_party_members",
+          "starcore_player_balances",
+          "starcore_player_locale",
+          "starcore_player_status",
+          "starcore_player_titles",
+          "starcore_policy_state",
+          "starcore_resolution_state",
+          "starcore_resource_state",
+          "starcore_social_events",
+          "starcore_subregions",
+          "starcore_subregions_permissions",
+          "starcore_technology_research",
+          "starcore_technology_state",
+          "starcore_territories",
+          "starcore_territories_permissions",
+          "starcore_territory_claims",
+          "starcore_territory_members",
+          "starcore_treasury_state",
+          "starcore_treaty_data",
+          "starcore_war_state",
+          "starcore_wars",
+          "trade_history",
+          "treasury_funded_taxes",
+          "treasury_tax_compensations",
+          "weather_tactics",
+          "weather_tactics_boosts",
+          "weather_weather_state",
+          "weather_weather_state_meta",
+          "zone_state"
+        ],
+        "database_sha256": "365b53483c928540ef02a17a9dd5431e152a93a4af1fde3bdd057b28d93b2d87",
+        "rows": {
+          "starcore_nation_state": [
+            {
+              "property_key": "__starcore_revision__",
+              "property_value": "3"
+            },
+            {
+              "property_key": "count",
+              "property_value": "1"
+            },
+            {
+              "property_key": "nation.0.capitalLocation",
+              "property_value": "baseline04-world,8.00,64.00,8.00,0.00,0.00"
+            },
+            {
+              "property_key": "nation.0.experience",
+              "property_value": "0"
+            },
+            {
+              "property_key": "nation.0.foundedAt",
+              "property_value": "1795157460267"
+            },
+            {
+              "property_key": "nation.0.founderId",
+              "property_value": "363cb761-f442-3a44-b511-0ffbf8720f97"
+            },
+            {
+              "property_key": "nation.0.government",
+              "property_value": "MONARCHY"
+            },
+            {
+              "property_key": "nation.0.id",
+              "property_value": "914c4e27-efa3-46f1-be09-23197a3e9334"
+            },
+            {
+              "property_key": "nation.0.kind",
+              "property_value": "NATION"
+            },
+            {
+              "property_key": "nation.0.member.0.id",
+              "property_value": "363cb761-f442-3a44-b511-0ffbf8720f97"
+            },
+            {
+              "property_key": "nation.0.member.0.joinedAt",
+              "property_value": "1795157460270"
+            },
+            {
+              "property_key": "nation.0.member.0.lastSeen",
+              "property_value": "1795157460270"
+            },
+            {
+              "property_key": "nation.0.member.0.name",
+              "property_value": "StarWorldQA"
+            },
+            {
+              "property_key": "nation.0.member.0.rank",
+              "property_value": "Member"
+            },
+            {
+              "property_key": "nation.0.memberCount",
+              "property_value": "1"
+            },
+            {
+              "property_key": "nation.0.name",
+              "property_value": "SWTestStarWorldQA"
+            },
+            {
+              "property_key": "nation.0.taxRate",
+              "property_value": "0.0"
+            }
+          ],
+          "starcore_treasury_state": [
+            {
+              "property_key": "__starcore_revision__",
+              "property_value": "2"
+            },
+            {
+              "property_key": "count",
+              "property_value": "0"
+            },
+            {
+              "property_key": "credit.count",
+              "property_value": "0"
+            },
+            {
+              "property_key": "spending.count",
+              "property_value": "0"
+            },
+            {
+              "property_key": "transfer.count",
+              "property_value": "0"
+            }
+          ],
+          "starcore_resource_state": [
+            {
+              "property_key": "agreement.count",
+              "property_value": "0"
+            },
+            {
+              "property_key": "count",
+              "property_value": "0"
+            },
+            {
+              "property_key": "embargo.count",
+              "property_value": "0"
+            },
+            {
+              "property_key": "factory.count",
+              "property_value": "0"
+            },
+            {
+              "property_key": "quota.count",
+              "property_value": "0"
+            },
+            {
+              "property_key": "route.count",
+              "property_value": "0"
+            },
+            {
+              "property_key": "transaction.count",
+              "property_value": "0"
+            }
+          ]
+        },
+        "integrity": "ok"
+      },
+      "pluginVersion": "0.4.0"
+    },
+    "serverHost": "127.0.0.1",
+    "serverPort": 25621,
+    "serverPropertiesSha256": "8edb91ee065b8425bc444cbf3891f98606d2aa024237c51274e3f7f0c58b592e",
+    "note": "Copied only the original stopped, accepted 0.4 source save, worlds, players and authority. No prior 0.5 database or player state used. Installed StarWorld.jar is the original 0.4 placeholder; final 0.5 artifact hash must be bound before any start. No Java process was started by preparation."
+  },
+  "scope": "Upgrade a copy of an actually accepted stopped 0.4 save; no SQL mutation, seeded goods, new city or warehouse commands. Natural production is bounded by actual new settlement receipts; transfers are preserved exactly.",
+  "testTuning": {
+    "jvmArgs": [
+      "-Xms128m",
+      "-Xmx512m",
+      "-Xss512k",
+      "-XX:MaxMetaspaceSize=192m",
+      "-XX:ActiveProcessorCount=1",
+      "-XX:+UseSerialGC",
+      "-XX:TieredStopAtLevel=1",
+      "-XX:ReservedCodeCacheSize=64m",
+      "-Dio.netty.eventLoopThreads=2"
+    ],
+    "nodeVersion": "v24.22.3",
+    "nodeExecArgv": [
+      "--max-old-space-size=128",
+      "--max-semi-space-size=4"
+    ],
+    "javaOptionsEnvironment": "",
+    "periodSeconds": 10,
+    "eventChance": 0
+  },
+  "steps": [
+    {
+      "name": "stopped accepted 0.4 save and copied database fingerprints match provenance",
+      "startedAt": "2026-11-20T07:50:16.579Z",
+      "observed": {
+        "world": {
+          "schema": 2,
+          "tables": [
+            "audit",
+            "audit_archive",
+            "building",
+            "city_authority",
+            "city_capacity",
+            "city_state",
+            "culture_decay",
+            "culture_dynamics_schema",
+            "culture_exchange",
+            "evolution_city",
+            "evolution_event",
+            "evolution_facility",
+            "evolution_history",
+            "evolution_readiness",
+            "evolution_schema",
+            "evolution_trade_action",
+            "extension_meta",
+            "life_action",
+            "life_audience",
+            "life_city",
+            "life_concert",
+            "life_decoration",
+            "life_evolution_action",
+            "life_note",
+            "life_profile",
+            "life_schema",
+            "logistics_cargo",
+            "logistics_clock",
+            "logistics_demand",
+            "logistics_node",
+            "logistics_node_usage",
+            "logistics_order",
+            "logistics_paid_shipment",
+            "logistics_receipt",
+            "logistics_reroute",
+            "logistics_route",
+            "logistics_route_node",
+            "logistics_route_usage",
+            "market_clock",
+            "market_delivery_clock",
+            "market_delivery_receipt",
+            "market_delivery_schema",
+            "market_delivery_stat",
+            "market_expiry_check",
+            "market_history",
+            "market_listing",
+            "market_purchase",
+            "market_schema",
+            "nation_state",
+            "national_evolution",
+            "national_evolution_schema",
+            "region",
+            "region_culture",
+            "reserve",
+            "resource_outbox",
+            "settlement",
+            "simulation_clock",
+            "sqlite_sequence",
+            "stock",
+            "transfer"
+          ],
+          "database_sha256": "c142bc6c92868e34d70cd13ce5790b5e8e28fade1cba22ceb7aaa181079fbfec",
+          "rows": {
+            "city_state": [
+              {
+                "id": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "name": "SWCityStarWorldQA",
+                "civilization": "agrarian",
+                "last_period": 179515750,
+                "last_report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
+                "event_type": "drought",
+                "event_start": 179515750,
+                "event_end": 179515762,
+                "aftermath_end": 179515764
+              }
+            ],
+            "building": [
+              {
+                "id": "05c67786-de3b-45b4-af5b-5a0628ca706f",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "type": "sawmill",
+                "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                "world_name": "baseline04-world",
+                "x": 24,
+                "y": 80,
+                "z": 8,
+                "level": 1
+              },
+              {
+                "id": "4893f8b1-28c7-487e-afce-79a8d2ca5b61",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "type": "workshop",
+                "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                "world_name": "baseline04-world",
+                "x": 40,
+                "y": 80,
+                "z": 8,
+                "level": 1
+              },
+              {
+                "id": "a26ee39f-9381-462c-a32f-bd53026be3c8",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "type": "farm",
+                "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                "world_name": "baseline04-world",
+                "x": 8,
+                "y": 80,
+                "z": 8,
+                "level": 1
+              }
+            ],
+            "stock": [
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:arrow",
+                "amount": 26
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:bread",
+                "amount": 15
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:iron_ingot",
+                "amount": 0
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:oak_log",
+                "amount": 13
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:oak_planks",
+                "amount": 56
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:paper",
+                "amount": 20
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:raw_iron",
+                "amount": 2
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:wheat",
+                "amount": 124
+              }
+            ],
+            "transfer": [
+              {
+                "id": "02409d6a-4870-4718-b440-7637c409b8dc",
+                "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "direction": "DEPOSIT",
+                "item": "minecraft:arrow",
+                "amount": 4,
+                "state": "COMPLETED",
+                "created": 1795157467768,
+                "decision": "runtime"
+              },
+              {
+                "id": "6fd61d4d-f3c1-4229-8f50-b6b721574d1d",
+                "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "direction": "DEPOSIT",
+                "item": "minecraft:wheat",
+                "amount": 16,
+                "state": "COMPLETED",
+                "created": 1795157469444,
+                "decision": "runtime"
+              },
+              {
+                "id": "932c70d3-b555-4aa0-a26b-80cfc79f34f5",
+                "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "direction": "DEPOSIT",
+                "item": "minecraft:wheat",
+                "amount": 17,
+                "state": "CANCELLED",
+                "created": 1795157469242,
+                "decision": "no inventory mutation"
+              },
+              {
+                "id": "d26a8f7a-20c5-48c6-ac7e-b66ce24bf43c",
+                "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "direction": "WITHDRAW",
+                "item": "minecraft:arrow",
+                "amount": 4,
+                "state": "COMPLETED",
+                "created": 1795157467571,
+                "decision": "runtime"
+              }
+            ],
+            "nation_state": [
+              {
+                "id": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "civilization": "agrarian",
+                "changed_period": -1000000
+              }
+            ],
+            "national_evolution": [
+              {
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "specialty": "",
+                "changed_period": -1000000
+              }
+            ],
+            "region": [
+              {
+                "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                "terrain": "plains",
+                "last_regen": 179515750
+              },
+              {
+                "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                "terrain": "plains",
+                "last_regen": 179515750
+              },
+              {
+                "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                "terrain": "plains",
+                "last_regen": 179515750
+              }
+            ],
+            "reserve": [
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                "resource": "fertility",
+                "amount": 688
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                "resource": "ore",
+                "amount": 100
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                "resource": "timber",
+                "amount": 160
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                "resource": "fertility",
+                "amount": 700
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                "resource": "ore",
+                "amount": 100
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                "resource": "timber",
+                "amount": 128
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                "resource": "fertility",
+                "amount": 700
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                "resource": "ore",
+                "amount": 88
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                "resource": "timber",
+                "amount": 160
+              }
+            ],
+            "city_authority": [
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "active": 1
+              }
+            ],
+            "simulation_clock": [
+              {
+                "id": 1,
+                "period_seconds": 10,
+                "epoch_origin": 1795157455,
+                "period_origin": 179515745
+              }
+            ],
+            "settlement": [
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515745,
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；林场与锯木厂: 维护食物不足；矿场与军工作坊: 维护食物不足"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515746,
+                "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515747,
+                "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515748,
+                "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515749,
+                "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515750,
+                "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
+              }
+            ],
+            "resource_outbox": [],
+            "logistics_order": [],
+            "logistics_receipt": [],
+            "life_action": [],
+            "life_concert": [],
+            "life_note": [],
+            "life_audience": [],
+            "life_evolution_action": [],
+            "life_decoration": [],
+            "market_delivery_schema": [
+              {
+                "id": 1,
+                "version": 1
+              }
+            ],
+            "market_delivery_clock": [
+              {
+                "id": 1,
+                "sequence": 0
+              }
+            ],
+            "market_delivery_receipt": [],
+            "market_delivery_stat": [],
+            "market_schema": [
+              {
+                "id": 1,
+                "version": 1,
+                "namespace": "3ade6b50-0bb9-457b-bd14-5351a22f5d8b"
+              }
+            ],
+            "market_listing": [],
+            "market_purchase": [],
+            "market_history": [],
+            "culture_dynamics_schema": [
+              {
+                "id": 1,
+                "version": 1
+              }
+            ],
+            "culture_decay": [
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                "last_period": 179515745
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                "last_period": 179515746
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                "last_period": 179515746
+              }
+            ],
+            "logistics_reroute": [],
+            "logistics_paid_shipment": []
+          },
+          "integrity": "ok"
+        },
+        "core": {
+          "schema": 0,
+          "tables": [
+            "alliance_members",
+            "audit_logs",
+            "business_nation_index",
+            "business_player_index",
+            "business_transactions",
+            "combat_history",
+            "combat_player_pvp",
+            "combat_player_states",
+            "court_appeals",
+            "court_cases",
+            "court_judges",
+            "court_jury",
+            "court_verdicts",
+            "duel_history",
+            "duel_player_stats",
+            "influence_leaderboard_history",
+            "influence_leaderboard_titles",
+            "influence_sources",
+            "leaderboard_notifications",
+            "lease_contracts",
+            "mercenary_contracts",
+            "parliament",
+            "parliament_bills",
+            "parliament_members",
+            "parliament_votes",
+            "party_alliances",
+            "party_members",
+            "player_influence",
+            "player_reputation",
+            "political_parties",
+            "pvp_elo_history",
+            "pvp_matchmaking_queue",
+            "pvp_season",
+            "relationship_history",
+            "relationships",
+            "reputation_history",
+            "resource_funded_trade_taxes",
+            "shop_auction_listings",
+            "shop_items",
+            "shop_npc_bindings",
+            "shop_shops",
+            "shop_templates",
+            "shop_trade_records",
+            "shop_transactions",
+            "social_activities",
+            "social_activity_participants",
+            "sovereignty_claims",
+            "sovereignty_declarations",
+            "sqlite_sequence",
+            "starcore_achievement_reward_delivered",
+            "starcore_achievement_reward_pending",
+            "starcore_achievement_stats",
+            "starcore_achievements",
+            "starcore_alliance_state",
+            "starcore_alliances",
+            "starcore_bankruptcy_state",
+            "starcore_battlefield_state",
+            "starcore_blacklist",
+            "starcore_budget_state",
+            "starcore_court_debts",
+            "starcore_court_history",
+            "starcore_culture",
+            "starcore_diplomacy_state",
+            "starcore_donations",
+            "starcore_dynasties",
+            "starcore_dynasty_heirs",
+            "starcore_event_state",
+            "starcore_friend_relations",
+            "starcore_friend_requests",
+            "starcore_guild_invites",
+            "starcore_guild_members",
+            "starcore_guilds",
+            "starcore_lease_chunk_index",
+            "starcore_lease_contracts",
+            "starcore_lease_payments",
+            "starcore_mail_attachment_claims",
+            "starcore_mail_attachments",
+            "starcore_mail_v2",
+            "starcore_mail_v2_attachments",
+            "starcore_mails",
+            "starcore_metadata",
+            "starcore_military_alliance_state",
+            "starcore_nation_resource_district_state",
+            "starcore_nation_state",
+            "starcore_officer_state",
+            "starcore_parties",
+            "starcore_party_invites",
+            "starcore_party_members",
+            "starcore_player_balances",
+            "starcore_player_locale",
+            "starcore_player_status",
+            "starcore_player_titles",
+            "starcore_policy_state",
+            "starcore_resolution_state",
+            "starcore_resource_state",
+            "starcore_social_events",
+            "starcore_subregions",
+            "starcore_subregions_permissions",
+            "starcore_technology_research",
+            "starcore_technology_state",
+            "starcore_territories",
+            "starcore_territories_permissions",
+            "starcore_territory_claims",
+            "starcore_territory_members",
+            "starcore_treasury_state",
+            "starcore_treaty_data",
+            "starcore_war_state",
+            "starcore_wars",
+            "trade_history",
+            "treasury_funded_taxes",
+            "treasury_tax_compensations",
+            "weather_tactics",
+            "weather_tactics_boosts",
+            "weather_weather_state",
+            "weather_weather_state_meta",
+            "zone_state"
+          ],
+          "database_sha256": "365b53483c928540ef02a17a9dd5431e152a93a4af1fde3bdd057b28d93b2d87",
+          "rows": {
+            "starcore_nation_state": [
+              {
+                "property_key": "__starcore_revision__",
+                "property_value": "3"
+              },
+              {
+                "property_key": "count",
+                "property_value": "1"
+              },
+              {
+                "property_key": "nation.0.capitalLocation",
+                "property_value": "baseline04-world,8.00,64.00,8.00,0.00,0.00"
+              },
+              {
+                "property_key": "nation.0.experience",
+                "property_value": "0"
+              },
+              {
+                "property_key": "nation.0.foundedAt",
+                "property_value": "1795157460267"
+              },
+              {
+                "property_key": "nation.0.founderId",
+                "property_value": "363cb761-f442-3a44-b511-0ffbf8720f97"
+              },
+              {
+                "property_key": "nation.0.government",
+                "property_value": "MONARCHY"
+              },
+              {
+                "property_key": "nation.0.id",
+                "property_value": "914c4e27-efa3-46f1-be09-23197a3e9334"
+              },
+              {
+                "property_key": "nation.0.kind",
+                "property_value": "NATION"
+              },
+              {
+                "property_key": "nation.0.member.0.id",
+                "property_value": "363cb761-f442-3a44-b511-0ffbf8720f97"
+              },
+              {
+                "property_key": "nation.0.member.0.joinedAt",
+                "property_value": "1795157460270"
+              },
+              {
+                "property_key": "nation.0.member.0.lastSeen",
+                "property_value": "1795157460270"
+              },
+              {
+                "property_key": "nation.0.member.0.name",
+                "property_value": "StarWorldQA"
+              },
+              {
+                "property_key": "nation.0.member.0.rank",
+                "property_value": "Member"
+              },
+              {
+                "property_key": "nation.0.memberCount",
+                "property_value": "1"
+              },
+              {
+                "property_key": "nation.0.name",
+                "property_value": "SWTestStarWorldQA"
+              },
+              {
+                "property_key": "nation.0.taxRate",
+                "property_value": "0.0"
+              }
+            ],
+            "starcore_treasury_state": [
+              {
+                "property_key": "__starcore_revision__",
+                "property_value": "2"
+              },
+              {
+                "property_key": "count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "credit.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "spending.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "transfer.count",
+                "property_value": "0"
+              }
+            ],
+            "starcore_resource_state": [
+              {
+                "property_key": "agreement.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "embargo.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "factory.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "quota.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "route.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "transaction.count",
+                "property_value": "0"
+              }
+            ]
+          },
+          "integrity": "ok"
+        },
+        "pluginVersion": "0.5.0"
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T07:50:16.650Z"
+    },
+    {
+      "name": "new plugin loads original core city facilities inventory and national authority",
+      "startedAt": "2026-11-20T07:50:16.651Z",
+      "observed": {
+        "city": {
+          "cityId": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+          "lastPeriod": 179515750,
+          "stock": {
+            "minecraft:oak_planks": 56,
+            "minecraft:oak_log": 13,
+            "minecraft:paper": 20,
+            "minecraft:raw_iron": 2,
+            "minecraft:iron_ingot": 0,
+            "minecraft:arrow": 26,
+            "minecraft:bread": 15,
+            "minecraft:wheat": 124
+          },
+          "buildings": 3,
+          "event": "EventState[type=drought, startPeriod=179515750, endPeriod=179515762, aftermathEndPeriod=179515764]",
+          "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
+          "raw": "[15:51:06 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"e5c52bca-38b8-48a4-bc83-76f3a8e98f1a\",\"lastPeriod\":179515750,\"stock\":{\"minecraft:oak_planks\":56,\"minecraft:oak_log\":13,\"minecraft:paper\":20,\"minecraft:raw_iron\":2,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":26,\"minecraft:bread\":15,\"minecraft:wheat\":124},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179515750, endPeriod\\u003d179515762, aftermathEndPeriod\\u003d179515764]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
+        },
+        "inventory": {
+          "player": "StarWorldQA",
+          "items": [
+            {
+              "slot": 0,
+              "type": "minecraft:written_book",
+              "amount": 1,
+              "named": true
+            },
+            {
+              "slot": 2,
+              "type": "minecraft:wheat",
+              "amount": 7,
+              "named": true
+            }
+          ],
+          "action": "inventory"
+        },
+        "nation": "StarCore 公共快照：NationSnapshot[nationId=914c4e27-efa3-46f1-be09-23197a3e9334, name=SWTestStarWorldQA, capturedAt=2026-11-20T07:51:06.946540200Z, weather=clear, weatherResourceMultipliers={mineral=1.0, energy=1.0, agricultural=1.2, luxury=1.0}, epoch=Epoch[enabled=true, number=20778, start=2026-11-20T00:00:00Z, nextStart=2026-11-21T00:00:00Z], technologies=[], technologyModifiers={trade_bonus=0.0, resource_yield=0.0, military_strength=0.0, crop_growth=0.0, transport_speed=0.0, production_speed=0.0}, policy=, policyModifiers={production_bonus=0.0, military_bonus=0.0, trade_bonus=0.0}, resourceStock={industrial=0, strategic=0, energy=0, luxury=0, agricultural=0, mineral=0, chemical=0}, prosperity=51.0, warOpponents=[], diplomacy={}, processingRecipes=[ProcessingRecipe[id=recipe_advanced_food, inputs={timber=3, food=5}, outputs={food=15}, seconds=480], ProcessingRecipe[id=recipe_bulk_ore, inputs={ore=10}, outputs={rare_metal=1, ore=8}, seconds=1200], ProcessingRecipe[id=recipe_ore_to_rare_metal, inputs={ore=3}, outputs={rare_metal=1}, seconds=600], ProcessingRecipe[id=recipe_timber_to_food, inputs={timber=2}, outputs={food=5}, seconds=300], ProcessingRecipe[id=recipe_oil_processing, inputs={oil=5}, outputs={rare_metal=2, food=2}, seconds=900]], factoryCount=0, capabilities={processing=available, folia=核心可变模型无跨区域快照契约；仅Paper主线程捕获, factories=available, policy=available, prosperity=available, war=available, diplomacy=available, resources=available, prosperity-submit=公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献, policy-effects=available, weather=available, technology-effects=available, technology=available, epoch=available, resource-transactions=available}]"
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T07:51:07.011Z"
+    },
+    {
+      "name": "existing atlas and market remain usable without replacing seven old configurations",
+      "startedAt": "2026-11-20T07:51:07.012Z",
+      "observed": {
+        "market": "实体商品挂牌（整批价格由国家创始人确认付款）",
+        "atlasTitle": {
+          "type": "string",
+          "value": "StarWorld · 地区地图册"
+        },
+        "oldConfigurationSha256": {
+          "plugins/StarWorld/config.yml": "33eb3a42c8e4bdcfa913c753d6a5b6e8ab9b521e77fbf9174084da7e17740cbe",
+          "plugins/StarWorld/definitions.yml": "870218ae9beb6bcb7d20ff52e3ae41bdc9c58ed6ce73f2a354d2d2109d25c1af",
+          "plugins/StarWorld/evolution.yml": "356089c21544c6d49455ad6eb512a2faef16639cbd6eae4266c190e761355e10",
+          "plugins/StarWorld/logistics.yml": "a54f0f86250669c1db25eb297efddc0450c3ab7c10ab41c627c3d322c9bc112f",
+          "plugins/StarWorld/exports.yml": "404834ea15275b775fddae6b8bc3a51ab13ede2b4e172cc854e09acf3ce7d51f",
+          "plugins/StarWorld/life.yml": "63816ff50f1e1a23241451f2d00a1031dda1a02f6386a56fddab996b47ca7532",
+          "plugins/StarWorld/market.yml": "4392dc8d43011fcf9419b8c172824ebd178de0640117e1eb643123261fe4a438"
+        },
+        "retainedMarketConfigurationSha256": "4392dc8d43011fcf9419b8c172824ebd178de0640117e1eb643123261fe4a438"
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T07:51:07.148Z"
+    },
+    {
+      "name": "normal new periods produce without replaying old transfers or offline catchup",
+      "startedAt": "2026-11-20T07:51:07.149Z",
+      "observed": {
+        "initial": {
+          "cityId": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+          "lastPeriod": 179515750,
+          "stock": {
+            "minecraft:oak_planks": 56,
+            "minecraft:oak_log": 13,
+            "minecraft:paper": 20,
+            "minecraft:raw_iron": 2,
+            "minecraft:iron_ingot": 0,
+            "minecraft:arrow": 26,
+            "minecraft:bread": 15,
+            "minecraft:wheat": 124
+          },
+          "buildings": 3,
+          "event": "EventState[type=drought, startPeriod=179515750, endPeriod=179515762, aftermathEndPeriod=179515764]",
+          "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
+          "raw": "[15:51:07 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"e5c52bca-38b8-48a4-bc83-76f3a8e98f1a\",\"lastPeriod\":179515750,\"stock\":{\"minecraft:oak_planks\":56,\"minecraft:oak_log\":13,\"minecraft:paper\":20,\"minecraft:raw_iron\":2,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":26,\"minecraft:bread\":15,\"minecraft:wheat\":124},\"buildingCount\":3,\"event\":\"EventState[type\\u003ddrought, startPeriod\\u003d179515750, endPeriod\\u003d179515762, aftermathEndPeriod\\u003d179515764]\",\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
+        },
+        "later": {
+          "cityId": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+          "lastPeriod": 179516106,
+          "stock": {
+            "minecraft:oak_planks": 66,
+            "minecraft:oak_log": 15,
+            "minecraft:paper": 24,
+            "minecraft:raw_iron": 3,
+            "minecraft:iron_ingot": 0,
+            "minecraft:arrow": 39,
+            "minecraft:bread": 16,
+            "minecraft:wheat": 142
+          },
+          "buildings": 3,
+          "event": null,
+          "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
+          "raw": "[15:51:07 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"e5c52bca-38b8-48a4-bc83-76f3a8e98f1a\",\"lastPeriod\":179516106,\"stock\":{\"minecraft:oak_planks\":66,\"minecraft:oak_log\":15,\"minecraft:paper\":24,\"minecraft:raw_iron\":3,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":39,\"minecraft:bread\":16,\"minecraft:wheat\":142},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
+        },
+        "inventory": {
+          "player": "StarWorldQA",
+          "items": [
+            {
+              "slot": 0,
+              "type": "minecraft:written_book",
+              "amount": 1,
+              "named": true
+            },
+            {
+              "slot": 2,
+              "type": "minecraft:wheat",
+              "amount": 7,
+              "named": true
+            }
+          ],
+          "action": "inventory"
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T07:51:07.653Z"
+    },
+    {
+      "name": "first normal shutdown commits additive schemas and preserves durable old receipts",
+      "startedAt": "2026-11-20T07:51:07.654Z",
+      "observed": {
+        "state": {
+          "world": {
+            "schema": 2,
+            "tables": [
+              "audit",
+              "audit_archive",
+              "building",
+              "city_authority",
+              "city_capacity",
+              "city_state",
+              "culture_decay",
+              "culture_dynamics_schema",
+              "culture_exchange",
+              "disaster_recovery_ledger",
+              "disaster_response",
+              "disaster_response_history",
+              "disaster_response_schema",
+              "evolution_city",
+              "evolution_event",
+              "evolution_facility",
+              "evolution_history",
+              "evolution_readiness",
+              "evolution_schema",
+              "evolution_trade_action",
+              "extension_meta",
+              "life_action",
+              "life_audience",
+              "life_city",
+              "life_concert",
+              "life_decoration",
+              "life_evolution_action",
+              "life_note",
+              "life_profile",
+              "life_schema",
+              "logistics_cargo",
+              "logistics_clock",
+              "logistics_demand",
+              "logistics_node",
+              "logistics_node_usage",
+              "logistics_order",
+              "logistics_paid_shipment",
+              "logistics_receipt",
+              "logistics_reroute",
+              "logistics_route",
+              "logistics_route_node",
+              "logistics_route_usage",
+              "market_clock",
+              "market_delivery_clock",
+              "market_delivery_receipt",
+              "market_delivery_schema",
+              "market_delivery_stat",
+              "market_expiry_check",
+              "market_history",
+              "market_listing",
+              "market_purchase",
+              "market_schema",
+              "nation_state",
+              "national_evolution",
+              "national_evolution_schema",
+              "region",
+              "region_culture",
+              "reserve",
+              "resource_outbox",
+              "settlement",
+              "simulation_clock",
+              "sqlite_sequence",
+              "stock",
+              "transfer"
+            ],
+            "database_sha256": "f54415181f5f7620af83de0ac02b58217e4ab8873b511dad03c3aa2acd41ed41",
+            "rows": {
+              "city_state": [
+                {
+                  "id": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                  "name": "SWCityStarWorldQA",
+                  "civilization": "agrarian",
+                  "last_period": 179516106,
+                  "last_report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
+                  "event_type": null,
+                  "event_start": null,
+                  "event_end": null,
+                  "aftermath_end": null
+                }
+              ],
+              "building": [
+                {
+                  "id": "05c67786-de3b-45b4-af5b-5a0628ca706f",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                  "type": "sawmill",
+                  "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                  "world_name": "baseline04-world",
+                  "x": 24,
+                  "y": 80,
+                  "z": 8,
+                  "level": 1
+                },
+                {
+                  "id": "4893f8b1-28c7-487e-afce-79a8d2ca5b61",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                  "type": "workshop",
+                  "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                  "world_name": "baseline04-world",
+                  "x": 40,
+                  "y": 80,
+                  "z": 8,
+                  "level": 1
+                },
+                {
+                  "id": "a26ee39f-9381-462c-a32f-bd53026be3c8",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                  "type": "farm",
+                  "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                  "world_name": "baseline04-world",
+                  "x": 8,
+                  "y": 80,
+                  "z": 8,
+                  "level": 1
+                }
+              ],
+              "stock": [
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "item": "minecraft:arrow",
+                  "amount": 39
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "item": "minecraft:bread",
+                  "amount": 16
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "item": "minecraft:iron_ingot",
+                  "amount": 0
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "item": "minecraft:oak_log",
+                  "amount": 15
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "item": "minecraft:oak_planks",
+                  "amount": 66
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "item": "minecraft:paper",
+                  "amount": 24
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "item": "minecraft:raw_iron",
+                  "amount": 3
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "item": "minecraft:wheat",
+                  "amount": 142
+                }
+              ],
+              "transfer": [
+                {
+                  "id": "02409d6a-4870-4718-b440-7637c409b8dc",
+                  "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "direction": "DEPOSIT",
+                  "item": "minecraft:arrow",
+                  "amount": 4,
+                  "state": "COMPLETED",
+                  "created": 1795157467768,
+                  "decision": "runtime"
+                },
+                {
+                  "id": "6fd61d4d-f3c1-4229-8f50-b6b721574d1d",
+                  "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "direction": "DEPOSIT",
+                  "item": "minecraft:wheat",
+                  "amount": 16,
+                  "state": "COMPLETED",
+                  "created": 1795157469444,
+                  "decision": "runtime"
+                },
+                {
+                  "id": "932c70d3-b555-4aa0-a26b-80cfc79f34f5",
+                  "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "direction": "DEPOSIT",
+                  "item": "minecraft:wheat",
+                  "amount": 17,
+                  "state": "CANCELLED",
+                  "created": 1795157469242,
+                  "decision": "no inventory mutation"
+                },
+                {
+                  "id": "d26a8f7a-20c5-48c6-ac7e-b66ce24bf43c",
+                  "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "direction": "WITHDRAW",
+                  "item": "minecraft:arrow",
+                  "amount": 4,
+                  "state": "COMPLETED",
+                  "created": 1795157467571,
+                  "decision": "runtime"
+                }
+              ],
+              "nation_state": [
+                {
+                  "id": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                  "civilization": "agrarian",
+                  "changed_period": -1000000
+                }
+              ],
+              "national_evolution": [
+                {
+                  "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                  "specialty": "",
+                  "changed_period": -1000000
+                }
+              ],
+              "region": [
+                {
+                  "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                  "terrain": "plains",
+                  "last_regen": 179516106
+                },
+                {
+                  "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                  "terrain": "plains",
+                  "last_regen": 179516106
+                },
+                {
+                  "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                  "terrain": "plains",
+                  "last_regen": 179516106
+                }
+              ],
+              "reserve": [
+                {
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                  "resource": "fertility",
+                  "amount": 688
+                },
+                {
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                  "resource": "ore",
+                  "amount": 100
+                },
+                {
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                  "resource": "timber",
+                  "amount": 160
+                },
+                {
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                  "resource": "fertility",
+                  "amount": 700
+                },
+                {
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                  "resource": "ore",
+                  "amount": 100
+                },
+                {
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                  "resource": "timber",
+                  "amount": 122
+                },
+                {
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                  "resource": "fertility",
+                  "amount": 700
+                },
+                {
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                  "resource": "ore",
+                  "amount": 82
+                },
+                {
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                  "resource": "timber",
+                  "amount": 160
+                }
+              ],
+              "city_authority": [
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "active": 1
+                }
+              ],
+              "simulation_clock": [
+                {
+                  "id": 1,
+                  "period_seconds": 10,
+                  "epoch_origin": 1795157455,
+                  "period_origin": 179515745
+                }
+              ],
+              "settlement": [
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179515745,
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；林场与锯木厂: 维护食物不足；矿场与军工作坊: 维护食物不足"
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179515746,
+                  "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179515747,
+                  "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179515748,
+                  "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179515749,
+                  "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179515750,
+                  "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
+                },
+                {
+                  "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                  "period": 179516106,
+                  "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
+                }
+              ],
+              "resource_outbox": [],
+              "logistics_order": [],
+              "logistics_receipt": [],
+              "life_action": [],
+              "life_concert": [],
+              "life_note": [],
+              "life_audience": [],
+              "life_evolution_action": [],
+              "life_decoration": [],
+              "market_delivery_schema": [
+                {
+                  "id": 1,
+                  "version": 1
+                }
+              ],
+              "market_delivery_clock": [
+                {
+                  "id": 1,
+                  "sequence": 0
+                }
+              ],
+              "market_delivery_receipt": [],
+              "market_delivery_stat": [],
+              "disaster_response_schema": [
+                {
+                  "id": 1,
+                  "version": 1
+                }
+              ],
+              "disaster_response": [],
+              "disaster_response_history": [],
+              "disaster_recovery_ledger": [],
+              "market_schema": [
+                {
+                  "id": 1,
+                  "version": 1,
+                  "namespace": "3ade6b50-0bb9-457b-bd14-5351a22f5d8b"
+                }
+              ],
+              "market_listing": [],
+              "market_purchase": [],
+              "market_history": [],
+              "culture_dynamics_schema": [
+                {
+                  "id": 1,
+                  "version": 1
+                }
+              ],
+              "culture_decay": [
+                {
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                  "last_period": 179516106
+                },
+                {
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                  "last_period": 179516106
+                },
+                {
+                  "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                  "last_period": 179516106
+                }
+              ],
+              "logistics_reroute": [],
+              "logistics_paid_shipment": []
+            },
+            "integrity": "ok"
+          },
+          "core": {
+            "schema": 0,
+            "tables": [
+              "alliance_members",
+              "audit_logs",
+              "business_nation_index",
+              "business_player_index",
+              "business_transactions",
+              "combat_history",
+              "combat_player_pvp",
+              "combat_player_states",
+              "court_appeals",
+              "court_cases",
+              "court_judges",
+              "court_jury",
+              "court_verdicts",
+              "duel_history",
+              "duel_player_stats",
+              "influence_leaderboard_history",
+              "influence_leaderboard_titles",
+              "influence_sources",
+              "leaderboard_notifications",
+              "lease_contracts",
+              "mercenary_contracts",
+              "parliament",
+              "parliament_bills",
+              "parliament_members",
+              "parliament_votes",
+              "party_alliances",
+              "party_members",
+              "player_influence",
+              "player_reputation",
+              "political_parties",
+              "pvp_elo_history",
+              "pvp_matchmaking_queue",
+              "pvp_season",
+              "relationship_history",
+              "relationships",
+              "reputation_history",
+              "resource_funded_trade_taxes",
+              "shop_auction_listings",
+              "shop_items",
+              "shop_npc_bindings",
+              "shop_shops",
+              "shop_templates",
+              "shop_trade_records",
+              "shop_transactions",
+              "social_activities",
+              "social_activity_participants",
+              "sovereignty_claims",
+              "sovereignty_declarations",
+              "sqlite_sequence",
+              "starcore_achievement_reward_delivered",
+              "starcore_achievement_reward_pending",
+              "starcore_achievement_stats",
+              "starcore_achievements",
+              "starcore_alliance_state",
+              "starcore_alliances",
+              "starcore_bankruptcy_state",
+              "starcore_battlefield_state",
+              "starcore_blacklist",
+              "starcore_budget_state",
+              "starcore_court_debts",
+              "starcore_court_history",
+              "starcore_culture",
+              "starcore_diplomacy_state",
+              "starcore_donations",
+              "starcore_dynasties",
+              "starcore_dynasty_heirs",
+              "starcore_event_state",
+              "starcore_friend_relations",
+              "starcore_friend_requests",
+              "starcore_guild_invites",
+              "starcore_guild_members",
+              "starcore_guilds",
+              "starcore_lease_chunk_index",
+              "starcore_lease_contracts",
+              "starcore_lease_payments",
+              "starcore_mail_attachment_claims",
+              "starcore_mail_attachments",
+              "starcore_mail_v2",
+              "starcore_mail_v2_attachments",
+              "starcore_mails",
+              "starcore_metadata",
+              "starcore_military_alliance_state",
+              "starcore_nation_resource_district_state",
+              "starcore_nation_state",
+              "starcore_officer_state",
+              "starcore_parties",
+              "starcore_party_invites",
+              "starcore_party_members",
+              "starcore_player_balances",
+              "starcore_player_locale",
+              "starcore_player_status",
+              "starcore_player_titles",
+              "starcore_policy_state",
+              "starcore_resolution_state",
+              "starcore_resource_state",
+              "starcore_social_events",
+              "starcore_subregions",
+              "starcore_subregions_permissions",
+              "starcore_technology_research",
+              "starcore_technology_state",
+              "starcore_territories",
+              "starcore_territories_permissions",
+              "starcore_territory_claims",
+              "starcore_territory_members",
+              "starcore_treasury_state",
+              "starcore_treaty_data",
+              "starcore_war_state",
+              "starcore_wars",
+              "trade_history",
+              "treasury_funded_taxes",
+              "treasury_tax_compensations",
+              "weather_tactics",
+              "weather_tactics_boosts",
+              "weather_weather_state",
+              "weather_weather_state_meta",
+              "zone_state"
+            ],
+            "database_sha256": "1aeb7e06e4732aff0b6b9c7e7098360350a4f583e42190b32ef519541f525a13",
+            "rows": {
+              "starcore_nation_state": [
+                {
+                  "property_key": "__starcore_revision__",
+                  "property_value": "4"
+                },
+                {
+                  "property_key": "count",
+                  "property_value": "1"
+                },
+                {
+                  "property_key": "nation.0.capitalLocation",
+                  "property_value": "baseline04-world,8.00,64.00,8.00,0.00,0.00"
+                },
+                {
+                  "property_key": "nation.0.experience",
+                  "property_value": "0"
+                },
+                {
+                  "property_key": "nation.0.foundedAt",
+                  "property_value": "1795157460267"
+                },
+                {
+                  "property_key": "nation.0.founderId",
+                  "property_value": "363cb761-f442-3a44-b511-0ffbf8720f97"
+                },
+                {
+                  "property_key": "nation.0.government",
+                  "property_value": "MONARCHY"
+                },
+                {
+                  "property_key": "nation.0.id",
+                  "property_value": "914c4e27-efa3-46f1-be09-23197a3e9334"
+                },
+                {
+                  "property_key": "nation.0.kind",
+                  "property_value": "NATION"
+                },
+                {
+                  "property_key": "nation.0.member.0.id",
+                  "property_value": "363cb761-f442-3a44-b511-0ffbf8720f97"
+                },
+                {
+                  "property_key": "nation.0.member.0.joinedAt",
+                  "property_value": "1795157460270"
+                },
+                {
+                  "property_key": "nation.0.member.0.lastSeen",
+                  "property_value": "1795157460270"
+                },
+                {
+                  "property_key": "nation.0.member.0.name",
+                  "property_value": "StarWorldQA"
+                },
+                {
+                  "property_key": "nation.0.member.0.rank",
+                  "property_value": "Member"
+                },
+                {
+                  "property_key": "nation.0.memberCount",
+                  "property_value": "1"
+                },
+                {
+                  "property_key": "nation.0.name",
+                  "property_value": "SWTestStarWorldQA"
+                },
+                {
+                  "property_key": "nation.0.taxRate",
+                  "property_value": "0.0"
+                }
+              ],
+              "starcore_treasury_state": [
+                {
+                  "property_key": "__starcore_revision__",
+                  "property_value": "3"
+                },
+                {
+                  "property_key": "count",
+                  "property_value": "0"
+                },
+                {
+                  "property_key": "credit.count",
+                  "property_value": "0"
+                },
+                {
+                  "property_key": "spending.count",
+                  "property_value": "0"
+                },
+                {
+                  "property_key": "transfer.count",
+                  "property_value": "0"
+                }
+              ],
+              "starcore_resource_state": [
+                {
+                  "property_key": "agreement.count",
+                  "property_value": "0"
+                },
+                {
+                  "property_key": "count",
+                  "property_value": "0"
+                },
+                {
+                  "property_key": "embargo.count",
+                  "property_value": "0"
+                },
+                {
+                  "property_key": "factory.count",
+                  "property_value": "0"
+                },
+                {
+                  "property_key": "quota.count",
+                  "property_value": "0"
+                },
+                {
+                  "property_key": "route.count",
+                  "property_value": "0"
+                },
+                {
+                  "property_key": "transaction.count",
+                  "property_value": "0"
+                }
+              ]
+            },
+            "integrity": "ok"
+          },
+          "pluginVersion": "0.5.0"
+        },
+        "newSettlements": [
+          {
+            "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+            "period": 179516106,
+            "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
+          }
+        ],
+        "elapsedSeconds": 53.308,
+        "oldStock": {
+          "minecraft:arrow": 26,
+          "minecraft:bread": 15,
+          "minecraft:iron_ingot": 0,
+          "minecraft:oak_log": 13,
+          "minecraft:oak_planks": 56,
+          "minecraft:paper": 20,
+          "minecraft:raw_iron": 2,
+          "minecraft:wheat": 124
+        },
+        "currentStock": {
+          "minecraft:arrow": 39,
+          "minecraft:bread": 16,
+          "minecraft:iron_ingot": 0,
+          "minecraft:oak_log": 15,
+          "minecraft:oak_planks": 66,
+          "minecraft:paper": 24,
+          "minecraft:raw_iron": 3,
+          "minecraft:wheat": 142
+        },
+        "perPeriodUpperBound": {
+          "minecraft:wheat": 360,
+          "minecraft:bread": 210,
+          "minecraft:oak_log": 120,
+          "minecraft:oak_planks": 240,
+          "minecraft:raw_iron": 90,
+          "minecraft:iron_ingot": 60,
+          "minecraft:arrow": 360,
+          "minecraft:paper": 90,
+          "minecraft:shield": 30
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T07:51:09.402Z"
+    },
+    {
+      "name": "second startup restores the same upgraded city and protected player inventory",
+      "startedAt": "2026-11-20T07:51:09.403Z",
+      "observed": {
+        "city": {
+          "cityId": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+          "lastPeriod": 179516106,
+          "stock": {
+            "minecraft:oak_planks": 66,
+            "minecraft:oak_log": 15,
+            "minecraft:paper": 24,
+            "minecraft:raw_iron": 3,
+            "minecraft:iron_ingot": 0,
+            "minecraft:arrow": 39,
+            "minecraft:bread": 16,
+            "minecraft:wheat": 142
+          },
+          "buildings": 3,
+          "event": null,
+          "lastReport": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
+          "raw": "[15:51:38 INFO]: [StarWorldFixture] SW_FIXTURE_JSON {\"action\":\"verify\",\"player\":\"StarWorldQA\",\"cityId\":\"e5c52bca-38b8-48a4-bc83-76f3a8e98f1a\",\"lastPeriod\":179516106,\"stock\":{\"minecraft:oak_planks\":66,\"minecraft:oak_log\":15,\"minecraft:paper\":24,\"minecraft:raw_iron\":3,\"minecraft:iron_ingot\":0,\"minecraft:arrow\":39,\"minecraft:bread\":16,\"minecraft:wheat\":142},\"buildingCount\":3,\"event\":null,\"lastReport\":\"产出 {minecraft:arrow\\u003d13, minecraft:bread\\u003d4, minecraft:iron_ingot\\u003d2, minecraft:oak_log\\u003d6, minecraft:oak_planks\\u003d12, minecraft:paper\\u003d4, minecraft:raw_iron\\u003d3, minecraft:wheat\\u003d24}；\"}"
+        },
+        "inventory": {
+          "player": "StarWorldQA",
+          "items": [
+            {
+              "slot": 0,
+              "type": "minecraft:written_book",
+              "amount": 1,
+              "named": true
+            },
+            {
+              "slot": 2,
+              "type": "minecraft:wheat",
+              "amount": 7,
+              "named": true
+            }
+          ],
+          "action": "inventory"
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T07:51:39.066Z"
+    },
+    {
+      "name": "second normal shutdown preserves payment and transfer tombstones with no invented market orders",
+      "startedAt": "2026-11-20T07:51:39.067Z",
+      "observed": {
+        "world": {
+          "schema": 2,
+          "tables": [
+            "audit",
+            "audit_archive",
+            "building",
+            "city_authority",
+            "city_capacity",
+            "city_state",
+            "culture_decay",
+            "culture_dynamics_schema",
+            "culture_exchange",
+            "disaster_recovery_ledger",
+            "disaster_response",
+            "disaster_response_history",
+            "disaster_response_schema",
+            "evolution_city",
+            "evolution_event",
+            "evolution_facility",
+            "evolution_history",
+            "evolution_readiness",
+            "evolution_schema",
+            "evolution_trade_action",
+            "extension_meta",
+            "life_action",
+            "life_audience",
+            "life_city",
+            "life_concert",
+            "life_decoration",
+            "life_evolution_action",
+            "life_note",
+            "life_profile",
+            "life_schema",
+            "logistics_cargo",
+            "logistics_clock",
+            "logistics_demand",
+            "logistics_node",
+            "logistics_node_usage",
+            "logistics_order",
+            "logistics_paid_shipment",
+            "logistics_receipt",
+            "logistics_reroute",
+            "logistics_route",
+            "logistics_route_node",
+            "logistics_route_usage",
+            "market_clock",
+            "market_delivery_clock",
+            "market_delivery_receipt",
+            "market_delivery_schema",
+            "market_delivery_stat",
+            "market_expiry_check",
+            "market_history",
+            "market_listing",
+            "market_purchase",
+            "market_schema",
+            "nation_state",
+            "national_evolution",
+            "national_evolution_schema",
+            "region",
+            "region_culture",
+            "reserve",
+            "resource_outbox",
+            "settlement",
+            "simulation_clock",
+            "sqlite_sequence",
+            "stock",
+            "transfer"
+          ],
+          "database_sha256": "11edae79989c36d85886576b886c5b477e38fe8dfc95e948916d3b756d71ebba",
+          "rows": {
+            "city_state": [
+              {
+                "id": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "name": "SWCityStarWorldQA",
+                "civilization": "agrarian",
+                "last_period": 179516106,
+                "last_report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；",
+                "event_type": null,
+                "event_start": null,
+                "event_end": null,
+                "aftermath_end": null
+              }
+            ],
+            "building": [
+              {
+                "id": "05c67786-de3b-45b4-af5b-5a0628ca706f",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "type": "sawmill",
+                "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                "world_name": "baseline04-world",
+                "x": 24,
+                "y": 80,
+                "z": 8,
+                "level": 1
+              },
+              {
+                "id": "4893f8b1-28c7-487e-afce-79a8d2ca5b61",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "type": "workshop",
+                "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                "world_name": "baseline04-world",
+                "x": 40,
+                "y": 80,
+                "z": 8,
+                "level": 1
+              },
+              {
+                "id": "a26ee39f-9381-462c-a32f-bd53026be3c8",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "type": "farm",
+                "world": "b0e66ac9-270c-4e28-ba56-e76d23321a47",
+                "world_name": "baseline04-world",
+                "x": 8,
+                "y": 80,
+                "z": 8,
+                "level": 1
+              }
+            ],
+            "stock": [
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:arrow",
+                "amount": 39
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:bread",
+                "amount": 16
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:iron_ingot",
+                "amount": 0
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:oak_log",
+                "amount": 15
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:oak_planks",
+                "amount": 66
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:paper",
+                "amount": 24
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:raw_iron",
+                "amount": 3
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "item": "minecraft:wheat",
+                "amount": 142
+              }
+            ],
+            "transfer": [
+              {
+                "id": "02409d6a-4870-4718-b440-7637c409b8dc",
+                "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "direction": "DEPOSIT",
+                "item": "minecraft:arrow",
+                "amount": 4,
+                "state": "COMPLETED",
+                "created": 1795157467768,
+                "decision": "runtime"
+              },
+              {
+                "id": "6fd61d4d-f3c1-4229-8f50-b6b721574d1d",
+                "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "direction": "DEPOSIT",
+                "item": "minecraft:wheat",
+                "amount": 16,
+                "state": "COMPLETED",
+                "created": 1795157469444,
+                "decision": "runtime"
+              },
+              {
+                "id": "932c70d3-b555-4aa0-a26b-80cfc79f34f5",
+                "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "direction": "DEPOSIT",
+                "item": "minecraft:wheat",
+                "amount": 17,
+                "state": "CANCELLED",
+                "created": 1795157469242,
+                "decision": "no inventory mutation"
+              },
+              {
+                "id": "d26a8f7a-20c5-48c6-ac7e-b66ce24bf43c",
+                "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "direction": "WITHDRAW",
+                "item": "minecraft:arrow",
+                "amount": 4,
+                "state": "COMPLETED",
+                "created": 1795157467571,
+                "decision": "runtime"
+              }
+            ],
+            "nation_state": [
+              {
+                "id": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "civilization": "agrarian",
+                "changed_period": -1000000
+              }
+            ],
+            "national_evolution": [
+              {
+                "nation": "914c4e27-efa3-46f1-be09-23197a3e9334",
+                "specialty": "",
+                "changed_period": -1000000
+              }
+            ],
+            "region": [
+              {
+                "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                "terrain": "plains",
+                "last_regen": 179516106
+              },
+              {
+                "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                "terrain": "plains",
+                "last_regen": 179516106
+              },
+              {
+                "id": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                "terrain": "plains",
+                "last_regen": 179516106
+              }
+            ],
+            "reserve": [
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                "resource": "fertility",
+                "amount": 688
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                "resource": "ore",
+                "amount": 100
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                "resource": "timber",
+                "amount": 160
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                "resource": "fertility",
+                "amount": 700
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                "resource": "ore",
+                "amount": 100
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                "resource": "timber",
+                "amount": 122
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                "resource": "fertility",
+                "amount": 700
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                "resource": "ore",
+                "amount": 82
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                "resource": "timber",
+                "amount": 160
+              }
+            ],
+            "city_authority": [
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "active": 1
+              }
+            ],
+            "simulation_clock": [
+              {
+                "id": 1,
+                "period_seconds": 10,
+                "epoch_origin": 1795157455,
+                "period_origin": 179515745
+              }
+            ],
+            "settlement": [
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515745,
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；林场与锯木厂: 维护食物不足；矿场与军工作坊: 维护食物不足"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515746,
+                "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515747,
+                "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515748,
+                "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515749,
+                "report": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；workshop: 领土/建筑失效，停产"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179515750,
+                "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
+              },
+              {
+                "city": "e5c52bca-38b8-48a4-bc83-76f3a8e98f1a",
+                "period": 179516106,
+                "report": "产出 {minecraft:arrow=13, minecraft:bread=4, minecraft:iron_ingot=2, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:raw_iron=3, minecraft:wheat=24}；"
+              }
+            ],
+            "resource_outbox": [],
+            "logistics_order": [],
+            "logistics_receipt": [],
+            "life_action": [],
+            "life_concert": [],
+            "life_note": [],
+            "life_audience": [],
+            "life_evolution_action": [],
+            "life_decoration": [],
+            "market_delivery_schema": [
+              {
+                "id": 1,
+                "version": 1
+              }
+            ],
+            "market_delivery_clock": [
+              {
+                "id": 1,
+                "sequence": 0
+              }
+            ],
+            "market_delivery_receipt": [],
+            "market_delivery_stat": [],
+            "disaster_response_schema": [
+              {
+                "id": 1,
+                "version": 1
+              }
+            ],
+            "disaster_response": [],
+            "disaster_response_history": [],
+            "disaster_recovery_ledger": [],
+            "market_schema": [
+              {
+                "id": 1,
+                "version": 1,
+                "namespace": "3ade6b50-0bb9-457b-bd14-5351a22f5d8b"
+              }
+            ],
+            "market_listing": [],
+            "market_purchase": [],
+            "market_history": [],
+            "culture_dynamics_schema": [
+              {
+                "id": 1,
+                "version": 1
+              }
+            ],
+            "culture_decay": [
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:0:0",
+                "last_period": 179516106
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:1:0",
+                "last_period": 179516106
+              },
+              {
+                "region": "b0e66ac9-270c-4e28-ba56-e76d23321a47:2:0",
+                "last_period": 179516106
+              }
+            ],
+            "logistics_reroute": [],
+            "logistics_paid_shipment": []
+          },
+          "integrity": "ok"
+        },
+        "core": {
+          "schema": 0,
+          "tables": [
+            "alliance_members",
+            "audit_logs",
+            "business_nation_index",
+            "business_player_index",
+            "business_transactions",
+            "combat_history",
+            "combat_player_pvp",
+            "combat_player_states",
+            "court_appeals",
+            "court_cases",
+            "court_judges",
+            "court_jury",
+            "court_verdicts",
+            "duel_history",
+            "duel_player_stats",
+            "influence_leaderboard_history",
+            "influence_leaderboard_titles",
+            "influence_sources",
+            "leaderboard_notifications",
+            "lease_contracts",
+            "mercenary_contracts",
+            "parliament",
+            "parliament_bills",
+            "parliament_members",
+            "parliament_votes",
+            "party_alliances",
+            "party_members",
+            "player_influence",
+            "player_reputation",
+            "political_parties",
+            "pvp_elo_history",
+            "pvp_matchmaking_queue",
+            "pvp_season",
+            "relationship_history",
+            "relationships",
+            "reputation_history",
+            "resource_funded_trade_taxes",
+            "shop_auction_listings",
+            "shop_items",
+            "shop_npc_bindings",
+            "shop_shops",
+            "shop_templates",
+            "shop_trade_records",
+            "shop_transactions",
+            "social_activities",
+            "social_activity_participants",
+            "sovereignty_claims",
+            "sovereignty_declarations",
+            "sqlite_sequence",
+            "starcore_achievement_reward_delivered",
+            "starcore_achievement_reward_pending",
+            "starcore_achievement_stats",
+            "starcore_achievements",
+            "starcore_alliance_state",
+            "starcore_alliances",
+            "starcore_bankruptcy_state",
+            "starcore_battlefield_state",
+            "starcore_blacklist",
+            "starcore_budget_state",
+            "starcore_court_debts",
+            "starcore_court_history",
+            "starcore_culture",
+            "starcore_diplomacy_state",
+            "starcore_donations",
+            "starcore_dynasties",
+            "starcore_dynasty_heirs",
+            "starcore_event_state",
+            "starcore_friend_relations",
+            "starcore_friend_requests",
+            "starcore_guild_invites",
+            "starcore_guild_members",
+            "starcore_guilds",
+            "starcore_lease_chunk_index",
+            "starcore_lease_contracts",
+            "starcore_lease_payments",
+            "starcore_mail_attachment_claims",
+            "starcore_mail_attachments",
+            "starcore_mail_v2",
+            "starcore_mail_v2_attachments",
+            "starcore_mails",
+            "starcore_metadata",
+            "starcore_military_alliance_state",
+            "starcore_nation_resource_district_state",
+            "starcore_nation_state",
+            "starcore_officer_state",
+            "starcore_parties",
+            "starcore_party_invites",
+            "starcore_party_members",
+            "starcore_player_balances",
+            "starcore_player_locale",
+            "starcore_player_status",
+            "starcore_player_titles",
+            "starcore_policy_state",
+            "starcore_resolution_state",
+            "starcore_resource_state",
+            "starcore_social_events",
+            "starcore_subregions",
+            "starcore_subregions_permissions",
+            "starcore_technology_research",
+            "starcore_technology_state",
+            "starcore_territories",
+            "starcore_territories_permissions",
+            "starcore_territory_claims",
+            "starcore_territory_members",
+            "starcore_treasury_state",
+            "starcore_treaty_data",
+            "starcore_war_state",
+            "starcore_wars",
+            "trade_history",
+            "treasury_funded_taxes",
+            "treasury_tax_compensations",
+            "weather_tactics",
+            "weather_tactics_boosts",
+            "weather_weather_state",
+            "weather_weather_state_meta",
+            "zone_state"
+          ],
+          "database_sha256": "7d208653ceb6a0ed480939bd477c3702dbb587a30196cae345d87796865df989",
+          "rows": {
+            "starcore_nation_state": [
+              {
+                "property_key": "__starcore_revision__",
+                "property_value": "5"
+              },
+              {
+                "property_key": "count",
+                "property_value": "1"
+              },
+              {
+                "property_key": "nation.0.capitalLocation",
+                "property_value": "baseline04-world,8.00,64.00,8.00,0.00,0.00"
+              },
+              {
+                "property_key": "nation.0.experience",
+                "property_value": "0"
+              },
+              {
+                "property_key": "nation.0.foundedAt",
+                "property_value": "1795157460267"
+              },
+              {
+                "property_key": "nation.0.founderId",
+                "property_value": "363cb761-f442-3a44-b511-0ffbf8720f97"
+              },
+              {
+                "property_key": "nation.0.government",
+                "property_value": "MONARCHY"
+              },
+              {
+                "property_key": "nation.0.id",
+                "property_value": "914c4e27-efa3-46f1-be09-23197a3e9334"
+              },
+              {
+                "property_key": "nation.0.kind",
+                "property_value": "NATION"
+              },
+              {
+                "property_key": "nation.0.member.0.id",
+                "property_value": "363cb761-f442-3a44-b511-0ffbf8720f97"
+              },
+              {
+                "property_key": "nation.0.member.0.joinedAt",
+                "property_value": "1795157460270"
+              },
+              {
+                "property_key": "nation.0.member.0.lastSeen",
+                "property_value": "1795157460270"
+              },
+              {
+                "property_key": "nation.0.member.0.name",
+                "property_value": "StarWorldQA"
+              },
+              {
+                "property_key": "nation.0.member.0.rank",
+                "property_value": "Member"
+              },
+              {
+                "property_key": "nation.0.memberCount",
+                "property_value": "1"
+              },
+              {
+                "property_key": "nation.0.name",
+                "property_value": "SWTestStarWorldQA"
+              },
+              {
+                "property_key": "nation.0.taxRate",
+                "property_value": "0.0"
+              }
+            ],
+            "starcore_treasury_state": [
+              {
+                "property_key": "__starcore_revision__",
+                "property_value": "4"
+              },
+              {
+                "property_key": "count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "credit.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "spending.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "transfer.count",
+                "property_value": "0"
+              }
+            ],
+            "starcore_resource_state": [
+              {
+                "property_key": "agreement.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "embargo.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "factory.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "quota.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "route.count",
+                "property_value": "0"
+              },
+              {
+                "property_key": "transaction.count",
+                "property_value": "0"
+              }
+            ]
+          },
+          "integrity": "ok"
+        },
+        "pluginVersion": "0.5.0"
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T07:51:41.740Z"
+    }
+  ],
+  "finishedAt": "2026-11-20T07:51:41.742Z"
+}

@@ -29,6 +29,9 @@ world.city(starCoreCityId).thenAccept(result -> {
 | `marketListings(int,int)` | `Future<List<Listing>>`；公开可用的整批实物挂牌，limit 为 1–100，offset 非负 |
 | `marketPurchases(UUID,int,int)` | `Future<List<Purchase>>`；城市作为买方或卖方的国家付款/实物交接状态，limit 为 1–100，offset 非负 |
 | `marketDeliveryStats(UUID,String,int,int)` | `Future<List<DeliveryStats>>`；仅后台已核对物流 `COMPLETED` 收据的实际市场交货，按物品统计订单、数量、精确总额、加权均价和完成周期；城市可为空，物品可为空；有界回填可能短暂落后于最新交货 |
+| `disasterResponse(UUID)` | `Future<Optional<DisasterState.Response>>`；按稳定请求 UUID 读取救灾成本、生效/到期、原事件身份、恢复步骤与预算快照 |
+| `disasterResponses(UUID,int,int)` | `Future<List<DisasterState.Response>>`；按城市分页读取救灾回执，含已完成/到期记录，不重新扣料或赋予权限；limit 为 1 至配置 `limits.max-page`（最多128），offset 为 0–1,000,000 |
+| `disasterHistory(UUID,int,int)` | `Future<List<DisasterState.History>>`；按城市分页读取请求与已提交恢复历史，分页边界同上 |
 | `readiness(UUID)` | `Future<Optional<Readiness>>`；城市/国家/周期、provided/required军需、terrainDefense及readiness |
 | `integrationStatus()` | 真实能力/降级原因；涉及StarCore读取，须在Paper主线程调用 |
 
@@ -86,3 +89,15 @@ public void onIndustry(IndustrySettledEvent event) {
 `Purchase.SHIPPED` 只代表转入物流，`PriceHistory` 记录该时点成交价格；真实到货由原物流单 `COMPLETED` 证明。消费 API 查询不得再次发物品或支付。恢复、撤单与配置合同见 [市场文档](market.md)。
 
 `CultureDynamics` 为已提交城市结算提供持久地区衰减时钟及公开核心政策对新影响的有限修正，最多处理 64 个地区，不离线多步追赶。`LedgerMaintenance.sweep` 在同库事务有限压缩旧审计、裁剪过期报告；`archives/readArchive` 分页与校验读取原审计，保留所有业务幂等凭据。以上为内部仓储服务，须使用现有串行 IO；详见 [存档维护](storage-maintenance.md) 与 [规模基线](scale.md)。
+
+## 灾害治理边界
+
+玩家入口为 `/sw disaster options`、`/sw disaster respond <策略ID> <requestUUID>`、`/sw disaster status [页]` 和 `/sw disaster history [页]`。响应命令先检查城市管理权限，异步读取扩展状态后，在 Paper 主线程重新核实成员、StarCore 城市与国家、管理权限和实际设施锚点；SQL 请求还核对捕获的原事件，防止排队期间更换事件后误扣仓储。请求 UUID 是幂等键，重复相同业务返回原回执，不再扣成本；换策略或城市/国家复用 UUID 会拒绝。
+
+`/sw disaster-menu` 提供同一授权路径的策略/成本预览、响应确认、状态及历史界面。`ExpansionRuntime.respondToDisaster` → `DisasterController.respondFromPreview` 保留确认页的原城市/国家、原事件与稳定请求 UUID，在重新读取后再次证明权限/设施；预览不是写入授权。界面只读查询和确认交互见[灾害治理文档](disaster-governance.md)。
+
+`DisasterResponseService` 是可信内部仓储服务，并非免权限写 API。`DisasterResponseDefinitions` 从独立 `disaster-response.yml` 读取有界成本、所需设施、缓解、可再生资源恢复和城市稳定/繁荣恢复。请求只扣真实城市实物，最早在请求周期的下一周期生效；请求本身不立即修改生产或城市发展属性。公开查询返回持久化的响应参数快照，重载配置不改写已付款响应。
+
+幂等重试先核对持久城市的当前 nation 与 active 状态，再匹配原请求的 city/nation/strategy；调用边界仍须证明当前权限。同权限历史重试允许旧事件、旧请求周期并返回原回执，当前归属变化或城市失效会拒绝，不会借原 UUID 修改新事件。`remainingBudget` 同时覆盖稳定、繁荣与自然资源，按该顺序消耗；属性按实际封顶增量 `ceil` 收费，已满100不消耗预算，资源按实际恢复量收费。上限或余额不足时返回实际恢复量，history 记录实际变化。
+
+`Simulation.Hooks.eventFactor(building,event,period,base)` 在实际事件推进后、地理和其他生产倍率组合前调用。默认原样返回；对于 `base < 1` 只能返回 `[base,1]`，对于 `base >= 1` 必须原样返回。无效值使整期回滚，不能以救灾制造正向事件增益。`ExpansionRuntime` 将有效响应接入该钩子，并在正常城市演化完成后、最终结算回执之前调用响应恢复。库存、地区储量、稳定/繁荣与救灾历史/步骤在同一个 `WorldStore` 事务提交；失败回滚，重复周期不执行恢复。跨期恢复每个实际结算至多一步，不补算离线周期；失去原国家归属或必需设施时暂停，资源只恢复配置允许的可再生容量，不恢复矿石。

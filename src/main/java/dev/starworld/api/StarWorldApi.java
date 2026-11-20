@@ -25,4 +25,8 @@ public interface StarWorldApi {
     default CompletableFuture<List<dev.starworld.market.MarketState.Listing>> marketListings(int limit,int offset){return CompletableFuture.completedFuture(List.of());}
     default CompletableFuture<List<dev.starworld.market.MarketState.Purchase>> marketPurchases(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
     default CompletableFuture<List<dev.starworld.market.MarketState.DeliveryStats>> marketDeliveryStats(UUID cityId,String item,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
+    /** Immutable response receipts only; gameplay requests remain at the authorized player boundary. */
+    default CompletableFuture<Optional<dev.starworld.disaster.DisasterState.Response>> disasterResponse(UUID requestId){return CompletableFuture.completedFuture(Optional.empty());}
+    default CompletableFuture<List<dev.starworld.disaster.DisasterState.Response>> disasterResponses(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
+    default CompletableFuture<List<dev.starworld.disaster.DisasterState.History>> disasterHistory(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
 }

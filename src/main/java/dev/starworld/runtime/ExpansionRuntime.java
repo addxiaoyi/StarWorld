@@ -3,6 +3,7 @@ package dev.starworld.runtime;
 import dev.starworld.api.event.CityDevelopmentEvent;
 import dev.starworld.domain.*;
 import dev.starworld.domain.WorldState.*;
+import dev.starworld.disaster.*;
 import dev.starworld.evolution.*;
 import dev.starworld.evolution.EvolutionState.*;
 import dev.starworld.integration.*;
@@ -31,6 +32,7 @@ public final class ExpansionRuntime {
     private final NationalEvolution national;
     private final RegionAtlas atlas;private final LedgerMaintenance maintenance;
     private final MarketService market;private final MarketController marketplace;
+    private final DisasterResponseService disasters;private final DisasterController disasterGovernance;
     private long maintenanceTick;private volatile LedgerMaintenance.Result lastMaintenance;
     private final LogisticsService logistics;private final LogisticsController transport;
     private final LifeService life;private final LifePlatform lifePlatform;private final LifeController lifestyle;
@@ -52,8 +54,9 @@ public final class ExpansionRuntime {
         YamlConfiguration evolutionConfig=new YamlConfiguration();evolutionConfig.load(new File(folder,"evolution.yml"));combat=new StarCoreCombatContributor(plugin,core,runtime::currentPeriod,StarCoreCombatContributor.Settings.load(evolutionConfig));
         transport=new LogisticsController(plugin,runtime,core,extensions,logistics);
         MarketDefinitions.writeDefaults(new File(folder,"market.yml"));market=new MarketService(store,logistics,MarketDefinitions.load(new File(folder,"market.yml")));marketplace=new MarketController(plugin,runtime,core,extensions,logistics,market,new StarCoreTreasuryTransfers(plugin));
+        DisasterResponseDefinitions.writeDefaults(new File(folder,"disaster-response.yml"));DisasterResponseDefinitions disasterDefinitions=DisasterResponseDefinitions.load(new File(folder,"disaster-response.yml"),definitions);disasters=new DisasterResponseService(store,disasterDefinitions);disasterGovernance=new DisasterController(plugin,runtime,core,disasters);
         Set<String> ids=new HashSet<>(lifeDefinitions.itemIds());exports.contracts().values().forEach(c->ids.addAll(c.costs().keySet()));
-        logistics.definitions().nodes().values().forEach(n->{ids.addAll(n.construction().keySet());ids.addAll(n.maintenance().keySet());});ids.addAll(market.definitions().items());itemIds=Set.copyOf(ids);items.validate(itemIds);
+        logistics.definitions().nodes().values().forEach(n->{ids.addAll(n.construction().keySet());ids.addAll(n.maintenance().keySet());});ids.addAll(market.definitions().items());ids.addAll(disasterDefinitions.itemIds());itemIds=Set.copyOf(ids);items.validate(itemIds);
         for(var c:exports.contracts().values())if(!definitions.buildings().containsKey(c.facility()))throw new IllegalArgumentException("Unknown export facility "+c.facility());
     }
     public EvolutionService evolution(){return evolution;}
@@ -61,12 +64,14 @@ public final class ExpansionRuntime {
     public RegionAtlas atlas(){return atlas;}
     public LedgerMaintenance maintenance(){return maintenance;}
     public MarketService market(){return market;}
+    public DisasterResponseService disasters(){return disasters;}
+    public void respondToDisaster(org.bukkit.entity.Player player,CoreCity city,String strategy,UUID requestId,EventState previewEvent,java.util.function.Consumer<dev.starworld.disaster.DisasterState.Response> completed){disasterGovernance.respondFromPreview(player,city,strategy,requestId,previewEvent,completed);}
     public LogisticsService logistics(){return logistics;}
     public LifeService life(){return life;}
     public Set<String> itemIds(){return itemIds;}
     public void start(){combat.register();}
     public void close(){marketplace.close();combat.close();}
-    public Map<String,String> status(){Map<String,String> status=new LinkedHashMap<>(lifePlatform.status());status.put("Logistics","节点、托管、改道确认、运力瓶颈与战争封锁已启用");status.put("Market",marketplace.status());status.put("Core exports","幂等国家资源事务 + 持久 outbox");status.put("Core combat",combat.status());return Map.copyOf(status);}
+    public Map<String,String> status(){Map<String,String> status=new LinkedHashMap<>(lifePlatform.status());status.put("Logistics","节点、托管、改道确认、运力瓶颈与战争封锁已启用");status.put("Market",marketplace.status());status.put("Disaster governance","实物救灾、次期缓解与有界地区恢复已启用；/sw disaster options");status.put("Core exports","幂等国家资源事务 + 持久 outbox");status.put("Core combat",combat.status());return Map.copyOf(status);}
     public Optional<NationSnapshot> nation(UUID id){return extensions.snapshot(id,Set.of());}
     /** The same main-thread live capture used by normal settlement; caller-supplied IDs cannot manufacture valid anchors. */
     public BorderConflictCapture.Captured captureBorderEvidence(CoreCity current,CityView registered,Set<UUID> verified){
@@ -91,13 +96,14 @@ public final class ExpansionRuntime {
         for(String receipt:tradeActions)store.execute("INSERT INTO evolution_trade_action(city,receipt,period) VALUES(?,?,?)",city.id(),receipt,period);
         long trades=tradeActions.size();
         Context context=new Context(nation.map(NationSnapshot::weather).orElse("unknown"),nation.map(n->n.epoch()==null?"unknown":Long.toString(n.epoch().number())).orElse("unknown"),nation.map(n->!n.warOpponents().isEmpty()).orElse(false),!borders.isEmpty(),trades,life.drainEvolutionCulture(city.id(),period),life.productionMultiplier(city.id(),period),borders);
-        Simulation.Hooks cityHooks=evolution.cycle(core,city,period,valid,context,nation.map(NationSnapshot::policy).orElse(""));Map<String,Double> nationalMultipliers=national.multipliers(core.nationId());
+        Simulation.Hooks cityHooks=evolution.cycle(core,city,period,valid,context,nation.map(NationSnapshot::policy).orElse(""));Map<String,Double> nationalMultipliers=national.multipliers(core.nationId());DisasterResponseService.Cycle responseCycle=disasters.cycle(core,city,period,valid);
         return new Simulation.Hooks(){
             @Override public double multiplier(Building b)throws SQLException{return cityHooks.multiplier(b)*nationalMultipliers.getOrDefault(b.type(),1.0);}
             @Override public long capacity(String item){return cityHooks.capacity(item);}
             @Override public boolean filterEvents(){return cityHooks.filterEvents();}
             @Override public Map<String,Double> eventWeights(CityView c,long p)throws SQLException{return cityHooks.eventWeights(c,p);}
-            @Override public void completed(CoreCity c,CityView previous,long p,Map<String,Long> produced,Set<UUID> maintained)throws SQLException{cityHooks.completed(c,previous,p,produced,maintained);}
+            @Override public double eventFactor(Building b,EventState event,long p,double base)throws SQLException{return responseCycle.eventFactor(event,cityHooks.eventFactor(b,event,p,base));}
+            @Override public void completed(CoreCity c,CityView previous,long p,Map<String,Long> produced,Set<UUID> maintained)throws SQLException{cityHooks.completed(c,previous,p,produced,maintained);responseCycle.completed();}
         };
     }
     private record Development(Profile profile,CityView city,Optional<Readiness> readiness){}
@@ -135,7 +141,7 @@ public final class ExpansionRuntime {
         });return result;});
     }
     public boolean command(Player p,String[] args){
-        if(lifestyle.execute(p,args)||transport.execute(p,args)||marketplace.execute(p,args))return true;
+        if(lifestyle.execute(p,args)||transport.execute(p,args)||marketplace.execute(p,args)||disasterGovernance.execute(p,args))return true;
         String sub=args[0].toLowerCase(Locale.ROOT);
         if(sub.equals("maintenance")){if(!p.hasPermission("starworld.admin"))throw new IllegalArgumentException("需要管理员权限");if(args.length>=2&&args[1].equalsIgnoreCase("backup")){require(args,3);runtime.reply(p,runtime.backup(args[2]),backup->p.sendMessage("§a在线备份已完成："+backup.path().getFileName()+" "+backup.bytes()+" bytes；schema "+backup.schemaVersion()+"；SHA "+backup.sha256()));return true;}if(args.length!=1)throw new IllegalArgumentException("/sw maintenance backup <文件名> 或 /sw maintenance");runtime.reply(p,runtime.async(()->maintenance.archives(0,20)),rows->{p.sendMessage("§e最近存档维护："+lastMaintenance);for(var row:rows)p.sendMessage("§7审计归档 "+row.id()+"："+row.rows()+" 条，"+row.bytes()+" bytes；SHA "+row.sha256());});return true;}
         if(!Set.of("development","plan","specialty","history","culture","export","outbox","nation","nation-development","national-specialty","regions").contains(sub))return false;

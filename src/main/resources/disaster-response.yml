@@ -1,0 +1,78 @@
+schema-version: 1
+limits:
+  max-active-per-city: 4
+  max-page: 64
+  max-evidence-facilities: 64
+allow-aftermath: true
+# Each budget covers stability, then prosperity, then regional reserve recovery.
+# One recovered point costs one unit; fractional profile gains round up.
+strategies:
+  drought_irrigation:
+    event: drought
+    facilities: [farm, well]
+    costs: {minecraft:bread: 12, minecraft:oak_planks: 8}
+    recovery-per-step: {fertility: 5}
+    relief-permille: 500
+    max-steps: 8
+    budget: 160
+    duration-periods: 12
+    stability-per-step: 1
+    prosperity-per-step: 0
+  drought_rationing:
+    event: drought
+    facilities: [warehouse, kitchen]
+    costs: {minecraft:wheat: 16, minecraft:bread: 8}
+    recovery-per-step: {fertility: 3}
+    relief-permille: 300
+    max-steps: 6
+    budget: 96
+    duration-periods: 10
+    stability-per-step: 2
+    prosperity-per-step: 0
+  flood_drainage:
+    event: flood
+    facilities: [well, warehouse]
+    costs: {minecraft:oak_planks: 16, minecraft:bread: 8}
+    recovery-per-step: {timber: 5, fertility: 2}
+    relief-permille: 450
+    max-steps: 8
+    budget: 180
+    duration-periods: 12
+    stability-per-step: 1
+    prosperity-per-step: 0
+  flood_relocation:
+    event: flood
+    facilities: [market, warehouse]
+    costs: {minecraft:oak_planks: 24, minecraft:bread: 8}
+    recovery-per-step: {timber: 3}
+    relief-permille: 250
+    max-steps: 6
+    budget: 96
+    duration-periods: 10
+    stability-per-step: 2
+    prosperity-per-step: 1
+  famine_kitchen:
+    event: famine
+    facilities: [kitchen, warehouse]
+    costs: {minecraft:wheat: 20, minecraft:oak_planks: 4}
+    recovery-per-step: {fertility: 2}
+    relief-permille: 550
+    max-steps: 8
+    budget: 128
+    duration-periods: 12
+    stability-per-step: 2
+    prosperity-per-step: 0
+  famine_import:
+    event: famine
+    facilities: [market, warehouse]
+    costs: {minecraft:oak_planks: 4}
+    recovery-per-step: {fertility: 3, timber: 2}
+    relief-permille: 700
+    max-steps: 10
+    budget: 180
+    duration-periods: 14
+    stability-per-step: 2
+    prosperity-per-step: 1
+    import-item: minecraft:bread
+    import-units: 8
+    receipt-age-periods: 24

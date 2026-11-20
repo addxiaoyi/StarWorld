@@ -243,4 +243,41 @@ class SimulationTest {
             assertEquals(0, store.stock(city.cityId()).getOrDefault("kaleidoscopecookery:baozi", 0L));
         }
     }
+
+    @Test void mitigationReceivesTheActualNewEventAndOnlyReducesItsPenalty() throws Exception {
+        Definitions base=definitions();Definitions d=new Definitions(base.periodSeconds(),base.maxBuildingsPerCity(),base.maxCitiesPerPass(),base.stockLimit(),1,base.terrains(),base.civilizations(),base.buildings(),base.recipes(),Map.of("drought",base.events().get("drought")));
+        try(WorldStore store=new WorldStore(temp.resolve("mitigation-selected.db"),d.stockLimit())){
+            CoreCity city=city();Building farm=register(store,d,city,"farm","plains",0);List<EventState> observed=new ArrayList<>();
+            Settlement result=new Simulation(store,d).settle(city,10,Set.of(farm.id()),new Simulation.Hooks(){@Override public double eventFactor(Building b,EventState event,long period,double factor){assertEquals(farm.id(),b.id());assertEquals(10,period);assertEquals(d.events().get("drought").multipliers().get("farm"),factor);observed.add(event);return factor+(1-factor)*0.5;}});
+            assertEquals(List.of(store.view(city.cityId()).orElseThrow().event()),observed);
+            assertEquals("drought",observed.getFirst().type());double adjusted=d.events().get("drought").multipliers().get("farm");adjusted+=(1-adjusted)*0.5;
+            assertEquals((long)Math.floor(12*1.25*1.3*adjusted),result.produced().get("minecraft:wheat"));
+        }
+    }
+
+    @Test void invalidMitigationCannotWorsenPenaltiesCreateBonusesOrChangePositiveEvents() throws Exception {
+        Definitions d=definitions();int index=0;
+        for(String event:List.of("drought","harvest","none"))for(double adjusted:new double[]{-1,0,0.2,1.01,10,Double.NaN,Double.POSITIVE_INFINITY}){
+            try(WorldStore store=new WorldStore(temp.resolve("invalid-mitigation-"+(index++)+".db"),d.stockLimit())){
+                CoreCity city=city();Building farm=register(store,d,city,"farm","plains",0);Simulation simulation=new Simulation(store,d);if(!event.equals("none"))simulation.trigger(city.cityId(),event,10);EventState before=store.view(city.cityId()).orElseThrow().event();
+                assertThrows(SQLException.class,()->simulation.settle(city,10,Set.of(farm.id()),new Simulation.Hooks(){@Override public double eventFactor(Building b,EventState state,long period,double factor){return adjusted;}}),event+" factor="+adjusted);
+                assertTrue(store.stock(city.cityId()).isEmpty());assertEquals(700,store.region(farm.site().regionKey()).reserves().get("fertility"));assertEquals(before,store.view(city.cityId()).orElseThrow().event());assertFalse(store.settled(city.cityId(),10));
+            }
+        }
+        try(WorldStore store=new WorldStore(temp.resolve("positive-unchanged.db"),d.stockLimit())){
+            CoreCity city=city();Building farm=register(store,d,city,"farm","plains",0);Simulation simulation=new Simulation(store,d);simulation.trigger(city.cityId(),"harvest",10);
+            assertThrows(SQLException.class,()->simulation.settle(city,10,Set.of(farm.id()),new Simulation.Hooks(){@Override public double eventFactor(Building b,EventState event,long period,double factor){return 1;}}),"A response may not suppress or replace a positive event either");
+            assertTrue(simulation.settle(city,10,Set.of(farm.id()),Simulation.Hooks.NONE).applied());
+        }
+    }
+
+    @Test void completionRecoveryRunsAfterReserveWritesAndSharesTheFinalReceiptTransaction() throws Exception {
+        Definitions d=definitions();try(WorldStore store=new WorldStore(temp.resolve("recovery-completion.db"),d.stockLimit())){
+            CoreCity city=city();Building farm=register(store,d,city,"farm","plains",0);store.reserve(farm.site().regionKey(),"fertility",100);store.execute("CREATE TABLE recovery_test(period INTEGER PRIMARY KEY)");
+            Simulation.Hooks hooks=new Simulation.Hooks(){@Override public void completed(CoreCity current,CityView before,long period,Map<String,Long> produced,Set<UUID> maintained)throws SQLException{assertTrue(maintained.contains(farm.id()));long afterProduction=store.region(farm.site().regionKey()).reserves().get("fertility");assertEquals(106,afterProduction);store.reserve(farm.site().regionKey(),"fertility",afterProduction+5);store.execute("INSERT INTO recovery_test(period) VALUES(?)",period);}};
+            store.execute("CREATE TRIGGER reject_recovery_receipt BEFORE INSERT ON settlement BEGIN SELECT RAISE(ABORT, 'receipt failure after recovery'); END");Simulation simulation=new Simulation(store,d);
+            assertThrows(SQLException.class,()->simulation.settle(city,10,Set.of(farm.id()),hooks));assertEquals(100,store.region(farm.site().regionKey()).reserves().get("fertility"));assertTrue(store.query("SELECT period FROM recovery_test",r->r.getLong(1)).isEmpty());assertTrue(store.stock(city.cityId()).isEmpty());
+            store.execute("DROP TRIGGER reject_recovery_receipt");assertTrue(simulation.settle(city,10,Set.of(farm.id()),hooks).applied());assertEquals(111,store.region(farm.site().regionKey()).reserves().get("fertility"));assertFalse(simulation.settle(city,10,Set.of(farm.id()),hooks).applied());assertEquals(List.of(10L),store.query("SELECT period FROM recovery_test",r->r.getLong(1)));
+        }
+    }
 }

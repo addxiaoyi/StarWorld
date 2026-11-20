@@ -25,6 +25,10 @@ final class ExpansionFixture {
         switch(action){
             case "exp-setup"->setup(p,slot(args));
             case "exp-register"->register(p,slot(args),false);
+            case "exp-disaster-register"->disasterRegister(p,slot(args));
+            case "exp-disaster-seed"->disasterSeed(p);
+            case "exp-disasters"->disasters(p);
+            case "exp-permissions"->emit("exp-permissions",p,Map.of("admin",p.hasPermission("starworld.admin"),"use",p.hasPermission("starworld.use")));
             case "exp-node"->register(p,slot(args),true);
             case "exp-seed"->seed(p);
             case "exp-snapshot"->snapshot(p);
@@ -132,6 +136,11 @@ final class ExpansionFixture {
         Material[] anchors=node?new Material[]{Material.LODESTONE}:new Material[]{Material.BARREL,Material.LECTERN,Material.FLETCHING_TABLE,Material.COMPOSTER};
         registerStep(p,slot,node,commands,anchors,0);
     }
+    /** Five real, separately claimed chunks; commands retain ordinary manager/raycast checks. */
+    private void disasterRegister(Player p,int slot){
+        if(!registering.add(p.getUniqueId()))throw new IllegalStateException("Fixture registration already running");
+        registerStep(p,slot,false,new String[]{"sw register warehouse","sw register farm","sw register well","sw register kitchen","sw register market"},new Material[]{Material.BARREL,Material.COMPOSTER,Material.CAULDRON,Material.SMOKER,Material.BELL},0,"exp-disaster-register");
+    }
     private void registerStep(Player p,int slot,boolean node,String[] commands,Material[] anchors,int index){
         registerStep(p,slot,node,commands,anchors,index,node?"exp-node":"exp-register");
     }
@@ -153,6 +162,10 @@ final class ExpansionFixture {
         Map<Material,Integer> quantities=new LinkedHashMap<>();quantities.put(Material.BREAD,128);quantities.put(Material.OAK_PLANKS,128);quantities.put(Material.IRON_INGOT,64);quantities.put(Material.OAK_LOG,32);quantities.put(Material.PAPER,64);quantities.put(Material.ARROW,256);quantities.put(Material.WHEAT,64);
         Map<String,Integer> provided=new LinkedHashMap<>();for(var entry:quantities.entrySet()){for(int remaining=entry.getValue();remaining>0;){int batch=Math.min(64,remaining);if(!p.getInventory().addItem(new ItemStack(entry.getKey(),batch)).isEmpty())throw new IllegalStateException("Seed inventory overflow");remaining-=batch;}provided.put(entry.getKey().getKey().toString(),entry.getValue());}p.saveData();
         emit("exp-seed",p,Map.of("source","explicit-fixture-player-inventory","items",provided,"productionEvidence",false));
+    }
+    private void disasterSeed(Player p){
+        Map<Material,Integer> quantities=new LinkedHashMap<>();quantities.put(Material.BREAD,256);quantities.put(Material.OAK_PLANKS,512);quantities.put(Material.WHEAT,512);quantities.put(Material.OAK_LOG,256);Map<String,Integer> provided=new LinkedHashMap<>();
+        for(var entry:quantities.entrySet()){for(int left=entry.getValue();left>0;){int batch=Math.min(64,left);if(!p.getInventory().addItem(new ItemStack(entry.getKey(),batch)).isEmpty())throw new IllegalStateException("Disaster seed inventory overflow");left-=batch;}provided.put(entry.getKey().getKey().toString(),entry.getValue());}p.saveData();emit("exp-disaster-seed",p,Map.of("source","explicit-disaster-fixture-player-inventory","items",provided,"productionEvidence",false));
     }
     private void progressSeed(Player p){
         Map<Material,Integer> quantities=new LinkedHashMap<>();quantities.put(Material.BREAD,256);quantities.put(Material.OAK_PLANKS,512);quantities.put(Material.IRON_INGOT,128);quantities.put(Material.OAK_LOG,64);quantities.put(Material.PAPER,128);quantities.put(Material.ARROW,256);quantities.put(Material.WHEAT,64);
@@ -176,6 +189,15 @@ final class ExpansionFixture {
                 }).whenComplete((value,failure)->Bukkit.getScheduler().runTask(owner,()->{if(failure!=null)failed(failure);else emit("exp-progress",p,value);}));
             }catch(Exception failure){Bukkit.getScheduler().runTask(owner,()->failed(failure));}
         });
+    }
+    /** Read-only public API Futures; no direct disaster writes, SQL, or manufactured authority. */
+    private void disasters(Player p)throws Exception {
+        Object runtime=world(),expansion=unwrap(call(runtime,"expansion")),current=unwrap(invoke(runtime,"playerCity",new Class<?>[]{Player.class},p));if(current==null)throw new IllegalStateException("Actual current city required");UUID city=(UUID)call(current,"cityId"),nation=(UUID)call(current,"nationId");Object configuration=call(call(expansion,"disasters"),"configuration");int page=Math.min(64,((Number)call(call(configuration,"data"),"maxPage")).intValue());
+        CompletableFuture<?> cityFuture=(CompletableFuture<?>)invoke(runtime,"city",new Class<?>[]{UUID.class},city),atlasFuture=(CompletableFuture<?>)invoke(runtime,"regions",new Class<?>[]{UUID.class,String.class,int.class},city,"",16),developmentFuture=(CompletableFuture<?>)invoke(runtime,"development",new Class<?>[]{UUID.class},city),responsesFuture=(CompletableFuture<?>)invoke(runtime,"disasterResponses",new Class<?>[]{UUID.class,int.class,int.class},city,page,0),historyFuture=(CompletableFuture<?>)invoke(runtime,"disasterHistory",new Class<?>[]{UUID.class,int.class,int.class},city,page,0);
+        CompletableFuture.allOf(cityFuture,atlasFuture,developmentFuture,responsesFuture,historyFuture).whenComplete((ignored,error)->Bukkit.getScheduler().runTask(owner,()->{try{
+            if(error!=null)throw new IllegalStateException(error);Object view=unwrap(cityFuture.join()),live=unwrap(invoke(runtime,"playerCity",new Class<?>[]{Player.class},p));if(view==null||live==null||!city.equals(call(live,"cityId"))||!nation.equals(call(live,"nationId")))throw new IllegalStateException("City authority changed during read");
+            Map<String,Object> report=new LinkedHashMap<>();report.put("entryPoint","StarWorldApi.disasterResponses/disasterHistory/development/regions/city");report.put("version",call(runtime,"version"));report.put("currentPeriod",call(runtime,"currentPeriod"));report.put("city",view);report.put("atlas",unwrap(atlasFuture.join()));report.put("development",unwrap(developmentFuture.join()));report.put("responses",responsesFuture.join());report.put("history",historyFuture.join());report.put("verifiedBuildings",invoke(runtime,"verifiedBuildings",new Class<?>[]{view.getClass()},view));report.put("strategies",call(configuration,"strategies"));report.put("queryLimit",page);report.put("admin",p.hasPermission("starworld.admin"));report.put("use",p.hasPermission("starworld.use"));report.put("manager",invoke(runtime,"manage",new Class<?>[]{Player.class,UUID.class},p,city));report.put("snapshotIsAtomic",false);report.put("gameplayWrites",false);emit("exp-disasters",p,report);
+        }catch(Exception failure){failed(failure);}}));
     }
     private void alternateNode(Player p,int slot){
         int x=(base(slot)+4)*16+11,z=12;for(int dx=-1;dx<=1;dx++)for(int dz=-4;dz<=1;dz++){p.getWorld().getBlockAt(x+dx,79,z+dz).setType(Material.STONE);for(int y=80;y<=83;y++)p.getWorld().getBlockAt(x+dx,y,z+dz).setType(Material.AIR);}

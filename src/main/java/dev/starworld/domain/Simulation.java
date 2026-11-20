@@ -23,6 +23,8 @@ public final class Simulation {
         default long capacity(String item){return Long.MAX_VALUE;}
         default Map<String,Double> eventWeights(CityView city,long period)throws SQLException{return Map.of();}
         default boolean filterEvents(){return false;}
+        /** Mitigation may only move a negative event factor toward 1; it cannot create a production bonus. */
+        default double eventFactor(Building building,EventState event,long period,double base)throws SQLException{return base;}
         default void completed(CoreCity core,CityView previous,long period,Map<String,Long> produced,Set<UUID> maintained)throws SQLException{}
     }
     public Settlement settle(CoreCity core,long period,Set<UUID> authorizedBuildings,Hooks hooks) throws SQLException {
@@ -47,7 +49,9 @@ public final class Simulation {
                 if(!canPay(stock,type.upkeep(),b.level())) { report.add(type.name()+": 维护食物不足");continue; }
                 debit(stock,type.upkeep(),b.level());
                 maintained.add(b.id());
-                double factor=core.productionMultiplier()*civilization.multipliers().getOrDefault(type.id(),1.0)*eventFactor(event,period,type.id());
+                double baseEventFactor=eventFactor(event,period,type.id()),adjustedEventFactor=hooks.eventFactor(b,event,period,baseEventFactor);
+                if(!Double.isFinite(adjustedEventFactor)||(baseEventFactor<1?(adjustedEventFactor<baseEventFactor||adjustedEventFactor>1):Double.compare(adjustedEventFactor,baseEventFactor)!=0))throw new IllegalArgumentException("Invalid event mitigation factor");
+                double factor=core.productionMultiplier()*civilization.multipliers().getOrDefault(type.id(),1.0)*adjustedEventFactor;
                 double extra=hooks.multiplier(b);if(!Double.isFinite(extra)||extra<0||extra>10)throw new IllegalArgumentException("Invalid extension multiplier");factor*=extra;
                 factor*=type.id().equals("farm") ? terrain.agriculture() : type.id().equals("sawmill") ? 1.0/Math.max(0.25,terrain.transport()) : 1.0;
                 final double effectiveFactor=Math.min(factor,10);

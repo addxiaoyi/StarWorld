@@ -1,5 +1,5 @@
 name: StarWorldSenLuoFixture
-version: '0.3.0-test'
+version: '0.4.0-test'
 main: dev.starworld.fixture.SenLuoFixture
 api-version: '1.21.11'
 depend: [StarWorld, StarCore, CraftEngine]

@@ -36,6 +36,8 @@ final class ExpansionFixture {
             case "exp-armies"->armies(p,Objects.requireNonNull(Bukkit.getPlayerExact(args[2]),"Connected peer required"),Integer.parseInt(args[3]),Integer.parseInt(args[4]));
             case "exp-combat"->combat(p,Objects.requireNonNull(Bukkit.getPlayerExact(args[2]),"Connected peer required"));
             case "exp-progress"->progress(p);
+            case "exp-operations"->operations(p,UUID.fromString(args[2]));
+            case "exp-permissions"->emit("exp-permissions",p,Map.of("admin",p.hasPermission("starworld.admin"),"use",p.hasPermission("starworld.use")));
             case "exp-progress-seed"->progressSeed(p);
             case "exp-alt-node"->alternateNode(p,slot(args));
             case "exp-fund"->fund(p,new java.math.BigDecimal(args[2]));
@@ -176,6 +178,18 @@ final class ExpansionFixture {
                 }).whenComplete((value,failure)->Bukkit.getScheduler().runTask(owner,()->{if(failure!=null)failed(failure);else emit("exp-progress",p,value);}));
             }catch(Exception failure){Bukkit.getScheduler().runTask(owner,()->failed(failure));}
         });
+    }
+    /** New-version projections use the public asynchronous API; no settlement/reconciliation is invoked. */
+    private void operations(Player p,UUID targetCity)throws Exception {
+        Object runtime=world(),coreCity=unwrap(invoke(runtime,"playerCity",new Class<?>[]{Player.class},p));UUID city=(UUID)call(coreCity,"cityId");
+        Class<?> modeType=type("StarWorld","dev.starworld.logistics.LogisticsState$Mode");
+        @SuppressWarnings({"unchecked","rawtypes"}) Object land=Enum.valueOf((Class<? extends Enum>)modeType,"LAND");
+        CompletableFuture<?> plans=(CompletableFuture<?>)invoke(runtime,"routePlans",new Class<?>[]{UUID.class,UUID.class,modeType,int.class,int.class},city,targetCity,land,100,0);
+        CompletableFuture<?> stats=(CompletableFuture<?>)invoke(runtime,"marketDeliveryStats",new Class<?>[]{UUID.class,String.class,int.class,int.class},city,null,100,0);
+        CompletableFuture<?> global=(CompletableFuture<?>)invoke(runtime,"marketDeliveryStats",new Class<?>[]{UUID.class,String.class,int.class,int.class},null,null,100,0);
+        CompletableFuture.allOf(plans,stats,global).whenComplete((ignored,error)->Bukkit.getScheduler().runTask(owner,()->{try{
+            if(error!=null)throw new IllegalStateException(error);emit("exp-operations",p,Map.of("version",call(runtime,"version"),"cityId",city,"targetCity",targetCity,"routePlans",plans.join(),"deliveryStats",stats.join(),"globalDeliveryStats",global.join(),"entryPoints",List.of("StarWorldApi.routePlans","StarWorldApi.marketDeliveryStats")));
+        }catch(Exception failure){failed(failure);}}));
     }
     private void alternateNode(Player p,int slot){
         int x=(base(slot)+4)*16+11,z=12;for(int dx=-1;dx<=1;dx++)for(int dz=-4;dz<=1;dz++){p.getWorld().getBlockAt(x+dx,79,z+dz).setType(Material.STONE);for(int y=80;y<=83;y++)p.getWorld().getBlockAt(x+dx,y,z+dz).setType(Material.AIR);}

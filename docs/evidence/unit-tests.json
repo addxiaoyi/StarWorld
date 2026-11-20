@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "version": "0.3.0",
-  "recorded_at": "2026-11-20T02:20:25.145845+00:00",
+  "version": "0.4.0",
+  "recorded_at": "2026-11-20T05:12:44.602870+00:00",
   "command": "./mvnw.cmd -B --no-transfer-progress -Dstarworld.testHeap=256m clean verify",
   "java": "21.0.13.1+2",
-  "artifact_sha256": "15946f82e248d08cabba45f4389d23297a9e27f574468658faa7edf6426382e1",
+  "artifact_sha256": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
   "totals": {
-    "tests": 232,
+    "tests": 245,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -168,7 +168,7 @@
     },
     {
       "suite": "dev.starworld.logistics.TransportPlanningTest",
-      "tests": 9,
+      "tests": 11,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -182,7 +182,7 @@
     },
     {
       "suite": "dev.starworld.market.MarketServiceTest",
-      "tests": 11,
+      "tests": 16,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -203,7 +203,7 @@
     },
     {
       "suite": "dev.starworld.persistence.WorldStoreTest",
-      "tests": 14,
+      "tests": 20,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -232,27 +232,27 @@
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 32498,
-      "missed": 12936
+      "covered": 34136,
+      "missed": 13360
     },
     "BRANCH": {
-      "covered": 2122,
-      "missed": 1746
+      "covered": 2235,
+      "missed": 1836
     },
     "LINE": {
-      "covered": 2229,
-      "missed": 596
+      "covered": 2336,
+      "missed": 615
     },
     "COMPLEXITY": {
-      "covered": 1494,
-      "missed": 1818
+      "covered": 1561,
+      "missed": 1899
     },
     "METHOD": {
-      "covered": 862,
-      "missed": 474
+      "covered": 896,
+      "missed": 485
     },
     "CLASS": {
-      "covered": 142,
+      "covered": 149,
       "missed": 14
     }
   }

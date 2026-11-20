@@ -8,7 +8,7 @@ const {setTimeout:delay}=require('node:timers/promises');
 const {Paper,connect,botMessage,properties,configuredNumber,hash,requireFile,waitUntil,argumentsOf}=require('./acceptance.cjs');
 const HELP=`Usage: node progression-acceptance.cjs --java <java21> --paper <Paper132.jar> --runtime <fresh-owned-directory> [--client-deps <mineflayer>]
 
-Requires actual StarCore, StarWorld 0.3 and the latest paper fixture, localhost/offline/EULA marker,
+Requires actual StarCore, StarWorld 0.3 or newer and the latest paper fixture, localhost/offline/EULA marker,
 fresh worlds/player/plugin data, ten-second settlement, zero random-event chance, culture decay
 interval 2 (only this disposable runtime), default 500 decay basis points, zero new-nation protection
 and affordable/zero claim/war costs. Keep default cultural policy factors and market costs.
@@ -28,7 +28,7 @@ async function fixture(server,action,bot,suffix=''){
     for(const line of lines){const i=line.indexOf('SW_FIXTURE_EXPANSION ');if(i<0)continue;const parsed=JSON.parse(line.slice(i+'SW_FIXTURE_EXPANSION '.length));if(parsed.action===action&&parsed.player===bot.username)return parsed.observed;}return null;
   },20000,`fixture ${action} ${bot.username}`);
 }
-async function snapshot(server,bot){return waitUntil(async()=>{const s=await fixture(server,'exp-progress',bot);assert(s.city&&s.atlas&&s.geography&&s.development&&s.nation);assert.match(s.version,/^0\.3\./);for(const n of Object.values(s.city.stock))assert(Number.isSafeInteger(n)&&n>=0);
+async function snapshot(server,bot){return waitUntil(async()=>{const s=await fixture(server,'exp-progress',bot);assert(s.city&&s.atlas&&s.geography&&s.development&&s.nation);assert.match(s.version,/^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$/);const [major,minor]=s.version.split('.').map(Number);assert(major>0||minor>=3,'Progression requires StarWorld 0.3 or newer');for(const n of Object.values(s.city.stock))assert(Number.isSafeInteger(n)&&n>=0);
   // Public city/atlas Futures precede the fixture's profile+culture IO job. A normal
   // settlement can commit between those reads, so only compare one coherent period.
   const period=s.city.lastPeriod;if(s.development.lastPeriod!==period||s.atlas.cityLastPeriod!==period||s.geography.cityLastPeriod!==period){console.log(`[RETRY] mixed snapshot ${bot.username}: city=${period}, development=${s.development.lastPeriod}, atlas=${s.atlas.cityLastPeriod}, geography=${s.geography.cityLastPeriod}`);return false;}return s;

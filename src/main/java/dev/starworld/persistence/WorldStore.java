@@ -190,10 +190,17 @@ public final class WorldStore implements AutoCloseable {
     public record Backup(Path path,long bytes,String sha256,int schemaVersion,String integrity) {}
     public synchronized Backup backup(Path destination) throws SQLException {
         Objects.requireNonNull(destination,"destination");
+        if(!connection.getAutoCommit())throw new IllegalStateException("Online backup cannot run inside an active transaction");
         Path target=destination.toAbsolutePath().normalize();
-        if(target.equals(databasePath))throw new IllegalArgumentException("Backup target must differ from the active database");
         try {
-            Files.createDirectories(Objects.requireNonNull(target.getParent(),"Backup target needs a parent"));
+            Path parent=Objects.requireNonNull(target.getParent(),"Backup target needs a parent");
+            Files.createDirectories(parent);
+            target=parent.toRealPath().resolve(target.getFileName());
+            rejectActiveDatabaseTarget(target);
+            if(Files.isSymbolicLink(target))throw new IllegalArgumentException("Backup target cannot be a symbolic link");
+            if(Files.exists(target,LinkOption.NOFOLLOW_LINKS)&&!Files.isRegularFile(target,LinkOption.NOFOLLOW_LINKS))throw new IllegalArgumentException("Backup target must be an ordinary file");
+            int sourceVersion=readUserVersion(connection);
+            if(sourceVersion!=2)throw new SQLException("Online backup requires the current StarWorld schema 2");
             Path temporary=Files.createTempFile(target.getParent(),".starworld-backup-", ".db.tmp");
             try {
                 Files.deleteIfExists(temporary);
@@ -202,15 +209,34 @@ public final class WorldStore implements AutoCloseable {
                 if(!Files.isRegularFile(temporary)||Files.size(temporary)==0)throw new SQLException("SQLite backup produced no file");
                 String integrity;int version;
                 try(Connection verify=DriverManager.getConnection("jdbc:sqlite:"+temporary.toAbsolutePath())) {
-                    try(Statement statement=verify.createStatement();ResultSet result=statement.executeQuery("PRAGMA quick_check")){if(!result.next())throw new SQLException("SQLite backup quick_check returned no row");integrity=result.getString(1);}
-                    version=readUserVersion(verify);if(!"ok".equalsIgnoreCase(integrity))throw new SQLException("SQLite backup integrity check failed: "+integrity);
+                    try(Statement statement=verify.createStatement();ResultSet result=statement.executeQuery("PRAGMA quick_check")){if(!result.next())throw new SQLException("SQLite backup quick_check returned no row");integrity=result.getString(1);if(!"ok".equalsIgnoreCase(integrity)||result.next())throw new SQLException("SQLite backup integrity check failed");}
+                    version=readUserVersion(verify);if(version!=sourceVersion||version!=2)throw new SQLException("SQLite backup schema differs from the current database");
                 }
                 String digest=sha256(temporary);long bytes=Files.size(temporary);
-                try { Files.move(temporary,target,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING); }
-                catch(AtomicMoveNotSupportedException unsupported){Files.move(temporary,target,StandardCopyOption.REPLACE_EXISTING);}
+                // No weaker fallback: a filesystem without atomic replacement fails closed.
+                Files.move(temporary,target,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);
                 return new Backup(target,bytes,digest,version,integrity);
             } finally { Files.deleteIfExists(temporary); }
         } catch(IOException|SQLException failure){throw failure instanceof SQLException sql?sql:new SQLException("SQLite backup failed",failure);}
+    }
+    /** The player-facing entry point cannot redirect backups through a linked directory. */
+    public synchronized Backup backupInPluginDirectory(Path pluginDirectory,String filename)throws SQLException {
+        if(filename==null||!filename.matches("[A-Za-z0-9._-]{1,96}")||filename.equals(".")||filename.equals(".."))throw new IllegalArgumentException("Invalid backup filename");
+        try {
+            Path root=Objects.requireNonNull(pluginDirectory).toAbsolutePath().normalize();Files.createDirectories(root);root=root.toRealPath();
+            Path directory=root.resolve("backups");Files.createDirectories(directory);
+            if(!directory.toRealPath().equals(directory))throw new IllegalArgumentException("Backup directory cannot redirect outside its configured location");
+            Path target=directory.resolve(filename.endsWith(".db")?filename:filename+".db");
+            if(!target.getParent().toRealPath().equals(directory))throw new IllegalArgumentException("Backup target escapes the backup directory");
+            return backup(target);
+        }catch(IOException failure){throw new SQLException("Cannot resolve backup directory",failure);}
+    }
+    private void rejectActiveDatabaseTarget(Path target)throws IOException {
+        Path realDatabase=databasePath.toRealPath();
+        for(Path active:List.of(databasePath,Path.of(databasePath+"-wal"),Path.of(databasePath+"-shm"),realDatabase,Path.of(realDatabase+"-wal"),Path.of(realDatabase+"-shm"))){
+            Path canonical=active.getParent().toRealPath().resolve(active.getFileName());
+            if(target.equals(canonical)||(Files.exists(target)&&Files.exists(active)&&Files.isSameFile(target,active)))throw new IllegalArgumentException("Backup target cannot replace the active database or its WAL/SHM files");
+        }
     }
     private static int readUserVersion(Connection c)throws SQLException {try(Statement s=c.createStatement();ResultSet r=s.executeQuery("PRAGMA user_version")){if(!r.next())throw new SQLException("Missing SQLite user_version");return r.getInt(1);}}
     private static String sha256(Path file)throws IOException,SQLException {try{MessageDigest digest=MessageDigest.getInstance("SHA-256");try(InputStream input=Files.newInputStream(file)){byte[] buffer=new byte[8192];for(int read;(read=input.read(buffer))>=0;)if(read>0)digest.update(buffer,0,read);}return HexFormat.of().formatHex(digest.digest());}catch(NoSuchAlgorithmException impossible){throw new SQLException("SHA-256 unavailable",impossible);}}

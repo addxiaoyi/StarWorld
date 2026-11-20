@@ -50,6 +50,6 @@ maintenance:
 
 ## 0.4 在线备份阶段
 
-`WorldStore.backup(Path)` 提供管理员触发的一致 SQLite 快照。调用在同一串行连接上执行 `VACUUM INTO`，因此会包含已提交的 WAL 状态，不直接复制正在写入的 `.db` 文件。快照写入同目录临时文件，随后使用 `PRAGMA quick_check`、`user_version` 和 SHA-256 校验，最后原子替换目标文件；目标必须不同于当前数据库。任何失败都会删除临时文件并保留原目标。
+`WorldStore.backup(Path)` 提供管理员触发的一致 SQLite 快照。调用在同一串行连接上执行 `VACUUM INTO`，因此会包含已提交的 WAL 状态，不直接复制正在写入的 `.db` 文件。已有事务中明确拒绝备份。快照写入同目录临时文件，随后要求 `PRAGMA quick_check` 恰好返回一条 `ok`、`user_version` 等于当前库的 schema 2，并计算 SHA-256，最后原子替换目标文件；文件系统不支持原子替换时失败，没有非原子覆盖回退。目标不可为当前数据库、WAL/SHM或其硬链接/符号链接别名。任何失败都会删除临时文件并保留原目标。
 
-管理员可以执行 `/sw maintenance backup <文件名>`。文件名只允许字母、数字、点、下划线和短横线，输出保存在 `plugins/StarWorld/backups/`；命令返回字节数、schema 版本和 SHA-256。备份目录不参与游戏状态扫描，也不会删除旧目标。在线备份仍应配合停服后的插件目录备份，不能替代跨文件系统灾备或 StarCore 数据库备份。
+管理员可以执行 `/sw maintenance backup <文件名>`。文件名只允许字母、数字、点、下划线和短横线，输出保存在 `plugins/StarWorld/backups/`；真实规范路径必须仍为该目录，目录联接或符号链接重定向会被拒绝。命令返回字节数、schema 版本和 SHA-256。备份目录不参与游戏状态扫描，也不会删除旧目标。在线备份仍应配合停服后的插件目录备份，不能替代跨文件系统灾备或 StarCore 数据库备份。

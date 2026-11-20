@@ -139,8 +139,8 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     /** Admin-only command boundary supplies a simple filename; snapshots stay under plugins/StarWorld/backups. */
     public CompletableFuture<WorldStore.Backup> backup(String filename){
         if(filename==null||!filename.matches("[A-Za-z0-9._-]{1,96}"))throw new IllegalArgumentException("备份文件名只能包含字母、数字、点、下划线和短横线");
-        java.nio.file.Path target=plugin.getDataFolder().toPath().resolve("backups").resolve(filename.endsWith(".db")?filename:filename+".db");
-        return async(()->store.backup(target));
+        java.nio.file.Path folder=plugin.getDataFolder().toPath();
+        return async(()->store.backupInPluginDirectory(folder,filename));
     }
     public CompletableFuture<Boolean> resolve(UUID id,boolean credit,String actor){return async(()->{if(activeTransferIds.contains(id))throw new IllegalStateException("这笔物品操作仍在进行，不能人工处理");store.resolveTransfer(id,credit,actor);return true;});}
     public void trigger(Player p,String type){CoreCity c=playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入城市"));reply(p,async(()->{store.ensureCity(c);EventState previous=store.view(c.cityId()).orElseThrow().event();EventState next=simulation.trigger(c.cityId(),type,currentPeriod());store.audit(p.getUniqueId().toString(),"EVENT "+type+" "+c.cityId());return new WorldEvolutionEvent(c.cityId(),previous,next);}),event->{Bukkit.getPluginManager().callEvent(event);p.sendMessage("§a事件已触发："+type);});}

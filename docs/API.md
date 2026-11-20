@@ -23,10 +23,12 @@ world.city(starCoreCityId).thenAccept(result -> {
 | `geography(UUID)` | `Future<Optional<RegionAtlas.Summary>>`；按不同地区只计一次的地形、剩余量/初始容量/恢复汇总 |
 | `life(UUID)` | `Future<Optional<LifeView>>`；累计生活文化、当前有限倍率、家具和活动会话 |
 | `routes(UUID,int,int)` | `Future<List<Route>>`；有限分页查询城市相关商路 |
+| `routePlans(UUID,UUID,Mode,int,int)` | `Future<List<RoutePlan>>`；同方向已声明路线的只读成本排序（周期/距离/容量/节点数/启用状态、按城市每期维护及独立货单全程维护基线），limit为1–100，不授予通行或外交许可 |
 | `orders(UUID,int,int)` | `Future<List<Order>>`；有限分页查询城市相关托管货单 |
 | `transport(UUID)` | `Future<Optional<TransportStatus>>`；当前周期持久运力、共享节点剩余量、维护、待运/暂停及瓶颈；不证明现场领土/锚点或外交有效 |
 | `marketListings(int,int)` | `Future<List<Listing>>`；公开可用的整批实物挂牌，limit 为 1–100，offset 非负 |
 | `marketPurchases(UUID,int,int)` | `Future<List<Purchase>>`；城市作为买方或卖方的国家付款/实物交接状态，limit 为 1–100，offset 非负 |
+| `marketDeliveryStats(UUID,String,int,int)` | `Future<List<DeliveryStats>>`；仅后台已核对物流 `COMPLETED` 收据的实际市场交货，按物品统计订单、数量、精确总额、加权均价和完成周期；城市可为空，物品可为空；有界回填可能短暂落后于最新交货 |
 | `readiness(UUID)` | `Future<Optional<Readiness>>`；城市/国家/周期、provided/required军需、terrainDefense及readiness |
 | `integrationStatus()` | 真实能力/降级原因；涉及StarCore读取，须在Paper主线程调用 |
 

@@ -60,6 +60,50 @@ class TransportPlanningTest {
         }
     }
 
+    @Test void routeCostPlanningSortsDeclaredSameDirectionPathsWithoutGrantingTransitAuthority()throws Exception{
+        try(Rig r=new Rig("route-plans.db")){
+            List<RoutePlan> plans=r.logistics.compareRoutes(r.seller.cityId(),r.buyer.cityId(),Mode.LAND,10,0);
+            assertEquals(List.of(r.alternative.id(),r.original.id()),plans.stream().map(RoutePlan::routeId).toList());
+            assertEquals(2,plans.getFirst().travelPeriods());
+            assertEquals(2,plans.getFirst().nodeCount());
+            assertEquals(Map.of(PLANKS,1L),plans.getFirst().maintenancePerPeriod().get(r.seller.cityId()));
+            assertEquals(Map.of(PLANKS,2L),plans.getFirst().standaloneJourneyMaintenance().get(r.seller.cityId()));
+            long before=r.stock(r.seller,PLANKS);
+            assertTrue(plans.getFirst().distanceBlocks()<plans.getLast().distanceBlocks());
+            r.logistics.setRouteEnabled(r.alternative.id(),false,r.auth(0,r.seller.cityId()));
+            plans=r.logistics.compareRoutes(r.seller.cityId(),r.buyer.cityId(),Mode.LAND,10,0);
+            assertFalse(plans.getFirst().enabled());
+            assertEquals(2,plans.size(),"Planning keeps disabled declarations visible so operators can compare their stored cost");
+            assertEquals(1,r.logistics.compareRoutes(r.seller.cityId(),r.buyer.cityId(),Mode.LAND,1,1).size());
+            assertTrue(r.logistics.compareRoutes(r.seller.cityId(),r.buyer.cityId(),Mode.SEA,10,0).isEmpty());
+            assertTrue(r.logistics.compareRoutes(r.seller.cityId(),r.buyer.cityId(),Mode.LAND,10,Integer.MAX_VALUE).isEmpty());
+            assertThrows(UnsupportedOperationException.class,()->r.logistics.compareRoutes(r.seller.cityId(),r.buyer.cityId(),Mode.LAND,10,0).clear());
+            assertEquals(before,r.stock(r.seller,PLANKS),"Read-only planning never pays maintenance");
+            assertThrows(IllegalArgumentException.class,()->r.logistics.compareRoutes(r.seller.cityId(),r.buyer.cityId(),Mode.LAND,101,0));
+            Map<String,Long> immutableCost=plans.getFirst().maintenancePerPeriod().get(r.seller.cityId());
+            assertThrows(UnsupportedOperationException.class,immutableCost::clear);
+            AuthoritySnapshot normal=r.auth(0,r.seller.cityId());
+            AuthoritySnapshot war=new AuthoritySnapshot(normal.actor(),normal.period(),normal.cityNations(),normal.managedCities(),normal.controlledAnchors(),normal.validNodes(),Set.of());
+            assertThrows(SQLException.class,()->r.logistics.createOffer(UUID.randomUUID(),r.original.id(),Map.of(BREAD,1L),Map.of(IRON,1L),war));
+            assertEquals(2,r.logistics.compareRoutes(r.seller.cityId(),r.buyer.cityId(),Mode.LAND,10,0).size(),"Read-only plans remain queryable during war without permitting transport");
+        }
+    }
+
+    @Test void planningRecomputesMaintenanceFromCurrentLevelsAndRejectsOverLimitLegacySet()throws Exception{
+        try(Rig r=new Rig("route-plans-bounds.db")){
+            UUID upgraded=r.alternative.nodes().getFirst();r.logistics.upgradeNode(upgraded,r.auth(0,r.seller.cityId()));
+            long before=r.stock(r.seller,PLANKS);
+            RoutePlan plan=r.logistics.compareRoutes(r.seller.cityId(),r.buyer.cityId(),Mode.LAND,10,0).stream().filter(p->p.routeId().equals(r.alternative.id())).findFirst().orElseThrow();
+            assertEquals(Map.of(PLANKS,2L),plan.maintenancePerPeriod().get(r.seller.cityId()));
+            assertEquals(2L*plan.travelPeriods(),plan.standaloneJourneyMaintenance().get(r.seller.cityId()).get(PLANKS));
+            assertEquals(before,r.stock(r.seller,PLANKS));
+            LogisticsDefinitions d=LogisticsDefinitions.defaults();
+            LogisticsDefinitions reduced=new LogisticsDefinitions(d.nodes(),d.terrainTime(),d.maxNodesPerCity(),1,d.maxWaypoints(),d.maxOpenOrdersPerCity(),d.maxBatch(),d.blocksPerPeriod(),d.maxTravelPeriods(),d.offerLifetimePeriods(),d.maxItemsPerOrder());
+            LogisticsService limited=new LogisticsService(r.store,reduced);
+            assertThrows(IllegalArgumentException.class,()->limited.compareRoutes(r.seller.cityId(),r.buyer.cityId(),Mode.LAND,10,0));
+        }
+    }
+
     @Test void expiredAndConflictingProposalsCannotChangeTheOrderAndNewProposalCanReplaceExpiry()throws Exception{
         try(Rig r=new Rig("expiry.db")){
             Order order=r.order();UUID request=UUID.randomUUID();r.logistics.proposeReroute(request,order.id(),r.alternative.id(),r.auth(0,r.seller.cityId()));

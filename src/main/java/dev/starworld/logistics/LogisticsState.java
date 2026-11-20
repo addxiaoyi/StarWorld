@@ -50,6 +50,26 @@ public final class LogisticsState {
         public Route { nodes = List.copyOf(nodes); }
     }
 
+    /** Read-only planning projection; it never grants route or transit authority. */
+    public record RoutePlan(UUID routeId, UUID originCity, UUID targetCity, Mode mode, boolean enabled,
+                            double distanceBlocks, int travelPeriods, long capacity, int nodeCount,
+                            Map<UUID, Map<String, Long>> maintenancePerPeriod,
+                            Map<UUID, Map<String, Long>> standaloneJourneyMaintenance) {
+        public RoutePlan {
+            Objects.requireNonNull(routeId); Objects.requireNonNull(originCity); Objects.requireNonNull(targetCity);
+            Objects.requireNonNull(mode);
+            if (!Double.isFinite(distanceBlocks) || distanceBlocks < 0 || travelPeriods < 1 || capacity < 1 || nodeCount < 2)
+                throw new IllegalArgumentException("Invalid route planning projection");
+            maintenancePerPeriod = immutableCosts(maintenancePerPeriod);
+            standaloneJourneyMaintenance = immutableCosts(standaloneJourneyMaintenance);
+        }
+        private static Map<UUID, Map<String, Long>> immutableCosts(Map<UUID, Map<String, Long>> costs) {
+            Map<UUID, Map<String, Long>> result = new HashMap<>();
+            costs.forEach((city, values) -> result.put(Objects.requireNonNull(city), Map.copyOf(values)));
+            return Map.copyOf(result);
+        }
+    }
+
     /** offered comes from origin; requested comes from target. Both remain in escrow in transit. */
     public record Order(UUID id, UUID routeId, UUID originCity, UUID targetCity,
                         UUID originNation, UUID targetNation, Map<String, Long> offered,

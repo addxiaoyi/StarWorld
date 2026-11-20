@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +60,49 @@ class WorldStoreTest {
         try(WorldStore store=new WorldStore(db,10000)){
             store.ensureCity(city);store.stock(city.cityId(),"minecraft:wheat",0);
             for(int i=1;i<=12;i++){store.stock(city.cityId(),"minecraft:wheat",i);WorldStore.Backup snapshot=store.backup(backup);assertEquals("ok",snapshot.integrity());try(WorldStore copy=new WorldStore(backup,10000)){assertEquals(i,copy.stock(city.cityId()).get("minecraft:wheat"));}}
+        }
+    }
+
+    @Test void onlineBackupRejectsActiveDatabaseHardlinksAndWalShmTargets()throws Exception {
+        Path db=temp.resolve("protected.db"),alias=temp.resolve("same-inode.db");CoreCity city=city();
+        try(WorldStore store=new WorldStore(db,1000)){
+            store.ensureCity(city);store.stock(city.cityId(),"minecraft:bread",42);Files.createLink(alias,db);
+            assertTrue(Files.isSameFile(alias,db));assertThrows(IllegalArgumentException.class,()->store.backup(alias));
+            assertThrows(IllegalArgumentException.class,()->store.backup(Path.of(db+"-wal")));
+            assertThrows(IllegalArgumentException.class,()->store.backup(Path.of(db+"-shm")));
+            Path wal=Path.of(db+"-wal");assertTrue(Files.exists(wal));Path walAlias=temp.resolve("same-wal.db");Files.createLink(walAlias,wal);
+            assertThrows(IllegalArgumentException.class,()->store.backup(walAlias));assertEquals(42,store.stock(city.cityId()).get("minecraft:bread"));
+        }
+    }
+
+    @Test void onlineBackupRejectsLinkedTargetsAndLinkedBackupDirectory()throws Exception {
+        Path db=temp.resolve("linked-protection.db"),plugin=temp.resolve("plugin"),outside=temp.resolve("outside");Files.createDirectories(plugin);Files.createDirectories(outside);
+        try(WorldStore store=new WorldStore(db,1000)){
+            Path alias=temp.resolve("symlink.db");Files.createSymbolicLink(alias,db);assertThrows(IllegalArgumentException.class,()->store.backup(alias));
+            Files.createSymbolicLink(plugin.resolve("backups"),outside);assertThrows(IllegalArgumentException.class,()->store.backupInPluginDirectory(plugin,"escape"));assertFalse(Files.exists(outside.resolve("escape.db")));
+            assertThrows(IllegalArgumentException.class,()->store.backupInPluginDirectory(plugin,"../escape"));
+        }
+    }
+
+    @Test void nestedTransactionAndInvalidSchemaBackupFailuresPreservePreviousSnapshot()throws Exception {
+        Path db=temp.resolve("backup-failure.db"),backup=temp.resolve("backups/previous.db");CoreCity city=city();
+        try(WorldStore store=new WorldStore(db,1000)){
+            store.ensureCity(city);store.stock(city.cityId(),"minecraft:bread",42);store.backup(backup);byte[] original=Files.readAllBytes(backup);
+            store.tx(s->{s.stock(city.cityId(),"minecraft:bread",99);assertThrows(IllegalStateException.class,()->s.backup(backup));return null;});assertArrayEquals(original,Files.readAllBytes(backup));
+            store.execute("PRAGMA user_version=99");assertThrows(SQLException.class,()->store.backup(backup));assertArrayEquals(original,Files.readAllBytes(backup));store.execute("PRAGMA user_version=2");
+            Path directory=temp.resolve("non-file-target");Files.createDirectories(directory);Files.writeString(directory.resolve("keep"),"untouched");assertThrows(IllegalArgumentException.class,()->store.backup(directory));assertEquals("untouched",Files.readString(directory.resolve("keep")));
+            try(var remaining=Files.list(backup.getParent())){assertTrue(remaining.noneMatch(p->p.getFileName().toString().startsWith(".starworld-backup-")));}
+            try(WorldStore copy=new WorldStore(backup,1000)){assertEquals(42,copy.stock(city.cityId()).get("minecraft:bread"));}
+        }
+    }
+
+    @Test void pluginBackupResolvesOrdinaryDirectoryAndRejectsTraversalNames()throws Exception {
+        Path db=temp.resolve("plugin-backup.db"),plugin=temp.resolve("plain-plugin");CoreCity city=city();
+        try(WorldStore store=new WorldStore(db,1000)){
+            store.ensureCity(city);store.stock(city.cityId(),"minecraft:bread",42);
+            WorldStore.Backup result=store.backupInPluginDirectory(plugin,"weekly-01");assertEquals(plugin.toRealPath().resolve("backups/weekly-01.db"),result.path());assertEquals(2,result.schemaVersion());
+            for(String filename:List.of(".","..","../outside","a/b","a\\b"))assertThrows(IllegalArgumentException.class,()->store.backupInPluginDirectory(plugin,filename));
+            try(WorldStore copy=new WorldStore(result.path(),1000)){assertEquals(42,copy.stock(city.cityId()).get("minecraft:bread"));}
         }
     }
 

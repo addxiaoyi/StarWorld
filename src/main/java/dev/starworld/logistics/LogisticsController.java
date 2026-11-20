@@ -144,6 +144,17 @@ public final class LogisticsController {
                 require(args.length <= 3, "/sw route list [页码]"); CoreCity city = current(p); int offset = offset(args, 2);
                 runtime.reply(p, runtime.async(() -> service.cityRoutes(city.cityId(), 10, offset)), routes -> routes.forEach(r -> p.sendMessage("§e" + r.id() + " " + r.originCity() + " → " + r.targetCity() + " " + r.mode() + " " + r.travelPeriods() + "周期/容量" + r.capacity() + " " + (r.enabled() ? "启用" : "停用"))));
             }
+            case "compare" -> {
+                require(args.length >= 3 && args.length <= 5, "/sw route compare <目标城市UUID> [land|sea] [页码]");
+                CoreCity city = current(p); UUID target = UUID.fromString(args[2]);
+                Mode mode = args.length > 3 ? Mode.valueOf(args[3].toUpperCase(Locale.ROOT)) : Mode.LAND;
+                int page = args.length > 4 ? Integer.parseInt(args[4]) : 1; require(page >= 1 && page <= 100000, "页码范围为1至100000");
+                runtime.reply(p, runtime.async(() -> service.compareRoutes(city.cityId(), target, mode, 10, (page - 1) * 10)), plans -> {
+                    p.sendMessage("§e路线成本规划（只读声明路线；不授予通行权限）");
+                    if (plans.isEmpty()) p.sendMessage("§7没有符合方向和运输模式的已声明路线");
+                    for (int i = 0; i < plans.size(); i++) { RoutePlan r = plans.get(i); p.sendMessage("§f" + (i + 1) + ". " + r.routeId() + " " + r.travelPeriods() + "周期 · 距离" + String.format(Locale.ROOT, "%.1f", r.distanceBlocks()) + " · 容量" + r.capacity() + " · 节点" + r.nodeCount() + " · " + (r.enabled() ? "启用" : "停用")); p.sendMessage("§7各城每期维护 " + r.maintenancePerPeriod() + "；独立货单全程维护基线 " + r.standaloneJourneyMaintenance()); }
+                });
+            }
             case "enable", "disable" -> {
                 require(args.length == 3, "/sw route " + op + " <商路UUID>"); UUID id = UUID.fromString(args[2]);
                 load(p, () -> contextForRoute(id), c -> act(p, c, Set.of(), a -> service.setRouteEnabled(id, op.equals("enable"), a), r -> p.sendMessage("§a商路已" + (r.enabled() ? "启用" : "停用"))));
@@ -157,7 +168,7 @@ public final class LogisticsController {
                     status.pausedReasons().forEach((reason,count)->p.sendMessage("§c"+count+"单 · "+reason));
                 });
             }
-            default -> { p.sendMessage("§e/sw route create <目标城市UUID> <land|sea> <起点UUID,途经UUID,终点UUID>"); p.sendMessage("§e/sw route list [页码] · enable|disable|status <商路UUID>"); }
+            default -> { p.sendMessage("§e/sw route create <目标城市UUID> <land|sea> <起点UUID,途经UUID,终点UUID>"); p.sendMessage("§e/sw route list [页码] · compare <目标城市UUID> [land|sea] [页码] · enable|disable|status <商路UUID>"); }
         }
     }
 

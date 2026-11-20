@@ -22,6 +22,7 @@ public final class LogisticsService {
             s.execute("CREATE TABLE IF NOT EXISTS logistics_route(id TEXT PRIMARY KEY,origin_city TEXT NOT NULL REFERENCES city_state(id),target_city TEXT NOT NULL REFERENCES city_state(id),mode TEXT NOT NULL,enabled INTEGER NOT NULL)");
             s.execute("CREATE INDEX IF NOT EXISTS logistics_route_origin ON logistics_route(origin_city)");
             s.execute("CREATE INDEX IF NOT EXISTS logistics_route_target ON logistics_route(target_city)");
+            s.execute("CREATE INDEX IF NOT EXISTS logistics_route_planning ON logistics_route(origin_city,target_city,mode,id)");
             s.execute("CREATE TABLE IF NOT EXISTS logistics_route_node(route TEXT NOT NULL REFERENCES logistics_route(id),position INTEGER NOT NULL,node TEXT NOT NULL REFERENCES logistics_node(id),PRIMARY KEY(route,position),UNIQUE(route,node))");
             s.execute("CREATE TABLE IF NOT EXISTS logistics_order(id TEXT PRIMARY KEY,route TEXT NOT NULL REFERENCES logistics_route(id),origin_city TEXT NOT NULL REFERENCES city_state(id),target_city TEXT NOT NULL REFERENCES city_state(id),origin_nation TEXT NOT NULL,target_nation TEXT NOT NULL,state TEXT NOT NULL,created_period INTEGER NOT NULL,expires_period INTEGER NOT NULL,last_period INTEGER NOT NULL,progress INTEGER NOT NULL,travel INTEGER NOT NULL,completed_period INTEGER NOT NULL DEFAULT -1,reason TEXT NOT NULL DEFAULT '')");
             s.execute("CREATE INDEX IF NOT EXISTS logistics_order_pending ON logistics_order(state,last_period,id)");
@@ -52,6 +53,46 @@ public final class LogisticsService {
     public Optional<Route> route(UUID id) throws SQLException { return store.query("SELECT * FROM logistics_route WHERE id=?", this::readRoute, id).stream().findFirst(); }
     public List<Route> routes(int limit, int offset) throws SQLException { page(limit, offset); return store.query("SELECT * FROM logistics_route ORDER BY id LIMIT ? OFFSET ?", this::readRoute, limit, offset); }
     public List<Route> cityRoutes(UUID city, int limit, int offset) throws SQLException { page(limit, offset); return store.query("SELECT * FROM logistics_route WHERE origin_city=? OR target_city=? ORDER BY id LIMIT ? OFFSET ?", this::readRoute, city, city, limit, offset); }
+    /**
+     * Deterministic planning comparison for already declared routes. This is a read-only
+     * projection: it does not check current claims/diplomacy and cannot authorize transport.
+     */
+    public List<RoutePlan> compareRoutes(UUID origin, UUID target, Mode mode, int limit, int offset) throws SQLException {
+        if (limit < 1 || limit > 100 || offset < 0) throw new IllegalArgumentException("Invalid route planning page");
+        Objects.requireNonNull(origin); Objects.requireNonNull(target); Objects.requireNonNull(mode);
+        if (origin.equals(target)) throw new IllegalArgumentException("路线规划需要不同的起点和终点城市");
+        record Header(UUID id, boolean enabled) {}
+        record Link(UUID route, int position, UUID node) {}
+        List<Header> declared = store.query("SELECT id,enabled FROM logistics_route WHERE origin_city=? AND target_city=? AND mode=? ORDER BY id LIMIT ?", row -> new Header(uuid(row,"id"),row.getInt("enabled")==1),
+                origin, target, mode.name(), definitions.maxRoutesPerCity() + 1);
+        if (declared.size() > definitions.maxRoutesPerCity()) throw new IllegalArgumentException("城市商路数量超过当前规划上限");
+        if (declared.isEmpty()) return List.of();
+        // One bounded read per relation, not one node query per route/waypoint. Node registration
+        // already caps each endpoint; corrupt/legacy excess is rejected rather than scanned forever.
+        List<Node> declaredNodes = store.query("SELECT * FROM logistics_node WHERE city IN (?,?) ORDER BY id LIMIT ?",this::readNode,
+                origin,target,Math.addExact(Math.multiplyExact(definitions.maxNodesPerCity(),2),1));
+        if(declaredNodes.size()>definitions.maxNodesPerCity()*2)throw new IllegalArgumentException("端点交通节点数量超过当前规划上限");
+        Map<UUID,Node> nodesById=new HashMap<>();declaredNodes.forEach(n->nodesById.put(n.id(),n));
+        List<Link> links=store.query("SELECT rn.route,rn.position,rn.node FROM logistics_route_node rn JOIN logistics_route r ON r.id=rn.route WHERE r.origin_city=? AND r.target_city=? AND r.mode=? ORDER BY rn.route,rn.position LIMIT ?",
+                row->new Link(uuid(row,"route"),row.getInt("position"),uuid(row,"node")),origin,target,mode.name(),Math.addExact(Math.multiplyExact(definitions.maxRoutesPerCity(),definitions.maxWaypoints()),1));
+        Map<UUID,List<UUID>> paths=new HashMap<>();
+        for(Link link:links){List<UUID> path=paths.computeIfAbsent(link.route(),ignored->new ArrayList<>());if(link.position()!=path.size()||path.size()>=definitions.maxWaypoints())throw new IllegalArgumentException("声明路线节点序列超过当前规划上限或不连续");path.add(link.node());}
+        List<RoutePlan> unsorted=new ArrayList<>();
+        for(Header header:declared){List<UUID> path=paths.getOrDefault(header.id(),List.of());List<Node> nodes=new ArrayList<>();for(UUID id:path){Node node=nodesById.get(id);if(node==null)throw new IllegalArgumentException("声明路线引用了端点城市之外或缺失的节点");nodes.add(node);}
+            Metrics metrics=metrics(nodes,mode);Map<UUID,Map<String,Long>> upkeep=new HashMap<>(),journey=new HashMap<>();
+            for(Node node:nodes){Map<String,Long> cityCost=upkeep.computeIfAbsent(node.cityId(),ignored->new TreeMap<>());scale(definitions.nodes().get(node.type()).maintenance(),node.level()).forEach((item,amount)->cityCost.merge(item,amount,Math::addExact));}
+            upkeep.forEach((city,items)->{Map<String,Long> total=new TreeMap<>();items.forEach((item,amount)->total.put(item,Math.multiplyExact(amount,metrics.periods())));journey.put(city,total);});
+            unsorted.add(new RoutePlan(header.id(),origin,target,mode,header.enabled(),metrics.distance(),metrics.periods(),metrics.capacity(),nodes.size(),upkeep,journey));
+        }
+        List<RoutePlan> plans = unsorted.stream().sorted(Comparator
+                        .comparingInt(RoutePlan::travelPeriods)
+                        .thenComparingDouble(RoutePlan::distanceBlocks)
+                        .thenComparing(Comparator.comparingLong(RoutePlan::capacity).reversed())
+                        .thenComparing(Comparator.comparingInt(RoutePlan::nodeCount))
+                        .thenComparing(RoutePlan::routeId)).toList();
+        int end = (int) Math.min(plans.size(), (long) offset + limit);
+        return plans.subList(Math.min(offset, plans.size()), end);
+    }
     public Optional<Order> order(UUID id) throws SQLException { return store.query("SELECT * FROM logistics_order WHERE id=?", this::readOrder, id).stream().findFirst(); }
     public List<Order> pendingOrders(int limit, int offset) throws SQLException {
         page(limit, offset); return store.query("SELECT * FROM logistics_order WHERE state IN ('OFFERED','IN_TRANSIT','PAUSED') ORDER BY last_period,created_period,id LIMIT ? OFFSET ?", this::readOrder, limit, offset);

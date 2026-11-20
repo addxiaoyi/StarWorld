@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>dev.starworld</groupId><artifactId>starworld</artifactId><version>0.3.0</version>
+  <groupId>dev.starworld</groupId><artifactId>starworld</artifactId><version>0.4.0</version>
   <name>StarWorld</name><description>Dynamic civilization and regional industry extension for StarCore</description>
   <url>https://github.com/addxiaoyi/StarWorld</url>
   <licenses><license><name>MIT</name><url>https://opensource.org/licenses/MIT</url></license></licenses>
@@ -18,7 +18,7 @@
     <plugins>
       <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.14.1</version><configuration><release>21</release><parameters>true</parameters><proc>none</proc></configuration></plugin>
       <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId><version>3.4.1</version><configuration><forceCreation>true</forceCreation></configuration></plugin>
-      <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.5.4</version><configuration><argLine>@{argLine} -Xmx${starworld.testHeap} -XX:ActiveProcessorCount=2 -XX:+UseSerialGC -XX:+EnableDynamicAgentLoading</argLine></configuration></plugin>
+      <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.5.4</version><configuration><argLine>@{argLine} -javaagent:"${settings.localRepository}/org/mockito/mockito-core/5.20.0/mockito-core-5.20.0.jar" -Xmx${starworld.testHeap} -XX:ActiveProcessorCount=2 -XX:+UseSerialGC</argLine></configuration></plugin>
       <plugin><groupId>org.jacoco</groupId><artifactId>jacoco-maven-plugin</artifactId><version>0.8.14</version><executions><execution><goals><goal>prepare-agent</goal></goals></execution><execution><id>report</id><phase>verify</phase><goals><goal>report</goal></goals></execution></executions></plugin>
       <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-shade-plugin</artifactId><version>3.6.1</version><executions><execution><phase>package</phase><goals><goal>shade</goal></goals><configuration><createDependencyReducedPom>false</createDependencyReducedPom><filters><filter><artifact>*:*</artifact><excludes><exclude>META-INF/*.SF</exclude><exclude>META-INF/*.DSA</exclude><exclude>META-INF/*.RSA</exclude></excludes></filter></filters><transformers><transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/></transformers></configuration></execution></executions></plugin>
       <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-source-plugin</artifactId><version>3.3.1</version><executions><execution><id>sources</id><goals><goal>jar-no-fork</goal></goals></execution></executions></plugin>

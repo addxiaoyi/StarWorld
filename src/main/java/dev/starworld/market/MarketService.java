@@ -32,6 +32,11 @@ public final class MarketService {
             s.execute("CREATE TABLE IF NOT EXISTS market_expiry_check(listing TEXT PRIMARY KEY REFERENCES market_listing(id),period INTEGER NOT NULL)");
             s.execute("CREATE TABLE IF NOT EXISTS market_history(listing TEXT PRIMARY KEY REFERENCES market_listing(id),buyer_city TEXT NOT NULL,period INTEGER NOT NULL)");
             s.execute("CREATE TABLE IF NOT EXISTS market_clock(id INTEGER PRIMARY KEY CHECK(id=1),period INTEGER NOT NULL)");s.execute("INSERT OR IGNORE INTO market_clock(id,period) VALUES(1,-1)");
+            s.execute("CREATE TABLE IF NOT EXISTS market_delivery_receipt(purchase TEXT PRIMARY KEY REFERENCES market_purchase(id),period INTEGER NOT NULL)");
+            s.execute("CREATE TABLE IF NOT EXISTS market_delivery_stat(scope TEXT NOT NULL,item TEXT NOT NULL,orders INTEGER NOT NULL,units INTEGER NOT NULL,gross TEXT NOT NULL,first_period INTEGER NOT NULL,last_period INTEGER NOT NULL,PRIMARY KEY(scope,item))");
+            s.execute("CREATE TABLE IF NOT EXISTS market_delivery_schema(id INTEGER PRIMARY KEY CHECK(id=1),version INTEGER NOT NULL)");s.execute("INSERT OR IGNORE INTO market_delivery_schema(id,version) VALUES(1,1)");
+            if(s.query("SELECT version FROM market_delivery_schema WHERE id=1",r->r.getInt(1)).getFirst()!=1)throw new SQLException("Unsupported market delivery statistics schema");
+            s.execute("CREATE TABLE IF NOT EXISTS market_delivery_clock(id INTEGER PRIMARY KEY CHECK(id=1),sequence INTEGER NOT NULL)");s.execute("INSERT OR IGNORE INTO market_delivery_clock(id,sequence) VALUES(1,0)");
             return s.query("SELECT namespace FROM market_schema WHERE id=1",r->r.getString(1)).getFirst();
         });
     }
@@ -42,6 +47,35 @@ public final class MarketService {
     public List<Listing> listings(UUID city,int limit,int offset)throws SQLException{page(limit,offset);return city==null?store.query("SELECT * FROM market_listing WHERE state='AVAILABLE' ORDER BY created_period,id LIMIT ? OFFSET ?",this::readListing,limit,offset):store.query("SELECT * FROM market_listing WHERE seller_city=? ORDER BY created_period DESC,id LIMIT ? OFFSET ?",this::readListing,city,limit,offset);}
     public List<Purchase> purchases(UUID city,int limit,int offset)throws SQLException{page(limit,offset);return store.query("SELECT * FROM market_purchase WHERE buyer_city=? OR seller_city=? ORDER BY created_period DESC,id LIMIT ? OFFSET ?",this::readPurchase,city,city,limit,offset);}
     public List<PriceHistory> history(String item,int limit,int offset)throws SQLException{page(limit,offset);return store.query("SELECT l.*,h.buyer_city,h.period FROM market_history h JOIN market_listing l ON l.id=h.listing WHERE (? IS NULL OR l.item=?) ORDER BY h.period DESC,l.id LIMIT ? OFFSET ?",r->new PriceHistory(uuid(r,"id"),r.getString("item"),r.getLong("units"),new BigDecimal(r.getString("unit_price")),uuid(r,"seller_city"),uuid(r,"buyer_city"),r.getLong("period")),item,item,limit,offset);}
+    /**
+     * Returns auditable paid-market deliveries after the physical logistics order reached COMPLETED.
+     * The query deliberately excludes SHIPPED/PAID rows and never treats a payment receipt as delivery.
+     * A city filter matches either endpoint; null means all cities. Results are grouped by item and
+     * ordered deterministically. Statistics are updated by the bounded completion reconciler; query never scans
+     * the complete order history. Money is accumulated with BigDecimal rather than SQLite numeric coercion.
+     */
+    public List<DeliveryStats> deliveryStats(UUID city,String item,int limit,int offset)throws SQLException{
+        page(limit,offset);
+        return List.copyOf(store.query("SELECT * FROM market_delivery_stat WHERE scope=? AND (? IS NULL OR item=?) ORDER BY item LIMIT ? OFFSET ?",r->{long units=r.getLong("units");BigDecimal gross=new BigDecimal(r.getString("gross"));return new DeliveryStats(r.getString("item"),r.getLong("orders"),units,gross,gross.divide(BigDecimal.valueOf(units),2,java.math.RoundingMode.HALF_UP),r.getLong("first_period"),r.getLong("last_period"));},city==null?"*":city.toString(),item,item,limit,offset));
+    }
+    /** Completion ledger and all three scope aggregates commit together; repeats/restarts cannot double count. */
+    public int reconcileDeliveries(int limit)throws SQLException{
+        page(limit,0);
+        return store.tx(s->{long cursor=s.query("SELECT sequence FROM market_delivery_clock WHERE id=1",r->r.getLong(1)).getFirst();
+            List<DeliveryReceipt> receipts=s.query("SELECT sequence,order_id,period FROM logistics_receipt WHERE sequence>? ORDER BY sequence LIMIT ?",r->new DeliveryReceipt(r.getLong(1),UUID.fromString(r.getString(2)),r.getLong(3)),cursor,limit);
+            for(DeliveryReceipt receipt:receipts){List<Purchase> purchases=s.query("SELECT * FROM market_purchase WHERE shipment=?",this::readPurchase,receipt.shipment());if(!purchases.isEmpty()){
+                Purchase purchase=purchases.getFirst();Listing listing=listing(purchase.listingId()).orElseThrow();Order order=logistics.order(receipt.shipment()).orElseThrow();
+                if(purchase.status()!=PurchaseStatus.SHIPPED||listing.status()!=ListingStatus.SHIPPED||order.status()!=OrderStatus.COMPLETED||!order.originCity().equals(purchase.sellerCity())||!order.targetCity().equals(purchase.buyerCity())||!order.originNation().equals(purchase.sellerNation())||!order.targetNation().equals(purchase.buyerNation())||!listing.sellerCity().equals(purchase.sellerCity())||!listing.sellerNation().equals(purchase.sellerNation())||!order.offered().equals(listing.cargo())||!order.requested().isEmpty()||order.completedPeriod()!=receipt.period()||!logistics.paidShipment(order.id()))throw new SQLException("Completed market delivery identity mismatch: "+purchase.id());
+                if(s.query("SELECT 1 FROM market_delivery_receipt WHERE purchase=?",r->1,purchase.id()).isEmpty()){DeliveryRow row=new DeliveryRow(purchase.id(),purchase.sellerCity(),purchase.buyerCity(),listing.item(),listing.units(),listing.unitPrice(),receipt.period());for(String scope:List.of("*",row.seller().toString(),row.buyer().toString()))recordDelivery(scope,row);s.execute("INSERT INTO market_delivery_receipt(purchase,period) VALUES(?,?)",row.purchase(),row.period());}
+            }s.execute("UPDATE market_delivery_clock SET sequence=? WHERE id=1",receipt.sequence());}return receipts.size();});
+    }
+    private void recordDelivery(String scope,DeliveryRow row)throws SQLException{
+        List<DeliveryStats> old=store.query("SELECT * FROM market_delivery_stat WHERE scope=? AND item=?",r->new DeliveryStats(r.getString("item"),r.getLong("orders"),r.getLong("units"),new BigDecimal(r.getString("gross")),BigDecimal.ZERO,r.getLong("first_period"),r.getLong("last_period")),scope,row.item());
+        DeliveryStats previous=old.isEmpty()?null:old.getFirst();long orders=previous==null?1:Math.addExact(previous.orders(),1),units=previous==null?row.units():Math.addExact(previous.units(),row.units());BigDecimal amount=row.price().multiply(BigDecimal.valueOf(row.units())),gross=previous==null?amount:previous.gross().add(amount);long first=previous==null?row.period():Math.min(previous.firstCompletedPeriod(),row.period()),last=previous==null?row.period():Math.max(previous.lastCompletedPeriod(),row.period());
+        store.execute("INSERT INTO market_delivery_stat(scope,item,orders,units,gross,first_period,last_period) VALUES(?,?,?,?,?,?,?) ON CONFLICT(scope,item) DO UPDATE SET orders=excluded.orders,units=excluded.units,gross=excluded.gross,first_period=excluded.first_period,last_period=excluded.last_period",scope,row.item(),orders,units,gross.toPlainString(),first,last);
+    }
+    private record DeliveryRow(UUID purchase,UUID seller,UUID buyer,String item,long units,BigDecimal price,long period){}
+    private record DeliveryReceipt(long sequence,UUID shipment,long period){}
     public Listing list(UUID id,UUID city,String item,long units,BigDecimal unitPrice,AuthoritySnapshot auth)throws SQLException{
         Objects.requireNonNull(id);if(!definitions.items().contains(item)||units<1||units>definitions.maxUnits())throw new IllegalArgumentException("物品未开放市场或批次数量超限");BigDecimal price=TreasuryTransferPort.money(unitPrice);if(price.compareTo(definitions.maximumUnitPrice())>0)throw new IllegalArgumentException("挂牌单价超限");TreasuryTransferPort.money(price.multiply(BigDecimal.valueOf(units)));
         return store.tx(s->{fresh(auth);UUID nation=manager(city,auth);Optional<Listing> saved=listing(id);if(saved.isPresent()){Listing l=saved.get();if(!l.sellerCity().equals(city)||!l.sellerNation().equals(nation)||!l.item().equals(item)||l.units()!=units||l.unitPrice().compareTo(price)!=0)throw new IllegalArgumentException("挂牌ID已用于不同参数");return l;}

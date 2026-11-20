@@ -36,8 +36,8 @@ public final class DisasterResponseService {
 
     public DisasterResponseDefinitions configuration(){return configuration;}
     public Optional<Response> response(UUID requestId)throws SQLException{return store.query("SELECT * FROM disaster_response WHERE request_id=?",this::read,requestId.toString()).stream().findFirst();}
-    public List<Response> responses(UUID city,int limit,int offset)throws SQLException{page(limit,offset);return store.query("SELECT * FROM disaster_response WHERE city=? ORDER BY requested_period DESC,request_id LIMIT ? OFFSET ?",this::read,city,limit,offset);}
-    public List<History> history(UUID city,int limit,int offset)throws SQLException{page(limit,offset);return store.query("SELECT request_id,period,kind,detail FROM disaster_response_history WHERE city=? ORDER BY sequence DESC LIMIT ? OFFSET ?",r->new History(UUID.fromString(r.getString(1)),r.getLong(2),r.getString(3),r.getString(4)),city,limit,offset);}
+    public List<Response> responses(UUID city,int limit,int offset)throws SQLException{page(limit,offset);return List.copyOf(store.query("SELECT * FROM disaster_response WHERE city=? ORDER BY requested_period DESC,request_id LIMIT ? OFFSET ?",this::read,city,limit,offset));}
+    public List<History> history(UUID city,int limit,int offset)throws SQLException{page(limit,offset);return List.copyOf(store.query("SELECT request_id,period,kind,detail FROM disaster_response_history WHERE city=? ORDER BY sequence DESC LIMIT ? OFFSET ?",r->new History(UUID.fromString(r.getString(1)),r.getLong(2),r.getString(3),r.getString(4)),city,limit,offset));}
 
     /** Trusted request boundary: authorization is captured by the controller; all game-state evidence is checked again here. */
     public Response request(UUID requestId,CoreCity current,String strategyId,long period,Set<UUID> verified,String actor)throws SQLException{

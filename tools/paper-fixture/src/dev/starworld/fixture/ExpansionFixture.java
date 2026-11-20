@@ -28,7 +28,6 @@ final class ExpansionFixture {
             case "exp-disaster-register"->disasterRegister(p,slot(args));
             case "exp-disaster-seed"->disasterSeed(p);
             case "exp-disasters"->disasters(p);
-            case "exp-permissions"->emit("exp-permissions",p,Map.of("admin",p.hasPermission("starworld.admin"),"use",p.hasPermission("starworld.use")));
             case "exp-node"->register(p,slot(args),true);
             case "exp-seed"->seed(p);
             case "exp-snapshot"->snapshot(p);

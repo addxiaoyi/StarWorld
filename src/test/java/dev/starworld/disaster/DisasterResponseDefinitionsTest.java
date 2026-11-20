@@ -27,4 +27,8 @@ class DisasterResponseDefinitionsTest {
             Path file=defaults();YamlConfiguration y=new YamlConfiguration();y.load(file.toFile());y.set(change.getKey(),change.getValue());y.save(file.toFile());assertThrows(IllegalArgumentException.class,()->DisasterResponseDefinitions.load(file.toFile(),base()),change.getKey());
         }
     }
+    @Test void validCraftEngineItemIdsWithDotsAndSlashesRemainLiteralCostKeys()throws Exception{
+        Path file=defaults();YamlConfiguration y=new YamlConfiguration();y.load(file.toFile());y.set("strategies.drought_irrigation.costs",Map.of("server.food:grains/wheat",3L));y.save(file.toFile());
+        var loaded=DisasterResponseDefinitions.load(file.toFile(),base());assertEquals(Map.of("server.food:grains/wheat",3L),loaded.strategies().get("drought_irrigation").costs());assertTrue(loaded.itemIds().contains("server.food:grains/wheat"));
+    }
 }

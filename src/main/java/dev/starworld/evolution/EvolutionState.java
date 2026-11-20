@@ -23,7 +23,9 @@ public final class EvolutionState {
     }
     /** The local resource association is resolved from current SQLite reserves inside the settlement transaction. */
     public record ResourceDispute(BorderWitness border,String resource,long remaining) {
-        public ResourceDispute {Objects.requireNonNull(border);if(resource==null||!resource.matches("[a-z][a-z0-9_-]{0,47}")||remaining<=0)throw new IllegalArgumentException("Resource dispute requires a positive local reserve");}
+        // Reserve keys follow ConfigLoader.amounts (namespaced/path keys included),
+        // rather than the narrower civilization/terrain definition-ID grammar.
+        public ResourceDispute {Objects.requireNonNull(border);if(resource==null||!resource.matches("[a-z0-9_./-]+(:[a-z0-9_./-]+)?")||remaining<=0)throw new IllegalArgumentException("Resource dispute requires a positive local reserve");}
     }
     public record History(long period,String kind,String detail){}
     public record Culture(String region,String tradition,long influence){}

@@ -1,10 +1,11 @@
 package dev.starworld.evolution;
 
 import dev.starworld.domain.*;
+import dev.starworld.config.ConfigLoaderTest;
 import dev.starworld.domain.WorldState.*;
 import dev.starworld.evolution.EvolutionState.*;
 import dev.starworld.persistence.WorldStore;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.sql.SQLException;
 import java.util.*;
 import org.junit.jupiter.api.Test;
@@ -44,5 +45,52 @@ class BorderResourceEventTest {
     }
     @Test void repeatedFacilityOrDuplicateWitnessCannotMultiplyResourceDisputeEvidence()throws Exception{
         try(WorldStore store=new WorldStore(temp.resolve("duplicates.db"),10000)){EvolutionService e=initialize(store);var values=e.resourceDisputes(city,store.view(city.cityId()).orElseThrow(),10,Set.of(farm.id()),context(witness(10),witness(10)));assertEquals(1,values.size());assertEquals("ore",values.getFirst().resource());assertEquals(20,values.getFirst().remaining());assertThrows(UnsupportedOperationException.class,()->values.clear());}
+    }
+    @Test void configuredNamespacedAndPathOnlyReservesProduceNaturalEventAndSurviveRestart()throws Exception{
+        int number=0;
+        for(String resource:List.of("custom:ore","deep/ore")){
+            Path folder=temp.resolve("custom-"+number++);Files.createDirectories(folder);Path config=folder.resolve("config.yml"),data=folder.resolve("definitions.yml"),database=folder.resolve("world.db");
+            Files.writeString(config,"config-version: 2\nsimulation:\n  event-chance: 1\n  period-seconds: 10\n  stock-limit: 10000\n");
+            Files.writeString(data,"""
+                definition-version: 1
+                terrains:
+                  plains:
+                    name: 自定义产地
+                    agriculture: 1
+                    transport: 1
+                    military: 1
+                    reserves: {'%s': 20}
+                    regeneration: {}
+                civilizations:
+                  agrarian: {name: 农耕, multipliers: {}}
+                buildings:
+                  farm: {name: 农场, anchor: COMPOSTER, upkeep: {}}
+                recipes:
+                  harvest:
+                    building: farm
+                    inputs: {}
+                    outputs: {minecraft:wheat: 12}
+                    reserve: '%s'
+                    reserve-cost: 1
+                events:
+                  border_dispute:
+                    name: 边境资源争端
+                    duration: 1
+                    aftermath: 1
+                    multipliers: {farm: 0.5}
+                    aftermath-multiplier: 0.8
+                """.formatted(resource,resource));
+            Definitions custom=ConfigLoaderTest.loadWithPlatformFixture(config,data);assertEquals(Set.of(resource),custom.terrains().get("plains").reserves().keySet());String detail;
+            try(WorldStore store=new WorldStore(database,custom.stockLimit())){
+                store.ensureCity(city);store.addBuilding(farm,"plains",custom);EvolutionService e=new EvolutionService(store,custom,options);
+                Settlement result=store.tx(s->new Simulation(s,custom).settle(city,10,Set.of(farm.id()),e.cycle(city,s.view(city.cityId()).orElseThrow(),10,Set.of(farm.id()),context(witness(10)))));
+                assertTrue(result.applied());assertEquals(6,result.produced().get("minecraft:wheat"));assertEquals(19,store.region(farm.site().regionKey()).reserves().get(resource));detail=e.history(city.cityId()).stream().filter(h->h.kind().equals("event")).findFirst().orElseThrow().detail();assertTrue(detail.contains("resource="+resource+" remaining=20"),detail);
+            }
+            try(WorldStore store=new WorldStore(database,custom.stockLimit())){EvolutionService e=new EvolutionService(store,custom,options);assertEquals(19,store.region(farm.site().regionKey()).reserves().get(resource));assertEquals(detail,e.history(city.cityId()).stream().filter(h->h.kind().equals("event")).findFirst().orElseThrow().detail());assertFalse(new Simulation(store,custom).settle(city,10,Set.of(farm.id())).applied());assertEquals(6,store.stock(city.cityId()).get("minecraft:wheat"));}
+        }
+    }
+    @Test void resourceEvidenceUsesTheExistingAmountKeyGrammarWithoutDefinitionIdRestrictions(){
+        for(String resource:List.of("ore","9ore","_ore","deep/ore","custom:ore","custom:deep/ore","ore.v2","x".repeat(64)))assertEquals(resource,new ResourceDispute(witness(10),resource,20).resource());
+        for(String resource:List.of("","Ore","custom:",":ore","a:b:c","ore with space"))assertThrows(IllegalArgumentException.class,()->new ResourceDispute(witness(10),resource,20));assertThrows(IllegalArgumentException.class,()->new ResourceDispute(witness(10),"ore",0));
     }
 }

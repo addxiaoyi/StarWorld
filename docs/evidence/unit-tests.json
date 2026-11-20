@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "version": "1.0.0",
-  "recorded_at": "2026-11-20T12:50:59.079756+00:00",
+  "version": "1.1.0",
+  "recorded_at": "2026-11-20T19:11:48.326837+00:00",
   "command": "./mvnw.cmd -B --no-transfer-progress -Dstarworld.testHeap=256m clean verify",
   "java": "21.0.13.1+2",
-  "artifact_sha256": "da87d1af73067a87a3fea04acb2a198ce6a1a4e1f32463f15a375ed824fe9ac6",
+  "artifact_sha256": "f8b6988df9fe273448997384b72596636502889ad9af72d8825e751557b3806b",
   "totals": {
-    "tests": 398,
+    "tests": 444,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -126,7 +126,7 @@
     },
     {
       "suite": "dev.starworld.integration.ResourceOutboxTest",
-      "tests": 10,
+      "tests": 13,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -174,6 +174,13 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.life.LifeEvolutionCarryTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.life.LifePlatformTest",
       "tests": 6,
       "failures": 0,
@@ -195,8 +202,15 @@
       "skipped": 0
     },
     {
-      "suite": "dev.starworld.logistics.LogisticsControllerTest",
+      "suite": "dev.starworld.logistics.LogisticsConfigurationRecoveryTest",
       "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.logistics.LogisticsControllerTest",
+      "tests": 4,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -217,14 +231,21 @@
     },
     {
       "suite": "dev.starworld.market.MarketControllerTest",
-      "tests": 4,
+      "tests": 6,
       "failures": 0,
       "errors": 0,
       "skipped": 0
     },
     {
       "suite": "dev.starworld.market.MarketServiceTest",
-      "tests": 17,
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.persistence.FairDispatchQueueTest",
+      "tests": 2,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -272,6 +293,13 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.runtime.ExpansionRuntimeSchedulingTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.runtime.ExpansionRuntimeTest",
       "tests": 14,
       "failures": 0,
@@ -286,8 +314,22 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.runtime.SchedulerGateTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.runtime.StorageWorkerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.runtime.WorldRuntimeTest",
-      "tests": 12,
+      "tests": 13,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -330,28 +372,30 @@
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 49934,
-      "missed": 15071
+      "covered": 51985,
+      "missed": 14434
     },
     "BRANCH": {
-      "covered": 3521,
-      "missed": 2439
+      "covered": 3722,
+      "missed": 2430
     },
     "LINE": {
-      "covered": 3120,
-      "missed": 644
+      "covered": 3335,
+      "missed": 603
     },
     "COMPLEXITY": {
-      "covered": 2379,
-      "missed": 2534
+      "covered": 2537,
+      "missed": 2517
     },
     "METHOD": {
-      "covered": 1319,
-      "missed": 546
+      "covered": 1398,
+      "missed": 512
     },
     "CLASS": {
-      "covered": 195,
-      "missed": 13
+      "covered": 204,
+      "missed": 12
     }
-  }
+  },
+  "build_log_sha256": "079663143bc58809ae09c54b6c9b057720430ac141c11a4c8b0628b0288c5377",
+  "sources_sha256": "18c996db11e0e03c3270b240e7a88f673049b89efec2ace333383372f7496a59"
 }

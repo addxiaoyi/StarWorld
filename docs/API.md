@@ -22,6 +22,7 @@ world.city(starCoreCityId).thenAccept(result -> {
 | `regions(UUID,String,int)` | `Future<Optional<RegionAtlas.Page>>`；本城已登记地区、资源/文化/设施的 cursor 分页，空字符串开始，limit 为 1–64 |
 | `geography(UUID)` | `Future<Optional<RegionAtlas.Summary>>`；按不同地区只计一次的地形、剩余量/初始容量/恢复汇总 |
 | `life(UUID)` | `Future<Optional<LifeView>>`；累计生活文化、当前有限倍率、家具和活动会话 |
+| `lifeEvolutionCredit(UUID)` | `Future<Optional<LifeState.EvolutionCredit>>`；按真实生活动作 UUID 只读诊断原文化、已归集文化、最近归集周期和是否待处理；不存在返回空，不推进归集、不暴露玩家身份 |
 | `routes(UUID,int,int)` | `Future<List<Route>>`；有限分页查询城市相关商路 |
 | `routePlans(UUID,UUID,Mode,int,int)` | `Future<List<RoutePlan>>`；同方向已声明路线的只读成本排序（周期/距离/容量/节点数/启用状态、按城市每期维护及独立货单全程维护基线），limit为1–100，不授予通行或外交许可 |
 | `orders(UUID,int,int)` | `Future<List<Order>>`；有限分页查询城市相关托管货单 |

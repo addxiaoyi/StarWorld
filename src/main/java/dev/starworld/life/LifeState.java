@@ -9,6 +9,9 @@ public final class LifeState {
     public record ProfessionView(UUID player, String profession, long changedPeriod, long cultureContributed) {}
     public record ContributionReceipt(UUID id, UUID city, UUID actor, String kind, String source, long period,
                                       int culture, double productionBonus, long bonusUntilPeriod, boolean applied) {}
+    /** Read-only per-action evolution progress. A never-credited action has lastCreditedPeriod=-1. */
+    public record EvolutionCredit(UUID actionId, UUID cityId, UUID nationId, long originalCulture,
+                                  long creditedCulture, long lastCreditedPeriod, boolean pending) {}
     public record Decoration(UUID furnitureId, UUID metaEntityId, UUID city, UUID nation, UUID artisan,
                              String itemId, Site site, long registeredPeriod) {}
     public record ConcertView(UUID id, UUID city, UUID nation, UUID performer, Site site, long startPeriod, long startedMillis,

@@ -74,12 +74,14 @@ public final class LogisticsService {
         if(declaredNodes.size()>definitions.maxNodesPerCity()*2)throw new IllegalArgumentException("端点交通节点数量超过当前规划上限");
         Map<UUID,Node> nodesById=new HashMap<>();declaredNodes.forEach(n->nodesById.put(n.id(),n));
         List<Link> links=store.query("SELECT rn.route,rn.position,rn.node FROM logistics_route_node rn JOIN logistics_route r ON r.id=rn.route WHERE r.origin_city=? AND r.target_city=? AND r.mode=? ORDER BY rn.route,rn.position LIMIT ?",
-                row->new Link(uuid(row,"route"),row.getInt("position"),uuid(row,"node")),origin,target,mode.name(),Math.addExact(Math.multiplyExact(definitions.maxRoutesPerCity(),definitions.maxWaypoints()),1));
+                row->new Link(uuid(row,"route"),row.getInt("position"),uuid(row,"node")),origin,target,mode.name(),Math.addExact(Math.multiplyExact(definitions.maxRoutesPerCity(),64),1));
         Map<UUID,List<UUID>> paths=new HashMap<>();
-        for(Link link:links){List<UUID> path=paths.computeIfAbsent(link.route(),ignored->new ArrayList<>());if(link.position()!=path.size()||path.size()>=definitions.maxWaypoints())throw new IllegalArgumentException("声明路线节点序列超过当前规划上限或不连续");path.add(link.node());}
+        for(Link link:links){List<UUID> path=paths.computeIfAbsent(link.route(),ignored->new ArrayList<>());if(link.position()!=path.size()||path.size()>=64)throw new IllegalArgumentException("声明路线节点序列超过持久化安全上限或不连续");path.add(link.node());}
         List<RoutePlan> unsorted=new ArrayList<>();
         for(Header header:declared){List<UUID> path=paths.getOrDefault(header.id(),List.of());List<Node> nodes=new ArrayList<>();for(UUID id:path){Node node=nodesById.get(id);if(node==null)throw new IllegalArgumentException("声明路线引用了端点城市之外或缺失的节点");nodes.add(node);}
-            Metrics metrics=metrics(nodes,mode);Map<UUID,Map<String,Long>> upkeep=new HashMap<>(),journey=new HashMap<>();
+            Metrics metrics=metrics(nodes,mode,false);
+            if(nodes.size()>definitions.maxWaypoints()||metrics.periods()>definitions.maxTravelPeriods())continue;
+            Map<UUID,Map<String,Long>> upkeep=new HashMap<>(),journey=new HashMap<>();
             for(Node node:nodes){Map<String,Long> cityCost=upkeep.computeIfAbsent(node.cityId(),ignored->new TreeMap<>());scale(definitions.nodes().get(node.type()).maintenance(),node.level()).forEach((item,amount)->cityCost.merge(item,amount,Math::addExact));}
             upkeep.forEach((city,items)->{Map<String,Long> total=new TreeMap<>();items.forEach((item,amount)->total.put(item,Math.multiplyExact(amount,metrics.periods())));journey.put(city,total);});
             unsorted.add(new RoutePlan(header.id(),origin,target,mode,header.enabled(),metrics.distance(),metrics.periods(),metrics.capacity(),nodes.size(),upkeep,journey));
@@ -94,6 +96,13 @@ public final class LogisticsService {
         return plans.subList(Math.min(offset, plans.size()), end);
     }
     public Optional<Order> order(UUID id) throws SQLException { return store.query("SELECT * FROM logistics_order WHERE id=?", this::readOrder, id).stream().findFirst(); }
+    /** Current operational limits, never a substitute for live ownership/anchor/diplomacy authorization. */
+    public Optional<String> routeLimitation(Route route) {
+        Objects.requireNonNull(route);
+        if(route.nodes().size()>definitions.maxWaypoints())return Optional.of("商路节点数超过当前配置上限；原路线与托管保留，可停用、撤单或双方改道");
+        if(route.travelPeriods()>definitions.maxTravelPeriods())return Optional.of("商路超过当前配置的最大运输时长；原路线与托管保留，可停用、撤单或双方改道");
+        return Optional.empty();
+    }
     public List<Order> pendingOrders(int limit, int offset) throws SQLException {
         page(limit, offset); return store.query("SELECT * FROM logistics_order WHERE state IN ('OFFERED','IN_TRANSIT','PAUSED') ORDER BY last_period,created_period,id LIMIT ? OFFSET ?", this::readOrder, limit, offset);
     }
@@ -206,7 +215,7 @@ public final class LogisticsService {
     /** Read-only persisted counters; caller must capture live authority separately before any transport action. */
     public TransportStatus transportStatus(UUID routeId,long period)throws SQLException{
         if(period<0)throw new IllegalArgumentException("Negative transport period");
-        return store.tx(s->{Route route=route(routeId).orElseThrow();long used=count("SELECT COALESCE(MAX(used),0) FROM logistics_route_usage WHERE route=? AND period=?",routeId,period);long available=route.enabled()?Math.max(0,route.capacity()-used):0;List<NodeTraffic> traffic=new ArrayList<>();
+        return store.tx(s->{Route route=route(routeId).orElseThrow();long used=count("SELECT COALESCE(MAX(used),0) FROM logistics_route_usage WHERE route=? AND period=?",routeId,period);long available=route.enabled()&&routeLimitation(route).isEmpty()?Math.max(0,route.capacity()-used):0;List<NodeTraffic> traffic=new ArrayList<>();
             for(UUID id:route.nodes()){Node n=node(id).orElseThrow();long capacity=Math.multiplyExact(definitions.nodes().get(n.type()).capacity(),n.level()),nodeUsed=count("SELECT COALESCE(MAX(used),0) FROM logistics_node_usage WHERE node=? AND period=?",id,period);long[] maintenance=s.query("SELECT last_maintenance,maintained FROM logistics_node WHERE id=?",r->new long[]{r.getLong(1),r.getLong(2)},id).getFirst();long remaining=n.enabled()?Math.max(0,capacity-nodeUsed):0;traffic.add(new NodeTraffic(id,n.cityId(),n.type(),capacity,nodeUsed,remaining,maintenance[0],maintenance[0]==period&&maintenance[1]==1,n.enabled()));available=Math.min(available,remaining);}
             long minimum=available;List<UUID> bottlenecks=traffic.stream().filter(n->n.remaining()==minimum).map(NodeTraffic::nodeId).toList();Map<String,Integer> reasons=new LinkedHashMap<>();
             List<long[]> counts=s.query("SELECT state,COUNT(*) FROM logistics_order WHERE route=? AND state IN ('OFFERED','IN_TRANSIT','PAUSED') GROUP BY state",r->new long[]{r.getString(1).equals("PAUSED")?1:0,r.getLong(2)},routeId);int waiting=0,paused=0;for(long[] row:counts){waiting=Math.addExact(waiting,Math.toIntExact(row[1]));if(row[0]==1)paused=Math.toIntExact(row[1]);}
@@ -283,7 +292,7 @@ public final class LogisticsService {
     }
 
     public Route setRouteEnabled(UUID id, boolean enabled, AuthoritySnapshot auth) throws SQLException {
-        return store.tx(s -> { fresh(auth); Route r = route(id).orElseThrow(); manager(r.originCity(), auth); s.execute("UPDATE logistics_route SET enabled=? WHERE id=?", enabled ? 1 : 0, id); return route(id).orElseThrow(); });
+        return store.tx(s -> { fresh(auth); Route r = route(id).orElseThrow(); manager(r.originCity(), auth); if(enabled)requireRouteLimits(r);s.execute("UPDATE logistics_route SET enabled=? WHERE id=?", enabled ? 1 : 0, id); return route(id).orElseThrow(); });
     }
 
     public Order createOffer(UUID id, UUID routeId, Map<String, Long> offered, Map<String, Long> requested, AuthoritySnapshot auth) throws SQLException {
@@ -466,7 +475,8 @@ public final class LogisticsService {
     private UUID manager(UUID city, AuthoritySnapshot auth) throws SQLException { UUID nation = owner(city, auth); if (!auth.managedCities().contains(city)) throw new IllegalArgumentException("需要城市管理权限"); return nation; }
     private void requireTrade(UUID origin, UUID target, AuthoritySnapshot auth) { if (!auth.permittedTrades().contains(TradePair.of(origin, target))) throw new IllegalArgumentException("当前战争/外交状态不允许该商路贸易"); }
     private void requireNode(Node n, AuthoritySnapshot auth) throws SQLException { requireOwner(n.cityId(), n.nationId(), auth); if (!n.enabled() || !auth.validNodes().contains(n.id())) throw new IllegalArgumentException("领土/节点实体失效，运输暂停"); }
-    private void requireRoute(Route r, AuthoritySnapshot auth) throws SQLException { if (!r.enabled()) throw new IllegalArgumentException("商路已停用"); requireTrade(r.originCity(), r.targetCity(), auth); for (UUID id : r.nodes()) requireNode(node(id).orElseThrow(), auth); }
+    private void requireRouteLimits(Route route){routeLimitation(route).ifPresent(reason->{throw new IllegalArgumentException(reason);});}
+    private void requireRoute(Route r, AuthoritySnapshot auth) throws SQLException { if (!r.enabled()) throw new IllegalArgumentException("商路已停用");requireRouteLimits(r); requireTrade(r.originCity(), r.targetCity(), auth); for (UUID id : r.nodes()) requireNode(node(id).orElseThrow(), auth); }
 
     private boolean maintain(Node n, long period) throws SQLException {
         List<long[]> state = store.query("SELECT last_maintenance,maintained FROM logistics_node WHERE id=?", r -> new long[]{r.getLong(1), r.getLong(2)}, n.id());
@@ -499,7 +509,7 @@ public final class LogisticsService {
     private Node readNode(ResultSet r) throws SQLException { return new Node(uuid(r, "id"), uuid(r, "city"), uuid(r, "nation"), NodeType.valueOf(r.getString("type")), new Site(uuid(r, "world"), r.getString("world_name"), r.getInt("x"), r.getInt("y"), r.getInt("z")), r.getString("terrain"), r.getInt("level"), r.getInt("enabled") == 1); }
     private Route readRoute(ResultSet r) throws SQLException {
         UUID id = uuid(r, "id"); List<UUID> ids = store.query("SELECT node FROM logistics_route_node WHERE route=? ORDER BY position", row -> UUID.fromString(row.getString(1)), id);
-        List<Node> nodes = new ArrayList<>(); for (UUID nodeId : ids) nodes.add(node(nodeId).orElseThrow()); Mode mode = Mode.valueOf(r.getString("mode")); Metrics metrics = metrics(nodes, mode);
+        List<Node> nodes = new ArrayList<>(); for (UUID nodeId : ids) nodes.add(node(nodeId).orElseThrow()); Mode mode = Mode.valueOf(r.getString("mode")); Metrics metrics = metrics(nodes, mode,false);
         return new Route(id, uuid(r, "origin_city"), uuid(r, "target_city"), ids, mode, r.getInt("enabled") == 1, metrics.distance(), metrics.periods(), metrics.capacity());
     }
     private Order readOrder(ResultSet r) throws SQLException {
@@ -509,6 +519,9 @@ public final class LogisticsService {
     private static UUID uuid(ResultSet r, String column) throws SQLException { return UUID.fromString(r.getString(column)); }
     private record Metrics(double distance, int periods, long capacity) {}
     private Metrics metrics(List<Node> nodes, Mode mode) {
+        return metrics(nodes,mode,true);
+    }
+    private Metrics metrics(List<Node> nodes, Mode mode,boolean enforceLimit) {
         if (nodes.size() < 2) throw new IllegalArgumentException("商路至少需要两个节点");
         if (mode == Mode.SEA && nodes.stream().anyMatch(n -> n.type() != NodeType.PORT)) throw new IllegalArgumentException("海运路径必须由港口节点组成");
         double distance = 0, travel = 0; long capacity = Long.MAX_VALUE;
@@ -521,7 +534,11 @@ public final class LogisticsService {
             double speed = (definitions.nodes().get(a.type()).timeFactor() / (1 + .15 * (a.level() - 1)) + spec.timeFactor() / (1 + .15 * (n.level() - 1))) / 2;
             travel += segment * terrain * speed / definitions.blocksPerPeriod();
         }
-        if (!Double.isFinite(travel) || Math.ceil(travel) > definitions.maxTravelPeriods()) throw new IllegalArgumentException("商路超过配置的最大运输时长");
-        return new Metrics(distance, Math.max(1, (int) Math.ceil(travel)), capacity);
+        double rounded=Math.ceil(travel);
+        if(enforceLimit&&(!Double.isFinite(rounded)||rounded>definitions.maxTravelPeriods()))throw new IllegalArgumentException("商路超过配置的最大运输时长");
+        // Persisted paths must stay queryable for cancellation/recovery even after stricter configuration.
+        // Integer.MAX_VALUE is an unavailable display sentinel, never accepted by current maxTravelPeriods<=100000.
+        int periods=!Double.isFinite(rounded)||rounded>=Integer.MAX_VALUE?Integer.MAX_VALUE:Math.max(1,(int)rounded);
+        return new Metrics(distance,periods,capacity);
     }
 }

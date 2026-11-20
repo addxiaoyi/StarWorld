@@ -25,10 +25,12 @@ public final class SenLuoFixture extends JavaPlugin implements CommandExecutor {
     private final Gson json=new Gson();
     private WorldRuntime runtime; private CustomItems items; private LifePlatform platform; private Object furniture;
     private CivicSenLuoFixture civic;
+    private LifecycleSenLuoFixture lifecycle;
     @Override public void onEnable() {
         runtime=(WorldRuntime)Objects.requireNonNull(Bukkit.getServicesManager().load(StarWorldApi.class));
         items=new CustomItems(this);platform=new LifePlatform(this,new StarCoreBridge(this),items,runtime.expansion().orElseThrow().life().definitions());
         civic=new CivicSenLuoFixture(this,runtime,items,platform);
+        lifecycle=new LifecycleSenLuoFixture(this,runtime,items);
         Objects.requireNonNull(getCommand("swsenluo")).setExecutor(this);
         getLogger().warning("TEST ONLY: real CE item seeds, same-city membership and bounded test furniture placement.");
     }
@@ -38,6 +40,7 @@ public final class SenLuoFixture extends JavaPlugin implements CommandExecutor {
             if(args.length<2)throw new IllegalArgumentException("swsenluo <status|seed|snapshot|audience|furniture|destroy|hold|aim|unclaim|reclaim> <player> [listener]");
             Player p=Objects.requireNonNull(Bukkit.getPlayerExact(args[1]),"Connected player required");
             if(args[0].startsWith("civic-")){civic.execute(args,p);return true;}
+            if(args[0].startsWith("lifecycle-")){lifecycle.execute(args,p);return true;}
             switch(args[0]) {
                 case "status"->status(p);
                 case "seed"->seed(p);

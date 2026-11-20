@@ -4,6 +4,25 @@
 
 审计日期：2026-11-19（Asia/Shanghai）。审计方式：读取 Git 远端当前代码、README、Gradle 定义、插件描述符、公开 API、事件触发点、状态与调度代码。本审计不把上游 README 的历史验收范围扩大为 StarWorld 的运行验收。
 
+## 1.1.0 上游契约复审：2026-11-20
+
+截至 **2026-11-20 14:23:28 UTC（22:23:28 Asia/Shanghai）**，通过 GitHub 提交接口复核，森罗主线 HEAD 为 `cecc87d616a577b8bf3bccaff1d812619e87c59f`（`Freeze village smoke inputs and pin CraftEngine source provenance`，提交时间 14:17:24 UTC）。相对上次审计 `7b8ef80d19e4f6e1a2703016e3ce898bcdd23f66` 新增 5 个提交、48 个变更路径。审计只读取明确提交的源码，没有使用正在开发的上游未提交文件，没有构建、启动或停止任何 JVM，也没有替换已验收候选。
+
+本轮逐项对照已运行候选生产基线 `3e774d00567deb9cb65eee8da6de8a65254e5b8e`：完整 `series/` tree 均为 `42f706f51fabb2007f75188b4cb0710371747c76`；`src/main/java/net/kaleidoscope/cookery/api/` tree 均为 `cf00a3239fb61bdfe60131d290b0c1cdfaef007e`。因此 Cookery 公共事件及 Tavern、Deco、Music 等系列源码在这两个提交之间没有变化。以下新增类不能仅因名称含有“门”“事务”或“Folia”就视为可用于城市结算的运行合同。
+
+| 新增公开类型或既有边界 | 核实的签名与作用 | 对 StarWorld 的结论 |
+| --- | --- | --- |
+| [`CeResourceReadGate`](https://github.com/addxiaoyi/SenLuo_Plugin/blob/cecc87d616a577b8bf3bccaff1d812619e87c59f/src/main/java/net/kaleidoscope/cookery/plugin/CeResourceReadGate.java) | 构造接受 CE `ResourceOperationCoordinator` 与 `BooleanSupplier`；`publish(Object,BooleanSupplier)`、`tryEnter()`、`invalidate()` 和可关闭 `Guard` 提供同步读者共享 lease | 这是独立原语；提交源码中生产调用点仍只有类自身，没有已注册的公共 gate 实例或完整生产接入。它不排斥绕过 CE coordinator 的 disable、生成及其他 writer，不能认证整体重载或 Folia 安全 |
+| [`VillageColdStartWindow`](https://github.com/addxiaoyi/SenLuo_Plugin/blob/cecc87d616a577b8bf3bccaff1d812619e87c59f/src/main/java/net/kaleidoscope/cookery/worldgen/VillageColdStartWindow.java) | `open(String)` 仅接受 1.21.11；持有原生 registry/template manager 的窄初始启动所有权 | 类明确为 dormant，未提供生产任务注册；仅 CE lease 不构成生成或在线重载屏障。StarWorld 普通在线城市操作不具备该冷启动窗口 |
+| [`VillagePublisher`](https://github.com/addxiaoyi/SenLuo_Plugin/blob/cecc87d616a577b8bf3bccaff1d812619e87c59f/src/main/java/net/kaleidoscope/cookery/worldgen/VillagePublisher.java) | `forMinecraft(String)` 和带原生 roots、准备结果及 `ExclusionScope` 的 `stage(...)`，可附加只读验证回调 | 提供的是休眠原生发布/回滚适配，不是国家领地、设施建成或玩家生产回执；调用方仍须证明完整排他所有权，不能直接用于在线地区生成 |
+| Cookery `PotExtractDishEvent` / `MillstoneGrindCompleteEvent` | 仍是带可修改物品/位置、可取消的交付前通知；后者的 player 可为空 | 没有新增持久事务 ID 或交付后完成查询，不自动记城市产出 |
+| Tavern `DrinkCreatedEvent` | 仍仅提供 `drinkId()`、克隆后的 `result()` 和 `ingredients()` | 没有玩家、位置或业务凭据，不能安全推定城市归属与唯一产出 |
+| Music `MusicPlugin` | 播放 token、`startSong` 与 `stopSong` 仍为私有实现；自然结束也进入私有停止逻辑 | 没有新增公开完成事件/服务，不把 `/kmusic` 当作城市节庆完成证据 |
+
+新变化集中于原生镰刀消耗/取消、村庄池准备、冷启动发布/回滚诊断和候选冻结。新增 `tools/village_publication_candidate.py` 只冻结/检查诊断输入及关联回滚收据，并明确不认证整轮服务器；不能将它生成清单当作已完成的世界生成或热重载验收。官方 CE 源码身份与屏障缺口另见上游[固定研究记录](https://github.com/addxiaoyi/SenLuo_Plugin/blob/cecc87d616a577b8bf3bccaff1d812619e87c59f/docs/research/craftengine-resource-barrier-source-2026-11-20.md)。
+
+目前可确认既有 CE 精确 ID 与公共接口保持源码兼容，不能据此宣称最新 Cookery 二进制已通过 StarWorld 联调。与已运行 `3e774d0…` 相比，`CookeryFoodItems` 的原生药水效果 ambient 编码曾改变；如更换候选，仍须固定新 JAR/厨房包来源并重跑真实栈识别、`isSimilar`、存取及宴会消耗。1.1 的存档/结算修复不自动更换此运行候选，也不自动开启休眠村庄代码或解除 Folia 门禁。
+
 ## 1.0.0 最新源码审计与运行基线
 
 2026-11-20 通过 GitHub 远端确认 `7b8ef80d19e4f6e1a2703016e3ce898bcdd23f66` 为当时最新 HEAD。最后一次提交只整理功能清单；与 0.4 审计的 `3e774d00567deb9cb65eee8da6de8a65254e5b8e` 完整比较，则有 10 个提交、50 个变更路径。基线仍为 Paper 1.21.11、Java 21、CraftEngine 26.9.1。根 Gradle 增加 Mojang 测试运行依赖，系列插件源码、描述符及 Cookery 公共 API 没有变化。

@@ -81,4 +81,61 @@ class ResourceOutboxTest {
             assertThrows(SQLException.class,()->o.enqueue("wrong-nation",city.cityId(),UUID.randomUUID(),COST,RESOURCES,"mayor"));
             assertThrows(SQLException.class,()->o.enqueue("too-costly",city.cityId(),city.nationId(),Map.of("minecraft:iron_ingot",21L),RESOURCES,"mayor"));assertTrue(o.entries(10).isEmpty());assertEquals(20,s.stock(city.cityId()).get("minecraft:iron_ingot"));}
     }
+
+    @Test void retryBacklogCannotStarveNewExportsEvenAfterRestart()throws Exception {
+        Path path=temp.resolve("fair-backlog.db");String newest;
+        try(WorldStore s=new WorldStore(path,1000)){
+            seed(s);s.stock(city.cityId(),"minecraft:iron_ingot",1000);ResourceOutbox outbox=new ResourceOutbox(s);
+            for(int i=0;i<130;i++)outbox.enqueue("old/"+i,city.cityId(),city.nationId(),Map.of("minecraft:iron_ingot",1L),RESOURCES,"mayor");
+            s.execute("UPDATE resource_outbox SET state='RETRY',attempts=8,next_attempt=0,created=1");
+            newest=outbox.enqueue("new/available",city.cityId(),city.nationId(),Map.of("minecraft:iron_ingot",1L),RESOURCES,"mayor").transactionId();
+            s.execute("UPDATE resource_outbox SET created=2 WHERE id=?",newest);
+        }
+        Set<String> seen=new HashSet<>();
+        for(int phase=0;phase<2;phase++)try(WorldStore s=new WorldStore(path,1000)){
+            ResourceOutbox outbox=new ResourceOutbox(s);
+            for(int tick=phase*70;tick<(phase+1)*70;tick++){
+                long now=tick*2000L;List<ResourceOutbox.Dispatch> due=outbox.leaseDue(1,now);
+                if(due.isEmpty())continue;ResourceOutbox.Dispatch dispatch=due.getFirst();seen.add(dispatch.entry().transactionId());
+                boolean available=dispatch.entry().transactionId().equals(newest);
+                Delivery result=new Delivery(dispatch.entry().transactionId(),available?DeliveryStatus.CONFIRMED:DeliveryStatus.RETRY,available?receipt(dispatch.entry().request()):null,"deterministic backlog");
+                assertTrue(outbox.finish(dispatch,result,now));
+            }
+            assertEquals(869,s.stock(city.cityId()).get("minecraft:iron_ingot"));
+            assertEquals(newest,outbox.enqueue("new/available",city.cityId(),city.nationId(),Map.of("minecraft:iron_ingot",1L),RESOURCES,"mayor").transactionId());
+            if(phase==1){assertEquals("ACKED",outbox.find(newest).orElseThrow().state());assertEquals(131,seen.size());}
+        }
+    }
+
+
+    @Test void steadyNewExportsCannotStarveRecoverableRetryAcrossRestart()throws Exception{
+        Path path=temp.resolve("steady-stream.db");String old;
+        try(WorldStore s=new WorldStore(path,1000)){
+            seed(s);s.stock(city.cityId(),"minecraft:iron_ingot",1000);ResourceOutbox outbox=new ResourceOutbox(s);old=outbox.enqueue("recoverable",city.cityId(),city.nationId(),Map.of("minecraft:iron_ingot",1L),RESOURCES,"mayor").transactionId();
+            ResourceOutbox.Dispatch first=outbox.leaseDue(1,0).getFirst();outbox.finish(first,new Delivery(old,DeliveryStatus.RETRY,null,"temporary outage"),0);assertEquals(2000,outbox.find(old).orElseThrow().nextAttempt());
+        }
+        int recoveredAt=-1;
+        for(int phase=0;phase<2;phase++)try(WorldStore s=new WorldStore(path,1000)){
+            ResourceOutbox outbox=new ResourceOutbox(s);
+            for(int tick=phase*6+1;tick<=phase*6+6;tick++){
+                ResourceOutbox.Entry fresh=outbox.enqueue("incoming/"+tick,city.cityId(),city.nationId(),Map.of("minecraft:iron_ingot",1L),RESOURCES,"mayor");s.execute("UPDATE resource_outbox SET created=? WHERE id=?",tick,fresh.transactionId());
+                long now=tick*2000L;List<ResourceOutbox.Dispatch> dispatches=outbox.leaseDue(1,now);assertEquals(1,dispatches.size());ResourceOutbox.Dispatch next=dispatches.getFirst();
+                if(next.entry().transactionId().equals(old)){recoveredAt=tick;assertEquals(2,next.entry().attempts());}
+                assertTrue(outbox.finish(next,new Delivery(next.entry().transactionId(),DeliveryStatus.CONFIRMED,receipt(next.entry().request()),"available"),now));
+            }
+        }
+        try(WorldStore s=new WorldStore(path,1000)){
+            ResourceOutbox outbox=new ResourceOutbox(s);assertTrue(recoveredAt>=1&&recoveredAt<=2,"Recoverable retry gets its lane while new work arrives every tick");assertEquals("ACKED",outbox.find(old).orElseThrow().state());assertEquals(987,s.stock(city.cityId()).get("minecraft:iron_ingot"));assertEquals(1,s.query("SELECT COUNT(*) FROM resource_outbox WHERE state<>'ACKED'",r->r.getInt(1)).getFirst());
+        }
+    }
+    @Test void failedLeaseRollsBackCursorAndEveryRowThenBatchLimitStillHolds()throws Exception{
+        try(WorldStore s=new WorldStore(temp.resolve("cursor-rollback.db"),1000)){
+            seed(s);ResourceOutbox outbox=new ResourceOutbox(s);String old=outbox.enqueue("old-retry",city.cityId(),city.nationId(),Map.of("minecraft:iron_ingot",1L),RESOURCES,"mayor").transactionId();ResourceOutbox.Dispatch first=outbox.leaseDue(1,0).getFirst();outbox.finish(first,new Delivery(old,DeliveryStatus.RETRY,null,"later"),0);
+            for(int i=0;i<4;i++)outbox.enqueue("new-"+i,city.cityId(),city.nationId(),Map.of("minecraft:iron_ingot",1L),RESOURCES,"mayor");String before=s.query("SELECT next_lane FROM starworld_dispatch_cursor WHERE queue='starworld:resource-export'",r->r.getString(1)).getFirst();
+            s.execute("CREATE TRIGGER reject_resource_lease BEFORE UPDATE ON resource_outbox WHEN NEW.state='IN_FLIGHT' BEGIN SELECT RAISE(ABORT,'lease rollback'); END");assertThrows(SQLException.class,()->outbox.leaseDue(1,2000));
+            assertEquals(before,s.query("SELECT next_lane FROM starworld_dispatch_cursor WHERE queue='starworld:resource-export'",r->r.getString(1)).getFirst());assertEquals("RETRY",outbox.find(old).orElseThrow().state());assertEquals(1,outbox.find(old).orElseThrow().attempts());assertEquals(0,s.query("SELECT COUNT(*) FROM resource_outbox WHERE state='IN_FLIGHT'",r->r.getInt(1)).getFirst());
+            s.execute("DROP TRIGGER reject_resource_lease");List<ResourceOutbox.Dispatch> batch=outbox.leaseDue(3,2000);assertEquals(3,batch.size());assertEquals(old,batch.getFirst().entry().transactionId());assertEquals(3,s.query("SELECT COUNT(*) FROM resource_outbox WHERE state='IN_FLIGHT'",r->r.getInt(1)).getFirst());assertEquals(2,s.query("SELECT COUNT(*) FROM resource_outbox WHERE state='PENDING'",r->r.getInt(1)).getFirst());
+        }
+    }
+
 }

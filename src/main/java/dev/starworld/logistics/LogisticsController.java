@@ -35,6 +35,7 @@ public final class LogisticsController {
     private record Context(List<Node> nodes, List<Route> routes, List<Order> orders) {
         Context { nodes = List.copyOf(nodes); routes = List.copyOf(routes); orders = List.copyOf(orders); }
     }
+    private record RouteStatus(TransportStatus transport, Optional<String> limitation) {}
     @FunctionalInterface private interface Action<T> { T run(AuthoritySnapshot auth) throws Exception; }
 
     /** Main thread only. Every route pair is checked against both current nations' war and relation data. */
@@ -142,7 +143,7 @@ public final class LogisticsController {
             }
             case "list" -> {
                 require(args.length <= 3, "/sw route list [页码]"); CoreCity city = current(p); int offset = offset(args, 2);
-                runtime.reply(p, runtime.async(() -> service.cityRoutes(city.cityId(), 10, offset)), routes -> routes.forEach(r -> p.sendMessage("§e" + r.id() + " " + r.originCity() + " → " + r.targetCity() + " " + r.mode() + " " + r.travelPeriods() + "周期/容量" + r.capacity() + " " + (r.enabled() ? "启用" : "停用"))));
+                runtime.reply(p, runtime.async(() -> service.cityRoutes(city.cityId(), 10, offset)), routes -> routes.forEach(r -> p.sendMessage("§e" + r.id() + " " + r.originCity() + " → " + r.targetCity() + " " + r.mode() + " " + r.travelPeriods() + "周期/容量" + r.capacity() + " " + (r.enabled() ? "启用" : "停用") + service.routeLimitation(r).map(reason -> " · 暂停：" + reason).orElse(""))));
             }
             case "compare" -> {
                 require(args.length >= 3 && args.length <= 5, "/sw route compare <目标城市UUID> [land|sea] [页码]");
@@ -151,7 +152,7 @@ public final class LogisticsController {
                 int page = args.length > 4 ? Integer.parseInt(args[4]) : 1; require(page >= 1 && page <= 100000, "页码范围为1至100000");
                 runtime.reply(p, runtime.async(() -> service.compareRoutes(city.cityId(), target, mode, 10, (page - 1) * 10)), plans -> {
                     p.sendMessage("§e路线成本规划（只读声明路线；不授予通行权限）");
-                    if (plans.isEmpty()) p.sendMessage("§7没有符合方向和运输模式的已声明路线");
+                    if (plans.isEmpty()) p.sendMessage("§7没有符合方向、运输模式和当前时长/节点上限的已声明路线；受限原路线可在 list/status 查询");
                     for (int i = 0; i < plans.size(); i++) { RoutePlan r = plans.get(i); p.sendMessage("§f" + (i + 1) + ". " + r.routeId() + " " + r.travelPeriods() + "周期 · 距离" + String.format(Locale.ROOT, "%.1f", r.distanceBlocks()) + " · 容量" + r.capacity() + " · 节点" + r.nodeCount() + " · " + (r.enabled() ? "启用" : "停用")); p.sendMessage("§7各城每期维护 " + r.maintenancePerPeriod() + "；独立货单全程维护基线 " + r.standaloneJourneyMaintenance()); }
                 });
             }
@@ -161,7 +162,8 @@ public final class LogisticsController {
             }
             case "status" -> {
                 require(args.length==3,"/sw route status <商路UUID>");UUID id=UUID.fromString(args[2]);CoreCity city=current(p);long period=runtime.currentPeriod();
-                runtime.reply(p,runtime.async(()->{Route route=service.route(id).orElseThrow();require(route.originCity().equals(city.cityId())||route.targetCity().equals(city.cityId()),"仅商路双方城市可查询");return service.transportStatus(id,period);}),status->{
+                runtime.reply(p,runtime.async(()->{Route route=service.route(id).orElseThrow();require(route.originCity().equals(city.cityId())||route.targetCity().equals(city.cityId()),"仅商路双方城市可查询");return new RouteStatus(service.transportStatus(id,period),service.routeLimitation(route));}),result->{
+                    TransportStatus status=result.transport();result.limitation().ifPresent(reason->p.sendMessage("§c运输暂停："+reason));
                     p.sendMessage("§e持久运力观察 · 周期"+status.period()+" · 剩余"+status.available()+"/"+status.capacity()+" · 待运"+status.waitingOrders()+" 暂停"+status.pausedOrders());
                     p.sendMessage("§7世界锚点与外交仍以结算现场复核为准；瓶颈 "+status.bottlenecks());
                     for(NodeTraffic node:status.nodes())p.sendMessage("§7"+node.nodeId()+" "+node.type()+" 可用"+node.remaining()+"/"+node.capacity()+" 本期维护"+(node.maintenancePaid()?"已支付":"未支付"));
@@ -247,12 +249,7 @@ public final class LogisticsController {
     private <T> void run(Player p, Captured captured, Action<T> action, Consumer<T> success) { runtime.reply(p, ensure(captured).thenCompose(ignored -> runtime.async(() -> action.run(captured.authority()))), success); }
     private CompletableFuture<Void> ensure(Captured captured) { List<CompletableFuture<?>> futures = new ArrayList<>(); for (CoreCity city : captured.cities()) futures.add(runtime.open(city)); return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)); }
     private <T> CompletableFuture<T> onMain(Callable<T> task) {
-        CompletableFuture<T> result = new CompletableFuture<>();
-        Runnable work = () -> { try { result.complete(task.call()); } catch (Throwable failure) { result.completeExceptionally(failure); } };
-        if (!plugin.isEnabled()) result.completeExceptionally(new IllegalStateException("StarWorld stopping"));
-        else if (plugin.getServer().isPrimaryThread()) work.run();
-        else try { plugin.getServer().getScheduler().runTask(plugin, work); } catch (RuntimeException failure) { result.completeExceptionally(failure); }
-        return result;
+        return runtime.globalFuture(task);
     }
     private CoreCity current(Player p) { return runtime.playerCity(p).orElseThrow(() -> new IllegalArgumentException("请先在 StarCore 加入城市")); }
     private static void require(boolean valid, String message) { if (!valid) throw new IllegalArgumentException(message); }

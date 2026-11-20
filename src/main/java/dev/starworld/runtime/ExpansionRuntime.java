@@ -118,7 +118,7 @@ public final class ExpansionRuntime {
     public LifeService life(){return life;}
     public Set<String> itemIds(){return itemIds;}
     public void start(){combat.register();}
-    public void close(){marketplace.close();combat.close();}
+    public void close(){scheduler.close();marketplace.close();combat.close();}
     public Map<String,String> status(){Map<String,String> status=new LinkedHashMap<>(lifePlatform.status());status.put("Logistics","节点、托管、改道确认、运力瓶颈与战争封锁已启用");status.put("Market",marketplace.status());status.put("Disaster governance","实物救灾、次期缓解与有界地区恢复已启用；/sw disaster options");status.put("Public works","起建、逐期施工、维护与下期运行已启用；/sw governance");status.put("Civic needs","社区聚餐/受控演奏需真实已提交凭据；公共空间需不同真实家具维护，CE家具API不可用时暂停该需求，登记不代替维护");status.put("Core exports","幂等国家资源事务 + 持久 outbox");status.put("Core combat",combat.status());return Map.copyOf(status);}
     public Optional<NationSnapshot> nation(UUID id){return extensions.snapshot(id,Set.of());}
     /** The same main-thread live capture used by normal settlement; caller-supplied IDs cannot manufacture valid anchors. */
@@ -164,9 +164,9 @@ public final class ExpansionRuntime {
     public void tick(){
         if(!ticking.compareAndSet(false,true))return;
         CompletableFuture<?> trades=transport.tickFuture();
-        CompletableFuture<?> resources=runtime.async(()->outbox.leaseDue(10,System.currentTimeMillis())).thenCompose(dispatches->{CompletableFuture<Void> done=new CompletableFuture<>();scheduler.global(()->{
-            try{List<CompletableFuture<?>> jobs=new ArrayList<>();for(var dispatch:dispatches){Delivery result=extensions.deliver(dispatch.entry().request());jobs.add(runtime.async(()->outbox.finish(dispatch,result,System.currentTimeMillis())));}CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new)).whenComplete((v,e)->{if(e==null)done.complete(null);else done.completeExceptionally(e);});}catch(Exception e){done.completeExceptionally(e);}
-        });return done;});
+        CompletableFuture<?> resources=runtime.async(()->outbox.leaseDue(10,System.currentTimeMillis())).thenCompose(dispatches->runtime.globalFuture(()->{
+            List<CompletableFuture<?>> jobs=new ArrayList<>();for(var dispatch:dispatches){Delivery result=extensions.deliver(dispatch.entry().request());jobs.add(runtime.async(()->outbox.finish(dispatch,result,System.currentTimeMillis())));}return CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new));
+        }).thenCompose(future->future));
         CompletableFuture<?> decorations=settleDecorations();
         CompletableFuture<?> payments=marketplace.tickFuture();
         CompletableFuture<?> storage=++maintenanceTick%30==0?runtime.async(()->lastMaintenance=maintenance.sweep(runtime.currentPeriod(),System.currentTimeMillis())):CompletableFuture.completedFuture(null);
@@ -174,20 +174,19 @@ public final class ExpansionRuntime {
     }
     private record Exchanges(List<dev.starworld.logistics.LogisticsState.TradeReceipt> receipts,Map<UUID,CityView> cities){}
     private CompletableFuture<Void> spreadCulture(){
-        return runtime.async(()->{long cursor=store.query("SELECT value FROM extension_meta WHERE key='culture-trade-cursor'",r->Long.parseLong(r.getString(1))).stream().findFirst().orElse(0L);var receipts=logistics.completedAfter(cursor,20);Map<UUID,CityView> cities=new HashMap<>();for(var r:receipts)for(UUID id:List.of(r.originCity(),r.targetCity()))if(!cities.containsKey(id))store.view(id).ifPresent(c->cities.put(id,c));return new Exchanges(receipts,Map.copyOf(cities));}).thenCompose(batch->{CompletableFuture<Void> done=new CompletableFuture<>();scheduler.global(()->{
-            try{Map<UUID,Set<String>> regions=new HashMap<>();Map<UUID,UUID> nations=new HashMap<>();for(var view:batch.cities().values()){Optional<CoreCity> city=core.city(view.id());if(city.isEmpty()||!city.get().nationId().equals(view.nationId()))continue;Set<UUID> valid=runtime.verifiedBuildings(view);Set<String> keys=new HashSet<>();for(Building b:view.buildings())if(valid.contains(b.id()))keys.add(b.site().regionKey());regions.put(view.id(),Set.copyOf(keys));nations.put(view.id(),city.get().nationId());}
-                runtime.async(()->store.tx(s->{for(var receipt:batch.receipts()){
+        return runtime.async(()->{long cursor=store.query("SELECT value FROM extension_meta WHERE key='culture-trade-cursor'",r->Long.parseLong(r.getString(1))).stream().findFirst().orElse(0L);var receipts=logistics.completedAfter(cursor,20);Map<UUID,CityView> cities=new HashMap<>();for(var r:receipts)for(UUID id:List.of(r.originCity(),r.targetCity()))if(!cities.containsKey(id))store.view(id).ifPresent(c->cities.put(id,c));return new Exchanges(receipts,Map.copyOf(cities));}).thenCompose(batch->runtime.globalFuture(()->{
+            Map<UUID,Set<String>> regions=new HashMap<>();Map<UUID,UUID> nations=new HashMap<>();for(var view:batch.cities().values()){Optional<CoreCity> city=core.city(view.id());if(city.isEmpty()||!city.get().nationId().equals(view.nationId()))continue;Set<UUID> valid=runtime.verifiedBuildings(view);Set<String> keys=new HashSet<>();for(Building b:view.buildings())if(valid.contains(b.id()))keys.add(b.site().regionKey());regions.put(view.id(),Set.copyOf(keys));nations.put(view.id(),city.get().nationId());}
+                return runtime.async(()->store.tx(s->{for(var receipt:batch.receipts()){
                     if(receipt.originNation().equals(nations.get(receipt.originCity()))&&receipt.targetNation().equals(nations.get(receipt.targetCity())))evolution.exchange(receipt.orderId().toString(),receipt.originCity(),receipt.targetCity(),receipt.period(),regions.getOrDefault(receipt.originCity(),Set.of()),regions.getOrDefault(receipt.targetCity(),Set.of()));
                     s.execute("INSERT INTO extension_meta(key,value) VALUES('culture-trade-cursor',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",Long.toString(receipt.sequence()));
-                }return true;})).whenComplete((v,e)->{if(e==null)done.complete(null);else done.completeExceptionally(e);});
-            }catch(Exception e){done.completeExceptionally(e);}
-        });return done;});
+                }return true;})).thenAccept(ignored->{});
+        }).thenCompose(future->future));
     }
     private record Decorations(UUID city,List<Decoration> decorations){}
     private CompletableFuture<Void> settleDecorations(){
-        return runtime.async(()->{List<UUID> cities=store.cities(20,decorationCursor);if(cities.isEmpty()){decorationCursor=0;cities=store.cities(20,0);}decorationCursor+=cities.size();List<Decorations> batch=new ArrayList<>();for(UUID city:cities)batch.add(new Decorations(city,life.decorations(city)));return batch;}).thenCompose(batch->{CompletableFuture<Void> result=new CompletableFuture<>();scheduler.global(()->{
-            try{List<CompletableFuture<?>> jobs=new ArrayList<>();long period=runtime.currentPeriod();for(var row:batch){Optional<CoreCity> city=core.city(row.city());if(city.isEmpty())continue;Set<UUID> valid=new HashSet<>();for(Decoration d:row.decorations())if(d.nation().equals(city.get().nationId())&&core.ownsSite(row.city(),d.site())&&lifePlatform.validateDecoration(d))valid.add(d.furnitureId());jobs.add(runtime.async(()->life.settleDecorations(city.get(),period,valid)));}CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new)).whenComplete((v,e)->{if(e==null)result.complete(null);else result.completeExceptionally(e);});}catch(Exception e){result.completeExceptionally(e);}
-        });return result;});
+        return runtime.async(()->{List<UUID> cities=store.cities(20,decorationCursor);if(cities.isEmpty()){decorationCursor=0;cities=store.cities(20,0);}decorationCursor+=cities.size();List<Decorations> batch=new ArrayList<>();for(UUID city:cities)batch.add(new Decorations(city,life.decorations(city)));return batch;}).thenCompose(batch->runtime.globalFuture(()->{
+            List<CompletableFuture<?>> jobs=new ArrayList<>();long period=runtime.currentPeriod();for(var row:batch){Optional<CoreCity> city=core.city(row.city());if(city.isEmpty())continue;Set<UUID> valid=new HashSet<>();for(Decoration d:row.decorations())if(d.nation().equals(city.get().nationId())&&core.ownsSite(row.city(),d.site())&&lifePlatform.validateDecoration(d))valid.add(d.furnitureId());jobs.add(runtime.async(()->life.settleDecorations(city.get(),period,valid)));}return CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new));
+        }).thenCompose(future->future));
     }
     public boolean command(Player p,String[] args){
         if(lifestyle.execute(p,args)||transport.execute(p,args)||marketplace.execute(p,args)||disasterGovernance.execute(p,args)||publicWorks.execute(p,args)||civicNeeds.execute(p,args))return true;

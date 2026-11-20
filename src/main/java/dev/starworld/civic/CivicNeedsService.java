@@ -18,7 +18,8 @@ public final class CivicNeedsService {
         atomic(s -> {
             for(String table:List.of("life_schema","life_action","life_concert","evolution_schema","evolution_city"))
                 if(s.query("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",r->1,table).isEmpty())throw new IllegalStateException("Initialize LifeService and EvolutionService before civic needs");
-            if(s.query("SELECT version FROM life_schema WHERE id=1",r->r.getInt(1)).getFirst()!=1||s.query("SELECT version FROM evolution_schema WHERE id=1",r->r.getInt(1)).getFirst()!=1)throw new IllegalStateException("Unsupported life/evolution schema");
+            int lifeVersion=s.query("SELECT version FROM life_schema WHERE id=1",r->r.getInt(1)).getFirst();
+            if(lifeVersion<1||lifeVersion>2||s.query("SELECT version FROM evolution_schema WHERE id=1",r->r.getInt(1)).getFirst()!=1)throw new IllegalStateException("Unsupported life/evolution schema");
             s.execute("CREATE TABLE IF NOT EXISTS civic_schema(id INTEGER PRIMARY KEY CHECK(id=1),version INTEGER NOT NULL)");
             var versions=s.query("SELECT version FROM civic_schema WHERE id=1",r->r.getInt(1));if(!versions.isEmpty()&&(versions.getFirst()<1||versions.getFirst()>2))throw new IllegalStateException("Unsupported civic schema; preserve database and upgrade plugin");
             s.execute("CREATE TABLE IF NOT EXISTS civic_clock(city TEXT PRIMARY KEY REFERENCES city_state(id),period INTEGER NOT NULL CHECK(period>=0))");

@@ -2,6 +2,7 @@ package dev.starworld.integration;
 
 import dev.starworld.integration.CoreExtensionPort.*;
 import dev.starworld.persistence.WorldStore;
+import dev.starworld.persistence.FairDispatchQueue;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -12,6 +13,7 @@ public final class ResourceOutbox {
     public static final long LEASE_MILLIS=30_000;
     private final WorldStore store;
     private final String namespace;
+    private static final String DISPATCH_QUEUE="starworld:resource-export";
     public record Entry(String transactionId, String businessKey, UUID cityId, UUID nationId,
                         Map<String,Long> localCost, Map<String,Long> resources, String description,
                         String state, int attempts, long nextAttempt, String lastError) {
@@ -22,10 +24,12 @@ public final class ResourceOutbox {
     public ResourceOutbox(WorldStore store)throws SQLException {
         this.store=Objects.requireNonNull(store);
         namespace=store.tx(s->{
+            FairDispatchQueue.initialize(s,DISPATCH_QUEUE);
             s.execute("CREATE TABLE IF NOT EXISTS extension_meta (key TEXT PRIMARY KEY,value TEXT NOT NULL)");
             s.execute("INSERT OR IGNORE INTO extension_meta(key,value) VALUES('resource-outbox-namespace',?)",UUID.randomUUID().toString());
             s.execute("CREATE TABLE IF NOT EXISTS resource_outbox (id TEXT PRIMARY KEY,business_key TEXT NOT NULL UNIQUE,city TEXT NOT NULL REFERENCES city_state(id),nation TEXT NOT NULL,local_cost TEXT NOT NULL,resources TEXT NOT NULL,description TEXT NOT NULL,state TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,next_attempt INTEGER NOT NULL DEFAULT 0,lease TEXT,last_error TEXT NOT NULL DEFAULT '',created INTEGER NOT NULL,updated INTEGER NOT NULL)");
             s.execute("CREATE INDEX IF NOT EXISTS resource_outbox_due ON resource_outbox(state,next_attempt)");
+            s.execute("CREATE INDEX IF NOT EXISTS resource_outbox_fair_due ON resource_outbox(next_attempt,created,id)");
             s.execute("CREATE INDEX IF NOT EXISTS resource_outbox_city ON resource_outbox(city,created)");
             return s.query("SELECT value FROM extension_meta WHERE key='resource-outbox-namespace'",r->r.getString(1)).getFirst();
         });
@@ -62,7 +66,9 @@ public final class ResourceOutbox {
     public List<Dispatch> leaseDue(int limit,long now)throws SQLException {
         if(limit<1 || limit>100 || now<0)throw new IllegalArgumentException("Invalid outbox page");
         return store.tx(s->{
-            List<String> ids=s.query("SELECT id FROM resource_outbox WHERE (state IN ('PENDING','RETRY') OR state='IN_FLIGHT') AND next_attempt<=? ORDER BY created,id LIMIT ?",r->r.getString(1),now,limit);
+            List<String> fresh=s.query("SELECT id FROM resource_outbox WHERE state IN ('PENDING','RETRY','IN_FLIGHT') AND next_attempt=0 ORDER BY created,id LIMIT ?",r->r.getString(1),limit);
+            List<String> due=s.query("SELECT id FROM resource_outbox WHERE state IN ('PENDING','RETRY','IN_FLIGHT') AND next_attempt>0 AND next_attempt<=? ORDER BY next_attempt,created,id LIMIT ?",r->r.getString(1),now,limit);
+            List<String> ids=FairDispatchQueue.select(s,DISPATCH_QUEUE,fresh,due,limit);
             List<Dispatch> result=new ArrayList<>();
             for(String id:ids){String token=UUID.randomUUID().toString();s.execute("UPDATE resource_outbox SET state='IN_FLIGHT',lease=?,attempts=attempts+1,next_attempt=?,updated=? WHERE id=?",token,Math.addExact(now,LEASE_MILLIS),now,id);result.add(new Dispatch(find(id).orElseThrow(),token));}
             return List.copyOf(result);

@@ -7,3 +7,5 @@ target/
 *.db-wal
 *.db-shm
 *.log
+__pycache__/
+/UNIT-EVIDENCE.json

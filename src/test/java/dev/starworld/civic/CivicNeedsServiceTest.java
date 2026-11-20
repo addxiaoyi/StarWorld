@@ -149,7 +149,7 @@ class CivicNeedsServiceTest {
     @Test void uniqueSpentActionTombstoneSurvivesLifeHistoryRemovalAndUuidRecreation() throws Exception {
         try(Fixture f=new Fixture("tombstone")) {
             f.seed();Request first=f.need("community_meals",10);UUID action=f.feast(11).id();f.civic.complete(first.id(),city,11,"mayor");
-            f.store.execute("DELETE FROM life_action WHERE id=?",action);Request second=f.need("community_meals",24);
+            f.store.execute("DELETE FROM life_evolution_pending WHERE id=?",action);f.store.execute("DELETE FROM life_action WHERE id=?",action);Request second=f.need("community_meals",24);
             assertTrue(f.life.feast(action,city,chef,"community",25,f.life.definitions().itemIds()).applied());assertThrows(SQLException.class,()->f.civic.complete(second.id(),city,25,"mayor"));assertEquals(1,f.count("civic_action_claim"));
         }
     }
@@ -228,6 +228,7 @@ class CivicNeedsServiceTest {
     @Test void unsupportedSchemasFailClosedWithoutResettingExistingRequests() throws Exception {
         try(Fixture f=new Fixture("schema")) {Request need=f.need("community_meals",10);f.store.execute("UPDATE civic_schema SET version=999 WHERE id=1");assertThrows(SQLException.class,f.civic::initialize);assertEquals(need.id(),f.civic.request(need.id()).orElseThrow().id());}
         try(WorldStore store=new WorldStore(temp.resolve("dependencies.db"),100000)) {assertThrows(SQLException.class,()->new CivicNeedsService(store,defaults).initialize());}
+        try(Fixture f=new Fixture("future-life")) {Request need=f.need("community_meals",10);f.store.execute("UPDATE life_schema SET version=3 WHERE id=1");assertThrows(SQLException.class,f.civic::initialize);assertEquals(need.id(),f.civic.request(need.id()).orElseThrow().id());}
     }
     @Test void displayHistoryPruningCannotReopenRequestsOrForgetSpentActionUuids() throws Exception {
         CivicNeedsDefinitions limited=new CivicNeedsDefinitions(1,32,10000,10,defaults.needs());UUID first=null,last=null;

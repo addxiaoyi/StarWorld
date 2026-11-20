@@ -109,6 +109,9 @@ def main() -> int:
     parser.add_argument("--disaster-dir", type=Path, help="Required from 0.5: disaster costs, response restart, and finite recovery")
     parser.add_argument("--works-dir", type=Path, help="Required for 1.0: public works under three consecutive starts")
     parser.add_argument("--civic-dir", type=Path, help="Required for 1.0: real SenLuo integrations and civic needs, including the original fifteen stages")
+    parser.add_argument("--lifecycle-source-dir", type=Path, help="Required from 1.1: real 1.0 source action before migration")
+    parser.add_argument("--lifecycle-dir", type=Path, help="Required from 1.1: three-start 1.0-to-1.1 partial culture migration")
+    parser.add_argument("--lifecycle-logistics-dir", type=Path, help="Required from 1.1: four-start transport configuration recovery")
     parser.add_argument("--smoke-dir", type=Path, help="Required for 0.3: no-dependency runtime containing smoke-evidence.json and both smoke-run logs")
     parser.add_argument("--check-only", action="store_true", help="Validate all inputs and print the planned archive without writing")
     args = parser.parse_args()
@@ -340,6 +343,15 @@ def main() -> int:
                      "started_at": evidence["startedAt"], "finished_at": evidence["finishedAt"],
                      "plugin_sha256": plugin_hash, "fixture_script": script_name, "fixture_script_sha256": sha256(script),
                      "preparation_sha256": preparation_hash})
+
+    if release_version >= (1, 1, 0):
+        from lifecycle_evidence import collect_lifecycle
+
+        require(all((args.lifecycle_source_dir, args.lifecycle_dir, args.lifecycle_logistics_dir)),
+                "1.1 delivery requires the source, candidate and logistics lifecycle suites")
+        runs.extend(collect_lifecycle(root, version, plugin_hash,
+                                      args.lifecycle_source_dir, args.lifecycle_dir, args.lifecycle_logistics_dir,
+                                      add, regular_file, read_json, require, stage_names))
 
     if args.smoke_dir:
         directory = absolute_directory(args.smoke_dir)

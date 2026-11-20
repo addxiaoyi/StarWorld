@@ -16,7 +16,7 @@ function verifyPreparation(options){
   const preparationFile=requireFile(path.join(options.runtime,'PREPARATION.json')),preparation=json(preparationFile);
   assert.equal(preparation.schema,1);assert(['prepared','running'].includes(preparation.status),'Bind the current fixture before acceptance');
   assert.equal(path.resolve(preparation.runtime),options.runtime);assert.match(preparation.upstreamAuditCommit,/^[a-f0-9]{40}$/);
-  assert.match(preparation.starWorldVersion,/^1\.0\.\d+$/,'Final 1.0 product required');assert.match(preparation.starWorldSha256,SHA);
+  assert.match(preparation.starWorldVersion,/^1\.(?:0|1)\.\d+$/,'Released 1.0/1.1 product required');assert.match(preparation.starWorldSha256,SHA);
   assert.match(preparation.cookeryJarSha256,SHA);assert.match(preparation.kitchenPackSha256,SHA);
   assert(preparation.unitEvidence,'A bound final-product clean unit evidence document is required');
   const unitFile=localFile(options.runtime,preparation.unitEvidence.file);assert.match(preparation.unitEvidence.sha256,SHA);assert.equal(hash(unitFile),preparation.unitEvidence.sha256);

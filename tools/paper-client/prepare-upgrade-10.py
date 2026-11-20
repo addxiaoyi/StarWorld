@@ -60,8 +60,10 @@ def main():
     checked(evidence['pluginJars']['StarWorld.jar'] == source_sha, 'Source JAR changed after acceptance')
     checked(re.search(r'^version:\s*[\'\"]?0\.5\.0[\'\"]?\s*$', descriptor(source_jar)[0], re.M), 'Expected 0.5.0 source')
     target_descriptor, target_files = descriptor(jar)
-    checked(re.search(r'^version:\s*[\'\"]?1\.0\.0[\'\"]?\s*$', target_descriptor, re.M) and set(NEW_CONFIGS) <= target_files,
-            'Expected 1.0.0 JAR with both new configuration files')
+    target_match = re.search(r'^version:\s*[\'\"]?(1\.(?:0|1)\.\d+)[\'\"]?\s*$', target_descriptor, re.M)
+    checked(target_match and set(NEW_CONFIGS) <= target_files,
+            'Expected released 1.0/1.1 JAR with both governance configuration files')
+    target_version = target_match.group(1)
     checked('dev/starworld/fixture/PublicWorksFixture.class' in descriptor(fixture)[1], 'Expected rebuilt 1.0 Paper fixture')
     server_logs = {}
     for name in ('paper-run-1.log', 'paper-run-2.log'):
@@ -100,7 +102,7 @@ def main():
         shutil.copy2(file, runtime / 'plugins' / name)
         checked(sha(runtime / 'plugins' / name) == sha(file), f'Installed JAR differs: {name}')
     proof = {'schema': 1, 'sourceRuntime': str(source), 'runtime': str(runtime), 'sourceVersion': '0.5.0',
-             'targetVersion': '1.0.0', 'sourcePluginSha256': source_sha, 'targetPluginSha256': sha(jar), 'fixtureSha256': sha(fixture),
+             'targetVersion': target_version, 'sourcePluginSha256': source_sha, 'targetPluginSha256': sha(jar), 'fixtureSha256': sha(fixture),
              'preparationStatus': 'prepared-not-started', 'processStarted': False, 'preparedAt': datetime.now(timezone.utc).isoformat(),
              'sourceEvidence': {'directory': str(evidence_dir), 'jsonSha256': sha(evidence_file), 'status': 'passed', 'steps': 22,
                                 'pluginSha256': source_sha, 'finishedAt': evidence['finishedAt'], 'serverLogSha256': server_logs},

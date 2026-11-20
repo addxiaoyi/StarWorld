@@ -27,12 +27,13 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     private final Simulation simulation;
     private final SchedulerGate scheduler;
     private final WorldStore.SimulationClock clock;
-    private final ExecutorService io=Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"StarWorld-storage");t.setDaemon(true);return t;});
+    private final StorageWorker io=new StorageWorker();
     private final AtomicBoolean settling=new AtomicBoolean();
     private final Set<UUID> transfers=ConcurrentHashMap.newKeySet();
     private final Set<UUID> activeTransferIds=ConcurrentHashMap.newKeySet();
     private int cursor;
     private volatile boolean closed;
+    private boolean terminated;
     private ExpansionRuntime expansion;
     public WorldRuntime(JavaPlugin plugin,Definitions definitions,CoreBridge core,CustomItems items,WorldStore store){this.plugin=plugin;this.definitions=definitions;this.core=core;this.items=items;this.store=store;
         Set<String> available=new HashSet<>();for(String id:ConfigLoader.items(definitions))if(items.create(id,1)!=null)available.add(id);
@@ -40,8 +41,9 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     @FunctionalInterface public interface Work<T>{T run()throws Exception;}
     public <T> CompletableFuture<T> async(Work<T> work){
         if(closed)return CompletableFuture.failedFuture(new IllegalStateException("StarWorld is stopping"));
-        return CompletableFuture.supplyAsync(()->{try{return work.run();}catch(Exception e){throw new CompletionException(e);}},io);
+        return io.submit(work::run);
     }
+    public <T> CompletableFuture<T> globalFuture(Callable<T> work){return scheduler.globalFuture(work);}
     public <T> void reply(Player player,CompletableFuture<T> future,Consumer<T> action){future.whenComplete((value,error)->scheduler.player(player,()->{
         if(error!=null){Throwable cause=error;while(cause.getCause()!=null)cause=cause.getCause();player.sendMessage("§cStarWorld: "+cause.getMessage());plugin.getLogger().fine(error.toString());}
         else try{action.accept(value);}catch(RuntimeException failure){player.sendMessage("§cStarWorld: "+failure.getMessage());plugin.getLogger().fine(failure.toString());}
@@ -61,6 +63,7 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     @Override public CompletableFuture<Optional<dev.starworld.evolution.EvolutionState.Profile>> development(UUID id){return async(()->expansion==null||store.view(id).isEmpty()?Optional.empty():Optional.of(expansion.evolution().profile(id)));}
     @Override public CompletableFuture<List<dev.starworld.evolution.EvolutionState.Culture>> culture(UUID id){return async(()->expansion==null?List.of():expansion.evolution().cultures(id));}
     @Override public CompletableFuture<Optional<dev.starworld.life.LifeState.LifeView>> life(UUID id){return async(()->expansion==null||store.view(id).isEmpty()?Optional.empty():Optional.of(expansion.life().view(id,currentPeriod())));}
+    @Override public CompletableFuture<Optional<dev.starworld.life.LifeState.EvolutionCredit>> lifeEvolutionCredit(UUID actionId){return async(()->expansion==null?Optional.empty():expansion.life().evolutionCredit(actionId));}
     @Override public CompletableFuture<List<dev.starworld.logistics.LogisticsState.Route>> routes(UUID id,int limit,int offset){return async(()->expansion==null?List.of():expansion.logistics().cityRoutes(id,limit,offset));}
     @Override public CompletableFuture<List<dev.starworld.logistics.LogisticsState.RoutePlan>> routePlans(UUID origin,UUID target,dev.starworld.logistics.LogisticsState.Mode mode,int limit,int offset){return async(()->expansion==null?List.of():expansion.logistics().compareRoutes(origin,target,mode,limit,offset));}
     @Override public CompletableFuture<List<dev.starworld.logistics.LogisticsState.Order>> orders(UUID id,int limit,int offset){return async(()->expansion==null?List.of():expansion.logistics().cityOrders(id,limit,offset));}
@@ -179,7 +182,16 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
         return world.getBlockAt(b.site().x(),b.site().y(),b.site().z()).getType()==Material.matchMaterial(type.anchor());
     }
     private void failure(Throwable e){settling.set(false);plugin.getLogger().severe("StarWorld tick failed: "+root(e));}
-    @Override public void close()throws Exception{
-        closed=true;if(expansion!=null)expansion.close();io.shutdown();if(!io.awaitTermination(10,TimeUnit.SECONDS)){io.shutdownNow();if(!io.awaitTermination(5,TimeUnit.SECONDS))throw new IllegalStateException("Storage worker did not terminate; database deliberately left open");}store.close();
+    @Override public synchronized void close()throws Exception{
+        if(terminated)return;
+        closed=true;
+        scheduler.close();
+        Exception cleanupFailure=null;
+        try{if(expansion!=null)expansion.close();}catch(Exception failure){cleanupFailure=failure;}
+        try{
+            if(!io.shutdown(10,5,TimeUnit.SECONDS))throw new IllegalStateException("Storage worker did not terminate; database deliberately left open");
+            store.close();terminated=true;
+        }catch(Exception failure){if(cleanupFailure!=null)failure.addSuppressed(cleanupFailure);throw failure;}
+        if(cleanupFailure!=null)throw cleanupFailure;
     }
 }

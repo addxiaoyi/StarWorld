@@ -54,4 +54,55 @@ class MarketServiceTest {
     @Test void paidShipmentBackoffPersistsAndBlockedFirstCustomerDoesNotStarveNext()throws Exception{try(Rig r=new Rig()){r.buy(r.list());r.buy(r.list());for(Dispatch d:r.market.leaseDue(10,0))r.market.finish(d,r.paid(d),0);List<Purchase> first=r.market.leasePaid(1,5000),second=r.market.leasePaid(1,5000);assertEquals(1,first.size());assertEquals(1,second.size());assertNotEquals(first.getFirst().id(),second.getFirst().id());assertTrue(r.market.leasePaid(1,5000).isEmpty());r.restart();assertTrue(r.market.leasePaid(1,5000).isEmpty());assertEquals(PurchaseStatus.PAID,r.market.purchase(first.getFirst().id()).orElseThrow().status());assertEquals(1,r.market.leasePaid(1,35001).size());}}
     @Test void fullExpiredEscrowRotatesPastTheOldestListingWithoutLosingEitherBatch()throws Exception{try(Rig r=new Rig()){Listing a=r.list(),b=r.list();r.store.cityCapacity(r.seller.cityId(),960);long period=Math.max(a.expiresPeriod(),b.expiresPeriod());UUID first=r.market.expiring(period,1).getFirst().id();assertEquals(0,r.market.expire(r.auth(period),1));UUID next=r.market.expiring(period,1).getFirst().id();assertNotEquals(first,next);r.store.stock(r.seller.cityId(),BREAD,940);assertEquals(1,r.market.expire(r.auth(period),1));assertEquals(ListingStatus.EXPIRED,r.market.listing(next).orElseThrow().status());assertEquals(ListingStatus.AVAILABLE,r.market.listing(first).orElseThrow().status());assertEquals(960,r.stock(r.seller));}}
     @Test void definitionsAndMoneyStayExactAndDoNotOverwriteExistingConfiguration()throws Exception{Path file=temp.resolve("market.yml");MarketDefinitions.writeDefaults(file.toFile());assertEquals(MarketDefinitions.defaults(),MarketDefinitions.load(file.toFile()));Files.writeString(file,Files.readString(file)+"\n# administrator\n");MarketDefinitions.writeDefaults(file.toFile());assertTrue(Files.readString(file).endsWith("# administrator\n"));assertThrows(IllegalArgumentException.class,()->TreasuryTransferPort.money(new BigDecimal("0.001")));assertThrows(IllegalArgumentException.class,()->TreasuryTransferPort.money(new BigDecimal("-1")));Files.writeString(file,Files.readString(file).replace("market-version: 1","market-version: 99"));assertThrows(IllegalArgumentException.class,()->MarketDefinitions.load(file.toFile()));}
+
+    @Test void failedPaymentBacklogCannotStarveNewPurchaseAcrossRestart()throws Exception{
+        try(Rig r=new Rig()){
+            MarketDefinitions d=MarketDefinitions.defaults();MarketDefinitions bulk=new MarketDefinitions(d.items(),200,d.listingLifetimePeriods(),1,d.maxUnits(),d.maximumUnitPrice());
+            r.market=new MarketService(r.store,r.logistics,bulk);
+            Map<UUID,String> originalTransactions=new HashMap<>();for(int i=0;i<130;i++){Purchase old=r.buy(r.market.list(UUID.randomUUID(),r.seller.cityId(),BREAD,1,new BigDecimal("1.00"),r.auth(1,r.seller.cityId())));originalTransactions.put(old.id(),old.transactionId());}
+            r.store.execute("UPDATE market_purchase SET state='RETRY',attempts=8,next_attempt=0,created_period=1");
+            Purchase newest=r.buy(r.market.list(UUID.randomUUID(),r.seller.cityId(),BREAD,1,new BigDecimal("1.00"),r.auth(1,r.seller.cityId())));
+            r.store.execute("UPDATE market_purchase SET created_period=2 WHERE id=?",newest.id());originalTransactions.put(newest.id(),newest.transactionId());Set<UUID> seen=new HashSet<>();
+            for(int tick=0;tick<140;tick++){
+                if(tick==70){r.restart();r.market=new MarketService(r.store,r.logistics,bulk);}
+                long now=tick*2000L;List<Dispatch> due=r.market.leaseDue(1,now);if(due.isEmpty())continue;Dispatch dispatch=due.getFirst();seen.add(dispatch.purchase().id());
+                assertEquals(originalTransactions.get(dispatch.purchase().id()),dispatch.purchase().transactionId());
+                TreasuryTransferPort.Delivery result=dispatch.purchase().id().equals(newest.id())?r.paid(dispatch):new TreasuryTransferPort.Delivery(dispatch.purchase().transactionId(),TreasuryTransferPort.Status.RETRY,null,"deterministic backlog");
+                assertTrue(r.market.finish(dispatch,result,now));
+            }
+            assertEquals(131,seen.size());Purchase paid=r.market.purchase(newest.id()).orElseThrow();assertEquals(PurchaseStatus.PAID,paid.status());assertEquals(newest.transactionId(),paid.transactionId());assertEquals(869,r.stock(r.seller));assertEquals(1000,r.stock(r.buyer));
+        }
+    }
+    @Test void tightenedTransportConfigurationPreservesPaidEscrowAndRejectsNewPaymentsUntilRecovery()throws Exception{
+        try(Rig r=new Rig()){
+            Purchase pending=r.buy(r.list());Dispatch dispatch=r.lease(0);r.market.finish(dispatch,r.paid(dispatch),0);Listing unsold=r.list();
+            r.store.close();r.store=new WorldStore(r.db,10000);LogisticsDefinitions d=LogisticsDefinitions.defaults();
+            LogisticsDefinitions reduced=new LogisticsDefinitions(d.nodes(),d.terrainTime(),d.maxNodesPerCity(),d.maxRoutesPerCity(),d.maxWaypoints(),d.maxOpenOrdersPerCity(),d.maxBatch(),d.blocksPerPeriod(),1,d.offerLifetimePeriods(),d.maxItemsPerOrder());
+            r.logistics=new LogisticsService(r.store,reduced);r.market=new MarketService(r.store,r.logistics,MarketDefinitions.defaults());
+            assertTrue(r.logistics.routeLimitation(r.logistics.route(r.route).orElseThrow()).isPresent());
+            assertThrows(SQLException.class,()->r.buy(unsold));assertThrows(SQLException.class,()->r.market.ship(pending.id(),r.auth(2)));
+            assertEquals(PurchaseStatus.PAID,r.market.purchase(pending.id()).orElseThrow().status());assertEquals(ListingStatus.LOCKED,r.market.listing(pending.listingId()).orElseThrow().status());assertTrue(r.logistics.order(pending.shipmentId()).isEmpty());assertEquals(960,r.stock(r.seller));
+            r.restart();Order shipped=r.market.ship(pending.id(),r.auth(3));assertEquals(pending.shipmentId(),shipped.id());assertEquals(shipped,r.market.ship(pending.id(),r.auth(3)));assertEquals(1,r.market.history(BREAD,10,0).size());assertEquals(960,r.stock(r.seller));
+        }
+    }
+
+
+    @Test void steadyNewPurchasesCannotStarveRecoverablePaymentAcrossRestart()throws Exception{
+        try(Rig r=new Rig()){
+            Purchase old=r.buy(r.list());Dispatch first=r.market.leaseDue(1,0).getFirst();r.market.finish(first,new TreasuryTransferPort.Delivery(old.transactionId(),TreasuryTransferPort.Status.RETRY,null,"temporary outage"),0);assertEquals(2000,r.market.purchase(old.id()).orElseThrow().nextAttempt());int recoveredAt=-1;
+            for(int tick=1;tick<=12;tick++){
+                if(tick==1||tick==7)r.restart();Listing fresh=r.market.list(UUID.randomUUID(),r.seller.cityId(),BREAD,1,new BigDecimal("1.00"),r.auth(tick,r.seller.cityId()));r.market.buy(UUID.randomUUID(),fresh.id(),r.route,r.buyer.cityId(),r.buyer.nationId(),r.auth(tick,r.buyer.cityId()));
+                long now=tick*2000L;List<Dispatch> batch=r.market.leaseDue(1,now);assertEquals(1,batch.size());Dispatch next=batch.getFirst();if(next.purchase().id().equals(old.id())){recoveredAt=tick;assertEquals(old.transactionId(),next.purchase().transactionId());assertEquals(2,next.purchase().attempts());}assertTrue(r.market.finish(next,r.paid(next),now));
+            }
+            assertTrue(recoveredAt>=1&&recoveredAt<=2,"Recoverable payment gets its lane while new purchases arrive every tick");r.restart();assertEquals(PurchaseStatus.PAID,r.market.purchase(old.id()).orElseThrow().status());assertEquals(968,r.stock(r.seller));assertEquals(1000,r.stock(r.buyer));assertEquals(1,r.store.query("SELECT COUNT(*) FROM market_purchase WHERE state='PENDING'",v->v.getInt(1)).getFirst());
+        }
+    }
+    @Test void failedPaymentLeaseRollsBackCursorAndRowsBeforeRespectingNextBatchLimit()throws Exception{
+        try(Rig r=new Rig()){
+            Purchase old=r.buy(r.list());Dispatch first=r.market.leaseDue(1,0).getFirst();r.market.finish(first,new TreasuryTransferPort.Delivery(old.transactionId(),TreasuryTransferPort.Status.RETRY,null,"later"),0);for(int i=0;i<4;i++)r.buy(r.list());String before=r.store.query("SELECT next_lane FROM starworld_dispatch_cursor WHERE queue='starworld:market-payment'",v->v.getString(1)).getFirst();
+            r.store.execute("CREATE TRIGGER reject_market_lease BEFORE UPDATE ON market_purchase WHEN NEW.state='IN_FLIGHT' BEGIN SELECT RAISE(ABORT,'lease rollback'); END");assertThrows(SQLException.class,()->r.market.leaseDue(1,2000));assertEquals(before,r.store.query("SELECT next_lane FROM starworld_dispatch_cursor WHERE queue='starworld:market-payment'",v->v.getString(1)).getFirst());assertEquals(PurchaseStatus.RETRY,r.market.purchase(old.id()).orElseThrow().status());assertEquals(1,r.market.purchase(old.id()).orElseThrow().attempts());assertEquals(0,r.store.query("SELECT COUNT(*) FROM market_purchase WHERE state='IN_FLIGHT'",v->v.getInt(1)).getFirst());
+            r.store.execute("DROP TRIGGER reject_market_lease");List<Dispatch> batch=r.market.leaseDue(3,2000);assertEquals(3,batch.size());assertEquals(old.id(),batch.getFirst().purchase().id());assertEquals(3,r.store.query("SELECT COUNT(*) FROM market_purchase WHERE state='IN_FLIGHT'",v->v.getInt(1)).getFirst());assertEquals(2,r.store.query("SELECT COUNT(*) FROM market_purchase WHERE state='PENDING'",v->v.getInt(1)).getFirst());
+        }
+    }
+
 }

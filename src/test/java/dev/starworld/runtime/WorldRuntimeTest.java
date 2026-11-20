@@ -40,11 +40,29 @@ class WorldRuntimeTest {
     @TempDir Path temp;
 
     @Test void newPublicQueriesForwardOnlyToReadMethodsWithoutStartingOrCompletingWork()throws Exception{
-        var works=mock(dev.starworld.works.PublicWorksService.class);var civic=mock(dev.starworld.civic.CivicNeedsService.class);UUID request=UUID.randomUUID();
-        try(MockedConstruction<ExpansionRuntime> expansions=mockConstruction(ExpansionRuntime.class,(value,context)->{when(value.works()).thenReturn(works);when(value.civic()).thenReturn(civic);} );Fixture f=new Fixture()){
+        var works=mock(dev.starworld.works.PublicWorksService.class);var civic=mock(dev.starworld.civic.CivicNeedsService.class);var life=mock(dev.starworld.life.LifeService.class);UUID request=UUID.randomUUID();
+        try(MockedConstruction<ExpansionRuntime> expansions=mockConstruction(ExpansionRuntime.class,(value,context)->{when(value.works()).thenReturn(works);when(value.civic()).thenReturn(civic);when(value.life()).thenReturn(life);} );Fixture f=new Fixture()){
             when(works.projects(f.city.cityId(),1,2)).thenReturn(List.of());when(works.history(f.city.cityId(),1,3)).thenReturn(List.of());when(civic.requests(f.city.cityId(),1,4)).thenReturn(List.of());when(civic.history(f.city.cityId(),1,5)).thenReturn(List.of());when(civic.receipt(request)).thenReturn(Optional.empty());
             f.runtime.installExpansion(temp.toFile());assertTrue(f.runtime.publicWorks(f.city.cityId(),1,2).get(5,TimeUnit.SECONDS).isEmpty());assertTrue(f.runtime.publicWorksHistory(f.city.cityId(),1,3).get(5,TimeUnit.SECONDS).isEmpty());assertTrue(f.runtime.civicNeeds(f.city.cityId(),1,4).get(5,TimeUnit.SECONDS).isEmpty());assertTrue(f.runtime.civicHistory(f.city.cityId(),1,5).get(5,TimeUnit.SECONDS).isEmpty());assertTrue(f.runtime.civicReceipt(request).get(5,TimeUnit.SECONDS).isEmpty());
             verify(works).projects(f.city.cityId(),1,2);verify(works).history(f.city.cityId(),1,3);verify(civic).requests(f.city.cityId(),1,4);verify(civic).history(f.city.cityId(),1,5);verify(civic).receipt(request);verify(works,never()).start(any(),any(),anyString(),anyLong(),anySet(),anyString());verify(works,never()).cycle(any(),any(),anyLong(),anySet());verify(civic,never()).request(any(),any(),anyString(),anyLong(),anyString());verify(civic,never()).complete(any(),any(),anyLong(),anyString());
+            var credit=new dev.starworld.life.LifeState.EvolutionCredit(request,f.city.cityId(),f.city.nationId(),25,20,10,true);
+            when(life.evolutionCredit(request)).thenReturn(Optional.of(credit));
+            assertEquals(credit,f.runtime.lifeEvolutionCredit(request).get(5,TimeUnit.SECONDS).orElseThrow());
+            verify(life).evolutionCredit(request);verify(life,never()).drainEvolutionCulture(any(),anyLong());
+        }
+    }
+
+    @Test void extensionCleanupFailureStillDrainsAcceptedWorkClosesStorageAndAllowsRepeatedClose()throws Exception{
+        try(MockedConstruction<ExpansionRuntime> expansions=mockConstruction(ExpansionRuntime.class,(value,context)->doThrow(new IllegalStateException("extension cleanup failed")).when(value).close());Fixture f=new Fixture()){
+            f.runtime.installExpansion(temp.toFile());
+            var accepted=f.runtime.async(()->{f.store.audit("shutdown-test","accepted before close");return true;});
+            IllegalStateException failure=assertThrows(IllegalStateException.class,f.runtime::close);
+            assertEquals("extension cleanup failed",failure.getMessage());
+            assertTrue(accepted.get(1,TimeUnit.SECONDS));
+            assertThrows(java.sql.SQLException.class,()->f.store.stock(f.city.cityId()));
+            assertDoesNotThrow(f.runtime::close);
+            verify(expansions.constructed().getFirst(),times(1)).close();
+            assertInstanceOf(IllegalStateException.class,assertThrows(ExecutionException.class,()->f.runtime.city(f.city.cityId()).get(1,TimeUnit.SECONDS)).getCause());
         }
     }
 

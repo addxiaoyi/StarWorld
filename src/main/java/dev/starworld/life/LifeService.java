@@ -16,18 +16,35 @@ public final class LifeService {
     public LifeService(WorldStore store, LifeDefinitions definitions) { this.store = Objects.requireNonNull(store); this.definitions = Objects.requireNonNull(definitions); }
     public LifeDefinitions definitions() { return definitions; }
     public void initialize() throws SQLException {
-        store.tx(s -> {
+        atomic(s -> {
             s.execute("CREATE TABLE IF NOT EXISTS life_schema (id INTEGER PRIMARY KEY CHECK(id=1),version INTEGER NOT NULL)");
             var versions=s.query("SELECT version FROM life_schema WHERE id=1",r->r.getInt(1));
-            if (!versions.isEmpty() && versions.getFirst()!=1) throw new IllegalStateException("Unsupported life schema; preserve database and upgrade plugin");
-            s.execute("INSERT OR IGNORE INTO life_schema(id,version) VALUES(1,1)");
+            if (!versions.isEmpty() && (versions.getFirst()<1 || versions.getFirst()>2)) throw new IllegalStateException("Unsupported life schema; preserve database and upgrade plugin");
+            boolean legacy=!versions.isEmpty() && versions.getFirst()==1;
             s.execute("CREATE TABLE IF NOT EXISTS life_profile (player TEXT PRIMARY KEY,profession TEXT NOT NULL,changed_period INTEGER NOT NULL,contributed INTEGER NOT NULL DEFAULT 0)");
             s.execute("CREATE TABLE IF NOT EXISTS life_city (city TEXT PRIMARY KEY REFERENCES city_state(id),nation TEXT NOT NULL,culture INTEGER NOT NULL DEFAULT 0,decor_period INTEGER NOT NULL DEFAULT -1,decor_bonus REAL NOT NULL DEFAULT 0,last_period INTEGER NOT NULL DEFAULT -1)");
             s.execute("CREATE TABLE IF NOT EXISTS life_action (id TEXT PRIMARY KEY,city TEXT NOT NULL REFERENCES life_city(city),nation TEXT NOT NULL,actor TEXT NOT NULL,kind TEXT NOT NULL,source TEXT NOT NULL,period INTEGER NOT NULL,culture INTEGER NOT NULL,bonus REAL NOT NULL,until_period INTEGER NOT NULL,fingerprint TEXT NOT NULL,eligible INTEGER NOT NULL DEFAULT 1)");
             if(!s.query("PRAGMA table_info(life_action)",r->r.getString("name")).contains("eligible"))s.execute("ALTER TABLE life_action ADD COLUMN eligible INTEGER NOT NULL DEFAULT 1");
             s.execute("CREATE INDEX IF NOT EXISTS life_action_city_period ON life_action(city,period)");
             s.execute("CREATE INDEX IF NOT EXISTS life_action_actor_period ON life_action(actor,period)");
-            s.execute("CREATE TABLE IF NOT EXISTS life_evolution_action (id TEXT PRIMARY KEY REFERENCES life_action(id),consumed_period INTEGER NOT NULL)");
+            s.execute("CREATE TABLE IF NOT EXISTS life_evolution_action (id TEXT PRIMARY KEY REFERENCES life_action(id),consumed_period INTEGER NOT NULL,credited_culture INTEGER NOT NULL CHECK(typeof(credited_culture)='integer' AND credited_culture>=0))");
+            if(!s.query("PRAGMA table_info(life_evolution_action)",r->r.getString("name")).contains("credited_culture")) {
+                if(!legacy)throw new SQLException("Life schema lacks durable culture progress; preserve database");
+                // Rebuild this owned ledger: SQLite JDBC treats ADD COLUMN with CHECK as a query.
+                s.execute("CREATE TABLE life_evolution_action_v2_migration (id TEXT PRIMARY KEY REFERENCES life_action(id),consumed_period INTEGER NOT NULL,credited_culture INTEGER NOT NULL CHECK(typeof(credited_culture)='integer' AND credited_culture>=0))");
+                s.execute("INSERT INTO life_evolution_action_v2_migration(id,consumed_period,credited_culture) SELECT e.id,e.consumed_period,a.culture FROM life_evolution_action e LEFT JOIN life_action a ON a.id=e.id");
+                s.execute("DROP TABLE life_evolution_action");
+                s.execute("ALTER TABLE life_evolution_action_v2_migration RENAME TO life_evolution_action");
+            }
+            s.execute("CREATE TABLE IF NOT EXISTS life_evolution_pending (id TEXT PRIMARY KEY REFERENCES life_action(id),city TEXT NOT NULL REFERENCES life_city(city),nation TEXT NOT NULL,period INTEGER NOT NULL CHECK(period>=0))");
+            s.execute("CREATE INDEX IF NOT EXISTS life_evolution_pending_city ON life_evolution_pending(city,nation,period,id)");
+            s.execute("CREATE TABLE IF NOT EXISTS life_evolution_budget (city TEXT NOT NULL REFERENCES life_city(city),nation TEXT NOT NULL,period INTEGER NOT NULL CHECK(typeof(period)='integer' AND period>=0),culture INTEGER NOT NULL CHECK(typeof(culture)='integer' AND culture>=0),PRIMARY KEY(city,nation))");
+            if(legacy) {
+                // Old rows represent completely consumed actions. Keep IDs and original completion periods unchanged.
+                if(!s.query("SELECT 1 FROM life_evolution_action e JOIN life_action a ON a.id=e.id WHERE e.credited_culture<>a.culture OR e.credited_culture<1 OR e.credited_culture>10000 OR typeof(a.culture)<>'integer' OR typeof(e.consumed_period)<>'integer' OR e.consumed_period<0 OR e.consumed_period<a.period LIMIT 1",r->1).isEmpty())throw new SQLException("Invalid legacy life culture progress");
+                s.execute("INSERT INTO life_evolution_budget(city,nation,period,culture) SELECT a.city,a.nation,e.consumed_period,SUM(e.credited_culture) FROM life_evolution_action e JOIN life_action a ON a.id=e.id JOIN (SELECT a.city,a.nation,MAX(e.consumed_period) AS latest FROM life_evolution_action e JOIN life_action a ON a.id=e.id GROUP BY a.city,a.nation) last ON last.city=a.city AND last.nation=a.nation AND last.latest=e.consumed_period GROUP BY a.city,a.nation,e.consumed_period");
+                s.execute("INSERT INTO life_evolution_pending(id,city,nation,period) SELECT a.id,a.city,a.nation,a.period FROM life_action a LEFT JOIN life_evolution_action e ON e.id=a.id WHERE a.eligible=1 AND e.id IS NULL");
+            }
             s.execute("CREATE TABLE IF NOT EXISTS life_decoration (furniture TEXT PRIMARY KEY,meta TEXT NOT NULL UNIQUE,city TEXT NOT NULL REFERENCES life_city(city),nation TEXT NOT NULL,artisan TEXT NOT NULL,item TEXT NOT NULL,world TEXT NOT NULL,world_name TEXT NOT NULL,x INTEGER NOT NULL,y INTEGER NOT NULL,z INTEGER NOT NULL,registered_period INTEGER NOT NULL,UNIQUE(world,x,y,z))");
             s.execute("CREATE INDEX IF NOT EXISTS life_decoration_city ON life_decoration(city)");
             s.execute("CREATE TABLE IF NOT EXISTS life_concert (id TEXT PRIMARY KEY,city TEXT NOT NULL REFERENCES life_city(city),nation TEXT NOT NULL,performer TEXT NOT NULL,world TEXT NOT NULL,world_name TEXT NOT NULL,x INTEGER NOT NULL,y INTEGER NOT NULL,z INTEGER NOT NULL,start_period INTEGER NOT NULL,started INTEGER NOT NULL,last_note INTEGER NOT NULL,notes INTEGER NOT NULL DEFAULT 0,pitches INTEGER NOT NULL DEFAULT 0,state TEXT NOT NULL,fingerprint TEXT NOT NULL)");
@@ -35,6 +52,7 @@ public final class LifeService {
             s.execute("CREATE INDEX IF NOT EXISTS life_concert_performer ON life_concert(performer,state)");
             s.execute("CREATE TABLE IF NOT EXISTS life_note (session TEXT NOT NULL REFERENCES life_concert(id),sequence INTEGER NOT NULL,fingerprint TEXT NOT NULL,PRIMARY KEY(session,sequence))");
             s.execute("CREATE TABLE IF NOT EXISTS life_audience (session TEXT NOT NULL REFERENCES life_concert(id),player TEXT NOT NULL,PRIMARY KEY(session,player))");
+            s.execute("INSERT INTO life_schema(id,version) VALUES(1,2) ON CONFLICT(id) DO UPDATE SET version=2");
             return null;
         });
     }
@@ -187,13 +205,38 @@ public final class LifeService {
     public long cultureInPeriod(UUID city,long period) throws SQLException {
         period(period);return store.tx(s->s.query("SELECT COALESCE(SUM(culture),0) FROM life_action WHERE city=? AND nation=? AND period=? AND eligible=1",r->r.getLong(1),city,currentNation(city),period).getFirst());
     }
-    /** Called inside the simulation transaction: late activity rolls into a future cycle exactly once. */
+    /** Exact-ID historical read; never grants culture, advances time, or reveals the contributing actor. */
+    public Optional<EvolutionCredit> evolutionCredit(UUID actionId) throws SQLException {
+        Objects.requireNonNull(actionId);
+        var rows=store.query("SELECT a.id,a.city,a.nation,a.culture,COALESCE(e.credited_culture,0),COALESCE(e.consumed_period,-1),p.id IS NOT NULL FROM life_action a LEFT JOIN life_evolution_action e ON e.id=a.id LEFT JOIN life_evolution_pending p ON p.id=a.id WHERE a.id=?",r->{
+            long original=integer(r,4),credited=integer(r,5),last=integer(r,6),pending=integer(r,7);
+            if(original<1||original>10000||credited<0||credited>original||last< -1||(credited==0)!=(last==-1)||pending<0||pending>1)throw new SQLException("Invalid saved life culture progress");
+            return new EvolutionCredit(uuid(r,"id"),uuid(r,"city"),uuid(r,"nation"),original,credited,last,pending==1);
+        },actionId);
+        return rows.stream().findFirst();
+    }
+    /** Bounded pending queue; old large actions carry their remaining credit across actual city periods. */
     public long drainEvolutionCulture(UUID city,long period) throws SQLException {
-        period(period);return store.tx(s->{
-            record Pending(UUID id,int culture){}
-            var pending=s.query("SELECT a.id,a.culture FROM life_action a LEFT JOIN life_evolution_action e ON e.id=a.id WHERE a.city=? AND a.nation=? AND a.eligible=1 AND a.period<=? AND e.id IS NULL ORDER BY a.period,a.id LIMIT 500",r->new Pending(UUID.fromString(r.getString(1)),r.getInt(2)),city,currentNation(city),period);
-            long total=0;for(Pending action:pending){if(total+action.culture()>definitions.cityCulturePerPeriod())break;
-                s.execute("INSERT INTO life_evolution_action(id,consumed_period) VALUES(?,?)",action.id(),period);total+=action.culture();}
+        period(period);return atomic(s->{
+            UUID nation=currentNation(city);
+            var budget=s.query("SELECT period,culture FROM life_evolution_budget WHERE city=? AND nation=?",r->new long[]{integer(r,1),integer(r,2)},city,nation);
+            long used=0;
+            if(!budget.isEmpty()) {long[] saved=budget.getFirst();if(saved[0]>period)throw new IllegalArgumentException("生活文化归集周期不能倒退");if(saved[0]<0||saved[1]<0||saved[1]>1_000_000_000L)throw new SQLException("Invalid saved life culture budget");if(saved[0]==period)used=saved[1];}
+            long remaining=definitions.cityCulturePerPeriod()-used;if(remaining<=0)return 0L;
+            record Pending(UUID id,UUID city,UUID nation,long period,long culture,long credited,long eligible,long lastCredited,long queuedPeriod){}
+            var pending=s.query("SELECT a.id,a.city,a.nation,a.period,a.culture,COALESCE(e.credited_culture,0),a.eligible,COALESCE(e.consumed_period,-1),p.period FROM life_evolution_pending p INDEXED BY life_evolution_pending_city JOIN life_action a ON a.id=p.id LEFT JOIN life_evolution_action e ON e.id=a.id WHERE p.city=? AND p.nation=? AND p.period<=? ORDER BY p.period,p.id LIMIT 500",r->new Pending(UUID.fromString(r.getString(1)),UUID.fromString(r.getString(2)),UUID.fromString(r.getString(3)),integer(r,4),integer(r,5),integer(r,6),integer(r,7),integer(r,8),integer(r,9)),city,nation,period);
+            long total=0;
+            for(Pending action:pending){
+                if(!city.equals(action.city())||!nation.equals(action.nation())||action.period()<0||action.period()>period||action.queuedPeriod()!=action.period()||action.culture()<1||action.culture()>10000||action.credited()<0||action.credited()>action.culture()||action.eligible()<0||action.eligible()>1||action.lastCredited()< -1||action.lastCredited()>period||(action.credited()==0)!=(action.lastCredited()==-1))throw new SQLException("Invalid queued life culture progress");
+                if(action.eligible()==0||action.credited()==action.culture()){s.execute("DELETE FROM life_evolution_pending WHERE id=?",action.id());continue;}
+                long amount=Math.min(remaining-total,action.culture()-action.credited());
+                if(amount<=0)break;
+                long credited=action.credited()+amount;
+                s.execute("INSERT INTO life_evolution_action(id,consumed_period,credited_culture) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET consumed_period=excluded.consumed_period,credited_culture=excluded.credited_culture",action.id(),period,credited);
+                if(credited==action.culture())s.execute("DELETE FROM life_evolution_pending WHERE id=?",action.id());
+                total+=amount;if(total==remaining)break;
+            }
+            if(total>0)s.execute("INSERT INTO life_evolution_budget(city,nation,period,culture) VALUES(?,?,?,?) ON CONFLICT(city,nation) DO UPDATE SET period=excluded.period,culture=excluded.culture",city,nation,period,used+total);
             return total;
         });
     }
@@ -205,6 +248,7 @@ public final class LifeService {
         if(!city.nationId().toString().equals(rows.getFirst()[0])) {
             store.execute("UPDATE life_city SET nation=?,decor_bonus=0,decor_period=-1 WHERE city=?",city.nationId(),city.cityId());
             store.execute("UPDATE life_action SET eligible=0 WHERE city=?",city.cityId());
+            store.execute("DELETE FROM life_evolution_pending WHERE city=?",city.cityId());
             store.execute("UPDATE life_concert SET state='ownership_changed' WHERE city=? AND state='active'",city.cityId());
         }
         store.execute("UPDATE life_city SET last_period=? WHERE city=?",period,city.cityId());
@@ -226,6 +270,7 @@ public final class LifeService {
     }
     private ContributionReceipt grant(UUID id,CoreCity city,UUID actor,String kind,String source,long period,int culture,double bonus,long until,String fingerprint) throws SQLException {
         store.execute("INSERT INTO life_action(id,city,nation,actor,kind,source,period,culture,bonus,until_period,fingerprint) VALUES(?,?,?,?,?,?,?,?,?,?,?)",id,city.cityId(),city.nationId(),actor,kind,source,period,culture,bonus,until,fingerprint);
+        store.execute("INSERT INTO life_evolution_pending(id,city,nation,period) VALUES(?,?,?,?)",id,city.cityId(),city.nationId(),period);
         store.execute("UPDATE life_city SET culture=culture+? WHERE city=?",culture,city.cityId());
         store.execute("UPDATE life_profile SET contributed=contributed+? WHERE player=?",culture,actor);
         store.audit(actor.toString(),"LIFE_CONTRIBUTION "+id+" "+kind+" "+culture);
@@ -237,5 +282,12 @@ public final class LifeService {
     private static Site site(ResultSet r) throws SQLException {return new Site(uuid(r,"world"),r.getString("world_name"),r.getInt("x"),r.getInt("y"),r.getInt("z"));}
     private static UUID uuid(ResultSet r,String column) throws SQLException{return UUID.fromString(r.getString(column));}
     private static UUID stable(String input){return UUID.nameUUIDFromBytes(input.getBytes(StandardCharsets.UTF_8));}
+    private static long integer(ResultSet row,int column)throws SQLException {Object value=row.getObject(column);if(!(value instanceof Integer)&&!(value instanceof Long))throw new SQLException("Non-integral saved life culture progress");return ((Number)value).longValue();}
+    private <T> T atomic(WorldStore.Work<T> work)throws SQLException {
+        return store.tx(s->{String point="life_"+UUID.randomUUID().toString().replace("-","");s.execute("SAVEPOINT "+point);
+            try{T result=work.run(s);s.execute("RELEASE SAVEPOINT "+point);return result;}
+            catch(Exception|Error failure){try{s.execute("ROLLBACK TO SAVEPOINT "+point);s.execute("RELEASE SAVEPOINT "+point);}catch(SQLException rollback){failure.addSuppressed(rollback);}throw failure;}
+        });
+    }
     private static void period(long period){if(period<0 || period>Long.MAX_VALUE-10000)throw new IllegalArgumentException("Invalid life period");}
 }

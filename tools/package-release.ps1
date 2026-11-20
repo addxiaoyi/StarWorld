@@ -26,6 +26,7 @@ $version = [string] $pom.project.version
 if ($version -notmatch '^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$') { throw "Unsupported release version: $version" }
 $releaseVersion = [version]($version -split '-')[0]
 $isFinalRelease = $releaseVersion -ge [version]'1.0.0'
+$requiresLifecycleEvidence = $releaseVersion -ge [version]'1.1.0'
 $nativeExamples = @('config.yml', 'definitions.yml', 'evolution.yml', 'logistics.yml', 'exports.yml')
 if ($releaseVersion -ge [version]'0.5.0') { $nativeExamples += 'disaster-response.yml' }
 if ($isFinalRelease) { $nativeExamples += @('public-works.yml', 'civic-needs.yml') }
@@ -59,6 +60,161 @@ function Read-ZipEntryBytes([IO.Compression.ZipArchiveEntry] $Entry) {
 function Get-BytesSha256([byte[]] $Bytes) {
     return [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($Bytes)).ToLowerInvariant()
 }
+function Get-LifecycleEntry([IO.Compression.ZipArchive] $Archive, [string] $Name) {
+    $entry = $Archive.GetEntry($Name)
+    if (!$entry -or $entry.Length -eq 0) { throw "Lifecycle evidence is missing or empty: $Name" }
+    return $entry
+}
+function Read-LifecycleJson([byte[]] $Bytes) {
+    return [Text.Encoding]::UTF8.GetString($Bytes) | ConvertFrom-Json -AsHashtable
+}
+function Get-LifecycleUtcTicks($Value, [string] $Label) {
+    if ($Value -is [DateTimeOffset]) { return $Value.UtcTicks }
+    if ($Value -is [DateTime]) {
+        if ($Value.Kind -ne [DateTimeKind]::Utc) { throw "Lifecycle timestamp is not UTC: $Label" }
+        return ([DateTimeOffset]$Value).UtcTicks
+    }
+    $parsed = [DateTimeOffset]::MinValue
+    if ([string]$Value -notmatch '(?:Z|\+00:00)$') { throw "Lifecycle timestamp must state UTC explicitly: $Label" }
+    $valid = [DateTimeOffset]::TryParse([string]$Value, [Globalization.CultureInfo]::InvariantCulture,
+        [Globalization.DateTimeStyles]::AssumeUniversal, [ref]$parsed)
+    if (!$valid -or $parsed.Offset -ne [TimeSpan]::Zero) { throw "Lifecycle timestamp is invalid or has no UTC zone: $Label" }
+    return $parsed.UtcTicks
+}
+function Assert-LifecycleEvidence([IO.Compression.ZipArchive] $Archive, $Manifest) {
+    $specifications = [ordered]@{
+        'life-source' = @{
+            Runner = 'tools/senluo-fixture/lifecycle-acceptance.cjs'
+            Suite = 'real-paper-life-carry'; Mode = 'source'; Version = '1.0.0'
+            Offset = 0; Steps = 4; Starts = 1
+        }
+        'life-carry' = @{
+            Runner = 'tools/senluo-fixture/lifecycle-acceptance.cjs'
+            Suite = 'real-paper-life-carry'; Mode = 'candidate'; Version = $version
+            Offset = 4; Steps = 7; Starts = 3
+        }
+        'lifecycle-logistics' = @{
+            Runner = 'tools/paper-client/lifecycle-logistics-acceptance.cjs'
+            Suite = 'real-paper-lifecycle-logistics'; Mode = $null; Version = $version
+            Offset = 0; Steps = 14; Starts = 4
+        }
+    }
+    $runs = @{}
+    foreach ($suite in $specifications.Keys) {
+        $spec = $specifications[$suite]
+        $base = "runtime/$suite"
+        $records = @($Manifest.runtime_runs | Where-Object suite -ceq $suite)
+        if ($records.Count -ne 1) { throw "Evidence manifest must contain exactly one $suite run." }
+        $record = $records[0]
+        $evidenceBytes = Read-ZipEntryBytes (Get-LifecycleEntry $Archive "$base/evidence.json")
+        $run = Read-LifecycleJson $evidenceBytes
+        $runStarted = Get-LifecycleUtcTicks $run.startedAt "$suite.startedAt"
+        $runFinished = Get-LifecycleUtcTicks $run.finishedAt "$suite.finishedAt"
+        $recordStarted = Get-LifecycleUtcTicks $record.started_at "$suite.record.started_at"
+        $recordFinished = Get-LifecycleUtcTicks $record.finished_at "$suite.record.finished_at"
+        if ($run.schema -ne 1 -or $run.status -cne 'passed' -or $run.suite -cne $spec.Suite -or
+            $record.version -cne $spec.Version -or $record.steps -ne $spec.Steps -or
+            $runStarted -gt $runFinished -or $recordStarted -ne $runStarted -or $recordFinished -ne $runFinished -or
+            @($run.steps).Count -ne $spec.Steps -or @($run.steps | Where-Object status -cne 'passed').Count -ne 0) {
+            throw "Lifecycle manifest does not match the passed $suite run."
+        }
+        foreach ($key in @('error', 'cleanupError', 'playerCleanupError', 'configurationRestoreError')) {
+            if ($run.Contains($key)) { throw "Lifecycle run retained an error: $suite ($key)" }
+        }
+        if ($spec.Mode) {
+            if ($run.mode -cne $spec.Mode -or $run.version -cne $spec.Version -or $run.expectedStages -ne $spec.Steps) {
+                throw "Lifecycle run has the wrong version, mode or stage count: $suite"
+            }
+            $runHash = $run.preparation.pluginJars.'StarWorld.jar'
+        } else {
+            if ($run.minecraft -cne '1.21.11') { throw 'Logistics lifecycle run has the wrong Minecraft version.' }
+            $runHash = $run.pluginJars.'StarWorld.jar'
+        }
+        if ($runHash -cnotmatch '^[0-9a-f]{64}$' -or $record.plugin_sha256 -cne $runHash -or
+            ($suite -ceq 'life-source' -and $runHash -ceq $pluginHash) -or
+            ($suite -cne 'life-source' -and $runHash -cne $pluginHash)) {
+            throw "Lifecycle run has a mismatched StarWorld JAR: $suite"
+        }
+
+        $scriptBytes = Read-ZipEntryBytes (Get-LifecycleEntry $Archive "$base/fixture-script.cjs")
+        $scriptHash = Get-BytesSha256 $scriptBytes
+        $currentScriptHash = (Get-FileHash -LiteralPath (Join-Path $RepositoryRoot $spec.Runner) -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($record.fixture_script -cne $spec.Runner -or $record.fixture_script_sha256 -cne $scriptHash -or
+            $scriptHash -cne $currentScriptHash -or ($run.Contains('runnerSha256') -and $run.runnerSha256 -cne $scriptHash)) {
+            throw "Lifecycle fixture script differs from the verified source: $suite"
+        }
+        $stageNames = [regex]::Matches([Text.Encoding]::UTF8.GetString($scriptBytes), 'await\s+stage\(\s*([''"])(.*?)\1')
+        $expectedTotal = if ($spec.Mode) { 11 } else { 14 }
+        if ($stageNames.Count -ne $expectedTotal) { throw "Lifecycle fixture has an unexpected stage count: $suite" }
+        for ($i = 0; $i -lt $spec.Steps; $i++) {
+            if ($run.steps[$i].name -cne $stageNames[$spec.Offset + $i].Groups[2].Value) {
+                throw "Lifecycle run is missing the expected stage $($i + 1): $suite"
+            }
+        }
+        for ($number = 1; $number -le $spec.Starts; $number++) {
+            $null = Get-LifecycleEntry $Archive "$base/paper-run-$number.log"
+            if ($spec.Mode) {
+                $null = Get-LifecycleEntry $Archive "$base/client-run-$number.log"
+            } else {
+                foreach ($slot in @('a', 'b')) { $null = Get-LifecycleEntry $Archive "$base/client-run-$number-$slot.log" }
+                $null = Get-LifecycleEntry $Archive "$base/memory-before-run-$number.json"
+            }
+        }
+        $runs[$suite] = @{Run = $run; Record = $record; Hash = $runHash; EvidenceHash = (Get-BytesSha256 $evidenceBytes)}
+    }
+
+    $source = $runs['life-source']
+    $candidate = $runs['life-carry']
+    $originalBytes = Read-ZipEntryBytes (Get-LifecycleEntry $Archive 'runtime/life-source/original-1.0-evidence.json')
+    $original = Read-LifecycleJson $originalBytes
+    $originalHash = Get-BytesSha256 $originalBytes
+    $historicalPath = Join-Path $RepositoryRoot 'docs/evidence/history/1.0.0/civic-client.json'
+    $historicalHash = (Get-FileHash -LiteralPath $historicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $originalLink = $source.Run.preparation.original
+    if ($originalHash -cne $historicalHash -or $originalHash -cne $source.Record.preparation_sha256 -or
+        $originalHash -cne $originalLink.evidenceSha256 -or
+        $original.schema -ne 1 -or $original.status -cne 'passed' -or $original.version -cne '1.0.0' -or
+        $original.pluginJars.'StarWorld.jar' -cne $source.Hash -or
+        (Get-LifecycleUtcTicks $original.finishedAt 'original1.0.finishedAt') -gt
+            (Get-LifecycleUtcTicks $source.Run.startedAt 'life-source.startedAt') -or
+        @($original.steps).Count -ne 30 -or @($original.steps | Where-Object status -cne 'passed').Count -ne 0) {
+        throw 'Lifecycle source is not bound to the archived, passed StarWorld 1.0 civic evidence.'
+    }
+    $sourceLink = $candidate.Run.preparation.source
+    $sourceDirectory = ([string]$source.Record.source_directory).Replace('\', '/').TrimEnd('/')
+    $sourceRuntime = ([string]$source.Run.runtime).Replace('\', '/').TrimEnd('/')
+    if ($candidate.Record.preparation_sha256 -cne $source.EvidenceHash -or $sourceLink.evidenceSha256 -cne $source.EvidenceHash -or
+        !$sourceDirectory -or ([string]$sourceLink.evidenceFile).Replace('\', '/') -cne "$sourceDirectory/evidence.json" -or
+        !$sourceRuntime -or ([string]$sourceLink.runtime).Replace('\', '/').TrimEnd('/') -cne $sourceRuntime -or
+        !$source.Run.oldActionId -or $sourceLink.oldAction.id -cne $source.Run.oldActionId -or
+        (Get-LifecycleUtcTicks $source.Run.finishedAt 'life-source.finishedAt') -gt
+            (Get-LifecycleUtcTicks $candidate.Run.startedAt 'life-carry.startedAt')) {
+        throw 'Lifecycle candidate is not bound to the exact stopped source run.'
+    }
+    $null = Get-LifecycleEntry $Archive 'runtime/life-source/stopped-source-final.json'
+    foreach ($label in @('partial', 'complete', 'final')) {
+        $null = Get-LifecycleEntry $Archive "runtime/life-carry/stopped-candidate-$label.json"
+    }
+
+    $logistics = $runs['lifecycle-logistics']
+    $prepBytes = Read-ZipEntryBytes (Get-LifecycleEntry $Archive 'runtime/lifecycle-logistics/PREPARATION.json')
+    $prepHash = Get-BytesSha256 $prepBytes
+    $preparation = Read-LifecycleJson $prepBytes
+    if ($prepHash -cne $logistics.Record.preparation_sha256 -or $prepHash -cne $logistics.Run.preparation.sha256 -or
+        $preparation.schema -ne 1 -or $preparation.artifactsBound -ne $true -or
+        $preparation.productVersion -cne $version -or $preparation.targetPluginSha256 -cne $pluginHash -or
+        $preparation.fixtureSha256 -cne $logistics.Run.pluginJars.'StarWorldFixture.jar' -or
+        $preparation.worldsCopied -ne 0 -or $preparation.databasesCopied -ne 0 -or $preparation.playersCopied -ne 0 -or
+        $logistics.Run.originalConfigurationRestored -ne $true) {
+        throw 'Logistics lifecycle run is not bound to its fresh runtime preparation and restored configuration.'
+    }
+    foreach ($label in @('default', 'travel-reduced', 'waypoints-reduced', 'restored')) {
+        $null = Get-LifecycleEntry $Archive "runtime/lifecycle-logistics/stopped-$label.json"
+    }
+    foreach ($label in @('original', 'travel-reduced', 'waypoints-reduced', 'restored')) {
+        $null = Get-LifecycleEntry $Archive "runtime/lifecycle-logistics/logistics-$label.yml"
+    }
+}
 # A stale evidence ZIP must not be attached to a different installable artifact.
 $evidenceArchive = [IO.Compression.ZipFile]::OpenRead($evidenceZip)
 try {
@@ -88,6 +244,7 @@ try {
     if ($releaseVersion -ge [version]'0.4.0') { $requiredSuites += 'operations' }
     if ($releaseVersion -ge [version]'0.5.0') { $requiredSuites += 'disaster' }
     if ($isFinalRelease) { $requiredSuites += @('works', 'civic') } else { $requiredSuites += 'senluo' }
+    if ($requiresLifecycleEvidence) { $requiredSuites += @('life-source', 'life-carry', 'lifecycle-logistics') }
     if ($isFinalRelease) {
         if ($manifest.source.sources_jar_sha256 -ne (Get-FileHash -LiteralPath $sourcesJar -Algorithm SHA256).Hash.ToLowerInvariant()) {
             throw 'Evidence manifest does not bind the current sources JAR.'
@@ -101,6 +258,9 @@ try {
         }
     }
     foreach ($suite in $requiredSuites) {
+        if ($requiresLifecycleEvidence -and $suite -in @('life-source', 'life-carry', 'lifecycle-logistics')) {
+            continue
+        }
         $entry = $evidenceArchive.GetEntry("runtime/$suite/evidence.json")
         if (!$entry) { throw "Evidence archive lacks the required $suite run." }
         $run = [Text.Encoding]::UTF8.GetString((Read-ZipEntryBytes $entry)) | ConvertFrom-Json
@@ -146,6 +306,7 @@ try {
             }
         }
     }
+    if ($requiresLifecycleEvidence) { Assert-LifecycleEvidence $evidenceArchive $manifest }
     $smokeEntry = $evidenceArchive.GetEntry('runtime/smoke/smoke-evidence.json')
     if (!$smokeEntry) { throw 'Evidence archive lacks the required standalone run.' }
     $smoke = [Text.Encoding]::UTF8.GetString((Read-ZipEntryBytes $smokeEntry)) | ConvertFrom-Json
@@ -255,6 +416,10 @@ try {
     if ($isFinalRelease) {
         $toolFiles += @('tools/paper-client/works-acceptance.cjs','tools/paper-client/prepare-upgrade-10.py',
             'tools/paper-client/upgrade-10-acceptance.cjs','tools/senluo-fixture/civic-acceptance.cjs')
+    }
+    if ($requiresLifecycleEvidence) {
+        $toolFiles += @('tools/lifecycle_evidence.py', 'tools/test_lifecycle_evidence.py',
+            'tools/paper-client/lifecycle-logistics-acceptance.cjs', 'tools/senluo-fixture/lifecycle-acceptance.cjs')
     }
     foreach ($file in $toolFiles) { Copy-AllowedFile $file $sourceRoot }
     $fixtureSource = Join-Path $RepositoryRoot 'tools/paper-fixture/src'

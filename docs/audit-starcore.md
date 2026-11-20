@@ -4,6 +4,10 @@
 
 审计日期：2026-11-19（Asia/Shanghai）。仓库：<https://github.com/addxiaoyi/starcore>。本地检出 `main`，`git log -1` 和 `git ls-remote origin HEAD` 均为 `f769e62799e769a18fe51305b545869a17f80cd1`，提交时间 `2026-11-18T23:34:47Z`，消息 `docs: record final shared budget Paper acceptance`。本次只读审计未修改 StarCore。审计范围包含 README（中文/英文）、ARCHITECTURE、Maven、plugin.yml、公共入口及实际注册、国家/城市/领土/资源/科技/政策/繁荣/天气/纪元实现。
 
+## 1.1.0 主线契约刷新
+
+2026-11-20 **14:23:28 UTC（22:23:28 Asia/Shanghai）** 再次通过 GitHub 提交接口核对，默认主线 HEAD 仍为 `f769e62799e769a18fe51305b545869a17f80cd1`，与已运行基线完全一致。本轮不读取未提交改动，不修改上游或运行任何 JVM。`StarCoreApi.service(Class<T>)` 仍返回原服务；`NationService.nationById/nationOf` 和 `CityService.getCity/getPlayerCity` 仍返回可变国家/城市模型，没有新增带版本的不可变权限/领土快照，也没有新增可核验的第三国商路通行授权。现有 metrics/health 的 `Snapshot` 类型不等于这些权威快照。`FoliaCompatScheduler` 的区域调度封装及其简化主线程判断，也没有改变全部服务的访问合同；`plugin.yml` 仍未声明 `folia-supported`。因此 1.1 保留当前 Paper 主线程捕获、稳定回执写入边界和 Folia 启用门禁，不因类名、同步集合或全局调度器而放宽兼容声明。
+
 ## 0.3.0 国库与线程边界复审
 
 2026-11-20 再次核对指定远端，HEAD 仍为上述 `f769e627…`，未改变核心生产源码。新增实物金币市场前复查以下公开服务：

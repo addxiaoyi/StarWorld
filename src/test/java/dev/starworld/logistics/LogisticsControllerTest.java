@@ -8,6 +8,9 @@ import dev.starworld.logistics.LogisticsState.*;
 import dev.starworld.runtime.WorldRuntime;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.bukkit.Material;
 import org.bukkit.Server;
 import org.bukkit.World;
@@ -20,6 +23,17 @@ import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
 
 class LogisticsControllerTest {
+    @Test void cancelledAuthorityDispatchTerminatesTickAndReleasesNextPass()throws Exception{
+        JavaPlugin plugin=mock(JavaPlugin.class);WorldRuntime runtime=mock(WorldRuntime.class);CoreBridge core=mock(CoreBridge.class);LogisticsService service=mock(LogisticsService.class);
+        when(service.definitions()).thenReturn(LogisticsDefinitions.defaults());when(service.dueOrders(anyLong(),anyInt())).thenReturn(List.of());
+        when(runtime.async(any())).thenAnswer(call->{try{return CompletableFuture.completedFuture(((WorldRuntime.Work<?>)call.getArgument(0)).run());}catch(Exception failure){return CompletableFuture.failedFuture(failure);}});
+        CompletableFuture<LogisticsController.Captured> scheduled=new CompletableFuture<>();when(runtime.globalFuture(any())).thenAnswer(call->scheduled);
+        LogisticsController controller=new LogisticsController(plugin,runtime,core,mock(CoreExtensionPort.class),service);
+        var result=controller.tickFuture();assertFalse(result.isDone());assertTrue(controller.tickFuture().isDone());verify(service,times(1)).dueOrders(anyLong(),anyInt());
+        IllegalStateException stopped=new IllegalStateException("scheduler stopped");scheduled.completeExceptionally(stopped);
+        assertSame(stopped,assertThrows(ExecutionException.class,()->result.get(1,TimeUnit.SECONDS)).getCause());
+        assertThrows(ExecutionException.class,()->controller.tickFuture().get(1,TimeUnit.SECONDS));verify(service,times(2)).dueOrders(anyLong(),anyInt());verifyNoInteractions(plugin,core);
+    }
     private NationSnapshot nation(UUID nation, UUID peer, String relation, boolean war, boolean capability) {
         return new NationSnapshot(nation, "国家", Instant.EPOCH, "clear", Map.of(), null, Set.of(), Map.of(), "", Map.of(), Map.of(), 1,
                 war ? Set.of(peer) : Set.of(), relation == null ? Map.of() : Map.of(peer, relation), List.of(), 0,

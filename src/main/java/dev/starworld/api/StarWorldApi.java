@@ -14,6 +14,8 @@ public interface StarWorldApi {
     default CompletableFuture<Optional<dev.starworld.evolution.EvolutionState.Profile>> development(UUID cityId){return CompletableFuture.completedFuture(Optional.empty());}
     default CompletableFuture<List<dev.starworld.evolution.EvolutionState.Culture>> culture(UUID cityId){return CompletableFuture.completedFuture(List.of());}
     default CompletableFuture<Optional<dev.starworld.life.LifeState.LifeView>> life(UUID cityId){return CompletableFuture.completedFuture(Optional.empty());}
+    /** Exact committed contribution credit; never drains culture or exposes the acting player's identity. */
+    default CompletableFuture<Optional<dev.starworld.life.LifeState.EvolutionCredit>> lifeEvolutionCredit(UUID actionId){return CompletableFuture.completedFuture(Optional.empty());}
     default CompletableFuture<List<dev.starworld.logistics.LogisticsState.Route>> routes(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
     default CompletableFuture<List<dev.starworld.logistics.LogisticsState.RoutePlan>> routePlans(UUID originCity,UUID targetCity,dev.starworld.logistics.LogisticsState.Mode mode,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
     default CompletableFuture<List<dev.starworld.logistics.LogisticsState.Order>> orders(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}

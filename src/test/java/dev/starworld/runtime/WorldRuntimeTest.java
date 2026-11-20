@@ -39,6 +39,15 @@ class WorldRuntimeTest {
     private static final String WHEAT = "minecraft:wheat";
     @TempDir Path temp;
 
+    @Test void newPublicQueriesForwardOnlyToReadMethodsWithoutStartingOrCompletingWork()throws Exception{
+        var works=mock(dev.starworld.works.PublicWorksService.class);var civic=mock(dev.starworld.civic.CivicNeedsService.class);UUID request=UUID.randomUUID();
+        try(MockedConstruction<ExpansionRuntime> expansions=mockConstruction(ExpansionRuntime.class,(value,context)->{when(value.works()).thenReturn(works);when(value.civic()).thenReturn(civic);} );Fixture f=new Fixture()){
+            when(works.projects(f.city.cityId(),1,2)).thenReturn(List.of());when(works.history(f.city.cityId(),1,3)).thenReturn(List.of());when(civic.requests(f.city.cityId(),1,4)).thenReturn(List.of());when(civic.history(f.city.cityId(),1,5)).thenReturn(List.of());when(civic.receipt(request)).thenReturn(Optional.empty());
+            f.runtime.installExpansion(temp.toFile());assertTrue(f.runtime.publicWorks(f.city.cityId(),1,2).get(5,TimeUnit.SECONDS).isEmpty());assertTrue(f.runtime.publicWorksHistory(f.city.cityId(),1,3).get(5,TimeUnit.SECONDS).isEmpty());assertTrue(f.runtime.civicNeeds(f.city.cityId(),1,4).get(5,TimeUnit.SECONDS).isEmpty());assertTrue(f.runtime.civicHistory(f.city.cityId(),1,5).get(5,TimeUnit.SECONDS).isEmpty());assertTrue(f.runtime.civicReceipt(request).get(5,TimeUnit.SECONDS).isEmpty());
+            verify(works).projects(f.city.cityId(),1,2);verify(works).history(f.city.cityId(),1,3);verify(civic).requests(f.city.cityId(),1,4);verify(civic).history(f.city.cityId(),1,5);verify(civic).receipt(request);verify(works,never()).start(any(),any(),anyString(),anyLong(),anySet(),anyString());verify(works,never()).cycle(any(),any(),anyLong(),anySet());verify(civic,never()).request(any(),any(),anyString(),anyLong(),anyString());verify(civic,never()).complete(any(),any(),anyLong(),anyString());
+        }
+    }
+
     private static Definitions definitions() {
         return new Definitions(60, 16, 16, 10000, 0,
                 Map.of("plains", new Definitions.Terrain("plains", "Plains", 1, 1, 1, Map.of(), Map.of())),

@@ -29,4 +29,10 @@ public interface StarWorldApi {
     default CompletableFuture<Optional<dev.starworld.disaster.DisasterState.Response>> disasterResponse(UUID requestId){return CompletableFuture.completedFuture(Optional.empty());}
     default CompletableFuture<List<dev.starworld.disaster.DisasterState.Response>> disasterResponses(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
     default CompletableFuture<List<dev.starworld.disaster.DisasterState.History>> disasterHistory(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
+    default CompletableFuture<List<dev.starworld.works.PublicWorksState.Project>> publicWorks(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
+    default CompletableFuture<List<dev.starworld.works.PublicWorksState.History>> publicWorksHistory(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
+    default CompletableFuture<List<dev.starworld.civic.CivicNeedsState.Request>> civicNeeds(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
+    default CompletableFuture<List<dev.starworld.civic.CivicNeedsState.History>> civicHistory(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}
+    /** Completed receipt snapshot with applied=false; querying never completes a request or claims an action. */
+    default CompletableFuture<Optional<dev.starworld.civic.CivicNeedsState.Receipt>> civicReceipt(UUID requestId){return CompletableFuture.completedFuture(Optional.empty());}
 }

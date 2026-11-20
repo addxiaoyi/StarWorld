@@ -10,7 +10,7 @@ const {Paper,connect,botMessage,properties,configuredNumber,hash,requireFile,wai
 const HELP=`Usage: node operations-acceptance.cjs --java <java21> --paper <Paper132.jar>
   --runtime <fresh-owned-directory> --python <Python3> [--client-deps <mineflayer>]
 
-Requires actual StarCore, StarWorld 0.4 and the latest paper fixture, localhost/offline/EULA marker,
+Requires actual StarCore, StarWorld 0.4 or 1.0 and the latest paper fixture, localhost/offline/EULA marker,
 fresh worlds/player/plugin data, ten-second settlement, zero random-event chance, culture decay
 interval 2 (only this disposable runtime), default 500 decay basis points, zero new-nation protection
 and affordable/zero claim/war costs. Keep default cultural policy factors and market costs.
@@ -49,7 +49,7 @@ function backupSnapshot(options){const file=path.join(options.runtime,'plugins/S
   const result=spawnSync(options.python,['-c',BACKUP_PROBE,file],{encoding:'utf8',windowsHide:true,timeout:15000,maxBuffer:8*1024*1024});assert.equal(result.status,0,`Read-only snapshot probe failed: ${result.stderr}`);return JSON.parse(result.stdout);
 }
 async function permission(server,bot,admin){return waitUntil(async()=>{const value=await fixture(server,'exp-permissions',bot);return value.admin===admin?value:false;},10000,'actual player admin permission',()=>server.check());}
-async function operations(server,bot,target){const value=await fixture(server,'exp-operations',bot,target);assert.match(value.version,/^0\.4\./);assert(Array.isArray(value.routePlans)&&Array.isArray(value.deliveryStats)&&Array.isArray(value.globalDeliveryStats));return value;}
+async function operations(server,bot,target){const value=await fixture(server,'exp-operations',bot,target);assert.match(value.version,/^(?:0\.4|1\.0)\.\d+$/);assert(Array.isArray(value.routePlans)&&Array.isArray(value.deliveryStats)&&Array.isArray(value.globalDeliveryStats));return value;}
 function completedLogStats(value){return value.deliveryStats.find(row=>row.item==='minecraft:oak_log');}
 function assertOneDelivery(value){const stats=completedLogStats(value);assert(stats);assert.equal(stats.orders,1);assert.equal(stats.units,11);assert.equal(Number(stats.gross),22);assert.equal(Number(stats.averageUnitPrice),2);assert(stats.firstCompletedPeriod>=0);assert.equal(stats.firstCompletedPeriod,stats.lastCompletedPeriod);return stats;}
 async function onlineBackup(server,bot,options){server.command(`op ${bot.username}`);await permission(server,bot,true);
@@ -68,7 +68,7 @@ async function fixture(server,action,bot,suffix=''){
     for(const line of lines){const i=line.indexOf('SW_FIXTURE_EXPANSION ');if(i<0)continue;const parsed=JSON.parse(line.slice(i+'SW_FIXTURE_EXPANSION '.length));if(parsed.action===action&&parsed.player===bot.username)return parsed.observed;}return null;
   },20000,`fixture ${action} ${bot.username}`);
 }
-async function snapshot(server,bot){return waitUntil(async()=>{const s=await fixture(server,'exp-progress',bot);assert(s.city&&s.atlas&&s.geography&&s.development&&s.nation);assert.match(s.version,/^0\.4\./);for(const n of Object.values(s.city.stock))assert(Number.isSafeInteger(n)&&n>=0);
+async function snapshot(server,bot){return waitUntil(async()=>{const s=await fixture(server,'exp-progress',bot);assert(s.city&&s.atlas&&s.geography&&s.development&&s.nation);assert.match(s.version,/^(?:0\.4|1\.0)\.\d+$/);for(const n of Object.values(s.city.stock))assert(Number.isSafeInteger(n)&&n>=0);
   // Public city/atlas Futures precede the fixture's profile+culture IO job. A normal
   // settlement can commit between those reads, so only compare one coherent period.
   const period=s.city.lastPeriod;if(s.development.lastPeriod!==period||s.atlas.cityLastPeriod!==period||s.geography.cityLastPeriod!==period){console.log(`[RETRY] mixed snapshot ${bot.username}: city=${period}, development=${s.development.lastPeriod}, atlas=${s.atlas.cityLastPeriod}, geography=${s.geography.cityLastPeriod}`);return false;}return s;
@@ -95,7 +95,7 @@ async function main(){
   const coreConfig=path.join(options.runtime,'plugins/StarCore/config.yml');assert.match(fs.readFileSync(coreConfig,'utf8'),/^\s*new-nation-protection-days:\s*0\s*(?:#.*)?$/m,'Disable only this isolated runtime new-nation protection');
   const requireClient=args['client-deps']?createRequire(path.resolve(args['client-deps'],'package.json')):require,mineflayer=requireClient('mineflayer');
   const preparation=path.join(options.runtime,'PREPARATION.json');assert(fs.existsSync(preparation),'Use an explicitly prepared fresh runtime');
-  const prepared=JSON.parse(fs.readFileSync(preparation,'utf8').replace(/^\uFEFF/,''));assert.equal(prepared.schema,1);assert.equal(prepared.productVersion,'0.4.0');assert.equal(prepared.targetPluginSha256,hash(path.join(options.runtime,'plugins/StarWorld.jar')));assert.equal(prepared.fixtureSha256,hash(path.join(options.runtime,'plugins/StarWorldFixture.jar')));assert.equal(prepared.artifactsBound,true);assert.equal(prepared.serverPort,options.port);assert.equal(prepared.worldsCopied,0);assert.equal(prepared.databasesCopied,0);assert.equal(prepared.playersCopied,0);
+  const prepared=JSON.parse(fs.readFileSync(preparation,'utf8').replace(/^\uFEFF/,''));assert.equal(prepared.schema,1);assert.match(prepared.productVersion,/^(?:0\.4|1\.0)\.\d+$/);assert.equal(prepared.targetPluginSha256,hash(path.join(options.runtime,'plugins/StarWorld.jar')));assert.equal(prepared.fixtureSha256,hash(path.join(options.runtime,'plugins/StarWorldFixture.jar')));assert.equal(prepared.artifactsBound,true);assert.equal(prepared.serverPort,options.port);assert.equal(prepared.worldsCopied,0);assert.equal(prepared.databasesCopied,0);assert.equal(prepared.playersCopied,0);
   assert(!fs.existsSync(path.join(configDir,'starworld.db')),'Operations acceptance requires a fresh extension database');assert(!fs.existsSync(path.join(options.runtime,props['level-name'])),'Operations acceptance requires a fresh world');
   const directory=path.join(options.runtime,'operations-acceptance',new Date().toISOString().replace(/[:.]/g,'-'));fs.mkdirSync(directory,{recursive:true});
   const evidence={schema:4,suite:'real-paper-operations',status:'running',startedAt:new Date().toISOString(),minecraft:'1.21.11',node:process.version,mineflayer:requireClient('mineflayer/package.json').version,paperSha256:hash(options.paper),pluginJars:{},configSha256:{},preparation:{fileSha256:hash(preparation),...prepared},seeds:[],steps:[],
@@ -103,6 +103,7 @@ async function main(){
       nodeVersion:process.version,nodeExecArgv:process.execArgv,javaOptionsEnvironment:process.env._JAVA_OPTIONS||''}};
   for(const name of fs.readdirSync(path.join(options.runtime,'plugins')))if(name.endsWith('.jar'))evidence.pluginJars[name]=hash(path.join(options.runtime,'plugins',name));
   evidence.configSha256['StarCore/config.yml']=hash(coreConfig);
+  if(prepared.productVersion.startsWith('1.0.'))for(const name of ['disaster-response.yml','public-works.yml','civic-needs.yml'])evidence.configSha256[name]=hash(path.join(configDir,name));
   const save=()=>fs.writeFileSync(path.join(directory,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');
   const stage=async(name,run)=>{const step={name,status:'running',startedAt:new Date().toISOString()};evidence.steps.push(step);save();try{step.observed=await run();step.status='passed';console.log(`[PASS] ${name}`);return step.observed;}catch(error){step.status='failed';step.error=error.stack;throw error;}finally{step.finishedAt=new Date().toISOString();save();}};
   let server=new Paper(options,directory,1),a,b,directRoute,alternateRoute,barter,rerouteId,listingId,purchaseId,shipmentId,preRestart,transferReceipt,treasuryBaseline,pausedBackup,deliveredBackup,completedStats;

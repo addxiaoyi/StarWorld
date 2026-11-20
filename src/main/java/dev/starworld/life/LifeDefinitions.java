@@ -104,7 +104,7 @@ public record LifeDefinitions(int professionCooldownPeriods, int playerCulturePe
     }
     private static Map<String, Long> amounts(ConfigurationSection root, String key) {
         ConfigurationSection s = section(root, key); Map<String, Long> result = new HashMap<>();
-        for (String id : s.getKeys(false)) { Object value = s.get(id); if (!(value instanceof Number n) || n.doubleValue() != n.longValue()) throw new IllegalArgumentException("Invalid life amount " + id); result.put(id, n.longValue()); }
+        for (String id : s.getKeys(true)) { if(s.isConfigurationSection(id)){if(s.getConfigurationSection(id).getKeys(false).isEmpty())throw new IllegalArgumentException("Empty life amount mapping " + id);continue;}Object value = s.get(id); if (!(value instanceof Number n) || n.doubleValue() != n.longValue()) throw new IllegalArgumentException("Invalid life amount " + id); result.put(id, n.longValue()); }
         return result;
     }
     private static Map<String, Long> costs(Map<String, Long> values) {

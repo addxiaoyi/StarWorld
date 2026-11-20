@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -69,16 +70,45 @@ def stage_names(script: bytes, label: str) -> list[str]:
     return result
 
 
+def hash_string(value: object) -> bool:
+    return isinstance(value, str) and re.fullmatch(r"[a-f0-9]{64}", value) is not None
+
+
+def clean_shutdown(log: bytes) -> bool:
+    return (b"StarWorld ready:" in log and (b"Stopping server" in log or b"Stopping the server" in log)
+            and b"All dimensions are saved" in log and b"Could not flush StarWorld storage" not in log)
+
+
+def final_source_manifest(root: Path, version: str) -> dict:
+    """Bind the product sources JAR and all native YAML to the same source tree."""
+    target = root / "target"
+    source_jar = regular_file(target / f"starworld-{version}-sources.jar", target)
+    with zipfile.ZipFile(io.BytesIO(source_jar)) as archive:
+        require(archive.testzip() is None, "Sources JAR failed CRC validation")
+        for folder in ("java", "resources"):
+            boundary = root / "src/main" / folder
+            for file in sorted(boundary.rglob("*")):
+                if file.is_file():
+                    name = file.relative_to(boundary).as_posix()
+                    require(archive.read(name) == regular_file(file, boundary), f"Sources JAR differs from current source: {name}")
+    files = [*sorted((root / "src/main/resources").glob("*.yml")), *sorted((root / "examples").glob("*.yml"))]
+    return {"sources_jar_sha256": sha256(source_jar), "configuration_sha256": {
+        file.relative_to(root).as_posix(): sha256(regular_file(file, root)) for file in files}}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--repository-root", type=Path, default=Path(__file__).absolute().parent.parent)
     parser.add_argument("--expansion-dir", type=Path, required=True, help="Passed expansion run directory containing evidence.json and complete transcripts")
-    parser.add_argument("--senluo-dir", type=Path, required=True, help="Passed optional integration run directory containing evidence.json and complete transcripts")
+    parser.add_argument("--senluo-dir", type=Path, help="Legacy standalone real SenLuo suite (required before 1.0; 1.0 civic suite repeats it)")
     parser.add_argument("--baseline-dir", type=Path, help="Required for 0.3: baseline run on the same final plugin JAR")
     parser.add_argument("--progression-dir", type=Path, help="Required 0.3 geography, reroute and treasury market runtime suite")
     parser.add_argument("--upgrade-dir", type=Path, help="Required 0.3 migration from a verified 0.2 server state")
     parser.add_argument("--border-dir", type=Path, help="Required 0.3 real neighboring-resource dispute regression")
     parser.add_argument("--operations-dir", type=Path, help="Required for 0.4: route planning, delivery statistics and online backup acceptance")
+    parser.add_argument("--disaster-dir", type=Path, help="Required from 0.5: disaster costs, response restart, and finite recovery")
+    parser.add_argument("--works-dir", type=Path, help="Required for 1.0: public works under three consecutive starts")
+    parser.add_argument("--civic-dir", type=Path, help="Required for 1.0: real SenLuo integrations and civic needs, including the original fifteen stages")
     parser.add_argument("--smoke-dir", type=Path, help="Required for 0.3: no-dependency runtime containing smoke-evidence.json and both smoke-run logs")
     parser.add_argument("--check-only", action="store_true", help="Validate all inputs and print the planned archive without writing")
     args = parser.parse_args()
@@ -89,6 +119,7 @@ def main() -> int:
             pom.findtext("m:artifactId", namespaces=ns) == "starworld", "Repository is not StarWorld")
     version = pom.findtext("m:version", namespaces=ns)
     require(bool(version and re.fullmatch(r"\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?", version)), "Invalid project version")
+    release_version = tuple(map(int, version.split("-")[0].split(".")))
     target = absolute_directory(root / "target")
     plugin_hash = sha256(regular_file(target / f"starworld-{version}.jar", target))
 
@@ -151,18 +182,22 @@ def main() -> int:
     require(counters == unit.get("coverage"), "JaCoCo counters differ from the recorded final build")
 
     runs = []
-    run_inputs = [("expansion", args.expansion_dir, "tools/paper-client/expansion-acceptance.cjs"),
-                  ("senluo", args.senluo_dir, "tools/senluo-fixture/acceptance.cjs")]
+    run_inputs = [("expansion", args.expansion_dir, "tools/paper-client/expansion-acceptance.cjs")]
+    require(args.senluo_dir is not None or release_version >= (1, 0, 0), "Pre-1.0 delivery requires the standalone SenLuo runtime suite")
+    if args.senluo_dir:
+        run_inputs.append(("senluo", args.senluo_dir, "tools/senluo-fixture/acceptance.cjs"))
     if args.baseline_dir:
         run_inputs.append(("baseline", args.baseline_dir, "tools/paper-client/acceptance.cjs"))
-    release_version = tuple(map(int, version.split("-")[0].split(".")))
     if release_version >= (0, 3, 0):
         require(args.baseline_dir is not None, "0.3 delivery requires the final basic gameplay regression")
         require(args.smoke_dir is not None, "0.3 delivery requires the final two-start standalone regression")
         require(args.progression_dir is not None, "0.3 delivery requires final progression runtime evidence")
         run_inputs.append(("progression", args.progression_dir, "tools/paper-client/progression-acceptance.cjs"))
         require(args.upgrade_dir is not None, "0.3 delivery requires real upgrade and restart evidence")
-        upgrade_script = "tools/paper-client/upgrade-04-acceptance.cjs" if release_version >= (0, 4, 0) else "tools/paper-client/upgrade-acceptance.cjs"
+        upgrade_script = ("tools/paper-client/upgrade-10-acceptance.cjs" if release_version >= (1, 0, 0) else
+                          "tools/paper-client/upgrade-05-acceptance.cjs" if release_version >= (0, 5, 0) else
+                          "tools/paper-client/upgrade-04-acceptance.cjs" if release_version >= (0, 4, 0) else
+                          "tools/paper-client/upgrade-acceptance.cjs")
         run_inputs.append(("upgrade", args.upgrade_dir, upgrade_script))
         require(args.border_dir is not None, "0.3 delivery requires real border-resource dispute evidence")
         run_inputs.append(("border", args.border_dir, "tools/paper-client/border-acceptance.cjs"))
@@ -175,6 +210,22 @@ def main() -> int:
     if release_version >= (0, 4, 0):
         require(args.operations_dir is not None, "0.4 delivery requires completed operations runtime evidence")
         run_inputs.append(("operations", args.operations_dir, "tools/paper-client/operations-acceptance.cjs"))
+    if release_version >= (0, 5, 0):
+        require(args.disaster_dir is not None, "0.5 or later delivery requires --disaster-dir")
+        run_inputs.append(("disaster", args.disaster_dir, "tools/paper-client/disaster-acceptance.cjs"))
+    if release_version >= (1, 0, 0):
+        for label, directory, script in (
+                ("works", args.works_dir, "tools/paper-client/works-acceptance.cjs"),
+                ("civic", args.civic_dir, "tools/senluo-fixture/civic-acceptance.cjs")):
+            require(directory is not None, f"1.0 delivery requires --{label}-dir")
+            run_inputs.append((label, directory, script))
+        # The combined civic suite must actually retain every standalone SenLuo assertion.
+        original_senluo = "tools/senluo-fixture/acceptance.cjs"
+        legacy_names = stage_names(regular_file(root / original_senluo, root), original_senluo)
+        combined = "tools/senluo-fixture/civic-acceptance.cjs"
+        civic_names = stage_names(regular_file(root / combined, root), combined)
+        require([name for name in civic_names if name in legacy_names] == legacy_names,
+                "The combined civic suite must retain every original SenLuo stage in order")
     transcript_pattern = re.compile(r"(?:paper-run-[1-9][0-9]*|client-run-[A-Za-z0-9_-]+)\.log")
     expected_clients = {
         "expansion": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
@@ -184,6 +235,9 @@ def main() -> int:
         "upgrade": {"client-run-1.log", "client-run-2.log"},
         "border": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
         "operations": {f"client-run-{run}-{player}.log" for run in (1, 2, 3) for player in ("a", "b")},
+        "disaster": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
+        "works": {f"client-run-{run}-{slot}.log" for run in (1, 2, 3) for slot in range(3)},
+        "civic": {"client-run-1.log", "client-run-listener-1.log", "client-run-2.log"},
     }
     for label, raw_directory, script_name in run_inputs:
         directory = absolute_directory(raw_directory)
@@ -200,26 +254,92 @@ def main() -> int:
         require(evidence.get("startedAt") and evidence.get("finishedAt"), f"{label} run has no completed timespan")
         add(f"runtime/{label}/evidence.json", data)
         preparation_name = "UPGRADE-PROVENANCE.json" if label == "upgrade" else "PREPARATION.json"
-        preparation = directory.parent.parent / preparation_name
+        runtime = directory.parent.parent
+        preparation = runtime / preparation_name
+        preparation_proof = None
+        preparation_hash = None
         if preparation.is_file():
-            preparation_data = regular_file(preparation, directory.parent.parent)
-            read_json(preparation_data, str(preparation))
+            preparation_data = regular_file(preparation, runtime)
+            preparation_proof = read_json(preparation_data, str(preparation))
+            preparation_hash = sha256(preparation_data)
             add(f"runtime/{label}/{preparation_name}", preparation_data)
         else:
-            require(label not in {"upgrade", "senluo"}, f"{label} run lacks its source/preparation provenance")
+            require(label not in {"upgrade", "senluo", "disaster", "civic", "works"}, f"{label} run lacks its source/preparation provenance")
+        if release_version >= (1, 0, 0):
+            require(evidence.get("version", version) == version and evidence.get("targetVersion", version) == version,
+                    f"{label} run declares another product version")
+            require(hash_string(evidence.get("paperSha256")), f"{label} lacks its Paper fingerprint")
+            plugin_jars = evidence["pluginJars"]
+            for name, fingerprint in sorted(plugin_jars.items()):
+                require(re.fullmatch(r"[^/\\:]+\.jar", name, re.IGNORECASE) is not None and hash_string(fingerprint),
+                        f"Invalid {label} plugin fingerprint/name: {name}")
+                require(sha256(regular_file(runtime / "plugins" / name, runtime)) == fingerprint,
+                        f"{label} actual installed artifact changed: {name}")
+            if label in {"disaster", "operations", "works", "upgrade"}:
+                require(preparation_proof is not None and preparation_proof.get("productVersion", preparation_proof.get("targetVersion")) == version and
+                        preparation_proof.get("targetPluginSha256") == plugin_hash, f"{label} preparation is not bound to the final JAR/version")
+                if label in {"disaster", "operations"}:
+                    require(evidence.get("preparation", {}).get("fileSha256") == preparation_hash and
+                            preparation_proof.get("fixtureSha256") == plugin_jars.get("StarWorldFixture.jar"), f"{label} preparation or fixture fingerprint mismatch")
+                elif label == "works":
+                    require(preparation_proof.get("fixtureSha256") == plugin_jars.get("StarWorldFixture.jar"), "Works preparation fixture mismatch")
+                else:
+                    require(evidence.get("beforeProvenance") == preparation_proof and hash_string(preparation_proof.get("sourcePluginSha256")) and
+                            evidence.get("sourcePluginSha256") == preparation_proof["sourcePluginSha256"] != plugin_hash and
+                            preparation_proof.get("fixtureSha256") == plugin_jars.get("StarWorldFixture.jar"), "Upgrade source/target provenance mismatch")
+            if label in {"civic", "senluo"}:
+                asset_proof = dict(evidence.get("assetPreparation", {}))
+                require(preparation_proof is not None and preparation_proof.get("starWorldVersion") == version and preparation_proof.get("starWorldSha256") == plugin_hash and
+                        asset_proof.pop("fileSha256", None) == preparation_hash and asset_proof == preparation_proof and
+                        preparation_proof.get("senluoFixtureSha256") == plugin_jars.get("StarWorldSenLuoFixture.jar"), f"{label} preparation or fixture fingerprint mismatch")
+            if label == "civic":
+                require(evidence.get("unitEvidence") == unit and preparation_proof.get("unitEvidence", {}).get("sha256") == sha256(unit_data), "Civic run is not bound to the final unit verification")
+                require(evidence.get("expectedStages") == len(expected), "Civic expected stage count does not match the shipped script")
+            config_hashes = dict(evidence.get("configSha256", {}))
+            if label in {"civic", "senluo"}:
+                config_hashes.update(preparation_proof["configSha256"])
+            if label == "baseline":
+                tuning = evidence.get("testTuning", {})
+                config_hashes.update({"config.yml": tuning.get("configSha256"), "definitions.yml": tuning.get("definitionsSha256")})
+            if label == "works":
+                require(all(name in config_hashes for name in ("config.yml", "definitions.yml", "evolution.yml", "public-works.yml", "civic-needs.yml", "disaster-response.yml")),
+                        "Works run is missing the final governance configuration fingerprints")
+            if label == "upgrade":
+                preserved = preparation_proof.get("oldConfigurationSha256", {})
+                after_start = evidence.get("startupConfigurationSha256", {})
+                require(bool(preserved) and set(after_start) == set(preserved) | {"plugins/StarWorld/civic-needs.yml", "plugins/StarWorld/public-works.yml"} and
+                        all(after_start.get(name) == fingerprint for name, fingerprint in preserved.items()), "Upgrade configurations were not preserved and supplemented")
+                for name, fingerprint in after_start.items():
+                    match = re.fullmatch(r"plugins/StarWorld/([a-z0-9_-]+\.yml)", name)
+                    require(match is not None and hash_string(fingerprint), f"Invalid preserved upgrade configuration fingerprint: {name}")
+                    config_hashes[match[1]] = fingerprint
+            require(bool(config_hashes), f"{label} run lacks runtime configuration fingerprints")
+            for name, fingerprint in sorted(config_hashes.items()):
+                require(re.fullmatch(r"(?:StarCore/)?[a-z0-9_-]+\.yml", name) is not None and hash_string(fingerprint),
+                        f"Invalid {label} configuration fingerprint/name: {name}")
+                relative = name if name.startswith("StarCore/") else f"StarWorld/{name}"
+                config_data = regular_file(runtime / "plugins" / relative, runtime)
+                require(sha256(config_data) == fingerprint, f"{label} runtime configuration changed: {name}")
+                # Keep reviewed StarWorld test inputs, never export external StarCore configuration.
+                if not name.startswith("StarCore/"):
+                    add(f"runtime/{label}/starworld-config/{name}", config_data)
         transcripts = sorted(file for file in directory.iterdir() if transcript_pattern.fullmatch(file.name))
         names = {file.name for file in transcripts}
         required_logs = {"paper-run-1.log", "paper-run-2.log"} | expected_clients[label]
-        if label == "operations":
+        if label in {"operations", "works"}:
             required_logs.add("paper-run-3.log")
-        require(required_logs.issubset(names), f"{label} run lacks complete two-start server/client transcripts: {sorted(required_logs - names)}")
+        require(required_logs.issubset(names), f"{label} run lacks required server/client transcripts: {sorted(required_logs - names)}")
         for file in transcripts:
             log = regular_file(file, directory)
             require(bool(log), f"Empty runtime transcript: {file}")
+            if release_version >= (1, 0, 0) and file.name.startswith("paper-run-"):
+                require(clean_shutdown(log),
+                        f"{label} transcript does not show startup and normal shutdown: {file.name}")
             add(f"runtime/{label}/{file.name}", log)
         runs.append({"suite": label, "source_directory": str(directory), "steps": len(steps),
                      "started_at": evidence["startedAt"], "finished_at": evidence["finishedAt"],
-                     "plugin_sha256": plugin_hash, "fixture_script": script_name, "fixture_script_sha256": sha256(script)})
+                     "plugin_sha256": plugin_hash, "fixture_script": script_name, "fixture_script_sha256": sha256(script),
+                     "preparation_sha256": preparation_hash})
 
     if args.smoke_dir:
         directory = absolute_directory(args.smoke_dir)
@@ -227,12 +347,22 @@ def main() -> int:
         smoke = read_json(data, "smoke-evidence.json")
         require(smoke.get("status") == "passed" and smoke.get("artifact_sha256") == plugin_hash,
                 "No-dependency smoke evidence is not passed on the final plugin")
+        if release_version >= (1, 0, 0):
+            require(smoke.get("version") == version and smoke.get("startedAt") and smoke.get("finishedAt"),
+                    "Standalone evidence must record final version and a completed timespan")
+            require(sha256(regular_file(directory / "plugins/StarWorld.jar", directory)) == plugin_hash,
+                    "Standalone installed JAR differs from the final plugin")
+            require({path.name for path in (directory / "plugins").glob("*.jar")} == {"StarWorld.jar"},
+                    "Standalone runtime contains other plugin JARs")
         logs = smoke.get("logs", {})
         require(isinstance(logs, dict), "Smoke logs must map filenames to SHA256")
         add("runtime/smoke/smoke-evidence.json", data)
         for name in ("smoke-run-1.log", "smoke-run-2.log"):
             log = regular_file(directory / name, directory)
             require(bool(log) and logs.get(name) == sha256(log), f"Smoke transcript missing or hash mismatch: {name}")
+            if release_version >= (1, 0, 0):
+                require(clean_shutdown(log),
+                        f"Standalone transcript does not show startup and normal shutdown: {name}")
             add(f"runtime/smoke/{name}", log)
         runs.append({"suite": "no-dependency-smoke", "source_directory": str(directory), "plugin_sha256": plugin_hash})
 
@@ -240,6 +370,8 @@ def main() -> int:
                 "plugin_sha256": plugin_hash, "unit_tests": totals, "runtime_runs": runs,
                 "scope": "Allowlisted evidence only; current machine and runtime inputs use the final plugin. Historical observations remain under docs/evidence/history in the source delivery. Manifest hashes cover all payload entries; manifest.json is excluded from its own self-reference.",
                 "entries": [{"path": name, "bytes": len(data), "sha256": sha256(data)} for name, data in sorted(entries.items())]}
+    if release_version >= (1, 0, 0):
+        manifest["source"] = final_source_manifest(root, version)
     add("manifest.json", (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode("utf-8"))
     output = target / f"StarWorld-{version}-evidence.zip"
     summary = {"path": str(output), "plugin_sha256": plugin_hash, "entries": len(entries), "runtime_runs": runs, "check_only": args.check_only}
@@ -269,6 +401,6 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except (EvidenceError, OSError, ValueError, KeyError, ET.ParseError, zipfile.BadZipFile) as error:
+    except (EvidenceError, OSError, ValueError, KeyError, TypeError, AttributeError, ET.ParseError, zipfile.BadZipFile) as error:
         print(f"Evidence packaging refused: {error}", file=sys.stderr)
         raise SystemExit(1)

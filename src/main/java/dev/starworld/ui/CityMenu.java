@@ -41,6 +41,7 @@ public final class CityMenu implements Listener {
             inv.setItem(44,item(Material.PAPER,"最新结算",wrap(city.lastReport())));
             if(runtime.expansion().isPresent())inv.setItem(45,item(Material.MAP,"城市规划与文明世界",List.of("设施、规划、专长、文化与交通","点击打开发展面板")));
             if(runtime.expansion().isPresent())inv.setItem(46,item(Material.WATER_BUCKET,"灾害治理",List.of("预览策略、真实成本与所需设施","提交救灾响应、查看恢复状态与历史")));
+            if(runtime.expansion().isPresent())inv.setItem(47,item(Material.BRICKS,"城市治理与公共工程",List.of("工程选择、真实施工维护与城市需求","点击打开独立治理面板")));
             inv.setItem(49,item(Material.SUNFLOWER,"刷新",List.of("仅已加载且领土有效的设施生产","不加载区块，不补发离线产量")));
             p.openInventory(inv);
         });
@@ -61,6 +62,7 @@ public final class CityMenu implements Listener {
             inv.setItem(44,item(Material.FILLED_MAP,"地区地图册",List.of("地形、资源稀缺、恢复与文化分布","查看已登记设施所在地区")));h.commands.put(44,new String[]{"atlas"});
             inv.setItem(45,item(Material.GOLD_INGOT,"实物金币市场",List.of("真实商品托管、国库付款和商路交货","整批限价挂牌与成交记录")));h.commands.put(45,new String[]{"market-menu"});
             inv.setItem(46,item(Material.WATER_BUCKET,"灾害治理",List.of("干旱、洪灾与饥荒的六项治理策略","实物救灾、次期缓解与长期恢复")));h.commands.put(46,new String[]{"disaster-menu"});
+            inv.setItem(47,item(Material.BRICKS,"公共工程与城市需求",List.of("预览起建门槛与物资缺口","请求后真实生活贡献，明确确认完成")));h.commands.put(47,new String[]{"governance"});
             inv.setItem(49,item(Material.ARROW,"返回城市产业",List.of()));inv.setItem(53,item(Material.SUNFLOWER,"刷新发展状态",List.of()));p.openInventory(inv);
         });
     }
@@ -160,10 +162,11 @@ public final class CityMenu implements Listener {
             if(holder.disaster&&!p.hasPermission("starworld.use")){p.closeInventory();return;}
             try{if(holder.disaster){disasterClick(p,holder,slot);return;}if(holder.market){if(slot==45)openMarket(p,Math.max(0,holder.marketOffset-28));else if(slot==49)openDevelopment(p);else if(slot==53)openMarket(p,holder.marketOffset+28);else if(holder.commands.containsKey(slot)){p.closeInventory();p.sendMessage("§e/sw market buy "+holder.commands.get(slot)[2]+" <卖城至本城商路UUID>");}return;}if(holder.atlas){if(slot==45)openAtlas(p,"");else if(slot==49)openDevelopment(p);else if(slot==53&&!holder.nextCursor.isEmpty())openAtlas(p,holder.nextCursor);return;}if(holder.development){
                 if(slot==49){open(p);return;}if(slot==53){openDevelopment(p);return;}String[] command=holder.commands.get(slot);if(command==null)return;p.closeInventory();
-                if(command[0].equals("register"))runtime.register(p,command[1]);else if(command[0].equals("civilization"))runtime.civilization(p,command[1]);else if(command[0].equals("atlas"))openAtlas(p,"");else if(command[0].equals("market-menu"))openMarket(p,0);else if(command[0].equals("disaster-menu"))openDisaster(p);else runtime.expansionCommand(p,command);return;
+                if(command[0].equals("register"))runtime.register(p,command[1]);else if(command[0].equals("civilization"))runtime.civilization(p,command[1]);else if(command[0].equals("atlas"))openAtlas(p,"");else if(command[0].equals("market-menu"))openMarket(p,0);else if(command[0].equals("disaster-menu"))openDisaster(p);else if(command[0].equals("governance"))p.performCommand("sw governance");else runtime.expansionCommand(p,command);return;
             }switch(slot){
                 case 45 -> {if(!holder.development)openDevelopment(p);}
                 case 46 -> {if(runtime.expansion().isPresent())openDisaster(p);}
+                case 47 -> {if(runtime.expansion().isPresent())p.performCommand("sw governance");}
                 case 10,12,14 -> {p.closeInventory();runtime.register(p,slot==10?"farm":slot==12?"sawmill":"workshop");}
                 case 16 -> {p.closeInventory();p.sendMessage("§e/sw civilization <"+String.join("|",runtime.definitions().civilizations().keySet())+">");}
                 case 36 -> {p.closeInventory();runtime.reply(p,runtime.city(holder.city),c->c.ifPresent(v->v.buildings().forEach(b->p.sendMessage("§e"+b.id()+" §f"+b.type()+" Lv"+b.level()+" @ "+b.site().x()+","+b.site().y()+","+b.site().z()))));}

@@ -40,7 +40,7 @@ public final class LogisticsConfig {
         if (!section.contains(key)) return fallback;
         ConfigurationSection mapping = section.getConfigurationSection(key);
         if (mapping == null) throw new IllegalArgumentException("Expected cargo mapping: " + key);
-        Map<String, Long> values = new HashMap<>(); for (String item : mapping.getKeys(false)) values.put(item, integer(mapping, item, -1));
+        Map<String, Long> values = new HashMap<>(); for (String item : mapping.getKeys(true)){if(mapping.isConfigurationSection(item)){if(mapping.getConfigurationSection(item).getKeys(false).isEmpty())throw new IllegalArgumentException("Empty cargo amount mapping: "+item);continue;}values.put(item, integer(mapping, item, -1));}
         return LogisticsDefinitions.amounts(values);
     }
     private static String text(ConfigurationSection yaml, String path, String fallback) {

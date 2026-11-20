@@ -75,6 +75,11 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     @Override public CompletableFuture<Optional<dev.starworld.disaster.DisasterState.Response>> disasterResponse(UUID id){return async(()->expansion==null?Optional.empty():expansion.disasters().response(id));}
     @Override public CompletableFuture<List<dev.starworld.disaster.DisasterState.Response>> disasterResponses(UUID city,int limit,int offset){return async(()->expansion==null?List.of():expansion.disasters().responses(city,limit,offset));}
     @Override public CompletableFuture<List<dev.starworld.disaster.DisasterState.History>> disasterHistory(UUID city,int limit,int offset){return async(()->expansion==null?List.of():expansion.disasters().history(city,limit,offset));}
+    @Override public CompletableFuture<List<dev.starworld.works.PublicWorksState.Project>> publicWorks(UUID city,int limit,int offset){return async(()->expansion==null?List.of():expansion.works().projects(city,limit,offset));}
+    @Override public CompletableFuture<List<dev.starworld.works.PublicWorksState.History>> publicWorksHistory(UUID city,int limit,int offset){return async(()->expansion==null?List.of():expansion.works().history(city,limit,offset));}
+    @Override public CompletableFuture<List<dev.starworld.civic.CivicNeedsState.Request>> civicNeeds(UUID city,int limit,int offset){return async(()->expansion==null?List.of():expansion.civic().requests(city,limit,offset));}
+    @Override public CompletableFuture<List<dev.starworld.civic.CivicNeedsState.History>> civicHistory(UUID city,int limit,int offset){return async(()->expansion==null?List.of():expansion.civic().history(city,limit,offset));}
+    @Override public CompletableFuture<Optional<dev.starworld.civic.CivicNeedsState.Receipt>> civicReceipt(UUID request){return async(()->expansion==null?Optional.empty():expansion.civic().receipt(request));}
     @Override public Map<String,String> integrationStatus(){Map<String,String> s=new LinkedHashMap<>(items.status());s.put("StarCore",core.status());if(expansion!=null)s.putAll(expansion.status());s.put("Folia","未声明支持：当前 StarCore 城市/科技服务不保证区域线程安全，需 Paper");return Map.copyOf(s);}
     public void register(Player p,String type){
         CoreCity city=playerCity(p).orElseThrow(()->new IllegalArgumentException("请先在 StarCore 加入城市"));

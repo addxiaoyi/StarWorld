@@ -22,12 +22,12 @@ class LifePlatformTest {
     }
     @Test void missingFurnitureApiFailsClosedAndDoesNotPretendMusicCompletionExists() {
         LifePlatform platform=platform();Player player=mock(Player.class);Entity entity=mock(Entity.class);
-        assertTrue(platform.inspectDecoration(player,UUID.randomUUID(),entity).isEmpty());assertTrue(platform.status().get("MusicPlus").contains("无公开完成 API"));
+        assertFalse(platform.decorationEvidenceAvailable());assertTrue(platform.inspectDecoration(player,UUID.randomUUID(),entity).isEmpty());assertTrue(platform.status().get("MusicPlus").contains("无公开完成 API"));
         verifyNoInteractions(core);verify(entity,never()).getLocation();
     }
     @Test void worldOperationsRejectWorkerThreadBeforeReadingPlayerOrWorld() {
         LifePlatform platform=platform();when(server.isPrimaryThread()).thenReturn(false);Player player=mock(Player.class);
-        assertThrows(IllegalStateException.class,()->platform.inspectDecoration(player,UUID.randomUUID(),null));verifyNoInteractions(player);
+        assertThrows(IllegalStateException.class,()->platform.inspectDecoration(player,UUID.randomUUID(),null));assertThrows(IllegalStateException.class,platform::decorationEvidenceAvailable);verifyNoInteractions(player);
         assertThrows(IllegalStateException.class,()->platform.inspectTargetDecoration(player,UUID.randomUUID()));verifyNoInteractions(player);
     }
     @Test void missingTargetingApiFailsClosedWithoutUsingBukkitEntityRaycast()throws Exception {
@@ -45,7 +45,7 @@ class LifePlatformTest {
         when(meta.isValid()).thenReturn(true);when(meta.getUniqueId()).thenReturn(UUID.randomUUID());when(meta.getWorld()).thenReturn(world);when(meta.getLocation()).thenReturn(location);
         CoreCity current=new CoreCity(city,nation,"城市","国家",1,"fixture");when(core.playerCity(actor)).thenReturn(Optional.of(current));when(core.ownsSite(eq(city),any())).thenReturn(true);
         FurnitureFixture.current=FurnitureFixture.traced=new TestFurniture(furniture,"kaleidoscope_deco:chair/oak",meta);
-        DecorationEvidence evidence=platform.inspectTargetDecoration(player,city).orElseThrow();assertEquals(furniture,evidence.furnitureId());assertEquals(meta.getUniqueId(),evidence.metaEntityId());assertEquals(6d,FurnitureFixture.maximumDistance);
+        assertTrue(platform.decorationEvidenceAvailable());DecorationEvidence evidence=platform.inspectTargetDecoration(player,city).orElseThrow();assertEquals(furniture,evidence.furnitureId());assertEquals(meta.getUniqueId(),evidence.metaEntityId());assertEquals(6d,FurnitureFixture.maximumDistance);
         verify(player,never()).getTargetEntity(anyInt());
         FurnitureFixture.current=new TestFurniture(UUID.randomUUID(),"kaleidoscope_deco:chair/oak",meta);assertTrue(platform.inspectTargetDecoration(player,city).isEmpty(),"A stale ray hit must not borrow another furniture identity");
         FurnitureFixture.current=FurnitureFixture.traced;when(player.getLocation()).thenReturn(location.clone().add(7,0,0));assertTrue(platform.inspectTargetDecoration(player,city).isEmpty());

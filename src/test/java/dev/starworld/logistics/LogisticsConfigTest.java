@@ -21,4 +21,10 @@ class LogisticsConfigTest {
             assertThrows(IllegalArgumentException.class, () -> LogisticsConfig.load(yaml), content);
         }
     }
+    @Test void dottedAndSlashedCustomItemIdsRemainLeafCargoKeysAfterActualConfigurationParse()throws Exception{
+        String item="server.food:grains/wheat.flour";String content="schema-version: 1\nnodes:\n  road:\n    construction: {\""+item+"\": 3}\n    maintenance: {\""+item+"\": 2}\n";
+        var yaml=new YamlConfiguration();yaml.loadFromString(content);var config=LogisticsConfig.load(yaml);var road=config.nodes().get(NodeType.ROAD);
+        assertEquals(Map.of(item,3L),road.construction());assertEquals(Map.of(item,2L),road.maintenance());
+        yaml.loadFromString(content.replace(": 3",": 1.5"));assertThrows(IllegalArgumentException.class,()->LogisticsConfig.load(yaml));
+    }
 }

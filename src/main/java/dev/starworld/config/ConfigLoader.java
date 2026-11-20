@@ -60,7 +60,7 @@ public final class ConfigLoader {
     private static String required(ConfigurationSection s,String key) {String r=s.getString(key);if(r==null || r.isBlank())throw new IllegalArgumentException("Missing "+s.getCurrentPath()+"."+key);return r;}
     private static Map<String,Long> amounts(ConfigurationSection s,String key) {
         ConfigurationSection a=section(s,key);Map<String,Long> result=new LinkedHashMap<>();
-        for(String id:a.getKeys(false)) {if(!id.matches("[a-z0-9_./-]+(:[a-z0-9_./-]+)?"))throw new IllegalArgumentException("Invalid item/reserve "+id);Object raw=a.get(id);if(!(raw instanceof Number n)||n.doubleValue()!=n.longValue())throw new IllegalArgumentException("Non-integral amount: "+id);result.put(id,n.longValue());}return result;
+        for(String id:a.getKeys(true)) {if(a.isConfigurationSection(id)){if(a.getConfigurationSection(id).getKeys(false).isEmpty())throw new IllegalArgumentException("Empty amount mapping: "+id);continue;}if(!id.matches("[a-z0-9_./-]+(:[a-z0-9_./-]+)?"))throw new IllegalArgumentException("Invalid item/reserve "+id);Object raw=a.get(id);if(!(raw instanceof Number n)||n.doubleValue()!=n.longValue())throw new IllegalArgumentException("Non-integral amount: "+id);result.put(id,n.longValue());}return result;
     }
     private static Map<String,Double> factors(ConfigurationSection s,String key) {ConfigurationSection a=section(s,key);Map<String,Double> r=new HashMap<>();for(String id:a.getKeys(false)){if(!(a.get(id) instanceof Number n))throw new IllegalArgumentException("Invalid factor "+id);r.put(id,n.doubleValue());}return r;}
 }

@@ -5,6 +5,7 @@ import dev.starworld.integration.TreasuryTransferPort;
 import dev.starworld.logistics.*;
 import dev.starworld.logistics.LogisticsState.*;
 import dev.starworld.market.MarketState.*;
+import java.io.IOException;
 import dev.starworld.persistence.WorldStore;
 import java.math.BigDecimal;
 import java.nio.file.*;
@@ -18,6 +19,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class MarketServiceTest {
     @TempDir Path temp;
     static final String BREAD="minecraft:bread",PLANKS="minecraft:oak_planks";
+    @Test void literalDottedAndSlashedItemIDsLoadFromMarketSequenceWithoutPathTraversal()throws Exception{
+        Path file=temp.resolve("market-literal-items.yml");String dotted="server.food:grains/wheat.flour",slashed="server.kitchen:grain/baozi";
+        Files.writeString(file,"market-version: 1\nitems: [\""+dotted+"\", \""+slashed+"\"]\nmax-listings-per-city: 4\nlisting-lifetime-periods: 10\ndispatch-batch: 2\nmax-units: 32\nmaximum-unit-price: \"100.00\"\n");
+        MarketDefinitions definitions=MarketDefinitions.load(file.toFile());assertEquals(Set.of(dotted,slashed),definitions.items());
+    }
     final class Rig implements AutoCloseable {
         final Path db=temp.resolve(UUID.randomUUID()+".db");final UUID actor=UUID.randomUUID(),world=UUID.randomUUID();final CoreCity seller=new CoreCity(UUID.randomUUID(),UUID.randomUUID(),"卖城","卖国",1,"test"),buyer=new CoreCity(UUID.randomUUID(),UUID.randomUUID(),"买城","买国",1,"test");
         final Set<String> anchors=new HashSet<>();WorldStore store;LogisticsService logistics;MarketService market;UUID route,left,right;

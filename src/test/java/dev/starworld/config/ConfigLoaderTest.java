@@ -117,4 +117,21 @@ public class ConfigLoaderTest {
         assertTrue(ConfigLoader.items(d).contains("kaleidoscopecookery:baozi"));
         assertEquals(Map.of("kaleidoscopecookery:baozi", 2L), d.recipes().stream().filter(r -> r.id().equals("bake")).findFirst().orElseThrow().outputs());
     }
+
+    @Test void dottedAndSlashedCraftEngineIdSurvivesActualDefinitionYamlInputsOutputsAndUpkeep() throws Exception {
+        fixtures();String original=Files.readString(data,StandardCharsets.UTF_8),item="server.food:grains/wheat.flour";
+        String changed=original.replace("upkeep: {minecraft:bread: 1}","upkeep: {minecraft:bread: 1, \""+item+"\": 2}")
+                .replace("inputs: {minecraft:wheat: 6}","inputs: {minecraft:wheat: 6, \""+item+"\": 3}")
+                .replace("outputs: {minecraft:bread: 2}","outputs: {minecraft:bread: 2, \""+item+"\": 1}");
+        assertNotEquals(original,changed,"Fixture must modify all three real YAML mappings");Files.writeString(data,changed,StandardCharsets.UTF_8);
+        Definitions loaded=load();assertEquals(2L,loaded.buildings().get("sawmill").upkeep().get(item));
+        Definitions.Recipe bake=loaded.recipes().stream().filter(recipe->recipe.id().equals("bake")).findFirst().orElseThrow();
+        assertEquals(3L,bake.inputs().get(item));assertEquals(1L,bake.outputs().get(item));assertTrue(ConfigLoader.items(loaded).contains(item));
+    }
+    @Test void additiveExpansionFilePreservesDottedCraftEngineKeysWhenDefinitionIsMerged()throws Exception{
+        fixtures();Path expansion=temp.resolve("expansion.yml");String item="server.food:grains/wheat.flour";
+        Files.writeString(expansion,"expansion-version: 1\nrecipes:\n  artisan_bake:\n    building: farm\n    inputs: {\""+item+"\": 2}\n    outputs: {\""+item+"\": 1}\n");
+        Definitions loaded;try(var materials=mockStatic(Material.class)){Material block=mock(Material.class),vanilla=mock(Material.class);when(block.isBlock()).thenReturn(true);when(vanilla.isItem()).thenReturn(true);for(String id:List.of("COMPOSTER","STONECUTTER","BLAST_FURNACE"))materials.when(()->Material.matchMaterial(id)).thenReturn(block);materials.when(()->Material.matchMaterial("STICK")).thenReturn(vanilla);loaded=ConfigLoader.load(config.toFile(),data.toFile(),expansion.toFile());}
+        Definitions.Recipe added=loaded.recipes().stream().filter(recipe->recipe.id().equals("artisan_bake")).findFirst().orElseThrow();assertEquals(Map.of(item,2L),added.inputs());assertEquals(Map.of(item,1L),added.outputs());assertTrue(ConfigLoader.items(loaded).contains(item));
+    }
 }

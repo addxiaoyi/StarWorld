@@ -91,6 +91,10 @@ class CustomItemsTest {
         verify(template, never()).setAmount(anyInt());
     }
 
+    @Test void customIdentityAllowsAndPreservesDottedNamespaceAndSlashedItemPath()throws Exception{
+        String id="server.food:grains/wheat.flour";when(plugins.isPluginEnabled("CraftEngine")).thenReturn(true);ItemStack stack=mock(ItemStack.class);when(access.id(stack)).thenReturn(id);assertTrue(items.matches(stack,id));assertFalse(items.matches(stack,"server.food:grains/other.flour"));when(access.exists(id)).thenReturn(true);assertDoesNotThrow(()->items.validate(List.of(id)));ItemStack template=mock(ItemStack.class),copy=mock(ItemStack.class);when(template.clone()).thenReturn(copy);when(access.create(id)).thenReturn(template);assertSame(copy,items.create(id,2));verify(copy).setAmount(2);verify(template,never()).setAmount(anyInt());
+    }
+
     @Test void unavailableContentAndApiFailuresReturnNullWithImmutableDiagnostics() throws Exception {
         when(plugins.isPluginEnabled("CraftEngine")).thenReturn(true);
         when(access.exists("custom:missing")).thenReturn(false);

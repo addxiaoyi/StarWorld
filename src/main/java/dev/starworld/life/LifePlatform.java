@@ -41,6 +41,8 @@ public final class LifePlatform {
                 "MusicPlus","上游无公开完成 API；仅使用真实 CE 乐器；/sw concert 为 StarWorld 独立现场演奏",
                 "Concert","原版音符盒或已加载 CE 乐器；逐音符声音、现场听众和完成回执");
     }
+    /** Live owning-thread capability used to avoid allocating furniture-dependent civic work while CE is unavailable. */
+    public boolean decorationEvidenceAvailable() { owningThread(); return furnitureAvailable() && furnitureRayTrace != null; }
     public Set<String> availableItems() {
         owningThread();Set<String> available=new HashSet<>();for(String id:definitions.itemIds())if(items.create(id,1)!=null)available.add(id);return Set.copyOf(available);
     }

@@ -21,6 +21,7 @@ public final class StarWorldFixture extends JavaPlugin implements CommandExecuto
     private final Gson json = new GsonBuilder().serializeNulls().create();
     private final Set<UUID> registering = new HashSet<>();
     private final ExpansionFixture expansion = new ExpansionFixture(this);
+    private final PublicWorksFixture works = new PublicWorksFixture(this);
 
     @Override public void onEnable() {
         Objects.requireNonNull(getCommand("swfixture")).setExecutor(this);
@@ -34,6 +35,7 @@ public final class StarWorldFixture extends JavaPlugin implements CommandExecuto
         }
         try {
             if (args.length>0 && args[0].startsWith("exp-")) return expansion.execute(args);
+            if (args.length>0 && args[0].startsWith("works-")) return works.execute(args);
             if (args.length != 2) throw new IllegalArgumentException("swfixture <setup|register|verify|unclaim|reclaim|seed|inventory> <connected-player>");
             Player player = Bukkit.getPlayerExact(args[1]);
             if (player == null) throw new IllegalArgumentException("A real connected player is required: " + args[1]);

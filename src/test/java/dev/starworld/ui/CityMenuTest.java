@@ -193,4 +193,8 @@ class CityMenuTest {
         verify(click, never()).setCancelled(anyBoolean());
         verify(drag, never()).setCancelled(anyBoolean());
     }
+    @Test void newGovernanceEntryUsesThePublicCommandWithoutChangingExistingMenuActions()throws Exception{
+        InventoryView view=menuView();Player owner=player(viewer);when(runtime.expansion()).thenReturn(Optional.of(mock(dev.starworld.runtime.ExpansionRuntime.class)));
+        try(MockedStatic<Bukkit> bukkit=mockStatic(Bukkit.class);MockedStatic<JavaPlugin> plugins=mockStatic(JavaPlugin.class)){BukkitScheduler scheduler=mock(BukkitScheduler.class);JavaPlugin plugin=mock(JavaPlugin.class);bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);plugins.when(()->JavaPlugin.getProvidingPlugin(CityMenu.class)).thenReturn(plugin);doAnswer(call->{call.getArgument(1,Runnable.class).run();return null;}).when(scheduler).runTask(eq(plugin),any(Runnable.class));menu.click(click(view,owner,47,ClickType.LEFT));verify(owner).performCommand("sw governance");verify(runtime,never()).register(any(),anyString());}
+    }
 }

@@ -64,3 +64,12 @@ node operations-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar
 它保留原进阶20阶段及严格断言，再加九阶段实际路线维护材料规划、只读查询不扣库存、付款未到货/易货不计市场到货、普通玩家拒绝备份、管理员在线一致快照、完成到货精确统计、同名快照替换和第三次真实启动后统计去重。`exp-operations` 只读取公开 `StarWorldApi.routePlans` 与 `marketDeliveryStats` Future，不主动结算或调用归集器；`exp-permissions` 只查询当前玩家实际权限。管理员权限只由隔离服控制台临时op，备份命令仍由真实玩家执行，随后deop。
 
 `PREPARATION.json` 必须绑定0.4.0最终JAR与重建helper；新世界/数据库、localhost、七份配置、10秒周期/随机事件0/文化衰减间隔2以及明确测试投入规则与进阶套件相同。Python只以 `mode=ro&immutable=1` 打开在线备份完成后的独立快照，核对完整性、schema、库存、付款和到货凭据；不读写活跃数据库，不用SQL注入玩法状态。三个服务端与 `client-run-1-a/1-b/2-a/2-b/3-a/3-b.log` 六份客户端、逐阶段证据及快照指纹位于 `runtime/operations-acceptance/<UTC timestamp>`。第三次启动用于证明已完成到货统计不会因重启重复归集；仅两次启动时原流程只能证明暂停货物的零统计恢复。
+
+0.5 → 1.0 升级以已经通过救灾套件全部22阶段且正常关闭的0.5世界作为输入。准备工具只复制数据并在副本安装1.0 JAR，验收工具也提供 `--check-only` 预检，不启动服务端：
+
+```sh
+python prepare-upgrade-10.py --source C:/accepted-disaster05 --runtime C:/upgrade10-fresh --jar C:/starworld-1.0.0.jar --fixture C:/StarWorldFixture.jar --port 25633
+node upgrade-10-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --runtime C:/upgrade10-fresh --python C:/python/python.exe --client-deps C:/mineflayer-deps
+```
+
+七个阶段覆盖两次正常启停。通过真实客户端读取原城市、设施和命名物品，打开新治理界面与旧市场，以原 UUID 重试已付款的救灾策略并核对同周期库存与历史。两次停服后只读核对 SQLite：两国两城、十设施、八笔仓储转移和三笔已付款救灾回执全部保留；工程和需求只加法创建表，不自动发起项目或认领凭据；新库存增量不超过实际在线结算产出。八份旧配置按 SHA-256 保持不变，两份自动生成的配置与 JAR 内文件一致。证据与两份服务端、两份客户端日志保存在 `runtime/upgrade-10-acceptance/<UTC timestamp>`。重跑请从同一个未改动的0.5原件准备新目录。

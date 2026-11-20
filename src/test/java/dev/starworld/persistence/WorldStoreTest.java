@@ -41,6 +41,27 @@ class WorldStoreTest {
         }
     }
 
+    @Test void onlineBackupCreatesVerifiedCommittedSnapshotsAndCanBeReplaced() throws Exception {
+        Path db=temp.resolve("online-backup.db"), backup=temp.resolve("backups/current.db");CoreCity city=city();
+        String firstHash,secondHash;
+        try(WorldStore store=new WorldStore(db,1000)){
+            store.ensureCity(city);store.stock(city.cityId(),"minecraft:bread",42);
+            WorldStore.Backup first=store.backup(backup);firstHash=first.sha256();assertEquals(2,first.schemaVersion());assertEquals("ok",first.integrity());
+            try(WorldStore ignored=new WorldStore(backup,1000)) { assertEquals(42,ignored.stock(city.cityId()).get("minecraft:bread")); }
+            store.stock(city.cityId(),"minecraft:bread",99);WorldStore.Backup second=store.backup(backup);secondHash=second.sha256();assertNotEquals(firstHash,secondHash);
+            try(WorldStore ignored=new WorldStore(backup,1000)) { assertEquals(99,ignored.stock(city.cityId()).get("minecraft:bread")); }
+            assertThrows(IllegalArgumentException.class,()->store.backup(db));
+        }
+    }
+
+    @Test void repeatedOnlineBackupsRemainReadableAfterCommittedWrites() throws Exception {
+        Path db=temp.resolve("online-backup-stress.db"),backup=temp.resolve("backups/stress.db");CoreCity city=city();
+        try(WorldStore store=new WorldStore(db,10000)){
+            store.ensureCity(city);store.stock(city.cityId(),"minecraft:wheat",0);
+            for(int i=1;i<=12;i++){store.stock(city.cityId(),"minecraft:wheat",i);WorldStore.Backup snapshot=store.backup(backup);assertEquals("ok",snapshot.integrity());try(WorldStore copy=new WorldStore(backup,10000)){assertEquals(i,copy.stock(city.cityId()).get("minecraft:wheat"));}}
+        }
+    }
+
     @Test void exceptionRollsBackWholeNestedTransactionAndSurvivesRestart() throws Exception {
         Path db = temp.resolve("rollback.db"); CoreCity city = city();
         try (WorldStore store = new WorldStore(db, 1000)) {

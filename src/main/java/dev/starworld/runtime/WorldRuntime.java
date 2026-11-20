@@ -62,6 +62,7 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     @Override public CompletableFuture<List<dev.starworld.evolution.EvolutionState.Culture>> culture(UUID id){return async(()->expansion==null?List.of():expansion.evolution().cultures(id));}
     @Override public CompletableFuture<Optional<dev.starworld.life.LifeState.LifeView>> life(UUID id){return async(()->expansion==null||store.view(id).isEmpty()?Optional.empty():Optional.of(expansion.life().view(id,currentPeriod())));}
     @Override public CompletableFuture<List<dev.starworld.logistics.LogisticsState.Route>> routes(UUID id,int limit,int offset){return async(()->expansion==null?List.of():expansion.logistics().cityRoutes(id,limit,offset));}
+    @Override public CompletableFuture<List<dev.starworld.logistics.LogisticsState.RoutePlan>> routePlans(UUID origin,UUID target,dev.starworld.logistics.LogisticsState.Mode mode,int limit,int offset){return async(()->expansion==null?List.of():expansion.logistics().compareRoutes(origin,target,mode,limit,offset));}
     @Override public CompletableFuture<List<dev.starworld.logistics.LogisticsState.Order>> orders(UUID id,int limit,int offset){return async(()->expansion==null?List.of():expansion.logistics().cityOrders(id,limit,offset));}
     @Override public CompletableFuture<Optional<dev.starworld.evolution.EvolutionState.Readiness>> readiness(UUID id){return async(()->expansion==null?Optional.empty():expansion.evolution().readiness(id));}
     @Override public CompletableFuture<Optional<dev.starworld.evolution.NationalEvolution.NationDevelopment>> nationDevelopment(UUID id){return async(()->{if(expansion==null||store.query("SELECT 1 FROM nation_state WHERE id=?",r->1,id).isEmpty())return Optional.empty();return Optional.of(expansion.national().view(id));});}
@@ -70,6 +71,7 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     @Override public CompletableFuture<Optional<dev.starworld.logistics.LogisticsState.TransportStatus>> transport(UUID route){return async(()->expansion==null||expansion.logistics().route(route).isEmpty()?Optional.empty():Optional.of(expansion.logistics().transportStatus(route,currentPeriod())));}
     @Override public CompletableFuture<List<dev.starworld.market.MarketState.Listing>> marketListings(int limit,int offset){return async(()->expansion==null?List.of():expansion.market().listings(null,limit,offset));}
     @Override public CompletableFuture<List<dev.starworld.market.MarketState.Purchase>> marketPurchases(UUID city,int limit,int offset){return async(()->expansion==null?List.of():expansion.market().purchases(city,limit,offset));}
+    @Override public CompletableFuture<List<dev.starworld.market.MarketState.DeliveryStats>> marketDeliveryStats(UUID city,String item,int limit,int offset){return async(()->expansion==null?List.of():expansion.market().deliveryStats(city,item,limit,offset));}
     @Override public Map<String,String> integrationStatus(){Map<String,String> s=new LinkedHashMap<>(items.status());s.put("StarCore",core.status());if(expansion!=null)s.putAll(expansion.status());s.put("Folia","未声明支持：当前 StarCore 城市/科技服务不保证区域线程安全，需 Paper");return Map.copyOf(s);}
     public void register(Player p,String type){
         CoreCity city=playerCity(p).orElseThrow(()->new IllegalArgumentException("请先在 StarCore 加入城市"));
@@ -134,6 +136,12 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     private void cancel(Transfer t,Player p,String reason){async(()->{store.cancelUntouchedTransfer(t.id());return true;}).whenComplete((ok,error)->{activeTransferIds.remove(t.id());transfers.remove(p.getUniqueId());tell(p,"§c"+reason+(error==null ? "":"；凭据待核对："+t.id()));});}
     private static Throwable root(Throwable e){while(e.getCause()!=null)e=e.getCause();return e;}
     public CompletableFuture<List<Transfer>> pending(){return async(store::pending);}
+    /** Admin-only command boundary supplies a simple filename; snapshots stay under plugins/StarWorld/backups. */
+    public CompletableFuture<WorldStore.Backup> backup(String filename){
+        if(filename==null||!filename.matches("[A-Za-z0-9._-]{1,96}"))throw new IllegalArgumentException("备份文件名只能包含字母、数字、点、下划线和短横线");
+        java.nio.file.Path target=plugin.getDataFolder().toPath().resolve("backups").resolve(filename.endsWith(".db")?filename:filename+".db");
+        return async(()->store.backup(target));
+    }
     public CompletableFuture<Boolean> resolve(UUID id,boolean credit,String actor){return async(()->{if(activeTransferIds.contains(id))throw new IllegalStateException("这笔物品操作仍在进行，不能人工处理");store.resolveTransfer(id,credit,actor);return true;});}
     public void trigger(Player p,String type){CoreCity c=playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入城市"));reply(p,async(()->{store.ensureCity(c);EventState previous=store.view(c.cityId()).orElseThrow().event();EventState next=simulation.trigger(c.cityId(),type,currentPeriod());store.audit(p.getUniqueId().toString(),"EVENT "+type+" "+c.cityId());return new WorldEvolutionEvent(c.cityId(),previous,next);}),event->{Bukkit.getPluginManager().callEvent(event);p.sendMessage("§a事件已触发："+type);});}
     public void tick(){

@@ -2,7 +2,11 @@ package dev.starworld.persistence;
 
 import dev.starworld.domain.Definitions;
 import dev.starworld.domain.WorldState.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.util.*;
 import java.util.function.Function;
@@ -11,11 +15,13 @@ import java.util.function.Function;
 public final class WorldStore implements AutoCloseable {
     private final Connection connection;
     private final long stockLimit;
+    private final Path databasePath;
     public WorldStore(Path path, long stockLimit) throws Exception {
         this.stockLimit=stockLimit;
-        Files.createDirectories(path.toAbsolutePath().getParent());
+        this.databasePath=path.toAbsolutePath().normalize();
+        Files.createDirectories(databasePath.getParent());
         Class.forName("org.sqlite.JDBC");
-        connection=DriverManager.getConnection("jdbc:sqlite:"+path.toAbsolutePath());
+        connection=DriverManager.getConnection("jdbc:sqlite:"+databasePath);
         try {
             try (Statement s=connection.createStatement()) {
                 try(ResultSet r=s.executeQuery("PRAGMA user_version")) { if(r.next() && r.getInt(1)>2) throw new SQLException("Database newer than this StarWorld version"); }
@@ -176,6 +182,38 @@ public final class WorldStore implements AutoCloseable {
         execute("INSERT INTO stock(city,item,amount) VALUES(?,?,?) ON CONFLICT(city,item) DO UPDATE SET amount=excluded.amount",t.cityId(),t.item(),amount);
     }
     public synchronized int schemaVersion() throws SQLException { return query("PRAGMA user_version",r->r.getInt(1)).getFirst(); }
+    /**
+     * Creates a consistent SQLite snapshot while this serialized connection is live.
+     * VACUUM INTO reads the committed WAL state without copying a hot .db file.
+     * The temporary snapshot is verified before an atomic replacement of the target.
+     */
+    public record Backup(Path path,long bytes,String sha256,int schemaVersion,String integrity) {}
+    public synchronized Backup backup(Path destination) throws SQLException {
+        Objects.requireNonNull(destination,"destination");
+        Path target=destination.toAbsolutePath().normalize();
+        if(target.equals(databasePath))throw new IllegalArgumentException("Backup target must differ from the active database");
+        try {
+            Files.createDirectories(Objects.requireNonNull(target.getParent(),"Backup target needs a parent"));
+            Path temporary=Files.createTempFile(target.getParent(),".starworld-backup-", ".db.tmp");
+            try {
+                Files.deleteIfExists(temporary);
+                String escaped=temporary.toString().replace("'","''");
+                try(Statement statement=connection.createStatement()) { statement.execute("VACUUM INTO '"+escaped+"'"); }
+                if(!Files.isRegularFile(temporary)||Files.size(temporary)==0)throw new SQLException("SQLite backup produced no file");
+                String integrity;int version;
+                try(Connection verify=DriverManager.getConnection("jdbc:sqlite:"+temporary.toAbsolutePath())) {
+                    try(Statement statement=verify.createStatement();ResultSet result=statement.executeQuery("PRAGMA quick_check")){if(!result.next())throw new SQLException("SQLite backup quick_check returned no row");integrity=result.getString(1);}
+                    version=readUserVersion(verify);if(!"ok".equalsIgnoreCase(integrity))throw new SQLException("SQLite backup integrity check failed: "+integrity);
+                }
+                String digest=sha256(temporary);long bytes=Files.size(temporary);
+                try { Files.move(temporary,target,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING); }
+                catch(AtomicMoveNotSupportedException unsupported){Files.move(temporary,target,StandardCopyOption.REPLACE_EXISTING);}
+                return new Backup(target,bytes,digest,version,integrity);
+            } finally { Files.deleteIfExists(temporary); }
+        } catch(IOException|SQLException failure){throw failure instanceof SQLException sql?sql:new SQLException("SQLite backup failed",failure);}
+    }
+    private static int readUserVersion(Connection c)throws SQLException {try(Statement s=c.createStatement();ResultSet r=s.executeQuery("PRAGMA user_version")){if(!r.next())throw new SQLException("Missing SQLite user_version");return r.getInt(1);}}
+    private static String sha256(Path file)throws IOException,SQLException {try{MessageDigest digest=MessageDigest.getInstance("SHA-256");try(InputStream input=Files.newInputStream(file)){byte[] buffer=new byte[8192];for(int read;(read=input.read(buffer))>=0;)if(read>0)digest.update(buffer,0,read);}return HexFormat.of().formatHex(digest.digest());}catch(NoSuchAlgorithmException impossible){throw new SQLException("SHA-256 unavailable",impossible);}}
     /** Keeps existing logical period IDs when administrators change the length of a period. */
     public record SimulationClock(long periodSeconds,long epochOrigin,long periodOrigin) {
         public long period(long epochSeconds){return Math.addExact(periodOrigin,Math.floorDiv(Math.subtractExact(epochSeconds,epochOrigin),periodSeconds));}

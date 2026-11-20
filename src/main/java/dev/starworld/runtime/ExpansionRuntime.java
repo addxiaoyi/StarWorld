@@ -137,7 +137,7 @@ public final class ExpansionRuntime {
     public boolean command(Player p,String[] args){
         if(lifestyle.execute(p,args)||transport.execute(p,args)||marketplace.execute(p,args))return true;
         String sub=args[0].toLowerCase(Locale.ROOT);
-        if(sub.equals("maintenance")){if(!p.hasPermission("starworld.admin"))throw new IllegalArgumentException("需要管理员权限");runtime.reply(p,runtime.async(()->maintenance.archives(0,20)),rows->{p.sendMessage("§e最近存档维护："+lastMaintenance);for(var row:rows)p.sendMessage("§7审计归档 "+row.id()+"："+row.rows()+" 条，"+row.bytes()+" bytes；SHA "+row.sha256());});return true;}
+        if(sub.equals("maintenance")){if(!p.hasPermission("starworld.admin"))throw new IllegalArgumentException("需要管理员权限");if(args.length>=2&&args[1].equalsIgnoreCase("backup")){require(args,3);runtime.reply(p,runtime.backup(args[2]),backup->p.sendMessage("§a在线备份已完成："+backup.path().getFileName()+" "+backup.bytes()+" bytes；schema "+backup.schemaVersion()+"；SHA "+backup.sha256()));return true;}if(args.length!=1)throw new IllegalArgumentException("/sw maintenance backup <文件名> 或 /sw maintenance");runtime.reply(p,runtime.async(()->maintenance.archives(0,20)),rows->{p.sendMessage("§e最近存档维护："+lastMaintenance);for(var row:rows)p.sendMessage("§7审计归档 "+row.id()+"："+row.rows()+" 条，"+row.bytes()+" bytes；SHA "+row.sha256());});return true;}
         if(!Set.of("development","plan","specialty","history","culture","export","outbox","nation","nation-development","national-specialty","regions").contains(sub))return false;
         CoreCity city=runtime.playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入 StarCore 城市"));
         switch(sub){

@@ -49,4 +49,18 @@ node border-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --r
 
 结果在 `runtime/border-acceptance/<UTC timestamp>`，包括两份服务端、`client-run-1-a/1-b/2-a/2-b.log` 四份客户端及全部阶段原始观察。每次失败完整保留；重跑必须重新准备干净输入，不能复用失败后的国家或数据库。
 
+0.3 → 0.4 存档升级使用 `upgrade-04-acceptance.cjs`（`npm run upgrade04 -- ...`）。输入必须是已经通过0.3最终基础15阶段并正常停止的 `baseline-final-09` 副本；`UPGRADE-PROVENANCE.json` 保存源15阶段证据、0.3 JAR、世界/玩家/Core/StarWorld 数据库及七配置指纹。脚本要求候选 `plugin.yml` 为0.4.0，保留原国家、城市、三设施、四笔转移和命名物品，并用两次真实启动/关闭验证无离线补算。
+
+升级只加法建立 `market_delivery_schema`、`market_delivery_clock`、`market_delivery_receipt`、`market_delivery_stat` 四张交付统计表；源0.3已有的市场 namespace/schema、文化表和所有空业务表必须逐字保留。新库不能虚构挂牌、付款、交付、统计或金币，数据库探针只读已停服 checkpoint 文件。
+
 首次边境运行在玩家连接前遇到主机内存提交不足，Node原生退出，保存为失败并保留驱动stderr；后续测试限制Node堆128MiB、半空间4MiB和Paper堆512MiB。第二次运行发现旧helper的Gson省略null字段，工具对所有无事件字段统一按 `event ?? null` 读取；该次仍保留失败结果并从新目录重跑。未将这些失败重标为通过，也未降低玩法断言。
+
+0.4 运维与经济反馈使用独立 `npm run operations -- --help`：
+
+```sh
+node operations-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --runtime C:/starworld-operations-fresh --python C:/python/python.exe --client-deps C:/mineflayer-deps
+```
+
+它保留原进阶20阶段及严格断言，再加九阶段实际路线维护材料规划、只读查询不扣库存、付款未到货/易货不计市场到货、普通玩家拒绝备份、管理员在线一致快照、完成到货精确统计、同名快照替换和第三次真实启动后统计去重。`exp-operations` 只读取公开 `StarWorldApi.routePlans` 与 `marketDeliveryStats` Future，不主动结算或调用归集器；`exp-permissions` 只查询当前玩家实际权限。管理员权限只由隔离服控制台临时op，备份命令仍由真实玩家执行，随后deop。
+
+`PREPARATION.json` 必须绑定0.4.0最终JAR与重建helper；新世界/数据库、localhost、七份配置、10秒周期/随机事件0/文化衰减间隔2以及明确测试投入规则与进阶套件相同。Python只以 `mode=ro&immutable=1` 打开在线备份完成后的独立快照，核对完整性、schema、库存、付款和到货凭据；不读写活跃数据库，不用SQL注入玩法状态。三个服务端与 `client-run-1-a/1-b/2-a/2-b/3-a/3-b.log` 六份客户端、逐阶段证据及快照指纹位于 `runtime/operations-acceptance/<UTC timestamp>`。第三次启动用于证明已完成到货统计不会因重启重复归集；仅两次启动时原流程只能证明暂停货物的零统计恢复。

@@ -88,6 +88,18 @@ try {
             throw "Evidence archive contains an incomplete or mismatched $suite run."
         }
     }
+    if ([version]($version -split '-')[0] -ge [version]'0.4.0') {
+        $operationsEntry = $evidenceArchive.GetEntry('runtime/operations/evidence.json')
+        if (!$operationsEntry) { throw 'Evidence archive lacks the required 0.4 operations acceptance.' }
+        $operations = [Text.Encoding]::UTF8.GetString((Read-ZipEntryBytes $operationsEntry)) | ConvertFrom-Json
+        if ($operations.status -ne 'passed' -or $operations.pluginJars.'StarWorld.jar' -ne $pluginHash -or
+            @($operations.steps).Count -eq 0 -or @($operations.steps | Where-Object status -ne 'passed').Count -ne 0) {
+            throw 'Operations acceptance is incomplete or describes another plugin.'
+        }
+        foreach ($runNumber in @(1, 2, 3)) {
+            if (!$evidenceArchive.GetEntry("runtime/operations/paper-run-$runNumber.log")) { throw 'Operations acceptance lacks all three starts.' }
+        }
+    }
     $smokeEntry = $evidenceArchive.GetEntry('runtime/smoke/smoke-evidence.json')
     if (!$smokeEntry) { throw 'Evidence archive lacks the required standalone run.' }
     $smoke = [Text.Encoding]::UTF8.GetString((Read-ZipEntryBytes $smokeEntry)) | ConvertFrom-Json
@@ -126,7 +138,7 @@ try {
         'dev/starworld/logistics/LogisticsService.class', 'dev/starworld/life/LifeService.class',
         'dev/starworld/integration/ResourceOutbox.class', 'dev/starworld/integration/StarCoreCombatContributor.class',
         'dev/starworld/evolution/RegionAtlas.class', 'dev/starworld/evolution/CultureDynamics.class',
-        'dev/starworld/integration/BorderConflictCapture.class',
+            'dev/starworld/integration/BorderConflictCapture.class',
         'dev/starworld/market/MarketService.class', 'dev/starworld/persistence/LedgerMaintenance.class', 'org/sqlite/JDBC.class')) {
         if ($jarNames -notcontains $required) { throw "Plugin artifact lacks $required" }
     }
@@ -175,6 +187,7 @@ try {
         'tools/paper-fixture/README.md', 'tools/paper-fixture/starcore-build-provenance.json',
         'tools/paper-client/package.json', 'tools/paper-client/acceptance.cjs',
         'tools/paper-client/expansion-acceptance.cjs', 'tools/paper-client/progression-acceptance.cjs', 'tools/paper-client/upgrade-acceptance.cjs', 'tools/paper-client/border-acceptance.cjs', 'tools/paper-client/README.md',
+        'tools/paper-client/operations-acceptance.cjs', 'tools/paper-client/upgrade-04-acceptance.cjs',
         'tools/senluo-fixture/pom.xml', 'tools/senluo-fixture/README.md',
         'tools/senluo-fixture/acceptance.cjs'
     )

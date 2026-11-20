@@ -1,8 +1,8 @@
 # StarWorld
 
-持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **0.3.0**。
+持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **0.4.0**。
 
-代码仓库：[addxiaoyi/StarWorld](https://github.com/addxiaoyi/StarWorld)。技术基线：Java 21、Paper **1.21.11**，CraftEngine **26.9.1** 为可选内容依赖。审计固定 StarCore `f769e62799e769a18fe51305b545869a17f80cd1` 与本轮 SenLuo 最新提交 `c3642ae22fc5252bf6da22ae745cd39be994b054`，见 [StarCore 审计](docs/audit-starcore.md)、[森罗审计](docs/audit-senluo.md)。
+代码仓库：[addxiaoyi/StarWorld](https://github.com/addxiaoyi/StarWorld)。技术基线：Java 21、Paper **1.21.11**，CraftEngine **26.9.1** 为可选内容依赖。审计固定 StarCore `f769e62799e769a18fe51305b545869a17f80cd1` 与本轮 SenLuo 提交 `3e774d00567deb9cb65eee8da6de8a65254e5b8e`，见 [StarCore 审计](docs/audit-starcore.md)、[森罗审计](docs/audit-senluo.md)。
 
 **Folia 仍为兼容规划。** 当前 StarCore 可变服务缺少区域线程安全契约，本版检测 Folia 后明确停用。缺 StarCore 时可独立安装、生成配置和数据库并显示降级原因；城市玩法需要真实 StarCore 国家/城市模块，不会自动建立替代国家。森罗模块或 CE 缺失时保留原版产业、贸易和音符盒演奏；缺失内容或 API 明确停用。
 
@@ -14,7 +14,7 @@
 
 Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME` 指向 JDK 21。Maven Wrapper 使用 Maven 3.9.11；插件包含 SQLite JDBC，不打包外部核心或森罗实现。
 
-产物为 `target/starworld-0.3.0.jar` 和 `target/starworld-0.3.0-sources.jar`；发布脚本生成 `target/StarWorld-0.3.0.zip`，包含插件、源码、配置、文档与校验和。只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
+产物为 `target/starworld-0.4.0.jar` 和 `target/starworld-0.4.0-sources.jar`；发布脚本生成 `target/StarWorld-0.4.0.zip`，包含插件、源码、配置、文档与校验和。只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
 
 1. 正常关服，备份整个 `plugins/StarWorld/`。升级时保留数据库和持久配置 ID。
 2. 放置插件 JAR，使用 Paper 1.21.11 和审计兼容的 StarCore 启动。
@@ -26,7 +26,7 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 
 ## 已实现的世界玩法
 
-| 系统 | 0.3.0 行为 |
+| 系统 | 0.4.0 行为 |
 | --- | --- |
 | 六类地理 | 山脉、河流、平原、森林、沙漠、雪原；农业/运输/军事属性；地区矿藏/林木/肥力及恢复率 |
 | 基础产业 | 肥力→小麦→面包；面包维护+林木→原木→木板；面包维护+矿藏→粗铁→铁锭→箭；新增造纸、食品加工与盾牌 |
@@ -45,6 +45,8 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 | 商路调度 | 同端点替代商路、双方确认改道、共享运力瓶颈；改道重计完整运时，原当期占用不退款 |
 | 国库实物市场 | 整批限价挂牌，实体货物先托管；国家创始人通过核心原子幂等转账付款，确认回执后实际商路交货 |
 | 长期存档 | 有界无损审计压缩归档、旧报表清理；付款/货物/生活活动的关键去重凭据永久保留 |
+| 经营反馈 | 已声明路线的时间、容量和双方维护物资比较；仅物流完成后有界归集到货数量、精确总额和均价 |
+| 在线备份 | 管理员创建经过完整性/schema/SHA-256校验的SQLite一致快照，原子发布到备份目录，保护主库/WAL/SHM和路径别名 |
 
 运输路径是管理者声明的有限节点路线，不证明沿途铺满道路。兵营实际消耗箭形成军需；当前或前一周期的有效供给通过核心公开扩展点提供最多30%军需增伤、20%额外地形减伤，只限有效设施区块。核心取贡献者最高伤害，其他插件可覆盖减伤；不修改真人PVP或核心军队补给。见[战斗联动](docs/combat.md)。城市繁荣为本地属性，不重复写无幂等回执的国家繁荣。
 
@@ -80,6 +82,7 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 /sw pending
 /sw resolve <物品凭据UUID> <credit|discard>
 /sw outbox <retry|cancel> <事务ID>
+/sw maintenance backup <文件名>
 ```
 
 背包存档与 SQLite 没有共同事务，异常遗留凭据必须核对。`resolve credit` 只向城市库存记账一次，`discard` 只确认；活跃操作不能人工处理。已发送国家 outbox 可能在核心提交，不能直接退款；按原事务回执恢复。见[架构](docs/architecture.md)和[国家事务](docs/core-extension.md)。
@@ -102,12 +105,12 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 
 [需求映射](docs/requirements.md) · [架构](docs/architecture.md) · [Java API](docs/API.md) · [玩法验收](docs/gameplay.md) · [地区地图册](docs/geography.md) · [交通贸易](docs/logistics.md) · [国库实物市场](docs/market.md) · [国家服务](docs/core-extension.md) · [战斗联动](docs/combat.md) · [生活联动](docs/life-integrations.md) · [森罗实服验收](docs/senluo-acceptance.md) · [存档维护](docs/storage-maintenance.md) · [千城基线](docs/scale.md) · [测试结果](docs/test-results.md) · [后续边界](docs/roadmap.md)
 
-0.3.0 新增地区地图册、文化衰减与政策影响、双方确认改道、运输瓶颈、国库金币实物市场、无损审计归档和真实边境资源争端。已通过232项自动化测试、千城真实SQLite基线、88阶段真实Paper客户端验收，以及无依赖两次正常启动/SQLite恢复。逐项[完成核对](docs/completion-audit.md)、[测试结果](docs/test-results.md)与证据均绑定同一最终JAR。0.2.0已交付结果保留在[历史报告](docs/history/test-results-0.2.0.md)，不作为新JAR已通过证明。
+0.4.0 在既有六系统上增加路线维护成本规划、真实到货统计和在线备份。同一最终JAR已通过245项自动化测试、117个实服阶段及缺依赖两次启动；其中经营套件29阶段、三次启动，升级与最新森罗候选回归均已完成，见[测试结果](docs/test-results.md)。用户选择继续深化原始六系统，后续版本见[开发计划](docs/development-plan.md)。0.3.0已交付的232项测试和88阶段实服结果保留在[历史报告](docs/history/test-results-0.3.0.md)，不作为新JAR通过证明。
 
 生成完整交付包前，先运行以下命令；各参数必须指向同一最终 JAR 的实际完整通过目录：
 
 ```sh
-python tools/package-evidence.py --expansion-dir <扩展目录> --senluo-dir <森罗目录> --baseline-dir <基础目录> --progression-dir <进阶目录> --upgrade-dir <升级目录> --border-dir <边境目录> --smoke-dir <独立安装目录>
+python tools/package-evidence.py --expansion-dir <扩展目录> --senluo-dir <森罗目录> --baseline-dir <基础目录> --progression-dir <进阶目录> --upgrade-dir <升级目录> --border-dir <边境目录> --operations-dir <经营目录> --smoke-dir <独立安装目录>
 ```
 
-再运行 `./tools/package-release.ps1`。脚本会核对单测、规模报告、六套实服流程、无依赖两次启动、JAR、源码与证据清单的 SHA256，拒绝缺失、失败或其他构建的证据。
+再运行 `./tools/package-release.ps1`。脚本会核对单测、规模报告、七套实服流程、经营套件三次启动、无依赖两次启动、JAR、源码与证据清单的 SHA256，拒绝缺失、失败或其他构建的证据。

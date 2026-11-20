@@ -4,7 +4,28 @@
 
 审计日期：2026-11-19（Asia/Shanghai）。审计方式：读取 Git 远端当前代码、README、Gradle 定义、插件描述符、公开 API、事件触发点、状态与调度代码。本审计不把上游 README 的历史验收范围扩大为 StarWorld 的运行验收。
 
-## 0.3.0 最新代码复审
+## 0.4.0 最新代码与候选复审
+
+2026-11-20 通过 GitHub 远端提交接口复核，StarCore 仍为 `f769e62799e769a18fe51305b545869a17f80cd1`，森罗物语远端 HEAD 为 `3e774d00567deb9cb65eee8da6de8a65254e5b8e`（2026-11-20 13:20:32 +08:00，`Match exported food components to production item encoding`）。StarWorld 自己的干净审计 checkout 固定此提交；没有改动森罗开发工作区，也没有启动 Java、构建或服务器。相对下文 `c3642ae…` 新增 8 次提交、32 个文件变化；Paper `1.21.11`、Java 21 主目标、CraftEngine `26.9.1` 和两个 Gradle 工程的依赖基线不变。
+
+生产变化集中在作物资源重载就绪检查和原生村庄战利品桥接：`CraftEngineRegistryCheckListener` 等待 CE 重载结束并取得资源操作租约后检查注册表，重试有 30 秒上限；`VillageLootBridge`、`VillageLootPending` 和 `/kcvillageloot recover <pendingUUID>` 保留原生抽取与待恢复记录。它们没有新增可供城市账本幂等消费的稳定生产完成 API。`cookery/api`、全部 `series`、现有生产物品/目录类以及根和系列 `build.gradle` 均未变化；Cookery、Tavern、Deco、Music 的公开边界和原有反射签名结论保持。
+
+最后一条提交只修改导出器、测试和验收材料，未修改生产 Java。新厨房包将 `food_v1` **PDC STRING** 内 JSON 的成员顺序及数字文本与 Java 生产物品编码统一，包括 `saturation` 和效果 `probability` 的浮点表示。静态逐项比较全部 103 个 BASE 食物/茶条目，其精确字符串与 UTF-8 字节均匹配源码 golden fixture；旧顺序和整数形式仍可由上游解码。包子仍为 `kaleidoscopecookery:baozi`；油 `kaleidoscopecookery:oil` 仍存在，但它本来不是带 `food_v1` 的可食用 BASE 条目。
+
+StarWorld `CustomItems` 通过 CE 公共 `CraftEngineItems.getCustomItemId(ItemStack)` 识别自定义物品，并按 `BukkitItemManager.getBuildableItem(Key)` → 公共 `BuildableItem.buildItem(CE Player)` → `ItemStackUtils.getBukkitStack(core.item.Item)` 创建栈。它不解析 Cookery 的食物 JSON，故现有精确 ID 匹配契约不变；此次导出修正有利于原始 CE 构造食物与 Cookery 生产食物具有一致组件，但实际 `isSimilar`、背包转移和城市消费仍必须以新 JAR/内容包组合实测。
+
+| 新候选 | 大小（字节） | SHA-256 |
+| --- | ---: | --- |
+| Cookery `KaleidoscopeCookeryPlugin-1.3.0.jar` | 1,738,694 | `26a37d7187766b4990a53ca7c01622e098fd6606d1c763eb479586051f952457` |
+| 厨房资源 `kitchen-crops-3.zip` | 2,991,133 | `a3f68c026c7440153444cd306374ce043dc7825dc7ab74df98c3fb1efd1d6c45` |
+
+候选来自同机 `luoseng/SenLuo_Plugin-continue` 的既有完成产物，读取时干净 HEAD 为 `705bb9a8f065162a7c14f849f4e800c9d5f05786`（2026-11-20 13:28:53 +08:00）。该本地后续提交相对远端审计提交仅增加文档，生产目录及构建定义无差异。厨房包 ZIP CRC 完整，仍含 1,432 个物品、84 个方块、1,515 个模型；这些是导出计数。Tavern、Deco、Music 及 CE JAR 与历史候选哈希相同。
+
+既有 `village-crops-integrated-1.log` 记录 `BUILD SUCCESSFUL` 且执行 `shadowJar`；`food-canonical-java-1.log` 记录 `BUILD SUCCESSFUL`、`shadowJar UP-TO-DATE`，现有 Java XML 报告为 662 项、82 套件、零失败/错误/跳过；`food-canonical-python-1.log` 记录 252 项通过。审计未重跑这些测试。候选 JAR 未嵌入源码提交；与本地编译生产类比较为 543 类相同、零缺失、9 类不同，差异位于插件主类、`InteractGuard` 和七个 NMS 适配类，其所在构建有 Shadow 重定位，因此不能宣称全 JAR 与编译输出逐字节一致，也不能据此宣称可重复构建。最新重载/村庄桥接类、资源 `plugin.yml` 和 `village-loot.json` 已与现有编译输出核对。完整本机来源记录在 StarWorld 工具区 `upstream-senluo-04-provenance.json`。
+
+**这组新候选的 StarWorld 实服验收尚未运行。** 上游先前严格 PDC 比较曾失败，新包不能继承旧包的运行通过结论；下文 0.3.0 的 15/15 记录只适用于 `fc81eaf8…` 与 `kitchen-crops-2.zip`。0.4.0 联调须另建世界和 StarWorld 数据库，固定 StarWorld JAR 哈希，安装上表两件匹配候选及不变系列候选，移除同名旧厨房包，保留 CE 自带内容；先验证精确物品 ID 与原始 CE/生产 BASE 的组件一致性，再执行生活联动、家具生命周期、失地复核、演奏和正常重启去重。须保存 PREP 清单、完整日志及两次正常停服证据；不据此扩大到画面/音频、完整作物玩法或 Folia 安全。
+
+## 0.3.0 历史代码复审
 
 2026-11-20 再次从指定远端 fetch 并固定 `c3642ae22fc5252bf6da22ae745cd39be994b054`（2026-11-20 08:24:49 +08:00，`Implement source crop gameplay and acceptance`）。只移动 StarWorld 自己的干净审计 checkout；没有修改森罗开发工作区。相对上次 `6a432fe…` 新增两次提交，32 个文件变化（3,980 行新增、41 行删除），内容为三作物实现、来源导出和验收工具。
 

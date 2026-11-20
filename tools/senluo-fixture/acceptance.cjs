@@ -6,6 +6,61 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const {createRequire}=require('node:module');
 const {setTimeout:delay}=require('node:timers/promises');
 const {Paper,connect,botMessage,properties,configuredNumber,hash,requireFile,waitUntil,argumentsOf}=require('../paper-client/acceptance.cjs');
+const AUDIT_COMMIT='3e774d00567deb9cb65eee8da6de8a65254e5b8e';
+const EXPECTED_JARS={
+  'StarWorld.jar':'68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba',
+  'StarWorldFixture.jar':'ce2aaaeeb8c34b870eefa2572444db2cf60b0d804d31fcf24b19a72b41e3e22b',
+  'StarCore.jar':'953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b',
+  'craftengine-26.9.1.jar':'021260c87e3546730d321f4360b1744e6e33caa1d68e98ae30dcdbbdc347ae0f',
+  'KaleidoscopeCookeryPlugin-1.3.0.jar':'26a37d7187766b4990a53ca7c01622e098fd6606d1c763eb479586051f952457',
+  'KaleidoscopeTavern-0.1.0-dev.jar':'205b36165b519106cda696f0d48ab91e031b6b90ba6bef8ee0d2202155948033',
+  'KaleidoscopeDeco-0.1.0-dev.jar':'1db18976692f5de6b284b31cfc5ef40e14d60f86925f75e87fe7dc3cf807f263',
+  'KaleidoscopeMusic-0.1.0-dev.jar':'983fb4b88b39bb5211e12ead23d3202222624e114e2ee4137f48d49d434b1078'};
+const PACK_SHA='a3f68c026c7440153444cd306374ce043dc7825dc7ab74df98c3fb1efd1d6c45';
+const PROVENANCE_SHA='07fa559d255a0ea254fe57ca9abfdded031334260a4f06764a77ea6c36a89440';
+function json(file){return JSON.parse(fs.readFileSync(requireFile(file),'utf8').replace(/^\uFEFF/,''));}
+function localFile(root,relative){assert(!path.isAbsolute(relative)&&!relative.split(/[\\/]/).includes('..'),`Unsafe preparation path: ${relative}`);return requireFile(path.join(root,relative));}
+function filesUnder(root,prefix=''){return fs.readdirSync(path.join(root,prefix),{withFileTypes:true}).flatMap(entry=>{const relative=prefix?`${prefix}/${entry.name}`:entry.name;assert(!entry.isSymbolicLink(),`Linked preparation input: ${relative}`);return entry.isDirectory()?filesUnder(root,relative):[relative];}).sort();}
+function verifyPreparation(options){
+  const preparationFile=requireFile(path.join(options.runtime,'PREPARATION.json')),preparation=json(preparationFile);
+  assert.equal(preparation.schema,1);assert(['prepared','running'].includes(preparation.status),'Bind the current fixture before acceptance');
+  assert.equal(path.resolve(preparation.runtime),options.runtime);assert.equal(preparation.upstreamAuditCommit,AUDIT_COMMIT);
+  assert.equal(preparation.starWorldVersion,'0.4.0');assert.equal(preparation.starWorldSha256,EXPECTED_JARS['StarWorld.jar']);
+  assert.equal(preparation.cookeryJarSha256,EXPECTED_JARS['KaleidoscopeCookeryPlugin-1.3.0.jar']);assert.equal(preparation.kitchenPackSha256,PACK_SHA);
+  assert.equal(preparation.worldsCopied,0);assert.equal(preparation.authorityFilesCopied,0);
+  assert(preparation.processStarted===false||preparation.processStarted===true);assert.equal(preparation.testTuning.serverStarts,2);
+  assert.equal(preparation.testTuning.host,'127.0.0.1');assert.equal(preparation.testTuning.port,options.port);
+  assert.equal(preparation.testTuning.minimumFreeCommitBytes,1610612736);assert.deepEqual(preparation.testTuning.jvmArgs,options.jvmArgs);
+  for(const name of ['_JAVA_OPTIONS','JAVA_TOOL_OPTIONS','JDK_JAVA_OPTIONS'])assert(!process.env[name],`Unexpected JVM injection: ${name}`);
+  const plugins=path.join(options.runtime,'plugins'),actualJars=fs.readdirSync(plugins).filter(name=>name.endsWith('.jar')).sort();
+  assert.equal(actualJars.length,9);assert.deepEqual(actualJars,[...Object.keys(EXPECTED_JARS),'StarWorldSenLuoFixture.jar'].sort());
+  assert.equal(preparation.installedPlugins.length,9);assert.deepEqual(preparation.installedPlugins.map(row=>row.file).sort(),actualJars);
+  const pluginJars={};for(const row of preparation.installedPlugins){assert.equal(path.basename(row.file),row.file);const file=localFile(plugins,row.file);pluginJars[row.file]=hash(file);assert.equal(pluginJars[row.file],row.sha256,`Prepared JAR drift: ${row.file}`);assert.equal(fs.statSync(file).size,row.bytes);if(EXPECTED_JARS[row.file])assert.equal(row.sha256,EXPECTED_JARS[row.file]);}
+  assert.equal(pluginJars['StarWorldSenLuoFixture.jar'],preparation.senluoFixtureSha256);assert.match(preparation.senluoFixtureSha256,/^[a-f0-9]{64}$/);
+  assert.deepEqual(Object.keys(preparation.configSha256).sort(),['config.yml','definitions.yml','evolution.yml','exports.yml','life.yml','logistics.yml','market.yml']);
+  for(const [name,expected]of Object.entries(preparation.configSha256))assert.equal(hash(localFile(path.join(plugins,'StarWorld'),name)),expected,`Prepared configuration drift: ${name}`);
+  const provenanceFile=localFile(options.runtime,'UPSTREAM-PROVENANCE.json'),provenance=json(provenanceFile);
+  assert.equal(hash(provenanceFile),PROVENANCE_SHA);assert.equal(preparation.newAssetPreparation.upstreamProvenanceSha256,PROVENANCE_SHA);
+  assert.equal(provenance.commit,AUDIT_COMMIT);assert.equal(provenance.cookeryJar.sha256,preparation.cookeryJarSha256);assert.equal(provenance.kitchenPack.sha256,PACK_SHA);
+  assert.equal(hash(localFile(options.runtime,'asset-inputs/kitchen-crops-3.zip')),PACK_SHA);
+  const assetRoot=path.join(options.runtime,'asset-inputs/kitchen-crops-3'),manifestFile=localFile(assetRoot,'manifest.json'),manifest=json(manifestFile);
+  assert.deepEqual(manifest,provenance.kitchenPack.manifest);assert.equal(hash(manifestFile),preparation.assetManifestSha256);
+  const assetFiles=Object.keys(manifest.files).sort();assert.equal(assetFiles.length,2399);
+  assert.deepEqual(filesUnder(assetRoot),[...assetFiles,'manifest.json'].sort());
+  const activeResources=path.join(plugins,'CraftEngine/resources');
+  assert.equal(path.resolve(preparation.newAssetPreparation.activeCookeryResources),path.join(activeResources,'cookery_kitchen'));
+  assert.deepEqual(filesUnder(path.join(activeResources,'cookery_kitchen')),assetFiles.map(name=>{assert(name.startsWith('cookery_kitchen/'));return name.slice('cookery_kitchen/'.length);}).sort());
+  for(const [name,expected]of Object.entries(manifest.files)){assert.equal(hash(localFile(assetRoot,name)),expected,`Extracted pack drift: ${name}`);assert.equal(hash(localFile(activeResources,name)),expected,`Loaded pack drift: ${name}`);}
+  assert.equal(preparation.newAssetPreparation.internalFiles,55);assert.equal(filesUnder(path.join(activeResources,'internal')).length,55);
+  assert(Object.keys(preparation.dependencyFilesSha256).length>=55,'Dependency/configuration fingerprints required');
+  for(const [name,expected]of Object.entries(preparation.dependencyFilesSha256))assert.equal(hash(localFile(options.runtime,name)),expected,`Prepared dependency drift: ${name}`);
+  assert.equal(hash(options.paper),preparation.paperSha256);assert.equal(hash(options.java),preparation.javaSha256);
+  const level=properties(path.join(options.runtime,'server.properties'))['level-name'];assert(level&&path.basename(level)===level);
+  for(const name of [level,`${level}_nether`,`${level}_the_end`,'world','world_nether','world_the_end'])assert(!fs.existsSync(path.join(options.runtime,name)),`Fresh world required: ${name}`);
+  for(const folder of ['StarWorld','StarCore'])for(const name of filesUnder(path.join(plugins,folder)))assert(!/\.(?:db|sqlite|sqlite3)(?:-|$)/i.test(name),`Fresh database required: ${folder}/${name}`);
+  assert(!fs.existsSync(path.join(options.runtime,'senluo-acceptance')),'Preserve previous acceptance; prepare another fresh runtime');
+  return{preparationFile,preparation,pluginJars,verifiedAssetFiles:assetFiles.length,verifiedDependencyFiles:Object.keys(preparation.dependencyFilesSha256).length};
+}
 async function main(){
   const args=argumentsOf(process.argv.slice(2));
   if(args.help){console.log('node tools/senluo-fixture/acceptance.cjs --java <java21> --paper <paper132.jar> --runtime <owned-runtime> --client-deps <mineflayer-directory>');return;}
@@ -20,15 +75,12 @@ async function main(){
   assert.equal(configuredNumber(worldConfig,'period-seconds'),10);assert.equal(configuredNumber(worldConfig,'event-chance'),0);
   assert.equal(configuredNumber(lifeConfig,'profession-cooldown-periods'),1,'Explicit isolated profession cooldown required');
   assert.equal(configuredNumber(lifeConfig,'minimum-duration-millis'),60000,'Concert duration must remain default');
+  const verified=verifyPreparation(options);
   const localRequire=createRequire(path.resolve(args['client-deps'],'package.json')),mineflayer=localRequire('mineflayer');
   const directory=path.join(options.runtime,'senluo-acceptance',new Date().toISOString().replace(/[:.]/g,'-'));fs.mkdirSync(directory,{recursive:true});
-  const preparationFile=requireFile(path.join(options.runtime,'PREPARATION.json'));
-  const assetPreparation=JSON.parse(fs.readFileSync(preparationFile,'utf8').replace(/^\uFEFF/,''));
-  assert.equal(assetPreparation.upstreamAuditCommit,'c3642ae22fc5252bf6da22ae745cd39be994b054','Current upstream candidate preparation required');
-  const evidence={schema:1,status:'running',startedAt:new Date().toISOString(),minecraft:'1.21.11',senluoAuditCommit:'c3642ae22fc5252bf6da22ae745cd39be994b054',paperSha256:hash(options.paper),pluginJars:{},assetPreparation:{fileSha256:hash(preparationFile),...assetPreparation},
+  const evidence={schema:1,status:'running',startedAt:new Date().toISOString(),minecraft:'1.21.11',senluoAuditCommit:AUDIT_COMMIT,paperSha256:hash(options.paper),pluginJars:verified.pluginJars,assetPreparation:{fileSha256:hash(verified.preparationFile),...verified.preparation},preflight:{verifiedAssetFiles:verified.verifiedAssetFiles,verifiedDependencyFiles:verified.verifiedDependencyFiles,freshWorldAndDatabases:true},
     scope:'Real CE player inventory deposits, feast warehouse consumption, actual furniture lifecycle, StarWorld-controlled concert with a real same-city listener, restart. No upstream kmusic completion, resource-pack visual/audio or Folia claim.',
     testTuning:{periodSeconds:10,randomEventChance:0,professionCooldownPeriods:1,concertMinimumDurationMillis:60000,lifeConfigSha256:hash(lifeConfig),jvmArgs:options.jvmArgs,nodeArgs:process.execArgv,nodeVersion:process.version,paperSparkEnabled:false},steps:[]};
-  for(const name of fs.readdirSync(path.join(options.runtime,'plugins')))if(name.endsWith('.jar'))evidence.pluginJars[name]=hash(path.join(options.runtime,'plugins',name));
   const save=()=>fs.writeFileSync(path.join(directory,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');
   const stage=async(name,run)=>{console.log(`RUN ${name}`);const row={name,startedAt:new Date().toISOString()};evidence.steps.push(row);save();try{row.result=await run();row.status='passed';}catch(error){row.status='failed';row.error=error.stack;throw error;}finally{row.finishedAt=new Date().toISOString();save();}};
   let server=new Paper(options,directory,1),bot,listener,preRestart,concertId;

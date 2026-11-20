@@ -1,18 +1,15 @@
 {
   "schema": 1,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "status": "passed",
-  "artifact_sha256": "15946f82e248d08cabba45f4389d23297a9e27f574468658faa7edf6426382e1",
-  "startedAt": "2026-11-20T03:36:42.6090772Z",
-  "finishedAt": "2026-11-20T03:37:48.3016546Z",
-  "launchMechanism": "Win32_Process.Create hidden startup",
-  "runtimeJvmOptions": "-Xms128m -Xmx512m -Xss512k -XX:MaxMetaspaceSize=192m -XX:MaxDirectMemorySize=64m -XX:ReservedCodeCacheSize=64m -XX:TieredStopAtLevel=1 -XX:ActiveProcessorCount=1 -XX:+UseSerialGC -Dio.netty.eventLoopThreads=2",
+  "artifact_sha256": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
+  "startedAt": "2026-11-20T06:57:06.2205471Z",
+  "finishedAt": "2026-11-20T06:58:15.6344400Z",
   "javaOptionsEnvironment": "-Xms128m -Xmx512m -Xss512k -XX:MaxMetaspaceSize=192m -XX:MaxDirectMemorySize=64m -XX:ReservedCodeCacheSize=64m -XX:TieredStopAtLevel=1 -XX:ActiveProcessorCount=1 -XX:+UseSerialGC -Dio.netty.eventLoopThreads=2",
-  "nodeExecArgv": [],
-  "command": "tools/smoke-paper.ps1 -JavaPath <Java21> -ServerJar <Paper132> -PluginJar target/starworld-0.3.0.jar -RuntimeDirectory <fresh-owned-no-dependency-runtime> -Port 25604",
-  "scope": "Two clean Paper starts, console degradation/status, SQLite schema 2 and audit restart marker; only StarWorld installed. Marker is isolated test data, not gameplay output. Smoke uses PowerShell/Java directly without Node.",
+  "command": "tools/smoke-paper.ps1 -PluginJar target/starworld-0.4.0.jar -Port 25618",
+  "scope": "Two clean no-dependency starts and persisted SQLite audit marker; marker is isolated test data",
   "logs": {
-    "smoke-run-1.log": "64699fbf3b54a42d1731098ea3ffc5583a133bc2274d12dfeea715fe3085bc20",
-    "smoke-run-2.log": "d338dcdb66b4e9dd9d1319c73fff6ad645917433d8cd037471c6cf9b34c06b65"
+    "smoke-run-1.log": "6659d05e4059f2606ab4449d0e82ac37346762fc615a0039d42eae05f579e88f",
+    "smoke-run-2.log": "85605b30f92162132dd1c8e017084c82d69838737164479f3722fcf8b12891db"
   }
 }

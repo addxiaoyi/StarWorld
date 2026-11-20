@@ -40,6 +40,8 @@ final class ExpansionFixture {
             case "exp-armies"->armies(p,Objects.requireNonNull(Bukkit.getPlayerExact(args[2]),"Connected peer required"),Integer.parseInt(args[3]),Integer.parseInt(args[4]));
             case "exp-combat"->combat(p,Objects.requireNonNull(Bukkit.getPlayerExact(args[2]),"Connected peer required"));
             case "exp-progress"->progress(p);
+            case "exp-operations"->operations(p,UUID.fromString(args[2]));
+            case "exp-permissions"->emit("exp-permissions",p,Map.of("admin",p.hasPermission("starworld.admin"),"use",p.hasPermission("starworld.use")));
             case "exp-progress-seed"->progressSeed(p);
             case "exp-alt-node"->alternateNode(p,slot(args));
             case "exp-fund"->fund(p,new java.math.BigDecimal(args[2]));
@@ -197,6 +199,18 @@ final class ExpansionFixture {
         CompletableFuture.allOf(cityFuture,atlasFuture,developmentFuture,responsesFuture,historyFuture).whenComplete((ignored,error)->Bukkit.getScheduler().runTask(owner,()->{try{
             if(error!=null)throw new IllegalStateException(error);Object view=unwrap(cityFuture.join()),live=unwrap(invoke(runtime,"playerCity",new Class<?>[]{Player.class},p));if(view==null||live==null||!city.equals(call(live,"cityId"))||!nation.equals(call(live,"nationId")))throw new IllegalStateException("City authority changed during read");
             Map<String,Object> report=new LinkedHashMap<>();report.put("entryPoint","StarWorldApi.disasterResponses/disasterHistory/development/regions/city");report.put("version",call(runtime,"version"));report.put("currentPeriod",call(runtime,"currentPeriod"));report.put("city",view);report.put("atlas",unwrap(atlasFuture.join()));report.put("development",unwrap(developmentFuture.join()));report.put("responses",responsesFuture.join());report.put("history",historyFuture.join());report.put("verifiedBuildings",invoke(runtime,"verifiedBuildings",new Class<?>[]{view.getClass()},view));report.put("strategies",call(configuration,"strategies"));report.put("queryLimit",page);report.put("admin",p.hasPermission("starworld.admin"));report.put("use",p.hasPermission("starworld.use"));report.put("manager",invoke(runtime,"manage",new Class<?>[]{Player.class,UUID.class},p,city));report.put("snapshotIsAtomic",false);report.put("gameplayWrites",false);emit("exp-disasters",p,report);
+        }catch(Exception failure){failed(failure);}}));
+    }
+    /** New-version projections use the public asynchronous API; no settlement/reconciliation is invoked. */
+    private void operations(Player p,UUID targetCity)throws Exception {
+        Object runtime=world(),coreCity=unwrap(invoke(runtime,"playerCity",new Class<?>[]{Player.class},p));UUID city=(UUID)call(coreCity,"cityId");
+        Class<?> modeType=type("StarWorld","dev.starworld.logistics.LogisticsState$Mode");
+        @SuppressWarnings({"unchecked","rawtypes"}) Object land=Enum.valueOf((Class<? extends Enum>)modeType,"LAND");
+        CompletableFuture<?> plans=(CompletableFuture<?>)invoke(runtime,"routePlans",new Class<?>[]{UUID.class,UUID.class,modeType,int.class,int.class},city,targetCity,land,100,0);
+        CompletableFuture<?> stats=(CompletableFuture<?>)invoke(runtime,"marketDeliveryStats",new Class<?>[]{UUID.class,String.class,int.class,int.class},city,null,100,0);
+        CompletableFuture<?> global=(CompletableFuture<?>)invoke(runtime,"marketDeliveryStats",new Class<?>[]{UUID.class,String.class,int.class,int.class},null,null,100,0);
+        CompletableFuture.allOf(plans,stats,global).whenComplete((ignored,error)->Bukkit.getScheduler().runTask(owner,()->{try{
+            if(error!=null)throw new IllegalStateException(error);emit("exp-operations",p,Map.of("version",call(runtime,"version"),"cityId",city,"targetCity",targetCity,"routePlans",plans.join(),"deliveryStats",stats.join(),"globalDeliveryStats",global.join(),"entryPoints",List.of("StarWorldApi.routePlans","StarWorldApi.marketDeliveryStats")));
         }catch(Exception failure){failed(failure);}}));
     }
     private void alternateNode(Player p,int slot){

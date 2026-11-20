@@ -78,6 +78,7 @@ def main() -> int:
     parser.add_argument("--progression-dir", type=Path, help="Required 0.3 geography, reroute and treasury market runtime suite")
     parser.add_argument("--upgrade-dir", type=Path, help="Required 0.3 migration from a verified 0.2 server state")
     parser.add_argument("--border-dir", type=Path, help="Required 0.3 real neighboring-resource dispute regression")
+    parser.add_argument("--operations-dir", type=Path, help="Required for 0.4: route planning, delivery statistics and online backup acceptance")
     parser.add_argument("--smoke-dir", type=Path, help="Required for 0.3: no-dependency runtime containing smoke-evidence.json and both smoke-run logs")
     parser.add_argument("--check-only", action="store_true", help="Validate all inputs and print the planned archive without writing")
     args = parser.parse_args()
@@ -154,13 +155,15 @@ def main() -> int:
                   ("senluo", args.senluo_dir, "tools/senluo-fixture/acceptance.cjs")]
     if args.baseline_dir:
         run_inputs.append(("baseline", args.baseline_dir, "tools/paper-client/acceptance.cjs"))
-    if tuple(map(int, version.split("-")[0].split("."))) >= (0, 3, 0):
+    release_version = tuple(map(int, version.split("-")[0].split(".")))
+    if release_version >= (0, 3, 0):
         require(args.baseline_dir is not None, "0.3 delivery requires the final basic gameplay regression")
         require(args.smoke_dir is not None, "0.3 delivery requires the final two-start standalone regression")
         require(args.progression_dir is not None, "0.3 delivery requires final progression runtime evidence")
         run_inputs.append(("progression", args.progression_dir, "tools/paper-client/progression-acceptance.cjs"))
         require(args.upgrade_dir is not None, "0.3 delivery requires real upgrade and restart evidence")
-        run_inputs.append(("upgrade", args.upgrade_dir, "tools/paper-client/upgrade-acceptance.cjs"))
+        upgrade_script = "tools/paper-client/upgrade-04-acceptance.cjs" if release_version >= (0, 4, 0) else "tools/paper-client/upgrade-acceptance.cjs"
+        run_inputs.append(("upgrade", args.upgrade_dir, upgrade_script))
         require(args.border_dir is not None, "0.3 delivery requires real border-resource dispute evidence")
         run_inputs.append(("border", args.border_dir, "tools/paper-client/border-acceptance.cjs"))
         scale_data = regular_file(target / "scale-results.json", target)
@@ -169,6 +172,9 @@ def main() -> int:
                 "Missing successful thousand-city storage baseline")
         require(any("WorldScaleTest" in suite["suite"] and suite["tests"] > 0 for suite in unit["suites"]), "Scale report has no matching verified test suite")
         add("scale/scale-results.json", scale_data)
+    if release_version >= (0, 4, 0):
+        require(args.operations_dir is not None, "0.4 delivery requires completed operations runtime evidence")
+        run_inputs.append(("operations", args.operations_dir, "tools/paper-client/operations-acceptance.cjs"))
     transcript_pattern = re.compile(r"(?:paper-run-[1-9][0-9]*|client-run-[A-Za-z0-9_-]+)\.log")
     expected_clients = {
         "expansion": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
@@ -177,6 +183,7 @@ def main() -> int:
         "progression": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
         "upgrade": {"client-run-1.log", "client-run-2.log"},
         "border": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
+        "operations": {f"client-run-{run}-{player}.log" for run in (1, 2, 3) for player in ("a", "b")},
     }
     for label, raw_directory, script_name in run_inputs:
         directory = absolute_directory(raw_directory)
@@ -203,6 +210,8 @@ def main() -> int:
         transcripts = sorted(file for file in directory.iterdir() if transcript_pattern.fullmatch(file.name))
         names = {file.name for file in transcripts}
         required_logs = {"paper-run-1.log", "paper-run-2.log"} | expected_clients[label]
+        if label == "operations":
+            required_logs.add("paper-run-3.log")
         require(required_logs.issubset(names), f"{label} run lacks complete two-start server/client transcripts: {sorted(required_logs - names)}")
         for file in transcripts:
             log = regular_file(file, directory)

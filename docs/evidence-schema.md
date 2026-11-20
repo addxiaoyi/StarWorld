@@ -1,4 +1,4 @@
-# 真实 Paper 扩展验收证据
+# 真实 Paper 验收证据
 
 `tools/paper-client/expansion-acceptance.cjs` 在隔离服务器中启动两个真实离线协议客户端，使用实际 StarCore/StarWorld JAR。它将每次观察写入 `expansion-acceptance/<UTC时间>/evidence.json`，并保存两个服务器进程日志及两名玩家分别在重启前后的聊天日志。`latest.json` 只指向最近一次结果，失败运行也保留。
 
@@ -41,3 +41,13 @@ fixture 输出一行 `SW_FIXTURE_EXPANSION {schema:2,action,player,observed}`。
 物流封锁先真实取消国家领土而保留城市 claim，确认货物留在托管；恢复领土后经真实 WarService 宣战，确认战争/外交阻断且进度不变；公开停战后同一货单继续并只交付一次。fixture 不直接设置 WAR 关系，不写任何插件权威数据库，不读取私有字段或私有缓存。
 
 这组独立环境验收使用原版 community 宴会，不能替代 CraftEngine/森罗 Cookery、Tavern、Deco、MusicPlus 已安装环境的实际家具、物品与声音测试；缺少这些插件时应明确降级。Folia 仍不在当前支持声明中。
+
+## 0.3 进阶与升级套件
+
+`progression-acceptance.cjs` 使用 schema 3、`suite=real-paper-progression`。两名协议玩家验证地区GUI保护、真实政策成本与文化增量、周期衰减、替代商路双方改道、国库原子付款与已付款货物的撤领/战争暂停和重启恢复；保存两份服务端、四份客户端日志。`configSha256` 包含新增 `market.yml`；测试物品和国库充值仍明确记作投入。
+
+`upgrade-acceptance.cjs` 使用 schema 1、`suite=real-paper-upgrade-02-to-03`。输入必须是已经通过0.2验收且正常停止的存档副本，`UPGRADE-PROVENANCE.json` 保存原JAR、原证据、数据库、玩家文件与六份配置的指纹和只读SQLite快照。`beforeProvenance` 将它完整嵌入结果，禁止把原服路径作为目标。通过两个真实客户端/服务端启动，检查原国家城市、设施、物品转移凭据、特殊物品和旧配置保留，新模块只加法建表，正常新周期继续且无离线补算。只读SQLite探针在正常关闭且WAL已检查点后运行，不通过SQL修改玩法数据。
+
+`border-acceptance.cjs` 使用 schema 1、`suite=real-paper-border-resource-dispute`，保存两份服务端及四份客户端日志。它用真实公开国家claim和宣战/停战调用验证远方战争及和平邻居两个阴性条件，邻国交战时由正常生产周期自然产生事件；不调用管理员事件命令或构造假边境证据。对端撤领后，经过原事件、余波和冷却结束仍只能保留一条历史。独立配置采用概率1、只保留border规则、持续12期/余波2期及重复宣战冷却0；全部定义、JAR、配置和Node/JVM内存调优均记录。常规回归保持各自的零随机概率设置。
+
+`package-evidence.py` 逐项比对当前脚本阶段名、全部passed状态、最终插件SHA256及完整两次启动日志；当前机器摘要不得混入其他JAR证据。森罗和升级还必须保留源内容/升级准备文件，其他套件如有 `PREPARATION.json` 也一并收录。历史0.2及早期0.1观察保存在 `docs/evidence/history/`，不作为0.3通过证明。

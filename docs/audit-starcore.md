@@ -4,6 +4,25 @@
 
 审计日期：2026-11-19（Asia/Shanghai）。仓库：<https://github.com/addxiaoyi/starcore>。本地检出 `main`，`git log -1` 和 `git ls-remote origin HEAD` 均为 `f769e62799e769a18fe51305b545869a17f80cd1`，提交时间 `2026-11-18T23:34:47Z`，消息 `docs: record final shared budget Paper acceptance`。本次只读审计未修改 StarCore。审计范围包含 README（中文/英文）、ARCHITECTURE、Maven、plugin.yml、公共入口及实际注册、国家/城市/领土/资源/科技/政策/繁荣/天气/纪元实现。
 
+## 0.3.0 国库与线程边界复审
+
+2026-11-20 再次核对指定远端，HEAD 仍为上述 `f769e627…`，未改变核心生产源码。新增实物金币市场前复查以下公开服务：
+
+| 公开边界 | 已确认合同 |
+| --- | --- |
+| `module.treasury.NationTransferService.transfer(TransferRequest)` | 请求包含稳定 String 事务 ID、付款/收款 `NationId`、`BigDecimal`、类别和描述，返回 `APPLIED/ALREADY_APPLIED/INSUFFICIENT_FUNDS/REJECTED` |
+| `NationTransferService.transferReceipt(String)` | 可查询持久 `TransferReceipt` 的双方国家、金额、类别、描述和应用时间；消费端应逐项核实 |
+| `NationCreditService.credit/creditReceipt` | 单国幂等收入，不应与独立 spend 拼成双国原子转账 |
+| `NationSpendingService.spend/spendingReceipt` | 单国幂等支出；核心预算接口另可负责预算优先扣款 |
+
+`TreasuryModule` 在服务元数据中公开注册上述三种事务接口。当前 `transfer` 实现为同步锁内同时修改双国余额与事务回执，统一同步持久化；持久化失败回滚两边余额和本次回执。证据见固定源码 [NationTransferService](https://github.com/addxiaoyi/starcore/blob/f769e62799e769a18fe51305b545869a17f80cd1/src/main/java/dev/starcore/starcore/module/treasury/NationTransferService.java) 和 [TreasuryModule.transfer](https://github.com/addxiaoyi/starcore/blob/f769e62799e769a18fe51305b545869a17f80cd1/src/main/java/dev/starcore/starcore/module/treasury/TreasuryModule.java#L743)。StarWorld 0.3.0 使用该原子接口及 `OTHER` 类别，先后查询原事务回执；不会直接读写核心余额，也不把个人 `EconomyService` 的无业务幂等 ID 转账或 TransactionFabric 流水当作原子国家支付完成证明。
+
+核心已经存在抽象国家资源的 `MarketOrderBookService`；StarWorld 的新市场对象是本插件城市仓库托管的真实商品，复用核心国库货币和实际商路，没有复制这个抽象资源订单簿。国家资源出口继续走已审计的 `NationResourceTransactionService`，两种用途和凭据分开。
+
+边境资源事件另复用 `NationService.claimAt(String world,int chunkX,int chunkZ)`、`nationById(NationId)`，以及现有公开 `WarService.activeWarsOf` 和 `DiplomacyRelationService.relationBetween` 的真实对端状态。读取限定有效登记设施地区的四个正交邻块，并在本国原区块双领土成立后确认邻接外国仍存在；不枚举全体 claims/nations，不读取邻块方块、不强制加载。最多 64 地区和 100 不同外交对端，后续 IO 只携带不可变国家/区块/关系证据并关联自己的地区正资源储量。核心领土、外交和战争仍为权威，StarWorld 不推断或写入另一套状态。`border_dispute` 不再仅凭全国家战争布尔值触发；事件概率、权重、冷却与余波保留，开始历史在结算事务内记录具体边境和资源。
+
+繁荣接口仍无稳定业务 ID/完成回执，`modifyProsperity` 的读取再写入和异步保存不能被当作可安全跨库重放的事务。当前保持只读核心繁荣，城市繁荣存在本地。国家、城市仍返回可变成员/领土模型，调度器仍有直接 Bukkit scheduler 调用，plugin.yml 仍无 Folia 声明；同步国库锁不能让其他核心 API 自动具有区域线程安全契约。StarWorld 的国家读取、治理确认、国库操作都限定 Paper 主线程，Folia 计划仍按下文边界执行。
+
 ## 实际基线与依赖
 
 - Maven 坐标 `dev.starcore:starcore:1.0.0`，Java 21，`paper-api:1.21.11-R0.1-SNAPSHOT`（provided），Bukkit 主类 `dev.starcore.starcore.StarCorePlugin`，`api-version: '1.21'`。

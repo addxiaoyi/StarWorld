@@ -4,7 +4,26 @@
 
 审计日期：2026-11-19（Asia/Shanghai）。审计方式：读取 Git 远端当前代码、README、Gradle 定义、插件描述符、公开 API、事件触发点、状态与调度代码。本审计不把上游 README 的历史验收范围扩大为 StarWorld 的运行验收。
 
-## 0.2.0 最新代码复审
+## 0.3.0 最新代码复审
+
+2026-11-20 再次从指定远端 fetch 并固定 `c3642ae22fc5252bf6da22ae745cd39be994b054`（2026-11-20 08:24:49 +08:00，`Implement source crop gameplay and acceptance`）。只移动 StarWorld 自己的干净审计 checkout；没有修改森罗开发工作区。相对上次 `6a432fe…` 新增两次提交，32 个文件变化（3,980 行新增、41 行删除），内容为三作物实现、来源导出和验收工具。
+
+Paper `1.21.11`、Java 21 主目标、CraftEngine `26.9.1`、Gradle 构建和插件依赖不变。`cookery/api`、Tavern API、全部 Deco/Music 和系列公共 `Items` 工具均无变化。新 `SourceCropBehavior` 实现番茄、辣椒、生菜的 CE 龄状态、主副手采收、生长和来源掉落；`HarvestableCrop` 增加带 `InteractionHand` 的五参 default 重载，四参接口仍可使用。三种新种子和作物方块为 `kaleidoscopecookery:tomato_seed/chili_seed/lettuce_seed` 及对应 `*_crop`。没有新增城市可可靠消费的持久生产完成回执，原取菜事件、饮品事件和 Music 完成接口的限制仍成立。
+
+现有 StarWorld 使用的包子、油、葡萄酒、Deco 家具与手持乐器 ID 和反射签名未变。新厨房包 `kitchen-crops-2.zip` 的 `cookery_kitchen/configuration/kitchen.yml` 已逐项核对仍有精确的 `kaleidoscopecookery:baozi` 和 `kaleidoscopecookery:oil` 物品定义，包含 1,432 物品、84 方块和 1,515 已检查模型；这些是导出内容计数，不是 StarWorld 服务器实际加载计数。
+
+已找到与最新干净生产源码工作区对应的本地候选：
+
+| 候选 | SHA-256 |
+| --- | --- |
+| Cookery `KaleidoscopeCookeryPlugin-1.3.0.jar` | `fc81eaf8b3769b93f00c6781086936807fa4d5ced2a5659e27947527d010a0d5` |
+| 厨房资源 `kitchen-crops-2.zip` | `0385c35b62dd7a6869b8466ddf85ef6d7b9732e826860c61550309d5e9dd03e0` |
+
+来源为同机 `luoseng/SenLuo_Plugin-continue` 的 `build/libs` 和 `build/distribution`；其 HEAD 为上述 `c3642ae…`，仅交接文档有未提交改动，生产源码未私改。读取到已结束的 `source-crops-root-3.log` 为 `BUILD SUCCESSFUL`、`shadowJar UP-TO-DATE`，配套结果记录 605 项上游测试零失败/错误/跳过；新作物两个关键类的 JAR 字节与当前编译输出相同。本次审计没有运行 Java 或改动上游构建。JAR 未内嵌源码提交，以上是可核对的本地候选来源证据，不构成可重复构建证明。Tavern、Deco、Music 的候选字节与下表历史候选完全相同。
+
+上游三作物真实玩家/生长/保护/重载验收仍为未完成，不能从上游单测或旧服务端报告扩大为通过。StarWorld 的任务是消费已交付食材并计算城市贡献；当前 `0.3.0` JAR `15946f82…` 已于 2026-11-20 10:27:43–10:32:09 +08:00 与上述最新 Cookery/匹配资源、真实 CE 和四模块完成独立 15/15 阶段联调，包括真实背包存入/宴会扣费、家具生命周期与失地复核、68,624 毫秒受控演奏及重启不重奖，两次 Paper 正常关闭。完整证据在 [senluo-acceptance.md](senluo-acceptance.md) 和 [test-results.md](test-results.md) 单列；这不替上游声明完整作物玩法、Folia 或画面/音频已通过。
+
+## 0.2.0 历史代码复审
 
 2026-11-19 再次通过远端固定 `6a432fe54097a3ebf22ba5757e016b602c711f28`（2026-11-19 22:05:49 +08:00，`Verify connected gameplay recovery across normal restarts`）。在 StarWorld 自己的只读审计 checkout 中 fetch 此提交，并比较下文历史 `7a676978…` 基线：仅新增一条提交，21 个文件变化；Paper `1.21.11`、Java 21 主目标和 CraftEngine `26.9.1` 均未改变。Cookery 根工程仍为 Gradle，系列为独立 Gradle 多模块，没有 Maven POM。
 
@@ -12,7 +31,7 @@
 
 上游新报告 `docs/research/series-gameplay-connected-acceptance-2026-11-19.json` 单独记录了当前五插件候选的物品哈希、Paper 132/Folia 14 有界协议测试与失败历史。StarWorld 可依据报告核对候选二进制身份，但它们的 PASS 不替代 StarWorld 适配器验收；不据此声明 Folia 安全、GPU 画面、音频或所有家具玩法通过。StarWorld 实服联调另见 [senluo-acceptance.md](senluo-acceptance.md)。
 
-当前报告中的四个接入候选 SHA-256：
+0.2.0 该报告中的四个接入候选 SHA-256（Cookery 在 0.3.0 已换用上文新候选）：
 
 | 插件 | SHA-256 |
 | --- | --- |

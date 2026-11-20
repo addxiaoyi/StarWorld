@@ -1,0 +1,5027 @@
+{
+  "schema": 1,
+  "suite": "real-paper-border-resource-dispute",
+  "status": "passed",
+  "startedAt": "2026-11-20T02:01:01.506Z",
+  "node": "v24.22.3",
+  "minecraft": "1.21.11",
+  "mineflayer": "4.39.0",
+  "paperSha256": "5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba",
+  "pluginJars": {
+    "StarCore.jar": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
+    "StarWorld.jar": "45159ecc945f8ff824f5e0b4aa2e99e63c623b9e5c27e25231fe992e2d4d3494",
+    "StarWorldFixture.jar": "00f0914bced06d153f707574b3cbdc9300f4d4d6fb2abc03802dd1a08d87bfbb"
+  },
+  "configSha256": {
+    "config.yml": "cbb7c939b6324b28579c754eecbfd008fb3f02bf711a5fc7d8aecc8a537d51e1",
+    "definitions.yml": "09d3918904ff7bd87b557842572796d3e6035e2040655f7b2d5a2502db9e8fbd",
+    "evolution.yml": "49b9dca6bf02f9e46d3d79b5b9226fe6e2d1d44d82577c4ad693e9128bdd8cdf",
+    "exports.yml": "404834ea15275b775fddae6b8bc3a51ab13ede2b4e172cc854e09acf3ce7d51f",
+    "life.yml": "82c34d5f2698c9313e47c3625eeb7bbfe239ba824d9a3a514a65068105e1f2a5",
+    "logistics.yml": "a54f0f86250669c1db25eb297efddc0450c3ab7c10ab41c627c3d322c9bc112f",
+    "market.yml": "eae03b86019bf757853526859d9a4de529dce5fb2b828cb9cbf2a54bc63314b1",
+    "StarCore/config.yml": "50eaf5d0c566d2c2357983a21d7aa9d846aaaef7106cd2e63fe83ad8b5d2b8b5"
+  },
+  "steps": [
+    {
+      "name": "real Paper enables public core services and two fresh protocol clients",
+      "status": "passed",
+      "startedAt": "2026-11-20T02:01:01.954Z",
+      "observed": {
+        "pid": 14700,
+        "players": [
+          "831f8f19-d8c9-38e4-b22d-41b1b57d73c3",
+          "4b7c9f07-02ad-38cd-aa7d-744b5172bb9e"
+        ]
+      },
+      "finishedAt": "2026-11-20T02:01:59.118Z"
+    },
+    {
+      "name": "two real countries and cities own distinct nonadjacent national and city claims",
+      "status": "passed",
+      "startedAt": "2026-11-20T02:01:59.119Z",
+      "observed": {
+        "first": {
+          "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+          "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+          "forceLoadedChunks": [],
+          "anchorBiome": "plains",
+          "slot": 0,
+          "chunks": [
+            20,
+            21
+          ],
+          "chunkZ": 0
+        },
+        "second": {
+          "cityId": "c082c355-48ea-4557-a534-66fbf31f7f7b",
+          "nationId": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+          "forceLoadedChunks": [],
+          "anchorBiome": "plains",
+          "slot": 1,
+          "chunks": [
+            52,
+            53
+          ],
+          "chunkZ": 0
+        }
+      },
+      "finishedAt": "2026-11-20T02:01:59.913Z"
+    },
+    {
+      "name": "explicit physical seeds and four raycast registered resource facilities settle normally",
+      "status": "passed",
+      "startedAt": "2026-11-20T02:01:59.914Z",
+      "observed": [
+        {
+          "seed": {
+            "source": "explicit-fixture-player-inventory",
+            "items": {
+              "minecraft:bread": 128,
+              "minecraft:oak_planks": 128,
+              "minecraft:iron_ingot": 64,
+              "minecraft:oak_log": 32,
+              "minecraft:paper": 64,
+              "minecraft:arrow": 256,
+              "minecraft:wheat": 64
+            },
+            "productionEvidence": false
+          },
+          "registration": {
+            "dispatched": 2,
+            "slot": 0
+          },
+          "state": {
+            "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+            "city": {
+              "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "name": "BorderStarWorldBA",
+              "civilization": "agrarian",
+              "lastPeriod": 179514012,
+              "stock": {
+                "minecraft:bread": 131,
+                "minecraft:oak_log": 35,
+                "minecraft:paper": 68,
+                "minecraft:iron_ingot": 64,
+                "minecraft:wheat": 82,
+                "minecraft:oak_planks": 140,
+                "minecraft:arrow": 256
+              },
+              "buildings": [
+                {
+                  "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                  "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                  "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                  "type": "sawmill",
+                  "site": {
+                    "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                    "worldName": "border-final-world",
+                    "x": 344,
+                    "y": 80,
+                    "z": 8
+                  },
+                  "level": 1
+                },
+                {
+                  "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                  "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                  "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                  "type": "farm",
+                  "site": {
+                    "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                    "worldName": "border-final-world",
+                    "x": 328,
+                    "y": 80,
+                    "z": 8
+                  },
+                  "level": 1
+                }
+              ],
+              "lastReport": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；"
+            },
+            "captured": {
+              "nation": {
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "name": "SWBorderStarWorldBA",
+                "capturedAt": "2026-11-20T02:02:04.506408600Z",
+                "weather": "clear",
+                "weatherResourceMultipliers": {
+                  "agricultural": 1.2,
+                  "energy": 1,
+                  "mineral": 1,
+                  "luxury": 1
+                },
+                "epoch": {
+                  "enabled": true,
+                  "number": 20778,
+                  "start": "2026-11-20T00:00:00Z",
+                  "nextStart": "2026-11-21T00:00:00Z"
+                },
+                "technologies": [],
+                "technologyModifiers": {
+                  "production_speed": 0,
+                  "transport_speed": 0,
+                  "crop_growth": 0,
+                  "military_strength": 0,
+                  "resource_yield": 0,
+                  "trade_bonus": 0
+                },
+                "policy": "",
+                "policyModifiers": {
+                  "military_bonus": 0,
+                  "production_bonus": 0,
+                  "trade_bonus": 0
+                },
+                "resourceStock": {
+                  "agricultural": 0,
+                  "luxury": 0,
+                  "energy": 0,
+                  "strategic": 0,
+                  "industrial": 0,
+                  "chemical": 0,
+                  "mineral": 0
+                },
+                "prosperity": 50.60000000000001,
+                "warOpponents": [],
+                "diplomacy": {},
+                "processingRecipes": [
+                  {
+                    "id": "recipe_advanced_food",
+                    "inputs": {
+                      "timber": 3,
+                      "food": 5
+                    },
+                    "outputs": {
+                      "food": 15
+                    },
+                    "seconds": 480
+                  },
+                  {
+                    "id": "recipe_bulk_ore",
+                    "inputs": {
+                      "ore": 10
+                    },
+                    "outputs": {
+                      "rare_metal": 1,
+                      "ore": 8
+                    },
+                    "seconds": 1200
+                  },
+                  {
+                    "id": "recipe_ore_to_rare_metal",
+                    "inputs": {
+                      "ore": 3
+                    },
+                    "outputs": {
+                      "rare_metal": 1
+                    },
+                    "seconds": 600
+                  },
+                  {
+                    "id": "recipe_timber_to_food",
+                    "inputs": {
+                      "timber": 2
+                    },
+                    "outputs": {
+                      "food": 5
+                    },
+                    "seconds": 300
+                  },
+                  {
+                    "id": "recipe_oil_processing",
+                    "inputs": {
+                      "oil": 5
+                    },
+                    "outputs": {
+                      "rare_metal": 2,
+                      "food": 2
+                    },
+                    "seconds": 900
+                  }
+                ],
+                "factoryCount": 0,
+                "capabilities": {
+                  "policy-effects": "available",
+                  "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                  "resources": "available",
+                  "diplomacy": "available",
+                  "war": "available",
+                  "prosperity": "available",
+                  "policy": "available",
+                  "factories": "available",
+                  "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                  "processing": "available",
+                  "resource-transactions": "available",
+                  "epoch": "available",
+                  "technology": "available",
+                  "technology-effects": "available",
+                  "weather": "available"
+                }
+              },
+              "witnesses": []
+            },
+            "verifiedBuildings": [
+              "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+              "9b6e7293-d5a3-444b-afc3-2752015b0418"
+            ],
+            "currentPeriod": 179514012,
+            "history": [
+              {
+                "period": 179514012,
+                "kind": "city",
+                "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+              },
+              {
+                "period": 179514011,
+                "kind": "city",
+                "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+              }
+            ],
+            "atlas": {
+              "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+              "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "authorityActive": true,
+              "cityLastPeriod": 179514012,
+              "regions": [
+                {
+                  "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "chunkX": 20,
+                  "chunkZ": 0,
+                  "terrain": "plains",
+                  "terrainName": "平原",
+                  "agriculture": 1.3,
+                  "transport": 0.8,
+                  "defense": 0.9,
+                  "lastRecoveryPeriod": 179514012,
+                  "reserves": {
+                    "fertility": 688,
+                    "ore": 100,
+                    "timber": 160
+                  },
+                  "initialCapacities": {
+                    "fertility": 700,
+                    "ore": 100,
+                    "timber": 160
+                  },
+                  "regeneration": {
+                    "timber": 2,
+                    "fertility": 18
+                  },
+                  "culture": [
+                    {
+                      "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                      "tradition": "agrarian",
+                      "influence": 1
+                    }
+                  ],
+                  "facilities": [
+                    {
+                      "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                      "type": "farm",
+                      "level": 1
+                    }
+                  ]
+                },
+                {
+                  "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "chunkX": 21,
+                  "chunkZ": 0,
+                  "terrain": "plains",
+                  "terrainName": "平原",
+                  "agriculture": 1.3,
+                  "transport": 0.8,
+                  "defense": 0.9,
+                  "lastRecoveryPeriod": 179514012,
+                  "reserves": {
+                    "fertility": 700,
+                    "ore": 100,
+                    "timber": 152
+                  },
+                  "initialCapacities": {
+                    "fertility": 700,
+                    "ore": 100,
+                    "timber": 160
+                  },
+                  "regeneration": {
+                    "timber": 2,
+                    "fertility": 18
+                  },
+                  "culture": [
+                    {
+                      "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                      "tradition": "agrarian",
+                      "influence": 1
+                    }
+                  ],
+                  "facilities": [
+                    {
+                      "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                      "type": "sawmill",
+                      "level": 1
+                    }
+                  ]
+                }
+              ],
+              "nextCursor": ""
+            }
+          }
+        },
+        {
+          "seed": {
+            "source": "explicit-fixture-player-inventory",
+            "items": {
+              "minecraft:bread": 128,
+              "minecraft:oak_planks": 128,
+              "minecraft:iron_ingot": 64,
+              "minecraft:oak_log": 32,
+              "minecraft:paper": 64,
+              "minecraft:arrow": 256,
+              "minecraft:wheat": 64
+            },
+            "productionEvidence": false
+          },
+          "registration": {
+            "dispatched": 2,
+            "slot": 1
+          },
+          "state": {
+            "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+            "city": {
+              "id": "c082c355-48ea-4557-a534-66fbf31f7f7b",
+              "nationId": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+              "name": "BorderStarWorldBB",
+              "civilization": "agrarian",
+              "lastPeriod": 179514012,
+              "stock": {
+                "minecraft:bread": 131,
+                "minecraft:oak_log": 35,
+                "minecraft:paper": 68,
+                "minecraft:iron_ingot": 64,
+                "minecraft:wheat": 82,
+                "minecraft:oak_planks": 140,
+                "minecraft:arrow": 256
+              },
+              "buildings": [
+                {
+                  "id": "84e95624-c1e8-4414-818b-423b60204760",
+                  "cityId": "c082c355-48ea-4557-a534-66fbf31f7f7b",
+                  "nationId": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+                  "type": "sawmill",
+                  "site": {
+                    "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                    "worldName": "border-final-world",
+                    "x": 856,
+                    "y": 80,
+                    "z": 8
+                  },
+                  "level": 1
+                },
+                {
+                  "id": "edcbf7b7-c6f1-46fe-8019-7e4f987e2319",
+                  "cityId": "c082c355-48ea-4557-a534-66fbf31f7f7b",
+                  "nationId": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+                  "type": "farm",
+                  "site": {
+                    "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                    "worldName": "border-final-world",
+                    "x": 840,
+                    "y": 80,
+                    "z": 8
+                  },
+                  "level": 1
+                }
+              ],
+              "lastReport": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；"
+            },
+            "captured": {
+              "nation": {
+                "nationId": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+                "name": "SWBorderStarWorldBB",
+                "capturedAt": "2026-11-20T02:02:06.449855600Z",
+                "weather": "clear",
+                "weatherResourceMultipliers": {
+                  "agricultural": 1.2,
+                  "energy": 1,
+                  "mineral": 1,
+                  "luxury": 1
+                },
+                "epoch": {
+                  "enabled": true,
+                  "number": 20778,
+                  "start": "2026-11-20T00:00:00Z",
+                  "nextStart": "2026-11-21T00:00:00Z"
+                },
+                "technologies": [],
+                "technologyModifiers": {
+                  "production_speed": 0,
+                  "transport_speed": 0,
+                  "crop_growth": 0,
+                  "military_strength": 0,
+                  "resource_yield": 0,
+                  "trade_bonus": 0
+                },
+                "policy": "",
+                "policyModifiers": {
+                  "military_bonus": 0,
+                  "production_bonus": 0,
+                  "trade_bonus": 0
+                },
+                "resourceStock": {
+                  "agricultural": 0,
+                  "luxury": 0,
+                  "energy": 0,
+                  "strategic": 0,
+                  "industrial": 0,
+                  "chemical": 0,
+                  "mineral": 0
+                },
+                "prosperity": 50.60000000000001,
+                "warOpponents": [],
+                "diplomacy": {},
+                "processingRecipes": [
+                  {
+                    "id": "recipe_advanced_food",
+                    "inputs": {
+                      "timber": 3,
+                      "food": 5
+                    },
+                    "outputs": {
+                      "food": 15
+                    },
+                    "seconds": 480
+                  },
+                  {
+                    "id": "recipe_bulk_ore",
+                    "inputs": {
+                      "ore": 10
+                    },
+                    "outputs": {
+                      "rare_metal": 1,
+                      "ore": 8
+                    },
+                    "seconds": 1200
+                  },
+                  {
+                    "id": "recipe_ore_to_rare_metal",
+                    "inputs": {
+                      "ore": 3
+                    },
+                    "outputs": {
+                      "rare_metal": 1
+                    },
+                    "seconds": 600
+                  },
+                  {
+                    "id": "recipe_timber_to_food",
+                    "inputs": {
+                      "timber": 2
+                    },
+                    "outputs": {
+                      "food": 5
+                    },
+                    "seconds": 300
+                  },
+                  {
+                    "id": "recipe_oil_processing",
+                    "inputs": {
+                      "oil": 5
+                    },
+                    "outputs": {
+                      "rare_metal": 2,
+                      "food": 2
+                    },
+                    "seconds": 900
+                  }
+                ],
+                "factoryCount": 0,
+                "capabilities": {
+                  "policy-effects": "available",
+                  "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                  "resources": "available",
+                  "diplomacy": "available",
+                  "war": "available",
+                  "prosperity": "available",
+                  "policy": "available",
+                  "factories": "available",
+                  "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                  "processing": "available",
+                  "resource-transactions": "available",
+                  "epoch": "available",
+                  "technology": "available",
+                  "technology-effects": "available",
+                  "weather": "available"
+                }
+              },
+              "witnesses": []
+            },
+            "verifiedBuildings": [
+              "edcbf7b7-c6f1-46fe-8019-7e4f987e2319",
+              "84e95624-c1e8-4414-818b-423b60204760"
+            ],
+            "currentPeriod": 179514012,
+            "history": [
+              {
+                "period": 179514012,
+                "kind": "city",
+                "detail": "active=2 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+              }
+            ],
+            "atlas": {
+              "city": "c082c355-48ea-4557-a534-66fbf31f7f7b",
+              "nation": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+              "authorityActive": true,
+              "cityLastPeriod": 179514012,
+              "regions": [
+                {
+                  "id": "f17a294b-9699-4d03-959a-91d108aacee2:52:0",
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "chunkX": 52,
+                  "chunkZ": 0,
+                  "terrain": "plains",
+                  "terrainName": "平原",
+                  "agriculture": 1.3,
+                  "transport": 0.8,
+                  "defense": 0.9,
+                  "lastRecoveryPeriod": 179514012,
+                  "reserves": {
+                    "fertility": 688,
+                    "ore": 100,
+                    "timber": 160
+                  },
+                  "initialCapacities": {
+                    "fertility": 700,
+                    "ore": 100,
+                    "timber": 160
+                  },
+                  "regeneration": {
+                    "timber": 2,
+                    "fertility": 18
+                  },
+                  "culture": [
+                    {
+                      "region": "f17a294b-9699-4d03-959a-91d108aacee2:52:0",
+                      "tradition": "agrarian",
+                      "influence": 1
+                    }
+                  ],
+                  "facilities": [
+                    {
+                      "id": "edcbf7b7-c6f1-46fe-8019-7e4f987e2319",
+                      "type": "farm",
+                      "level": 1
+                    }
+                  ]
+                },
+                {
+                  "id": "f17a294b-9699-4d03-959a-91d108aacee2:53:0",
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "chunkX": 53,
+                  "chunkZ": 0,
+                  "terrain": "plains",
+                  "terrainName": "平原",
+                  "agriculture": 1.3,
+                  "transport": 0.8,
+                  "defense": 0.9,
+                  "lastRecoveryPeriod": 179514012,
+                  "reserves": {
+                    "fertility": 700,
+                    "ore": 100,
+                    "timber": 152
+                  },
+                  "initialCapacities": {
+                    "fertility": 700,
+                    "ore": 100,
+                    "timber": 160
+                  },
+                  "regeneration": {
+                    "timber": 2,
+                    "fertility": 18
+                  },
+                  "culture": [
+                    {
+                      "region": "f17a294b-9699-4d03-959a-91d108aacee2:53:0",
+                      "tradition": "agrarian",
+                      "influence": 1
+                    }
+                  ],
+                  "facilities": [
+                    {
+                      "id": "84e95624-c1e8-4414-818b-423b60204760",
+                      "type": "sawmill",
+                      "level": 1
+                    }
+                  ]
+                }
+              ],
+              "nextCursor": ""
+            }
+          }
+        }
+      ],
+      "finishedAt": "2026-11-20T02:02:06.573Z"
+    },
+    {
+      "name": "war against a distant country has no border witness or dispute across normal periods",
+      "status": "passed",
+      "startedAt": "2026-11-20T02:02:06.574Z",
+      "observed": {
+        "war": {
+          "peer": "StarWorldBB",
+          "nationA": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+          "nationB": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+          "atWar": true
+        },
+        "before": {
+          "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+          "city": {
+            "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "name": "BorderStarWorldBA",
+            "civilization": "agrarian",
+            "lastPeriod": 179514012,
+            "stock": {
+              "minecraft:bread": 131,
+              "minecraft:oak_log": 35,
+              "minecraft:paper": 68,
+              "minecraft:iron_ingot": 64,
+              "minecraft:wheat": 82,
+              "minecraft:oak_planks": 140,
+              "minecraft:arrow": 256
+            },
+            "buildings": [
+              {
+                "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "sawmill",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 344,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              },
+              {
+                "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "farm",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 328,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              }
+            ],
+            "lastReport": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；"
+          },
+          "captured": {
+            "nation": {
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "name": "SWBorderStarWorldBA",
+              "capturedAt": "2026-11-20T02:02:06.851349200Z",
+              "weather": "clear",
+              "weatherResourceMultipliers": {
+                "agricultural": 1.2,
+                "energy": 1,
+                "mineral": 1,
+                "luxury": 1
+              },
+              "epoch": {
+                "enabled": true,
+                "number": 20778,
+                "start": "2026-11-20T00:00:00Z",
+                "nextStart": "2026-11-21T00:00:00Z"
+              },
+              "technologies": [],
+              "technologyModifiers": {
+                "production_speed": 0,
+                "transport_speed": 0,
+                "crop_growth": 0,
+                "military_strength": 0,
+                "resource_yield": 0,
+                "trade_bonus": 0
+              },
+              "policy": "",
+              "policyModifiers": {
+                "military_bonus": 0,
+                "production_bonus": 0,
+                "trade_bonus": 0
+              },
+              "resourceStock": {
+                "agricultural": 0,
+                "luxury": 0,
+                "energy": 0,
+                "strategic": 0,
+                "industrial": 0,
+                "chemical": 0,
+                "mineral": 0
+              },
+              "prosperity": 50.60000000000001,
+              "warOpponents": [
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4"
+              ],
+              "diplomacy": {},
+              "processingRecipes": [
+                {
+                  "id": "recipe_advanced_food",
+                  "inputs": {
+                    "timber": 3,
+                    "food": 5
+                  },
+                  "outputs": {
+                    "food": 15
+                  },
+                  "seconds": 480
+                },
+                {
+                  "id": "recipe_bulk_ore",
+                  "inputs": {
+                    "ore": 10
+                  },
+                  "outputs": {
+                    "rare_metal": 1,
+                    "ore": 8
+                  },
+                  "seconds": 1200
+                },
+                {
+                  "id": "recipe_ore_to_rare_metal",
+                  "inputs": {
+                    "ore": 3
+                  },
+                  "outputs": {
+                    "rare_metal": 1
+                  },
+                  "seconds": 600
+                },
+                {
+                  "id": "recipe_timber_to_food",
+                  "inputs": {
+                    "timber": 2
+                  },
+                  "outputs": {
+                    "food": 5
+                  },
+                  "seconds": 300
+                },
+                {
+                  "id": "recipe_oil_processing",
+                  "inputs": {
+                    "oil": 5
+                  },
+                  "outputs": {
+                    "rare_metal": 2,
+                    "food": 2
+                  },
+                  "seconds": 900
+                }
+              ],
+              "factoryCount": 0,
+              "capabilities": {
+                "policy-effects": "available",
+                "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                "resources": "available",
+                "diplomacy": "available",
+                "war": "available",
+                "prosperity": "available",
+                "policy": "available",
+                "factories": "available",
+                "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                "processing": "available",
+                "resource-transactions": "available",
+                "epoch": "available",
+                "technology": "available",
+                "technology-effects": "available",
+                "weather": "available"
+              }
+            },
+            "witnesses": []
+          },
+          "verifiedBuildings": [
+            "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+            "9b6e7293-d5a3-444b-afc3-2752015b0418"
+          ],
+          "currentPeriod": 179514012,
+          "history": [
+            {
+              "period": 179514012,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514011,
+              "kind": "city",
+              "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+            }
+          ],
+          "atlas": {
+            "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "authorityActive": true,
+            "cityLastPeriod": 179514012,
+            "regions": [
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514012,
+                "reserves": {
+                  "fertility": 688,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                    "tradition": "agrarian",
+                    "influence": 1
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                    "type": "farm",
+                    "level": 1
+                  }
+                ]
+              },
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 21,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514012,
+                "reserves": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 152
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                    "tradition": "agrarian",
+                    "influence": 1
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                    "type": "sawmill",
+                    "level": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": ""
+          }
+        },
+        "after": {
+          "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+          "city": {
+            "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "name": "BorderStarWorldBA",
+            "civilization": "agrarian",
+            "lastPeriod": 179514014,
+            "stock": {
+              "minecraft:bread": 137,
+              "minecraft:oak_log": 41,
+              "minecraft:paper": 76,
+              "minecraft:iron_ingot": 64,
+              "minecraft:wheat": 118,
+              "minecraft:oak_planks": 164,
+              "minecraft:arrow": 256
+            },
+            "buildings": [
+              {
+                "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "sawmill",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 344,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              },
+              {
+                "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "farm",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 328,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              }
+            ],
+            "lastReport": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；"
+          },
+          "captured": {
+            "nation": {
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "name": "SWBorderStarWorldBA",
+              "capturedAt": "2026-11-20T02:02:25.999766Z",
+              "weather": "clear",
+              "weatherResourceMultipliers": {
+                "agricultural": 1.2,
+                "energy": 1,
+                "mineral": 1,
+                "luxury": 1
+              },
+              "epoch": {
+                "enabled": true,
+                "number": 20778,
+                "start": "2026-11-20T00:00:00Z",
+                "nextStart": "2026-11-21T00:00:00Z"
+              },
+              "technologies": [],
+              "technologyModifiers": {
+                "production_speed": 0,
+                "transport_speed": 0,
+                "crop_growth": 0,
+                "military_strength": 0,
+                "resource_yield": 0,
+                "trade_bonus": 0
+              },
+              "policy": "",
+              "policyModifiers": {
+                "military_bonus": 0,
+                "production_bonus": 0,
+                "trade_bonus": 0
+              },
+              "resourceStock": {
+                "agricultural": 0,
+                "luxury": 0,
+                "energy": 0,
+                "strategic": 0,
+                "industrial": 0,
+                "chemical": 0,
+                "mineral": 0
+              },
+              "prosperity": 50.60000000000001,
+              "warOpponents": [
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4"
+              ],
+              "diplomacy": {},
+              "processingRecipes": [
+                {
+                  "id": "recipe_advanced_food",
+                  "inputs": {
+                    "timber": 3,
+                    "food": 5
+                  },
+                  "outputs": {
+                    "food": 15
+                  },
+                  "seconds": 480
+                },
+                {
+                  "id": "recipe_bulk_ore",
+                  "inputs": {
+                    "ore": 10
+                  },
+                  "outputs": {
+                    "rare_metal": 1,
+                    "ore": 8
+                  },
+                  "seconds": 1200
+                },
+                {
+                  "id": "recipe_ore_to_rare_metal",
+                  "inputs": {
+                    "ore": 3
+                  },
+                  "outputs": {
+                    "rare_metal": 1
+                  },
+                  "seconds": 600
+                },
+                {
+                  "id": "recipe_timber_to_food",
+                  "inputs": {
+                    "timber": 2
+                  },
+                  "outputs": {
+                    "food": 5
+                  },
+                  "seconds": 300
+                },
+                {
+                  "id": "recipe_oil_processing",
+                  "inputs": {
+                    "oil": 5
+                  },
+                  "outputs": {
+                    "rare_metal": 2,
+                    "food": 2
+                  },
+                  "seconds": 900
+                }
+              ],
+              "factoryCount": 0,
+              "capabilities": {
+                "policy-effects": "available",
+                "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                "resources": "available",
+                "diplomacy": "available",
+                "war": "available",
+                "prosperity": "available",
+                "policy": "available",
+                "factories": "available",
+                "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                "processing": "available",
+                "resource-transactions": "available",
+                "epoch": "available",
+                "technology": "available",
+                "technology-effects": "available",
+                "weather": "available"
+              }
+            },
+            "witnesses": []
+          },
+          "verifiedBuildings": [
+            "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+            "9b6e7293-d5a3-444b-afc3-2752015b0418"
+          ],
+          "currentPeriod": 179514014,
+          "history": [
+            {
+              "period": 179514014,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=54.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514013,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=53.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514012,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514011,
+              "kind": "city",
+              "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+            }
+          ],
+          "atlas": {
+            "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "authorityActive": true,
+            "cityLastPeriod": 179514014,
+            "regions": [
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514014,
+                "reserves": {
+                  "fertility": 688,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                    "tradition": "agrarian",
+                    "influence": 3
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                    "type": "farm",
+                    "level": 1
+                  }
+                ]
+              },
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 21,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514014,
+                "reserves": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 140
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                    "tradition": "agrarian",
+                    "influence": 3
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                    "type": "sawmill",
+                    "level": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": ""
+          }
+        }
+      },
+      "finishedAt": "2026-11-20T02:02:26.114Z"
+    },
+    {
+      "name": "public peace and a real adjacent peer claim still produce no resource dispute",
+      "status": "passed",
+      "startedAt": "2026-11-20T02:02:26.115Z",
+      "observed": {
+        "peace": {
+          "peer": "StarWorldBB",
+          "nationA": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+          "nationB": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+          "atWar": false
+        },
+        "claim": {
+          "entryPoint": "NationService.claimCurrentChunk",
+          "resourceCity": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+          "resourceNation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+          "peerNation": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+          "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+          "worldName": "border-final-world",
+          "chunkX": 20,
+          "chunkZ": 0,
+          "neighborChunkX": 20,
+          "neighborChunkZ": 1,
+          "nationalClaimPresent": true,
+          "neighborLoadedBefore": true,
+          "neighborLoadedAfter": true,
+          "forcedChunkLoad": false
+        },
+        "before": {
+          "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+          "city": {
+            "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "name": "BorderStarWorldBA",
+            "civilization": "agrarian",
+            "lastPeriod": 179514014,
+            "stock": {
+              "minecraft:bread": 137,
+              "minecraft:oak_log": 41,
+              "minecraft:paper": 76,
+              "minecraft:iron_ingot": 64,
+              "minecraft:wheat": 118,
+              "minecraft:oak_planks": 164,
+              "minecraft:arrow": 256
+            },
+            "buildings": [
+              {
+                "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "sawmill",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 344,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              },
+              {
+                "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "farm",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 328,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              }
+            ],
+            "lastReport": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；"
+          },
+          "captured": {
+            "nation": {
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "name": "SWBorderStarWorldBA",
+              "capturedAt": "2026-11-20T02:02:26.404029200Z",
+              "weather": "clear",
+              "weatherResourceMultipliers": {
+                "agricultural": 1.2,
+                "energy": 1,
+                "mineral": 1,
+                "luxury": 1
+              },
+              "epoch": {
+                "enabled": true,
+                "number": 20778,
+                "start": "2026-11-20T00:00:00Z",
+                "nextStart": "2026-11-21T00:00:00Z"
+              },
+              "technologies": [],
+              "technologyModifiers": {
+                "production_speed": 0,
+                "transport_speed": 0,
+                "crop_growth": 0,
+                "military_strength": 0,
+                "resource_yield": 0,
+                "trade_bonus": 0
+              },
+              "policy": "",
+              "policyModifiers": {
+                "military_bonus": 0,
+                "production_bonus": 0,
+                "trade_bonus": 0
+              },
+              "resourceStock": {
+                "agricultural": 0,
+                "luxury": 0,
+                "energy": 0,
+                "strategic": 0,
+                "industrial": 0,
+                "chemical": 0,
+                "mineral": 0
+              },
+              "prosperity": 50.60000000000001,
+              "warOpponents": [],
+              "diplomacy": {
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4": "NEUTRAL"
+              },
+              "processingRecipes": [
+                {
+                  "id": "recipe_advanced_food",
+                  "inputs": {
+                    "timber": 3,
+                    "food": 5
+                  },
+                  "outputs": {
+                    "food": 15
+                  },
+                  "seconds": 480
+                },
+                {
+                  "id": "recipe_bulk_ore",
+                  "inputs": {
+                    "ore": 10
+                  },
+                  "outputs": {
+                    "rare_metal": 1,
+                    "ore": 8
+                  },
+                  "seconds": 1200
+                },
+                {
+                  "id": "recipe_ore_to_rare_metal",
+                  "inputs": {
+                    "ore": 3
+                  },
+                  "outputs": {
+                    "rare_metal": 1
+                  },
+                  "seconds": 600
+                },
+                {
+                  "id": "recipe_timber_to_food",
+                  "inputs": {
+                    "timber": 2
+                  },
+                  "outputs": {
+                    "food": 5
+                  },
+                  "seconds": 300
+                },
+                {
+                  "id": "recipe_oil_processing",
+                  "inputs": {
+                    "oil": 5
+                  },
+                  "outputs": {
+                    "rare_metal": 2,
+                    "food": 2
+                  },
+                  "seconds": 900
+                }
+              ],
+              "factoryCount": 0,
+              "capabilities": {
+                "policy-effects": "available",
+                "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                "resources": "available",
+                "diplomacy": "available",
+                "war": "available",
+                "prosperity": "available",
+                "policy": "available",
+                "factories": "available",
+                "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                "processing": "available",
+                "resource-transactions": "available",
+                "epoch": "available",
+                "technology": "available",
+                "technology-effects": "available",
+                "weather": "available"
+              }
+            },
+            "witnesses": []
+          },
+          "verifiedBuildings": [
+            "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+            "9b6e7293-d5a3-444b-afc3-2752015b0418"
+          ],
+          "currentPeriod": 179514014,
+          "history": [
+            {
+              "period": 179514014,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=54.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514013,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=53.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514012,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514011,
+              "kind": "city",
+              "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+            }
+          ],
+          "atlas": {
+            "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "authorityActive": true,
+            "cityLastPeriod": 179514014,
+            "regions": [
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514014,
+                "reserves": {
+                  "fertility": 688,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                    "tradition": "agrarian",
+                    "influence": 3
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                    "type": "farm",
+                    "level": 1
+                  }
+                ]
+              },
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 21,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514014,
+                "reserves": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 140
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                    "tradition": "agrarian",
+                    "influence": 3
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                    "type": "sawmill",
+                    "level": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": ""
+          }
+        },
+        "after": {
+          "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+          "city": {
+            "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "name": "BorderStarWorldBA",
+            "civilization": "agrarian",
+            "lastPeriod": 179514016,
+            "stock": {
+              "minecraft:bread": 143,
+              "minecraft:oak_log": 47,
+              "minecraft:paper": 84,
+              "minecraft:iron_ingot": 64,
+              "minecraft:wheat": 154,
+              "minecraft:oak_planks": 188,
+              "minecraft:arrow": 256
+            },
+            "buildings": [
+              {
+                "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "sawmill",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 344,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              },
+              {
+                "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "farm",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 328,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              }
+            ],
+            "lastReport": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；"
+          },
+          "captured": {
+            "nation": {
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "name": "SWBorderStarWorldBA",
+              "capturedAt": "2026-11-20T02:02:45.851532700Z",
+              "weather": "clear",
+              "weatherResourceMultipliers": {
+                "agricultural": 1.2,
+                "energy": 1,
+                "mineral": 1,
+                "luxury": 1
+              },
+              "epoch": {
+                "enabled": true,
+                "number": 20778,
+                "start": "2026-11-20T00:00:00Z",
+                "nextStart": "2026-11-21T00:00:00Z"
+              },
+              "technologies": [],
+              "technologyModifiers": {
+                "production_speed": 0,
+                "transport_speed": 0,
+                "crop_growth": 0,
+                "military_strength": 0,
+                "resource_yield": 0,
+                "trade_bonus": 0
+              },
+              "policy": "",
+              "policyModifiers": {
+                "military_bonus": 0,
+                "production_bonus": 0,
+                "trade_bonus": 0
+              },
+              "resourceStock": {
+                "agricultural": 0,
+                "luxury": 0,
+                "energy": 0,
+                "strategic": 0,
+                "industrial": 0,
+                "chemical": 0,
+                "mineral": 0
+              },
+              "prosperity": 50.60000000000001,
+              "warOpponents": [],
+              "diplomacy": {
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4": "NEUTRAL"
+              },
+              "processingRecipes": [
+                {
+                  "id": "recipe_advanced_food",
+                  "inputs": {
+                    "timber": 3,
+                    "food": 5
+                  },
+                  "outputs": {
+                    "food": 15
+                  },
+                  "seconds": 480
+                },
+                {
+                  "id": "recipe_bulk_ore",
+                  "inputs": {
+                    "ore": 10
+                  },
+                  "outputs": {
+                    "rare_metal": 1,
+                    "ore": 8
+                  },
+                  "seconds": 1200
+                },
+                {
+                  "id": "recipe_ore_to_rare_metal",
+                  "inputs": {
+                    "ore": 3
+                  },
+                  "outputs": {
+                    "rare_metal": 1
+                  },
+                  "seconds": 600
+                },
+                {
+                  "id": "recipe_timber_to_food",
+                  "inputs": {
+                    "timber": 2
+                  },
+                  "outputs": {
+                    "food": 5
+                  },
+                  "seconds": 300
+                },
+                {
+                  "id": "recipe_oil_processing",
+                  "inputs": {
+                    "oil": 5
+                  },
+                  "outputs": {
+                    "rare_metal": 2,
+                    "food": 2
+                  },
+                  "seconds": 900
+                }
+              ],
+              "factoryCount": 0,
+              "capabilities": {
+                "policy-effects": "available",
+                "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                "resources": "available",
+                "diplomacy": "available",
+                "war": "available",
+                "prosperity": "available",
+                "policy": "available",
+                "factories": "available",
+                "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                "processing": "available",
+                "resource-transactions": "available",
+                "epoch": "available",
+                "technology": "available",
+                "technology-effects": "available",
+                "weather": "available"
+              }
+            },
+            "witnesses": []
+          },
+          "verifiedBuildings": [
+            "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+            "9b6e7293-d5a3-444b-afc3-2752015b0418"
+          ],
+          "currentPeriod": 179514016,
+          "history": [
+            {
+              "period": 179514016,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=56.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514015,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=55.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514014,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=54.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514013,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=53.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514012,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514011,
+              "kind": "city",
+              "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+            }
+          ],
+          "atlas": {
+            "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "authorityActive": true,
+            "cityLastPeriod": 179514016,
+            "regions": [
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514016,
+                "reserves": {
+                  "fertility": 688,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                    "tradition": "agrarian",
+                    "influence": 5
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                    "type": "farm",
+                    "level": 1
+                  }
+                ]
+              },
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 21,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514016,
+                "reserves": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 128
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                    "tradition": "agrarian",
+                    "influence": 5
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                    "type": "sawmill",
+                    "level": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": ""
+          }
+        }
+      },
+      "finishedAt": "2026-11-20T02:02:45.956Z"
+    },
+    {
+      "name": "real war with that adjacent nation naturally records resource remaining peer and chunks",
+      "status": "passed",
+      "startedAt": "2026-11-20T02:02:45.957Z",
+      "observed": {
+        "war": {
+          "peer": "StarWorldBB",
+          "nationA": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+          "nationB": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+          "atWar": true
+        },
+        "captured": {
+          "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+          "city": {
+            "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "name": "BorderStarWorldBA",
+            "civilization": "agrarian",
+            "lastPeriod": 179514016,
+            "stock": {
+              "minecraft:bread": 143,
+              "minecraft:oak_log": 47,
+              "minecraft:paper": 84,
+              "minecraft:iron_ingot": 64,
+              "minecraft:wheat": 154,
+              "minecraft:oak_planks": 188,
+              "minecraft:arrow": 256
+            },
+            "buildings": [
+              {
+                "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "sawmill",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 344,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              },
+              {
+                "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "farm",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 328,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              }
+            ],
+            "lastReport": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；"
+          },
+          "captured": {
+            "nation": {
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "name": "SWBorderStarWorldBA",
+              "capturedAt": "2026-11-20T02:02:46.149382100Z",
+              "weather": "clear",
+              "weatherResourceMultipliers": {
+                "agricultural": 1.2,
+                "energy": 1,
+                "mineral": 1,
+                "luxury": 1
+              },
+              "epoch": {
+                "enabled": true,
+                "number": 20778,
+                "start": "2026-11-20T00:00:00Z",
+                "nextStart": "2026-11-21T00:00:00Z"
+              },
+              "technologies": [],
+              "technologyModifiers": {
+                "production_speed": 0,
+                "transport_speed": 0,
+                "crop_growth": 0,
+                "military_strength": 0,
+                "resource_yield": 0,
+                "trade_bonus": 0
+              },
+              "policy": "",
+              "policyModifiers": {
+                "military_bonus": 0,
+                "production_bonus": 0,
+                "trade_bonus": 0
+              },
+              "resourceStock": {
+                "agricultural": 0,
+                "luxury": 0,
+                "energy": 0,
+                "strategic": 0,
+                "industrial": 0,
+                "chemical": 0,
+                "mineral": 0
+              },
+              "prosperity": 50.60000000000001,
+              "warOpponents": [
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4"
+              ],
+              "diplomacy": {
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4": "WAR"
+              },
+              "processingRecipes": [
+                {
+                  "id": "recipe_advanced_food",
+                  "inputs": {
+                    "timber": 3,
+                    "food": 5
+                  },
+                  "outputs": {
+                    "food": 15
+                  },
+                  "seconds": 480
+                },
+                {
+                  "id": "recipe_bulk_ore",
+                  "inputs": {
+                    "ore": 10
+                  },
+                  "outputs": {
+                    "rare_metal": 1,
+                    "ore": 8
+                  },
+                  "seconds": 1200
+                },
+                {
+                  "id": "recipe_ore_to_rare_metal",
+                  "inputs": {
+                    "ore": 3
+                  },
+                  "outputs": {
+                    "rare_metal": 1
+                  },
+                  "seconds": 600
+                },
+                {
+                  "id": "recipe_timber_to_food",
+                  "inputs": {
+                    "timber": 2
+                  },
+                  "outputs": {
+                    "food": 5
+                  },
+                  "seconds": 300
+                },
+                {
+                  "id": "recipe_oil_processing",
+                  "inputs": {
+                    "oil": 5
+                  },
+                  "outputs": {
+                    "rare_metal": 2,
+                    "food": 2
+                  },
+                  "seconds": 900
+                }
+              ],
+              "factoryCount": 0,
+              "capabilities": {
+                "policy-effects": "available",
+                "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                "resources": "available",
+                "diplomacy": "available",
+                "war": "available",
+                "prosperity": "available",
+                "policy": "available",
+                "factories": "available",
+                "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                "processing": "available",
+                "resource-transactions": "available",
+                "epoch": "available",
+                "technology": "available",
+                "technology-effects": "available",
+                "weather": "available"
+              }
+            },
+            "witnesses": [
+              {
+                "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "neighborChunkX": 20,
+                "neighborChunkZ": 1,
+                "peerNation": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+                "relation": "WAR",
+                "period": 179514016
+              }
+            ]
+          },
+          "verifiedBuildings": [
+            "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+            "9b6e7293-d5a3-444b-afc3-2752015b0418"
+          ],
+          "currentPeriod": 179514016,
+          "history": [
+            {
+              "period": 179514016,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=56.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514015,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=55.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514014,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=54.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514013,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=53.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514012,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514011,
+              "kind": "city",
+              "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+            }
+          ],
+          "atlas": {
+            "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "authorityActive": true,
+            "cityLastPeriod": 179514016,
+            "regions": [
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514016,
+                "reserves": {
+                  "fertility": 688,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                    "tradition": "agrarian",
+                    "influence": 5
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                    "type": "farm",
+                    "level": 1
+                  }
+                ]
+              },
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 21,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514016,
+                "reserves": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 128
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                    "tradition": "agrarian",
+                    "influence": 5
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                    "type": "sawmill",
+                    "level": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": ""
+          }
+        },
+        "after": {
+          "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+          "city": {
+            "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "name": "BorderStarWorldBA",
+            "civilization": "agrarian",
+            "lastPeriod": 179514017,
+            "stock": {
+              "minecraft:bread": 145,
+              "minecraft:oak_log": 49,
+              "minecraft:paper": 87,
+              "minecraft:iron_ingot": 64,
+              "minecraft:wheat": 169,
+              "minecraft:oak_planks": 198,
+              "minecraft:arrow": 256
+            },
+            "buildings": [
+              {
+                "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "sawmill",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 344,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              },
+              {
+                "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "farm",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 328,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              }
+            ],
+            "event": {
+              "type": "border_dispute",
+              "startPeriod": 179514017,
+              "endPeriod": 179514029,
+              "aftermathEndPeriod": 179514031
+            },
+            "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=5, minecraft:oak_planks=10, minecraft:paper=3, minecraft:wheat=21}；；事件 border_dispute"
+          },
+          "captured": {
+            "nation": {
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "name": "SWBorderStarWorldBA",
+              "capturedAt": "2026-11-20T02:02:55.949430200Z",
+              "weather": "clear",
+              "weatherResourceMultipliers": {
+                "agricultural": 1.2,
+                "energy": 1,
+                "mineral": 1,
+                "luxury": 1
+              },
+              "epoch": {
+                "enabled": true,
+                "number": 20778,
+                "start": "2026-11-20T00:00:00Z",
+                "nextStart": "2026-11-21T00:00:00Z"
+              },
+              "technologies": [],
+              "technologyModifiers": {
+                "production_speed": 0,
+                "transport_speed": 0,
+                "crop_growth": 0,
+                "military_strength": 0,
+                "resource_yield": 0,
+                "trade_bonus": 0
+              },
+              "policy": "",
+              "policyModifiers": {
+                "military_bonus": 0,
+                "production_bonus": 0,
+                "trade_bonus": 0
+              },
+              "resourceStock": {
+                "agricultural": 0,
+                "luxury": 0,
+                "energy": 0,
+                "strategic": 0,
+                "industrial": 0,
+                "chemical": 0,
+                "mineral": 0
+              },
+              "prosperity": 50.60000000000001,
+              "warOpponents": [
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4"
+              ],
+              "diplomacy": {
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4": "WAR"
+              },
+              "processingRecipes": [
+                {
+                  "id": "recipe_advanced_food",
+                  "inputs": {
+                    "timber": 3,
+                    "food": 5
+                  },
+                  "outputs": {
+                    "food": 15
+                  },
+                  "seconds": 480
+                },
+                {
+                  "id": "recipe_bulk_ore",
+                  "inputs": {
+                    "ore": 10
+                  },
+                  "outputs": {
+                    "rare_metal": 1,
+                    "ore": 8
+                  },
+                  "seconds": 1200
+                },
+                {
+                  "id": "recipe_ore_to_rare_metal",
+                  "inputs": {
+                    "ore": 3
+                  },
+                  "outputs": {
+                    "rare_metal": 1
+                  },
+                  "seconds": 600
+                },
+                {
+                  "id": "recipe_timber_to_food",
+                  "inputs": {
+                    "timber": 2
+                  },
+                  "outputs": {
+                    "food": 5
+                  },
+                  "seconds": 300
+                },
+                {
+                  "id": "recipe_oil_processing",
+                  "inputs": {
+                    "oil": 5
+                  },
+                  "outputs": {
+                    "rare_metal": 2,
+                    "food": 2
+                  },
+                  "seconds": 900
+                }
+              ],
+              "factoryCount": 0,
+              "capabilities": {
+                "policy-effects": "available",
+                "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                "resources": "available",
+                "diplomacy": "available",
+                "war": "available",
+                "prosperity": "available",
+                "policy": "available",
+                "factories": "available",
+                "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                "processing": "available",
+                "resource-transactions": "available",
+                "epoch": "available",
+                "technology": "available",
+                "technology-effects": "available",
+                "weather": "available"
+              }
+            },
+            "witnesses": [
+              {
+                "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "neighborChunkX": 20,
+                "neighborChunkZ": 1,
+                "peerNation": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+                "relation": "WAR",
+                "period": 179514017
+              }
+            ]
+          },
+          "verifiedBuildings": [
+            "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+            "9b6e7293-d5a3-444b-afc3-2752015b0418"
+          ],
+          "currentPeriod": 179514017,
+          "history": [
+            {
+              "period": 179514017,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=57.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514017,
+              "kind": "event",
+              "detail": "border_dispute until=179514029 aftermath=179514031 weather=clear era=20778 evidence=1 [region=f17a294b-9699-4d03-959a-91d108aacee2:20:0 world=border-final-world peer=9de3e936-0fe0-40a0-80b9-1d3381e9dbd4 neighbor=20,1 relation=WAR resource=ore remaining=100 captured=179514017]"
+            },
+            {
+              "period": 179514016,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=56.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514015,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=55.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514014,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=54.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514013,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=53.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514012,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514011,
+              "kind": "city",
+              "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+            }
+          ],
+          "atlas": {
+            "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "authorityActive": true,
+            "cityLastPeriod": 179514017,
+            "regions": [
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514017,
+                "reserves": {
+                  "fertility": 688,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                    "tradition": "agrarian",
+                    "influence": 6
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                    "type": "farm",
+                    "level": 1
+                  }
+                ]
+              },
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 21,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514017,
+                "reserves": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 122
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                    "tradition": "agrarian",
+                    "influence": 6
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                    "type": "sawmill",
+                    "level": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": ""
+          }
+        },
+        "originalEvent": {
+          "type": "border_dispute",
+          "startPeriod": 179514017,
+          "endPeriod": 179514029,
+          "aftermathEndPeriod": 179514031
+        },
+        "originalHistory": {
+          "period": 179514017,
+          "kind": "event",
+          "detail": "border_dispute until=179514029 aftermath=179514031 weather=clear era=20778 evidence=1 [region=f17a294b-9699-4d03-959a-91d108aacee2:20:0 world=border-final-world peer=9de3e936-0fe0-40a0-80b9-1d3381e9dbd4 neighbor=20,1 relation=WAR resource=ore remaining=100 captured=179514017]"
+        }
+      },
+      "finishedAt": "2026-11-20T02:02:56.090Z"
+    },
+    {
+      "name": "public neighbor unclaim removes all current witnesses while retaining the original event",
+      "status": "passed",
+      "startedAt": "2026-11-20T02:02:56.092Z",
+      "observed": {
+        "unclaim": {
+          "entryPoint": "NationService.unclaimCurrentChunk",
+          "resourceCity": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+          "resourceNation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+          "peerNation": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+          "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+          "worldName": "border-final-world",
+          "chunkX": 20,
+          "chunkZ": 0,
+          "neighborChunkX": 20,
+          "neighborChunkZ": 1,
+          "nationalClaimPresent": false,
+          "neighborLoadedBefore": true,
+          "neighborLoadedAfter": true,
+          "forcedChunkLoad": false
+        },
+        "current": {
+          "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+          "city": {
+            "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "name": "BorderStarWorldBA",
+            "civilization": "agrarian",
+            "lastPeriod": 179514017,
+            "stock": {
+              "minecraft:bread": 145,
+              "minecraft:oak_log": 49,
+              "minecraft:paper": 87,
+              "minecraft:iron_ingot": 64,
+              "minecraft:wheat": 169,
+              "minecraft:oak_planks": 198,
+              "minecraft:arrow": 256
+            },
+            "buildings": [
+              {
+                "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "sawmill",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 344,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              },
+              {
+                "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "farm",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 328,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              }
+            ],
+            "event": {
+              "type": "border_dispute",
+              "startPeriod": 179514017,
+              "endPeriod": 179514029,
+              "aftermathEndPeriod": 179514031
+            },
+            "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=5, minecraft:oak_planks=10, minecraft:paper=3, minecraft:wheat=21}；；事件 border_dispute"
+          },
+          "captured": {
+            "nation": {
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "name": "SWBorderStarWorldBA",
+              "capturedAt": "2026-11-20T02:02:56.300962700Z",
+              "weather": "clear",
+              "weatherResourceMultipliers": {
+                "agricultural": 1.2,
+                "energy": 1,
+                "mineral": 1,
+                "luxury": 1
+              },
+              "epoch": {
+                "enabled": true,
+                "number": 20778,
+                "start": "2026-11-20T00:00:00Z",
+                "nextStart": "2026-11-21T00:00:00Z"
+              },
+              "technologies": [],
+              "technologyModifiers": {
+                "production_speed": 0,
+                "transport_speed": 0,
+                "crop_growth": 0,
+                "military_strength": 0,
+                "resource_yield": 0,
+                "trade_bonus": 0
+              },
+              "policy": "",
+              "policyModifiers": {
+                "military_bonus": 0,
+                "production_bonus": 0,
+                "trade_bonus": 0
+              },
+              "resourceStock": {
+                "agricultural": 0,
+                "luxury": 0,
+                "energy": 0,
+                "strategic": 0,
+                "industrial": 0,
+                "chemical": 0,
+                "mineral": 0
+              },
+              "prosperity": 50.60000000000001,
+              "warOpponents": [
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4"
+              ],
+              "diplomacy": {},
+              "processingRecipes": [
+                {
+                  "id": "recipe_advanced_food",
+                  "inputs": {
+                    "timber": 3,
+                    "food": 5
+                  },
+                  "outputs": {
+                    "food": 15
+                  },
+                  "seconds": 480
+                },
+                {
+                  "id": "recipe_bulk_ore",
+                  "inputs": {
+                    "ore": 10
+                  },
+                  "outputs": {
+                    "rare_metal": 1,
+                    "ore": 8
+                  },
+                  "seconds": 1200
+                },
+                {
+                  "id": "recipe_ore_to_rare_metal",
+                  "inputs": {
+                    "ore": 3
+                  },
+                  "outputs": {
+                    "rare_metal": 1
+                  },
+                  "seconds": 600
+                },
+                {
+                  "id": "recipe_timber_to_food",
+                  "inputs": {
+                    "timber": 2
+                  },
+                  "outputs": {
+                    "food": 5
+                  },
+                  "seconds": 300
+                },
+                {
+                  "id": "recipe_oil_processing",
+                  "inputs": {
+                    "oil": 5
+                  },
+                  "outputs": {
+                    "rare_metal": 2,
+                    "food": 2
+                  },
+                  "seconds": 900
+                }
+              ],
+              "factoryCount": 0,
+              "capabilities": {
+                "policy-effects": "available",
+                "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                "resources": "available",
+                "diplomacy": "available",
+                "war": "available",
+                "prosperity": "available",
+                "policy": "available",
+                "factories": "available",
+                "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                "processing": "available",
+                "resource-transactions": "available",
+                "epoch": "available",
+                "technology": "available",
+                "technology-effects": "available",
+                "weather": "available"
+              }
+            },
+            "witnesses": []
+          },
+          "verifiedBuildings": [
+            "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+            "9b6e7293-d5a3-444b-afc3-2752015b0418"
+          ],
+          "currentPeriod": 179514017,
+          "history": [
+            {
+              "period": 179514017,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=57.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514017,
+              "kind": "event",
+              "detail": "border_dispute until=179514029 aftermath=179514031 weather=clear era=20778 evidence=1 [region=f17a294b-9699-4d03-959a-91d108aacee2:20:0 world=border-final-world peer=9de3e936-0fe0-40a0-80b9-1d3381e9dbd4 neighbor=20,1 relation=WAR resource=ore remaining=100 captured=179514017]"
+            },
+            {
+              "period": 179514016,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=56.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514015,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=55.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514014,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=54.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514013,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=53.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514012,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514011,
+              "kind": "city",
+              "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+            }
+          ],
+          "atlas": {
+            "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "authorityActive": true,
+            "cityLastPeriod": 179514017,
+            "regions": [
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514017,
+                "reserves": {
+                  "fertility": 688,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                    "tradition": "agrarian",
+                    "influence": 6
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                    "type": "farm",
+                    "level": 1
+                  }
+                ]
+              },
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 21,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514017,
+                "reserves": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 122
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                    "tradition": "agrarian",
+                    "influence": 6
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                    "type": "sawmill",
+                    "level": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": ""
+          }
+        },
+        "later": {
+          "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+          "city": {
+            "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "name": "BorderStarWorldBA",
+            "civilization": "agrarian",
+            "lastPeriod": 179514018,
+            "stock": {
+              "minecraft:bread": 147,
+              "minecraft:oak_log": 51,
+              "minecraft:paper": 90,
+              "minecraft:iron_ingot": 64,
+              "minecraft:wheat": 184,
+              "minecraft:oak_planks": 208,
+              "minecraft:arrow": 256
+            },
+            "buildings": [
+              {
+                "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "sawmill",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 344,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              },
+              {
+                "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "farm",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 328,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              }
+            ],
+            "event": {
+              "type": "border_dispute",
+              "startPeriod": 179514017,
+              "endPeriod": 179514029,
+              "aftermathEndPeriod": 179514031
+            },
+            "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=5, minecraft:oak_planks=10, minecraft:paper=3, minecraft:wheat=21}；；事件 border_dispute"
+          },
+          "captured": {
+            "nation": {
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "name": "SWBorderStarWorldBA",
+              "capturedAt": "2026-11-20T02:03:06.098996300Z",
+              "weather": "clear",
+              "weatherResourceMultipliers": {
+                "agricultural": 1.2,
+                "energy": 1,
+                "mineral": 1,
+                "luxury": 1
+              },
+              "epoch": {
+                "enabled": true,
+                "number": 20778,
+                "start": "2026-11-20T00:00:00Z",
+                "nextStart": "2026-11-21T00:00:00Z"
+              },
+              "technologies": [],
+              "technologyModifiers": {
+                "production_speed": 0,
+                "transport_speed": 0,
+                "crop_growth": 0,
+                "military_strength": 0,
+                "resource_yield": 0,
+                "trade_bonus": 0
+              },
+              "policy": "",
+              "policyModifiers": {
+                "military_bonus": 0,
+                "production_bonus": 0,
+                "trade_bonus": 0
+              },
+              "resourceStock": {
+                "agricultural": 0,
+                "luxury": 0,
+                "energy": 0,
+                "strategic": 0,
+                "industrial": 0,
+                "chemical": 0,
+                "mineral": 0
+              },
+              "prosperity": 50.60000000000001,
+              "warOpponents": [
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4"
+              ],
+              "diplomacy": {},
+              "processingRecipes": [
+                {
+                  "id": "recipe_advanced_food",
+                  "inputs": {
+                    "timber": 3,
+                    "food": 5
+                  },
+                  "outputs": {
+                    "food": 15
+                  },
+                  "seconds": 480
+                },
+                {
+                  "id": "recipe_bulk_ore",
+                  "inputs": {
+                    "ore": 10
+                  },
+                  "outputs": {
+                    "rare_metal": 1,
+                    "ore": 8
+                  },
+                  "seconds": 1200
+                },
+                {
+                  "id": "recipe_ore_to_rare_metal",
+                  "inputs": {
+                    "ore": 3
+                  },
+                  "outputs": {
+                    "rare_metal": 1
+                  },
+                  "seconds": 600
+                },
+                {
+                  "id": "recipe_timber_to_food",
+                  "inputs": {
+                    "timber": 2
+                  },
+                  "outputs": {
+                    "food": 5
+                  },
+                  "seconds": 300
+                },
+                {
+                  "id": "recipe_oil_processing",
+                  "inputs": {
+                    "oil": 5
+                  },
+                  "outputs": {
+                    "rare_metal": 2,
+                    "food": 2
+                  },
+                  "seconds": 900
+                }
+              ],
+              "factoryCount": 0,
+              "capabilities": {
+                "policy-effects": "available",
+                "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                "resources": "available",
+                "diplomacy": "available",
+                "war": "available",
+                "prosperity": "available",
+                "policy": "available",
+                "factories": "available",
+                "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                "processing": "available",
+                "resource-transactions": "available",
+                "epoch": "available",
+                "technology": "available",
+                "technology-effects": "available",
+                "weather": "available"
+              }
+            },
+            "witnesses": []
+          },
+          "verifiedBuildings": [
+            "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+            "9b6e7293-d5a3-444b-afc3-2752015b0418"
+          ],
+          "currentPeriod": 179514018,
+          "history": [
+            {
+              "period": 179514018,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=58.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514017,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=57.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514017,
+              "kind": "event",
+              "detail": "border_dispute until=179514029 aftermath=179514031 weather=clear era=20778 evidence=1 [region=f17a294b-9699-4d03-959a-91d108aacee2:20:0 world=border-final-world peer=9de3e936-0fe0-40a0-80b9-1d3381e9dbd4 neighbor=20,1 relation=WAR resource=ore remaining=100 captured=179514017]"
+            },
+            {
+              "period": 179514016,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=56.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514015,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=55.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514014,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=54.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514013,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=53.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514012,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514011,
+              "kind": "city",
+              "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+            }
+          ],
+          "atlas": {
+            "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "authorityActive": true,
+            "cityLastPeriod": 179514018,
+            "regions": [
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514018,
+                "reserves": {
+                  "fertility": 688,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                    "tradition": "agrarian",
+                    "influence": 7
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                    "type": "farm",
+                    "level": 1
+                  }
+                ]
+              },
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 21,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514018,
+                "reserves": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 116
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                    "tradition": "agrarian",
+                    "influence": 7
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                    "type": "sawmill",
+                    "level": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": ""
+          }
+        }
+      },
+      "finishedAt": "2026-11-20T02:03:06.225Z"
+    },
+    {
+      "name": "first normal shutdown saves the active original event and single history receipt",
+      "status": "passed",
+      "startedAt": "2026-11-20T02:03:06.227Z",
+      "observed": {
+        "state": {
+          "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+          "city": {
+            "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "name": "BorderStarWorldBA",
+            "civilization": "agrarian",
+            "lastPeriod": 179514018,
+            "stock": {
+              "minecraft:bread": 147,
+              "minecraft:oak_log": 51,
+              "minecraft:paper": 90,
+              "minecraft:iron_ingot": 64,
+              "minecraft:wheat": 184,
+              "minecraft:oak_planks": 208,
+              "minecraft:arrow": 256
+            },
+            "buildings": [
+              {
+                "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "sawmill",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 344,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              },
+              {
+                "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "farm",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 328,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              }
+            ],
+            "event": {
+              "type": "border_dispute",
+              "startPeriod": 179514017,
+              "endPeriod": 179514029,
+              "aftermathEndPeriod": 179514031
+            },
+            "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=5, minecraft:oak_planks=10, minecraft:paper=3, minecraft:wheat=21}；；事件 border_dispute"
+          },
+          "captured": {
+            "nation": {
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "name": "SWBorderStarWorldBA",
+              "capturedAt": "2026-11-20T02:03:06.300231700Z",
+              "weather": "clear",
+              "weatherResourceMultipliers": {
+                "agricultural": 1.2,
+                "energy": 1,
+                "mineral": 1,
+                "luxury": 1
+              },
+              "epoch": {
+                "enabled": true,
+                "number": 20778,
+                "start": "2026-11-20T00:00:00Z",
+                "nextStart": "2026-11-21T00:00:00Z"
+              },
+              "technologies": [],
+              "technologyModifiers": {
+                "production_speed": 0,
+                "transport_speed": 0,
+                "crop_growth": 0,
+                "military_strength": 0,
+                "resource_yield": 0,
+                "trade_bonus": 0
+              },
+              "policy": "",
+              "policyModifiers": {
+                "military_bonus": 0,
+                "production_bonus": 0,
+                "trade_bonus": 0
+              },
+              "resourceStock": {
+                "agricultural": 0,
+                "luxury": 0,
+                "energy": 0,
+                "strategic": 0,
+                "industrial": 0,
+                "chemical": 0,
+                "mineral": 0
+              },
+              "prosperity": 50.60000000000001,
+              "warOpponents": [
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4"
+              ],
+              "diplomacy": {},
+              "processingRecipes": [
+                {
+                  "id": "recipe_advanced_food",
+                  "inputs": {
+                    "timber": 3,
+                    "food": 5
+                  },
+                  "outputs": {
+                    "food": 15
+                  },
+                  "seconds": 480
+                },
+                {
+                  "id": "recipe_bulk_ore",
+                  "inputs": {
+                    "ore": 10
+                  },
+                  "outputs": {
+                    "rare_metal": 1,
+                    "ore": 8
+                  },
+                  "seconds": 1200
+                },
+                {
+                  "id": "recipe_ore_to_rare_metal",
+                  "inputs": {
+                    "ore": 3
+                  },
+                  "outputs": {
+                    "rare_metal": 1
+                  },
+                  "seconds": 600
+                },
+                {
+                  "id": "recipe_timber_to_food",
+                  "inputs": {
+                    "timber": 2
+                  },
+                  "outputs": {
+                    "food": 5
+                  },
+                  "seconds": 300
+                },
+                {
+                  "id": "recipe_oil_processing",
+                  "inputs": {
+                    "oil": 5
+                  },
+                  "outputs": {
+                    "rare_metal": 2,
+                    "food": 2
+                  },
+                  "seconds": 900
+                }
+              ],
+              "factoryCount": 0,
+              "capabilities": {
+                "policy-effects": "available",
+                "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                "resources": "available",
+                "diplomacy": "available",
+                "war": "available",
+                "prosperity": "available",
+                "policy": "available",
+                "factories": "available",
+                "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                "processing": "available",
+                "resource-transactions": "available",
+                "epoch": "available",
+                "technology": "available",
+                "technology-effects": "available",
+                "weather": "available"
+              }
+            },
+            "witnesses": []
+          },
+          "verifiedBuildings": [
+            "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+            "9b6e7293-d5a3-444b-afc3-2752015b0418"
+          ],
+          "currentPeriod": 179514018,
+          "history": [
+            {
+              "period": 179514018,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=58.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514017,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=57.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514017,
+              "kind": "event",
+              "detail": "border_dispute until=179514029 aftermath=179514031 weather=clear era=20778 evidence=1 [region=f17a294b-9699-4d03-959a-91d108aacee2:20:0 world=border-final-world peer=9de3e936-0fe0-40a0-80b9-1d3381e9dbd4 neighbor=20,1 relation=WAR resource=ore remaining=100 captured=179514017]"
+            },
+            {
+              "period": 179514016,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=56.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514015,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=55.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514014,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=54.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514013,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=53.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514012,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514011,
+              "kind": "city",
+              "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+            }
+          ],
+          "atlas": {
+            "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "authorityActive": true,
+            "cityLastPeriod": 179514018,
+            "regions": [
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514018,
+                "reserves": {
+                  "fertility": 688,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                    "tradition": "agrarian",
+                    "influence": 7
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                    "type": "farm",
+                    "level": 1
+                  }
+                ]
+              },
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 21,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514018,
+                "reserves": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 116
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                    "tradition": "agrarian",
+                    "influence": 7
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                    "type": "sawmill",
+                    "level": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": ""
+          }
+        },
+        "clean": true
+      },
+      "finishedAt": "2026-11-20T02:03:09.598Z"
+    },
+    {
+      "name": "second real startup restores the event countries facilities and exact historical evidence",
+      "status": "passed",
+      "startedAt": "2026-11-20T02:03:09.599Z",
+      "observed": {
+        "first": {
+          "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+          "city": {
+            "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "name": "BorderStarWorldBA",
+            "civilization": "agrarian",
+            "lastPeriod": 179514018,
+            "stock": {
+              "minecraft:arrow": 256,
+              "minecraft:bread": 147,
+              "minecraft:oak_log": 51,
+              "minecraft:paper": 90,
+              "minecraft:iron_ingot": 64,
+              "minecraft:wheat": 184,
+              "minecraft:oak_planks": 208
+            },
+            "buildings": [
+              {
+                "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "sawmill",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 344,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              },
+              {
+                "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "farm",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 328,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              }
+            ],
+            "event": {
+              "type": "border_dispute",
+              "startPeriod": 179514017,
+              "endPeriod": 179514029,
+              "aftermathEndPeriod": 179514031
+            },
+            "lastReport": "产出 {minecraft:bread=3, minecraft:oak_log=5, minecraft:oak_planks=10, minecraft:paper=3, minecraft:wheat=21}；；事件 border_dispute"
+          },
+          "captured": {
+            "nation": {
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "name": "SWBorderStarWorldBA",
+              "capturedAt": "2026-11-20T02:03:37.461107700Z",
+              "weather": "clear",
+              "weatherResourceMultipliers": {
+                "luxury": 1,
+                "agricultural": 1.2,
+                "energy": 1,
+                "mineral": 1
+              },
+              "epoch": {
+                "enabled": true,
+                "number": 20778,
+                "start": "2026-11-20T00:00:00Z",
+                "nextStart": "2026-11-21T00:00:00Z"
+              },
+              "technologies": [],
+              "technologyModifiers": {
+                "production_speed": 0,
+                "transport_speed": 0,
+                "crop_growth": 0,
+                "military_strength": 0,
+                "resource_yield": 0,
+                "trade_bonus": 0
+              },
+              "policy": "",
+              "policyModifiers": {
+                "trade_bonus": 0,
+                "military_bonus": 0,
+                "production_bonus": 0
+              },
+              "resourceStock": {
+                "chemical": 0,
+                "mineral": 0,
+                "agricultural": 0,
+                "luxury": 0,
+                "energy": 0,
+                "strategic": 0,
+                "industrial": 0
+              },
+              "prosperity": 50.800000000000004,
+              "warOpponents": [
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4"
+              ],
+              "diplomacy": {},
+              "processingRecipes": [
+                {
+                  "id": "recipe_advanced_food",
+                  "inputs": {
+                    "timber": 3,
+                    "food": 5
+                  },
+                  "outputs": {
+                    "food": 15
+                  },
+                  "seconds": 480
+                },
+                {
+                  "id": "recipe_bulk_ore",
+                  "inputs": {
+                    "ore": 10
+                  },
+                  "outputs": {
+                    "rare_metal": 1,
+                    "ore": 8
+                  },
+                  "seconds": 1200
+                },
+                {
+                  "id": "recipe_ore_to_rare_metal",
+                  "inputs": {
+                    "ore": 3
+                  },
+                  "outputs": {
+                    "rare_metal": 1
+                  },
+                  "seconds": 600
+                },
+                {
+                  "id": "recipe_timber_to_food",
+                  "inputs": {
+                    "timber": 2
+                  },
+                  "outputs": {
+                    "food": 5
+                  },
+                  "seconds": 300
+                },
+                {
+                  "id": "recipe_oil_processing",
+                  "inputs": {
+                    "oil": 5
+                  },
+                  "outputs": {
+                    "rare_metal": 2,
+                    "food": 2
+                  },
+                  "seconds": 900
+                }
+              ],
+              "factoryCount": 0,
+              "capabilities": {
+                "epoch": "available",
+                "technology": "available",
+                "technology-effects": "available",
+                "weather": "available",
+                "policy-effects": "available",
+                "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                "resources": "available",
+                "diplomacy": "available",
+                "war": "available",
+                "prosperity": "available",
+                "policy": "available",
+                "factories": "available",
+                "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                "processing": "available",
+                "resource-transactions": "available"
+              }
+            },
+            "witnesses": []
+          },
+          "verifiedBuildings": [
+            "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+            "9b6e7293-d5a3-444b-afc3-2752015b0418"
+          ],
+          "currentPeriod": 179514021,
+          "history": [
+            {
+              "period": 179514018,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=58.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514017,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=57.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514017,
+              "kind": "event",
+              "detail": "border_dispute until=179514029 aftermath=179514031 weather=clear era=20778 evidence=1 [region=f17a294b-9699-4d03-959a-91d108aacee2:20:0 world=border-final-world peer=9de3e936-0fe0-40a0-80b9-1d3381e9dbd4 neighbor=20,1 relation=WAR resource=ore remaining=100 captured=179514017]"
+            },
+            {
+              "period": 179514016,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=56.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514015,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=55.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514014,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=54.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514013,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=53.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514012,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514011,
+              "kind": "city",
+              "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+            }
+          ],
+          "atlas": {
+            "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "authorityActive": true,
+            "cityLastPeriod": 179514018,
+            "regions": [
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514018,
+                "reserves": {
+                  "fertility": 688,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                    "tradition": "agrarian",
+                    "influence": 7
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                    "type": "farm",
+                    "level": 1
+                  }
+                ]
+              },
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 21,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514018,
+                "reserves": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 116
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                    "tradition": "agrarian",
+                    "influence": 7
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                    "type": "sawmill",
+                    "level": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": ""
+          }
+        },
+        "second": {
+          "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+          "city": {
+            "id": "c082c355-48ea-4557-a534-66fbf31f7f7b",
+            "nationId": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+            "name": "BorderStarWorldBB",
+            "civilization": "agrarian",
+            "lastPeriod": 179514018,
+            "stock": {
+              "minecraft:arrow": 256,
+              "minecraft:bread": 149,
+              "minecraft:oak_log": 53,
+              "minecraft:paper": 92,
+              "minecraft:iron_ingot": 64,
+              "minecraft:wheat": 190,
+              "minecraft:oak_planks": 212
+            },
+            "buildings": [
+              {
+                "id": "84e95624-c1e8-4414-818b-423b60204760",
+                "cityId": "c082c355-48ea-4557-a534-66fbf31f7f7b",
+                "nationId": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+                "type": "sawmill",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 856,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              },
+              {
+                "id": "edcbf7b7-c6f1-46fe-8019-7e4f987e2319",
+                "cityId": "c082c355-48ea-4557-a534-66fbf31f7f7b",
+                "nationId": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+                "type": "farm",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 840,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              }
+            ],
+            "lastReport": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=12, minecraft:paper=4, minecraft:wheat=24}；"
+          },
+          "captured": {
+            "nation": {
+              "nationId": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+              "name": "SWBorderStarWorldBB",
+              "capturedAt": "2026-11-20T02:03:37.641372600Z",
+              "weather": "clear",
+              "weatherResourceMultipliers": {
+                "luxury": 1,
+                "agricultural": 1.2,
+                "energy": 1,
+                "mineral": 1
+              },
+              "epoch": {
+                "enabled": true,
+                "number": 20778,
+                "start": "2026-11-20T00:00:00Z",
+                "nextStart": "2026-11-21T00:00:00Z"
+              },
+              "technologies": [],
+              "technologyModifiers": {
+                "production_speed": 0,
+                "transport_speed": 0,
+                "crop_growth": 0,
+                "military_strength": 0,
+                "resource_yield": 0,
+                "trade_bonus": 0
+              },
+              "policy": "",
+              "policyModifiers": {
+                "trade_bonus": 0,
+                "military_bonus": 0,
+                "production_bonus": 0
+              },
+              "resourceStock": {
+                "chemical": 0,
+                "mineral": 0,
+                "agricultural": 0,
+                "luxury": 0,
+                "energy": 0,
+                "strategic": 0,
+                "industrial": 0
+              },
+              "prosperity": 50.800000000000004,
+              "warOpponents": [
+                "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87"
+              ],
+              "diplomacy": {},
+              "processingRecipes": [
+                {
+                  "id": "recipe_advanced_food",
+                  "inputs": {
+                    "timber": 3,
+                    "food": 5
+                  },
+                  "outputs": {
+                    "food": 15
+                  },
+                  "seconds": 480
+                },
+                {
+                  "id": "recipe_bulk_ore",
+                  "inputs": {
+                    "ore": 10
+                  },
+                  "outputs": {
+                    "rare_metal": 1,
+                    "ore": 8
+                  },
+                  "seconds": 1200
+                },
+                {
+                  "id": "recipe_ore_to_rare_metal",
+                  "inputs": {
+                    "ore": 3
+                  },
+                  "outputs": {
+                    "rare_metal": 1
+                  },
+                  "seconds": 600
+                },
+                {
+                  "id": "recipe_timber_to_food",
+                  "inputs": {
+                    "timber": 2
+                  },
+                  "outputs": {
+                    "food": 5
+                  },
+                  "seconds": 300
+                },
+                {
+                  "id": "recipe_oil_processing",
+                  "inputs": {
+                    "oil": 5
+                  },
+                  "outputs": {
+                    "rare_metal": 2,
+                    "food": 2
+                  },
+                  "seconds": 900
+                }
+              ],
+              "factoryCount": 0,
+              "capabilities": {
+                "epoch": "available",
+                "technology": "available",
+                "technology-effects": "available",
+                "weather": "available",
+                "policy-effects": "available",
+                "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                "resources": "available",
+                "diplomacy": "available",
+                "war": "available",
+                "prosperity": "available",
+                "policy": "available",
+                "factories": "available",
+                "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                "processing": "available",
+                "resource-transactions": "available"
+              }
+            },
+            "witnesses": []
+          },
+          "verifiedBuildings": [
+            "edcbf7b7-c6f1-46fe-8019-7e4f987e2319",
+            "84e95624-c1e8-4414-818b-423b60204760"
+          ],
+          "currentPeriod": 179514021,
+          "history": [
+            {
+              "period": 179514018,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=57.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514017,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=56.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514016,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=55.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514015,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=54.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514014,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=53.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514013,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514012,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+            }
+          ],
+          "atlas": {
+            "city": "c082c355-48ea-4557-a534-66fbf31f7f7b",
+            "nation": "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4",
+            "authorityActive": true,
+            "cityLastPeriod": 179514018,
+            "regions": [
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:52:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 52,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514018,
+                "reserves": {
+                  "fertility": 688,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:52:0",
+                    "tradition": "agrarian",
+                    "influence": 7
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "edcbf7b7-c6f1-46fe-8019-7e4f987e2319",
+                    "type": "farm",
+                    "level": 1
+                  }
+                ]
+              },
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:53:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 53,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514018,
+                "reserves": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 116
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:53:0",
+                    "tradition": "agrarian",
+                    "influence": 7
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "84e95624-c1e8-4414-818b-423b60204760",
+                    "type": "sawmill",
+                    "level": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": ""
+          }
+        }
+      },
+      "finishedAt": "2026-11-20T02:03:37.764Z"
+    },
+    {
+      "name": "after original aftermath and cooldown distant continuing war cannot create another dispute",
+      "status": "passed",
+      "startedAt": "2026-11-20T02:03:37.766Z",
+      "observed": {
+        "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+        "city": {
+          "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+          "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+          "name": "BorderStarWorldBA",
+          "civilization": "agrarian",
+          "lastPeriod": 179514033,
+          "stock": {
+            "minecraft:arrow": 256,
+            "minecraft:bread": 176,
+            "minecraft:oak_log": 81,
+            "minecraft:paper": 137,
+            "minecraft:iron_ingot": 64,
+            "minecraft:wheat": 398,
+            "minecraft:oak_planks": 350
+          },
+          "buildings": [
+            {
+              "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+              "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "type": "sawmill",
+              "site": {
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "x": 344,
+                "y": 80,
+                "z": 8
+              },
+              "level": 1
+            },
+            {
+              "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+              "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "type": "farm",
+              "site": {
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "x": 328,
+                "y": 80,
+                "z": 8
+              },
+              "level": 1
+            }
+          ],
+          "lastReport": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=13, minecraft:paper=5, minecraft:wheat=26}；"
+        },
+        "captured": {
+          "nation": {
+            "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "name": "SWBorderStarWorldBA",
+            "capturedAt": "2026-11-20T02:05:35.290394700Z",
+            "weather": "clear",
+            "weatherResourceMultipliers": {
+              "luxury": 1,
+              "agricultural": 1.2,
+              "energy": 1,
+              "mineral": 1
+            },
+            "epoch": {
+              "enabled": true,
+              "number": 20778,
+              "start": "2026-11-20T00:00:00Z",
+              "nextStart": "2026-11-21T00:00:00Z"
+            },
+            "technologies": [],
+            "technologyModifiers": {
+              "production_speed": 0,
+              "transport_speed": 0,
+              "crop_growth": 0,
+              "military_strength": 0,
+              "resource_yield": 0,
+              "trade_bonus": 0
+            },
+            "policy": "",
+            "policyModifiers": {
+              "trade_bonus": 0,
+              "military_bonus": 0,
+              "production_bonus": 0
+            },
+            "resourceStock": {
+              "chemical": 0,
+              "mineral": 0,
+              "agricultural": 0,
+              "luxury": 0,
+              "energy": 0,
+              "strategic": 0,
+              "industrial": 0
+            },
+            "prosperity": 50.800000000000004,
+            "warOpponents": [
+              "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4"
+            ],
+            "diplomacy": {},
+            "processingRecipes": [
+              {
+                "id": "recipe_advanced_food",
+                "inputs": {
+                  "timber": 3,
+                  "food": 5
+                },
+                "outputs": {
+                  "food": 15
+                },
+                "seconds": 480
+              },
+              {
+                "id": "recipe_bulk_ore",
+                "inputs": {
+                  "ore": 10
+                },
+                "outputs": {
+                  "rare_metal": 1,
+                  "ore": 8
+                },
+                "seconds": 1200
+              },
+              {
+                "id": "recipe_ore_to_rare_metal",
+                "inputs": {
+                  "ore": 3
+                },
+                "outputs": {
+                  "rare_metal": 1
+                },
+                "seconds": 600
+              },
+              {
+                "id": "recipe_timber_to_food",
+                "inputs": {
+                  "timber": 2
+                },
+                "outputs": {
+                  "food": 5
+                },
+                "seconds": 300
+              },
+              {
+                "id": "recipe_oil_processing",
+                "inputs": {
+                  "oil": 5
+                },
+                "outputs": {
+                  "rare_metal": 2,
+                  "food": 2
+                },
+                "seconds": 900
+              }
+            ],
+            "factoryCount": 0,
+            "capabilities": {
+              "epoch": "available",
+              "technology": "available",
+              "technology-effects": "available",
+              "weather": "available",
+              "policy-effects": "available",
+              "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+              "resources": "available",
+              "diplomacy": "available",
+              "war": "available",
+              "prosperity": "available",
+              "policy": "available",
+              "factories": "available",
+              "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+              "processing": "available",
+              "resource-transactions": "available"
+            }
+          },
+          "witnesses": []
+        },
+        "verifiedBuildings": [
+          "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+          "9b6e7293-d5a3-444b-afc3-2752015b0418"
+        ],
+        "currentPeriod": 179514033,
+        "history": [
+          {
+            "period": 179514033,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=71.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514032,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=70.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514031,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=69.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514030,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=68.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514029,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=67.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514028,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=66.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514027,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=65.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514026,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=64.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514025,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=63.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514024,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=62.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514023,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=61.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514022,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=60.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514021,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=59.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514018,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=58.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514017,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=57.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514017,
+            "kind": "event",
+            "detail": "border_dispute until=179514029 aftermath=179514031 weather=clear era=20778 evidence=1 [region=f17a294b-9699-4d03-959a-91d108aacee2:20:0 world=border-final-world peer=9de3e936-0fe0-40a0-80b9-1d3381e9dbd4 neighbor=20,1 relation=WAR resource=ore remaining=100 captured=179514017]"
+          },
+          {
+            "period": 179514016,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=56.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514015,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=55.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514014,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=54.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514013,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=53.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514012,
+            "kind": "city",
+            "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+          },
+          {
+            "period": 179514011,
+            "kind": "city",
+            "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+          }
+        ],
+        "atlas": {
+          "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+          "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+          "authorityActive": true,
+          "cityLastPeriod": 179514033,
+          "regions": [
+            {
+              "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+              "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+              "worldName": "border-final-world",
+              "chunkX": 20,
+              "chunkZ": 0,
+              "terrain": "plains",
+              "terrainName": "平原",
+              "agriculture": 1.3,
+              "transport": 0.8,
+              "defense": 0.9,
+              "lastRecoveryPeriod": 179514033,
+              "reserves": {
+                "fertility": 688,
+                "ore": 100,
+                "timber": 160
+              },
+              "initialCapacities": {
+                "fertility": 700,
+                "ore": 100,
+                "timber": 160
+              },
+              "regeneration": {
+                "timber": 2,
+                "fertility": 18
+              },
+              "culture": [
+                {
+                  "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                  "tradition": "agrarian",
+                  "influence": 19
+                }
+              ],
+              "facilities": [
+                {
+                  "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                  "type": "farm",
+                  "level": 1
+                }
+              ]
+            },
+            {
+              "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+              "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+              "worldName": "border-final-world",
+              "chunkX": 21,
+              "chunkZ": 0,
+              "terrain": "plains",
+              "terrainName": "平原",
+              "agriculture": 1.3,
+              "transport": 0.8,
+              "defense": 0.9,
+              "lastRecoveryPeriod": 179514033,
+              "reserves": {
+                "fertility": 700,
+                "ore": 100,
+                "timber": 38
+              },
+              "initialCapacities": {
+                "fertility": 700,
+                "ore": 100,
+                "timber": 160
+              },
+              "regeneration": {
+                "timber": 2,
+                "fertility": 18
+              },
+              "culture": [
+                {
+                  "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                  "tradition": "agrarian",
+                  "influence": 19
+                }
+              ],
+              "facilities": [
+                {
+                  "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                  "type": "sawmill",
+                  "level": 1
+                }
+              ]
+            }
+          ],
+          "nextCursor": ""
+        }
+      },
+      "finishedAt": "2026-11-20T02:05:35.323Z"
+    },
+    {
+      "name": "second owned Paper process stops normally with one durable natural border event",
+      "status": "passed",
+      "startedAt": "2026-11-20T02:05:35.326Z",
+      "observed": {
+        "final": {
+          "entryPoint": "ExpansionRuntime.captureBorderEvidence",
+          "city": {
+            "id": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "name": "BorderStarWorldBA",
+            "civilization": "agrarian",
+            "lastPeriod": 179514033,
+            "stock": {
+              "minecraft:arrow": 256,
+              "minecraft:bread": 176,
+              "minecraft:oak_log": 81,
+              "minecraft:paper": 137,
+              "minecraft:iron_ingot": 64,
+              "minecraft:wheat": 398,
+              "minecraft:oak_planks": 350
+            },
+            "buildings": [
+              {
+                "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "sawmill",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 344,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              },
+              {
+                "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                "cityId": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+                "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+                "type": "farm",
+                "site": {
+                  "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                  "worldName": "border-final-world",
+                  "x": 328,
+                  "y": 80,
+                  "z": 8
+                },
+                "level": 1
+              }
+            ],
+            "lastReport": "产出 {minecraft:bread=4, minecraft:oak_log=6, minecraft:oak_planks=13, minecraft:paper=5, minecraft:wheat=26}；"
+          },
+          "captured": {
+            "nation": {
+              "nationId": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+              "name": "SWBorderStarWorldBA",
+              "capturedAt": "2026-11-20T02:05:35.391897900Z",
+              "weather": "clear",
+              "weatherResourceMultipliers": {
+                "luxury": 1,
+                "agricultural": 1.2,
+                "energy": 1,
+                "mineral": 1
+              },
+              "epoch": {
+                "enabled": true,
+                "number": 20778,
+                "start": "2026-11-20T00:00:00Z",
+                "nextStart": "2026-11-21T00:00:00Z"
+              },
+              "technologies": [],
+              "technologyModifiers": {
+                "production_speed": 0,
+                "transport_speed": 0,
+                "crop_growth": 0,
+                "military_strength": 0,
+                "resource_yield": 0,
+                "trade_bonus": 0
+              },
+              "policy": "",
+              "policyModifiers": {
+                "trade_bonus": 0,
+                "military_bonus": 0,
+                "production_bonus": 0
+              },
+              "resourceStock": {
+                "chemical": 0,
+                "mineral": 0,
+                "agricultural": 0,
+                "luxury": 0,
+                "energy": 0,
+                "strategic": 0,
+                "industrial": 0
+              },
+              "prosperity": 50.800000000000004,
+              "warOpponents": [
+                "9de3e936-0fe0-40a0-80b9-1d3381e9dbd4"
+              ],
+              "diplomacy": {},
+              "processingRecipes": [
+                {
+                  "id": "recipe_advanced_food",
+                  "inputs": {
+                    "timber": 3,
+                    "food": 5
+                  },
+                  "outputs": {
+                    "food": 15
+                  },
+                  "seconds": 480
+                },
+                {
+                  "id": "recipe_bulk_ore",
+                  "inputs": {
+                    "ore": 10
+                  },
+                  "outputs": {
+                    "rare_metal": 1,
+                    "ore": 8
+                  },
+                  "seconds": 1200
+                },
+                {
+                  "id": "recipe_ore_to_rare_metal",
+                  "inputs": {
+                    "ore": 3
+                  },
+                  "outputs": {
+                    "rare_metal": 1
+                  },
+                  "seconds": 600
+                },
+                {
+                  "id": "recipe_timber_to_food",
+                  "inputs": {
+                    "timber": 2
+                  },
+                  "outputs": {
+                    "food": 5
+                  },
+                  "seconds": 300
+                },
+                {
+                  "id": "recipe_oil_processing",
+                  "inputs": {
+                    "oil": 5
+                  },
+                  "outputs": {
+                    "rare_metal": 2,
+                    "food": 2
+                  },
+                  "seconds": 900
+                }
+              ],
+              "factoryCount": 0,
+              "capabilities": {
+                "epoch": "available",
+                "technology": "available",
+                "technology-effects": "available",
+                "weather": "available",
+                "policy-effects": "available",
+                "prosperity-submit": "公开modifyProsperity/addChunkContribution无幂等回执；不自动重放跨库贡献",
+                "resources": "available",
+                "diplomacy": "available",
+                "war": "available",
+                "prosperity": "available",
+                "policy": "available",
+                "factories": "available",
+                "folia": "核心可变模型无跨区域快照契约；仅Paper主线程捕获",
+                "processing": "available",
+                "resource-transactions": "available"
+              }
+            },
+            "witnesses": []
+          },
+          "verifiedBuildings": [
+            "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+            "9b6e7293-d5a3-444b-afc3-2752015b0418"
+          ],
+          "currentPeriod": 179514033,
+          "history": [
+            {
+              "period": 179514033,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=71.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514032,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=70.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514031,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=69.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514030,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=68.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514029,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=67.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514028,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=66.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514027,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=65.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514026,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=64.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514025,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=63.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514024,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=62.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514023,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=61.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514022,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=60.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514021,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=59.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514018,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=58.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514017,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=57.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514017,
+              "kind": "event",
+              "detail": "border_dispute until=179514029 aftermath=179514031 weather=clear era=20778 evidence=1 [region=f17a294b-9699-4d03-959a-91d108aacee2:20:0 world=border-final-world peer=9de3e936-0fe0-40a0-80b9-1d3381e9dbd4 neighbor=20,1 relation=WAR resource=ore remaining=100 captured=179514017]"
+            },
+            {
+              "period": 179514016,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=56.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514015,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=55.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514014,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=54.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514013,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=53.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514012,
+              "kind": "city",
+              "detail": "active=2 food=true prosperity=52.0 knowledge=0 militarySupply=0"
+            },
+            {
+              "period": 179514011,
+              "kind": "city",
+              "detail": "active=0 food=true prosperity=51.0 knowledge=0 militarySupply=0"
+            }
+          ],
+          "atlas": {
+            "city": "5ce6bfda-d2f3-4f3d-ba69-73963ab3ebb9",
+            "nation": "3d7b6ef1-6ed8-4ed8-8eee-4bd8ae637b87",
+            "authorityActive": true,
+            "cityLastPeriod": 179514033,
+            "regions": [
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 20,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514033,
+                "reserves": {
+                  "fertility": 688,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:20:0",
+                    "tradition": "agrarian",
+                    "influence": 19
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "9b6e7293-d5a3-444b-afc3-2752015b0418",
+                    "type": "farm",
+                    "level": 1
+                  }
+                ]
+              },
+              {
+                "id": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                "worldId": "f17a294b-9699-4d03-959a-91d108aacee2",
+                "worldName": "border-final-world",
+                "chunkX": 21,
+                "chunkZ": 0,
+                "terrain": "plains",
+                "terrainName": "平原",
+                "agriculture": 1.3,
+                "transport": 0.8,
+                "defense": 0.9,
+                "lastRecoveryPeriod": 179514033,
+                "reserves": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 38
+                },
+                "initialCapacities": {
+                  "fertility": 700,
+                  "ore": 100,
+                  "timber": 160
+                },
+                "regeneration": {
+                  "timber": 2,
+                  "fertility": 18
+                },
+                "culture": [
+                  {
+                    "region": "f17a294b-9699-4d03-959a-91d108aacee2:21:0",
+                    "tradition": "agrarian",
+                    "influence": 19
+                  }
+                ],
+                "facilities": [
+                  {
+                    "id": "80c1ed45-c06f-4a01-b34b-6ebb930b2999",
+                    "type": "sawmill",
+                    "level": 1
+                  }
+                ]
+              }
+            ],
+            "nextCursor": ""
+          }
+        },
+        "clean": true
+      },
+      "finishedAt": "2026-11-20T02:05:37.545Z"
+    }
+  ],
+  "seeds": [
+    {
+      "player": "StarWorldBA",
+      "source": "explicit-fixture-player-inventory",
+      "items": {
+        "minecraft:bread": 128,
+        "minecraft:oak_planks": 128,
+        "minecraft:iron_ingot": 64,
+        "minecraft:oak_log": 32,
+        "minecraft:paper": 64,
+        "minecraft:arrow": 256,
+        "minecraft:wheat": 64
+      },
+      "productionEvidence": false
+    },
+    {
+      "player": "StarWorldBB",
+      "source": "explicit-fixture-player-inventory",
+      "items": {
+        "minecraft:bread": 128,
+        "minecraft:oak_planks": 128,
+        "minecraft:iron_ingot": 64,
+        "minecraft:oak_log": 32,
+        "minecraft:paper": 64,
+        "minecraft:arrow": 256,
+        "minecraft:wheat": 64
+      },
+      "productionEvidence": false
+    }
+  ],
+  "testTuning": {
+    "jvmArgs": [
+      "-Xms128m",
+      "-Xmx512m",
+      "-Xss512k",
+      "-XX:MaxMetaspaceSize=192m",
+      "-XX:ActiveProcessorCount=1",
+      "-XX:+UseSerialGC",
+      "-XX:TieredStopAtLevel=1",
+      "-XX:ReservedCodeCacheSize=64m",
+      "-Dio.netty.eventLoopThreads=2"
+    ],
+    "nodeFlags": [
+      "--max-old-space-size=128",
+      "--max-semi-space-size=4"
+    ],
+    "periodSeconds": 10,
+    "eventChance": 1,
+    "eventRules": [
+      "border_dispute"
+    ],
+    "borderDuration": 12,
+    "borderAftermath": 2,
+    "borderCooldown": 10,
+    "newNationProtectionDays": 0,
+    "warDeclarationCooldownHours": 0,
+    "slots": [
+      20,
+      52
+    ],
+    "registeredFacilities": 4,
+    "fixtureForceLoadedChunks": [],
+    "explicitPlayerInventorySeeds": true,
+    "neighborClaim": "NationService public API; no neighbor world/block/chunk load"
+  },
+  "finishedAt": "2026-11-20T02:05:37.547Z"
+}

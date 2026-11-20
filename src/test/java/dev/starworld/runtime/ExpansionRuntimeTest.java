@@ -83,4 +83,11 @@ class ExpansionRuntimeTest {
             assertThrows(IllegalArgumentException.class,()->x.command(player,new String[]{"specialty","granary"}));assertEquals("",x.evolution().profile(c.cityId()).specialty());verify(runtime,never()).verifiedBuildings(any());
         }
     }
+    @Test void publicBorderCaptureRechecksActualBuildingsRatherThanTrustingCallerIds()throws Exception{
+        try(WorldStore s=new WorldStore(temp.resolve("border-capture.db"),definitions.stockLimit())){
+            CoreCity c=city();s.ensureCity(c);Building b=new Building(UUID.randomUUID(),c.cityId(),c.nationId(),"farm",new Site(UUID.randomUUID(),"world",0,64,0),1);s.addBuilding(b,"plains",definitions);var registered=s.view(c.cityId()).orElseThrow();
+            JavaPlugin plugin=mock(JavaPlugin.class);org.bukkit.Server server=mock(org.bukkit.Server.class);when(plugin.getServer()).thenReturn(server);when(server.isPrimaryThread()).thenReturn(true);when(server.getPluginManager()).thenReturn(mock(org.bukkit.plugin.PluginManager.class));WorldRuntime runtime=mock(WorldRuntime.class);CoreBridge core=mock(CoreBridge.class);when(runtime.currentPeriod()).thenReturn(10L);when(runtime.verifiedBuildings(registered)).thenReturn(Set.of());
+            ExpansionRuntime x=new ExpansionRuntime(plugin,runtime,definitions,core,mock(CustomItems.class),s,temp.toFile());assertTrue(x.captureBorderEvidence(c,registered,Set.of(b.id())).witnesses().isEmpty());verifyNoInteractions(core);when(runtime.verifiedBuildings(registered)).thenReturn(Set.of(b.id()));when(core.foreignNeighbors(c,b.site())).thenReturn(List.of());x.captureBorderEvidence(c,registered,Set.of(b.id()));verify(core).foreignNeighbors(c,b.site());
+        }
+    }
 }

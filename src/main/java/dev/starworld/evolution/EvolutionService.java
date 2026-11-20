@@ -73,6 +73,7 @@ public final class EvolutionService {
         Map<String,Map<String,Long>> influences=new HashMap<>();for(Building b:city.buildings())if(verified.contains(b.id())&&!influences.containsKey(b.site().regionKey())){
             Map<String,Long> values=new HashMap<>();store.query("SELECT tradition,influence FROM region_culture WHERE region=?",r->{values.put(r.getString(1),r.getLong(2));return 0;},b.site().regionKey());influences.put(b.site().regionKey(),Map.copyOf(values));
         }
+        List<ResourceDispute> disputes=resourceDisputes(core,city,period,verified,context);
         store.cityCapacity(city.id(),capacity);
         return new Simulation.Hooks(){
             @Override public long capacity(String item){return capacity;}
@@ -87,11 +88,25 @@ public final class EvolutionService {
                 return Math.min(options.maxBonus(),factor);
             }
             @Override public boolean filterEvents(){return true;}
-            @Override public Map<String,Double> eventWeights(CityView c,long t)throws SQLException{return candidates(c,p,t,context,verified);}
-            @Override public void completed(CoreCity c,CityView previous,long t,Map<String,Long> produced,Set<UUID> maintained)throws SQLException{complete(c,previous,t,produced,maintained,context,p,policyId);}
+            @Override public Map<String,Double> eventWeights(CityView c,long t)throws SQLException{return candidates(c,p,t,context,verified,disputes);}
+            @Override public void completed(CoreCity c,CityView previous,long t,Map<String,Long> produced,Set<UUID> maintained)throws SQLException{complete(c,previous,t,produced,maintained,context,p,policyId,disputes);}
         };
     }
-    private Map<String,Double> candidates(CityView city,Profile p,long period,Context context,Set<UUID> valid)throws SQLException {
+    /** Current local reserves are associated only with matching-period, verified frontier production sites. */
+    public List<ResourceDispute> resourceDisputes(CoreCity core,CityView city,long period,Set<UUID> valid,Context context)throws SQLException {
+        if(!city.id().equals(core.cityId())||!city.nationId().equals(core.nationId()))return List.of();
+        Set<String> regions=new HashSet<>();for(Building b:city.buildings())if(valid.contains(b.id())&&b.cityId().equals(city.id())&&b.nationId().equals(core.nationId()))regions.add(b.site().regionKey());
+        List<ResourceDispute> result=new ArrayList<>();Set<String> seen=new HashSet<>();
+        for(BorderWitness witness:context.borderWitnesses()){
+            if(witness.period()!=period||!witness.city().equals(city.id())||!witness.nation().equals(core.nationId())||!regions.contains(witness.regionKey()))continue;
+            String key=witness.regionKey()+":"+witness.neighborChunkX()+":"+witness.neighborChunkZ()+":"+witness.peerNation();if(!seen.add(key))continue;
+            Map<String,Long> reserves=store.region(witness.regionKey()).reserves();
+            String resource=java.util.stream.Stream.concat(java.util.stream.Stream.of("ore","timber","fertility"),reserves.keySet().stream().sorted()).filter(id->reserves.getOrDefault(id,0L)>0).findFirst().orElse(null);
+            if(resource!=null)result.add(new ResourceDispute(witness,resource,reserves.get(resource)));
+        }
+        return List.copyOf(result);
+    }
+    private Map<String,Double> candidates(CityView city,Profile p,long period,Context context,Set<UUID> valid,List<ResourceDispute> disputes)throws SQLException {
         Set<String> terrains=new HashSet<>();for(Building b:city.buildings())if(valid.contains(b.id()))terrains.add(store.region(b.site().regionKey()).terrain());
         Map<String,Long> last=new HashMap<>();store.query("SELECT type,period FROM evolution_event WHERE city=?",r->{last.put(r.getString(1),r.getLong(2));return 0;},city.id());
         long bread=city.stock().getOrDefault("minecraft:bread",0L),arrows=city.stock().getOrDefault("minecraft:arrow",0L);
@@ -107,14 +122,14 @@ public final class EvolutionService {
                 case "crisis"->context.atWar()&&arrows<12||city.buildings().stream().filter(b->valid.contains(b.id())).anyMatch(b->{try{return store.region(b.site().regionKey()).reserves().getOrDefault("ore",1L)==0;}catch(SQLException e){throw new IllegalStateException(e);}});
                 case "trade"->context.successfulTrades()>0;
                 case "culture"->context.lifeCulture()>0||p.culture()>=20;
-                case "border"->context.borderPressure()||context.atWar();
+                case "border"->!disputes.isEmpty();
                 case "decline"->p.prosperity()<30||p.stability()<30;
                 case "revival"->p.prosperity()>=30&&p.prosperity()<55&&bread>=10&&valid.size()>=2;
                 default->false;
             };if(allowed)weights.put(entry.getKey(),rule.weight());
         }return Map.copyOf(weights);
     }
-    private void complete(CoreCity core,CityView city,long period,Map<String,Long> produced,Set<UUID> maintained,Context context,Profile before,String policyId)throws SQLException {
+    private void complete(CoreCity core,CityView city,long period,Map<String,Long> produced,Set<UUID> maintained,Context context,Profile before,String policyId,List<ResourceDispute> disputes)throws SQLException {
         if(before.lastPeriod()>=period)return;
         List<Building> active=city.buildings().stream().filter(b->maintained.contains(b.id())).toList();
         for(Building building:active)store.execute("INSERT OR IGNORE INTO evolution_facility(city,building,period) VALUES(?,?,?)",city.id(),building.id(),period);
@@ -135,7 +150,9 @@ public final class EvolutionService {
         EventState event=store.view(city.id()).orElseThrow().event();
         if(event!=null&&(city.event()==null||!event.equals(city.event()))){
             store.execute("INSERT INTO evolution_event(city,type,period) VALUES(?,?,?) ON CONFLICT(city,type) DO UPDATE SET period=excluded.period",city.id(),event.type(),period);
-            history(city.id(),period,"event",event.type()+" until="+event.endPeriod()+" aftermath="+event.aftermathEndPeriod()+" weather="+context.weather()+" era="+context.era());
+            String frontier="";
+            if(event.type().equals("border_dispute"))frontier=" evidence="+disputes.size()+" "+disputes.stream().limit(8).map(d->{BorderWitness b=d.border();return "region="+b.regionKey()+" world="+b.worldName()+" peer="+b.peerNation()+" neighbor="+b.neighborChunkX()+","+b.neighborChunkZ()+" relation="+b.relation()+" resource="+d.resource()+" remaining="+d.remaining()+" captured="+b.period();}).toList();
+            history(city.id(),period,"event",event.type()+" until="+event.endPeriod()+" aftermath="+event.aftermathEndPeriod()+" weather="+context.weather()+" era="+context.era()+frontier);
         }
         if(event!=null&&period>=event.startPeriod()&&period<event.aftermathEndPeriod())switch(event.type()){
             case "famine","decline","resource_crisis"->{prosperity=clamp(prosperity-2,0,100);stability=clamp(stability-2,0,100);}

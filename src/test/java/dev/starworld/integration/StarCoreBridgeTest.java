@@ -218,6 +218,30 @@ class StarCoreBridgeTest {
     }
 
     @Test
+    void foreignBorderClaimsReadExactlyFourCardinalNeighboursAndNeverReadWorldBlocks() {
+        Site site=new Site(worldId,"world",Integer.MAX_VALUE,64,Integer.MIN_VALUE);int x=site.x()>>4,z=site.z()>>4;
+        when(city.hasClaim("world",x,z)).thenReturn(true);
+        when(nations.claimAt("world",x,z)).thenReturn(Optional.of(new TerritoryClaim(nationId.toString(),new ChunkCoordinate("world",x,z))));
+        NationId peerId=NationId.of(UUID.randomUUID());Nation peer=mock(Nation.class);when(peer.id()).thenReturn(peerId);when(nations.nationById(peerId)).thenReturn(Optional.of(peer));
+        when(nations.claimAt("world",x+1,z)).thenReturn(Optional.of(new TerritoryClaim(peerId.toString(),new ChunkCoordinate("world",x+1,z))));
+        when(nations.claimAt("world",x,z+1)).thenReturn(Optional.of(new TerritoryClaim(nationId.toString(),new ChunkCoordinate("world",x,z+1))));
+        var values=bridge.foreignNeighbors(new dev.starworld.domain.WorldState.CoreCity(cityId,nationId.value(),"city","nation",1,""),site);
+        assertEquals(1,values.size());assertEquals(peerId.value(),values.getFirst().nation());assertEquals(134217728,values.getFirst().chunkX());assertEquals(-134217728,values.getFirst().chunkZ());
+        for(int[] delta:new int[][]{{-1,0},{0,-1},{0,1},{1,0}})verify(nations).claimAt("world",Math.addExact(x,delta[0]),Math.addExact(z,delta[1]));
+        verify(nations,times(5)).claimAt(eq("world"),anyInt(),anyInt());World world=server.getWorld(worldId);verify(world,never()).getBlockAt(anyInt(),anyInt(),anyInt());verify(world,never()).getChunkAt(anyInt(),anyInt());
+        assertThrows(IllegalArgumentException.class,()->new CoreBridge.BorderNeighbor(site,Integer.MIN_VALUE,Integer.MAX_VALUE,peerId.value()));
+    }
+
+    @Test
+    void foreignBorderClaimsRejectMissingCoreNationAndOffThreadCalls() {
+        var current=new dev.starworld.domain.WorldState.CoreCity(cityId,nationId.value(),"city","nation",1,"");Site site=new Site(worldId,"world",0,64,0);
+        when(city.hasClaim("world",0,0)).thenReturn(true);when(nations.claimAt("world",0,0)).thenReturn(Optional.of(new TerritoryClaim(nationId.toString(),new ChunkCoordinate("world",0,0))));
+        when(nations.claimAt("world",1,0)).thenReturn(Optional.of(new TerritoryClaim(UUID.randomUUID().toString(),new ChunkCoordinate("world",1,0))));
+        assertTrue(bridge.foreignNeighbors(current,site).isEmpty());when(server.isPrimaryThread()).thenReturn(false);clearInvocations(nations);assertTrue(bridge.foreignNeighbors(current,site).isEmpty());verifyNoInteractions(nations);
+        when(server.isPrimaryThread()).thenReturn(true);when(core.isEnabled()).thenReturn(false);assertTrue(bridge.foreignNeighbors(current,site).isEmpty());
+    }
+
+    @Test
     void nullInputsAreRejected() {
         assertTrue(bridge.city(null).isEmpty());
         assertTrue(bridge.playerCity(null).isEmpty());

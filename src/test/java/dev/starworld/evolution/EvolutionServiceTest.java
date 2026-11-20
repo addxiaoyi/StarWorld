@@ -62,7 +62,7 @@ class EvolutionServiceTest {
     }
     @Test void contextualEventsRespectConditionsAndPersistentCooldowns()throws Exception {
         try(WorldStore s=new WorldStore(temp.resolve("events.db"),1000)){CoreCity c=city();Building b=add(s,c,"farm",0);EvolutionService e=new EvolutionService(s,definitions,options);CityView view=s.view(c.cityId()).orElseThrow();var hooks=e.cycle(c,view,10,Set.of(b.id()),EvolutionState.Context.empty());var candidates=hooks.eventWeights(view,10);assertTrue(candidates.containsKey("famine"));assertFalse(candidates.containsKey("flood"));assertFalse(candidates.containsKey("blizzard"));assertFalse(candidates.containsKey("commerce_boom"));
-            var context=new EvolutionState.Context("drought","3",true,true,1,2,1);assertTrue(e.cycle(c,view,10,Set.of(b.id()),context).eventWeights(view,10).keySet().containsAll(Set.of("drought","border_dispute","commerce_boom","festival","resource_crisis")));
+            var context=new EvolutionState.Context("drought","3",true,true,1,2,1);var wartime=e.cycle(c,view,10,Set.of(b.id()),context).eventWeights(view,10);assertTrue(wartime.keySet().containsAll(Set.of("drought","commerce_boom","festival","resource_crisis")));assertFalse(wartime.containsKey("border_dispute"),"War alone is not evidence of a local frontier resource dispute");
             s.execute("INSERT INTO evolution_event(city,type,period) VALUES(?,?,?)",c.cityId(),"famine",9);assertFalse(hooks.eventWeights(view,10).containsKey("famine"));
         }
     }

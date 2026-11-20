@@ -118,6 +118,26 @@ public final class StarCoreBridge implements CoreBridge {
     }
 
     @Override
+    public List<BorderNeighbor> foreignNeighbors(CoreCity current,Site site) {
+        if(current==null||site==null)return List.of();
+        try {
+            Access access=access();
+            Object city=city(access,current.cityId());
+            if(city==null||nation(access,city)==null||!current.nationId().equals(call(call(city,"nationId"),"value"))||!ownsSite(current.cityId(),site))return List.of();
+            int x=site.x()>>4,z=site.z()>>4;List<BorderNeighbor> result=new ArrayList<>();
+            for(int[] offset:new int[][]{{-1,0},{0,-1},{0,1},{1,0}}){
+                int nextX=Math.addExact(x,offset[0]),nextZ=Math.addExact(z,offset[1]);
+                Object claim=optional(call(access.nations(),"claimAt",new Class<?>[]{String.class,int.class,int.class},site.worldName(),nextX,nextZ));
+                if(claim==null)continue;UUID peer=UUID.fromString((String)call(claim,"ownerId"));if(peer.equals(current.nationId()))continue;
+                Object peerId=access.idType().getMethod("of",UUID.class).invoke(null,peer);
+                Object peerNation=optional(call(access.nations(),"nationById",new Class<?>[]{access.idType()},peerId));
+                if(peerNation!=null&&peerId.equals(call(peerNation,"id")))result.add(new BorderNeighbor(site,nextX,nextZ,peer));
+            }
+            return List.copyOf(result);
+        }catch(ReflectiveOperationException|RuntimeException|LinkageError failure){failed(failure);return List.of();}
+    }
+
+    @Override
     public String status() {
         try {
             Access access = access();

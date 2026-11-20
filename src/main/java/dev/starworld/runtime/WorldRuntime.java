@@ -148,8 +148,8 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
                     CompletableFuture<Void> authority=async(()->store.tx(s->{for(CityView view:views){CoreCity city=currentCities.get(view.id());if(city==null)s.invalidateCity(view.id());else s.ensureCity(city);}return null;}));jobs.add(authority);
                     for(CityView view:views){CoreCity current=currentCities.get(view.id());if(current==null)continue;
                     Set<UUID> valid=verifiedBuildings(view);
-                    Optional<CoreExtensionPort.NationSnapshot> nation=expansion==null?Optional.empty():expansion.nation(current.nationId());
-                    CompletableFuture<Settlement> job=authority.thenCompose(ignored->async(()->expansion==null?simulation.settle(current,period,valid):expansion.settle(current,period,valid,nation,simulation)));jobs.add(job);
+                    dev.starworld.integration.BorderConflictCapture.Captured captured=expansion==null?new dev.starworld.integration.BorderConflictCapture.Captured(Optional.empty(),List.of()):expansion.captureBorderEvidence(current,view,valid);
+                    CompletableFuture<Settlement> job=authority.thenCompose(ignored->async(()->expansion==null?simulation.settle(current,period,valid):expansion.settle(current,period,valid,captured.nation(),captured.witnesses(),simulation)));jobs.add(job);
                     job.thenAccept(settlement->{if(settlement.applied()){scheduler.global(()->Bukkit.getPluginManager().callEvent(new IndustrySettledEvent(settlement)));if(expansion!=null)expansion.afterSettlement(view.id());}});
                     jobs.add(job.thenCompose(result->city(view.id())).thenAccept(updated->updated.ifPresent(next->{if(!Objects.equals(view.event(),next.event()))scheduler.global(()->Bukkit.getPluginManager().callEvent(new WorldEvolutionEvent(view.id(),view.event(),next.event())));})));
                 }}catch(Exception e){failure(e);return;}

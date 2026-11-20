@@ -35,6 +35,7 @@ public final class ExpansionRuntime {
     private final LogisticsService logistics;private final LogisticsController transport;
     private final LifeService life;private final LifePlatform lifePlatform;private final LifeController lifestyle;
     private final ResourceOutbox outbox;private final CoreExtensionPort extensions;
+    private final BorderConflictCapture borderCapture;
     private final StarCoreCombatContributor combat;
     private final AtomicBoolean ticking=new AtomicBoolean();private int decorationCursor;
     private final Set<String> itemIds;
@@ -47,7 +48,7 @@ public final class ExpansionRuntime {
         atlas=new RegionAtlas(store,definitions);YamlConfiguration mainConfig=new YamlConfiguration();mainConfig.load(new File(folder,"config.yml"));maintenance=new LedgerMaintenance(store,LedgerMaintenance.Settings.load(mainConfig));
         national=new NationalEvolution(store,definitions,new File(folder,"evolution.yml"));
         life=new LifeService(store,lifeDefinitions);life.initialize();lifePlatform=new LifePlatform(plugin,core,items,lifeDefinitions);
-        lifestyle=new LifeController(plugin,runtime,core,items,life,lifePlatform);outbox=new ResourceOutbox(store);extensions=new StarCoreExtensions(plugin);
+        lifestyle=new LifeController(plugin,runtime,core,items,life,lifePlatform);outbox=new ResourceOutbox(store);extensions=new StarCoreExtensions(plugin);borderCapture=new BorderConflictCapture(plugin,core,extensions);
         YamlConfiguration evolutionConfig=new YamlConfiguration();evolutionConfig.load(new File(folder,"evolution.yml"));combat=new StarCoreCombatContributor(plugin,core,runtime::currentPeriod,StarCoreCombatContributor.Settings.load(evolutionConfig));
         transport=new LogisticsController(plugin,runtime,core,extensions,logistics);
         MarketDefinitions.writeDefaults(new File(folder,"market.yml"));market=new MarketService(store,logistics,MarketDefinitions.load(new File(folder,"market.yml")));marketplace=new MarketController(plugin,runtime,core,extensions,logistics,market,new StarCoreTreasuryTransfers(plugin));
@@ -67,17 +68,29 @@ public final class ExpansionRuntime {
     public void close(){marketplace.close();combat.close();}
     public Map<String,String> status(){Map<String,String> status=new LinkedHashMap<>(lifePlatform.status());status.put("Logistics","节点、托管、改道确认、运力瓶颈与战争封锁已启用");status.put("Market",marketplace.status());status.put("Core exports","幂等国家资源事务 + 持久 outbox");status.put("Core combat",combat.status());return Map.copyOf(status);}
     public Optional<NationSnapshot> nation(UUID id){return extensions.snapshot(id,Set.of());}
+    /** The same main-thread live capture used by normal settlement; caller-supplied IDs cannot manufacture valid anchors. */
+    public BorderConflictCapture.Captured captureBorderEvidence(CoreCity current,CityView registered,Set<UUID> verified){
+        if(!plugin.getServer().isPrimaryThread())throw new IllegalStateException("边境证据必须在Paper主线程读取");
+        Set<UUID> actual=new HashSet<>(runtime.verifiedBuildings(registered));actual.retainAll(verified);
+        return borderCapture.capture(current,registered,Set.copyOf(actual),runtime.currentPeriod());
+    }
     public Settlement settle(CoreCity core,long period,Set<UUID> valid,Optional<NationSnapshot> nation,Simulation simulation)throws SQLException {
+        return settle(core,period,valid,nation,List.of(),simulation);
+    }
+    public Settlement settle(CoreCity core,long period,Set<UUID> valid,Optional<NationSnapshot> nation,List<BorderWitness> borders,Simulation simulation)throws SQLException {
         return store.tx(s->{s.ensureCity(core);CityView city=s.view(core.cityId()).orElseThrow();
             if(city.lastPeriod()>=period||s.settled(city.id(),period))return simulation.settle(core,period,valid);
-            return simulation.settle(core,period,valid,cycle(core,city,period,valid,nation));
+            return simulation.settle(core,period,valid,cycle(core,city,period,valid,nation,borders));
         });
     }
     public Simulation.Hooks cycle(CoreCity core,CityView city,long period,Set<UUID> valid,Optional<NationSnapshot> nation)throws SQLException {
+        return cycle(core,city,period,valid,nation,List.of());
+    }
+    public Simulation.Hooks cycle(CoreCity core,CityView city,long period,Set<UUID> valid,Optional<NationSnapshot> nation,List<BorderWitness> borders)throws SQLException {
         List<String> tradeActions=store.query("SELECT r.order_id FROM logistics_receipt r JOIN logistics_order o ON r.order_id=o.id LEFT JOIN evolution_trade_action a ON a.city=? AND a.receipt=r.order_id WHERE ((o.origin_city=? AND o.origin_nation=?) OR (o.target_city=? AND o.target_nation=?)) AND r.period<=? AND a.receipt IS NULL ORDER BY r.sequence LIMIT 10",r->r.getString(1),city.id(),city.id(),city.nationId(),city.id(),city.nationId(),period);
         for(String receipt:tradeActions)store.execute("INSERT INTO evolution_trade_action(city,receipt,period) VALUES(?,?,?)",city.id(),receipt,period);
         long trades=tradeActions.size();
-        Context context=new Context(nation.map(NationSnapshot::weather).orElse("unknown"),nation.map(n->n.epoch()==null?"unknown":Long.toString(n.epoch().number())).orElse("unknown"),nation.map(n->!n.warOpponents().isEmpty()).orElse(false),nation.map(n->n.diplomacy().values().stream().anyMatch(v->v.equals("HOSTILE")||v.equals("WAR"))).orElse(false),trades,life.drainEvolutionCulture(city.id(),period),life.productionMultiplier(city.id(),period));
+        Context context=new Context(nation.map(NationSnapshot::weather).orElse("unknown"),nation.map(n->n.epoch()==null?"unknown":Long.toString(n.epoch().number())).orElse("unknown"),nation.map(n->!n.warOpponents().isEmpty()).orElse(false),!borders.isEmpty(),trades,life.drainEvolutionCulture(city.id(),period),life.productionMultiplier(city.id(),period),borders);
         Simulation.Hooks cityHooks=evolution.cycle(core,city,period,valid,context,nation.map(NationSnapshot::policy).orElse(""));Map<String,Double> nationalMultipliers=national.multipliers(core.nationId());
         return new Simulation.Hooks(){
             @Override public double multiplier(Building b)throws SQLException{return cityHooks.multiplier(b)*nationalMultipliers.getOrDefault(b.type(),1.0);}

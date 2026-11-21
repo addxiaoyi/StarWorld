@@ -23,7 +23,7 @@ const ADDED = ['public_works_schema', 'public_works', 'public_works_history', 'c
 const V11_TABLES = ['life_evolution_pending', 'life_evolution_budget', 'starworld_dispatch_cursor'];
 const DISPATCH_QUEUES = ['starworld:market-payment', 'starworld:resource-export'];
 const CONFIGS = ['config.yml', 'definitions.yml', 'disaster-response.yml', 'evolution.yml', 'exports.yml', 'life.yml', 'logistics.yml', 'market.yml'];
-const NEW_CONFIGS = ['civic-needs.yml', 'public-works.yml'];
+let NEW_CONFIGS = ['civic-needs.yml', 'public-works.yml'];
 const STABLE = ['building', 'transfer', 'nation_state', 'city_authority', 'simulation_clock', 'resource_outbox', 'logistics_order', 'logistics_receipt', 'life_action', 'life_profile', 'life_concert', 'life_note', 'life_audience', 'life_evolution_action', 'life_decoration', 'market_delivery_schema', 'market_delivery_clock', 'market_delivery_receipt', 'market_delivery_stat', 'disaster_response_schema', 'market_schema', 'market_listing', 'market_purchase', 'market_history', 'culture_dynamics_schema', 'logistics_reroute', 'logistics_paid_shipment'];
 
 const PROBE = String.raw`
@@ -55,7 +55,7 @@ for label,relative in [('world','plugins/StarWorld/starworld.db'),('core','plugi
   result[label]=probe
 with zipfile.ZipFile(root/'plugins/StarWorld.jar') as jar:
  descriptor=jar.read('plugin.yml').decode('utf-8');result['pluginVersion']=re.search(r"^version:\s*['\"]?([^'\"\s]+)",descriptor,re.M).group(1)
- result['bundledConfigs']={name:hashlib.sha256(jar.read(name)).hexdigest() for name in ['civic-needs.yml','public-works.yml'] if name in jar.namelist()}
+ result['bundledConfigs']={name:hashlib.sha256(jar.read(name)).hexdigest() for name in ['civic-needs.yml','public-works.yml','climate.yml'] if name in jar.namelist()}
 print(json.dumps(result,ensure_ascii=False))
 `;
 
@@ -105,7 +105,7 @@ function assertInventory(actual, expected) {
   assert.deepEqual(actual.items, expected, 'Named guide inventory or deposited goods changed across upgrade');
 }
 
-function is11(version) { return /^1\.1\./.test(version); }
+function is11(version) { return /^1\.(?:1|2)\./.test(version); }
 function expectedAddedTables(version) { return ADDED.filter(table => is11(version) || !V11_TABLES.includes(table)).sort(); }
 function assertAddedTables(before, after, version) {
   assert.deepEqual(after.filter(name => !before.includes(name)).sort(), expectedAddedTables(version));
@@ -350,8 +350,10 @@ async function main() {
   assert.equal(properties(path.join(options.runtime, 'eula.txt')).eula, 'true');
   assert.equal(fs.readFileSync(path.join(options.runtime, '.starworld-smoke-runtime'), 'utf8').trim(), 'StarWorld isolated Paper smoke runtime v1');
   const prep = readJson(path.join(options.runtime, 'UPGRADE-PROVENANCE.json'));
-  assert.match(prep.targetVersion, /^1\.(?:0|1)\.\d+$/);
+  assert.match(prep.targetVersion, /^1\.(?:0|1|2)\.\d+$/);
   VERSION = prep.targetVersion;
+  if(/^1\.2\./.test(VERSION))NEW_CONFIGS=[...NEW_CONFIGS,'climate.yml'];
+  assert.deepEqual(prep.newConfigurationNames||['civic-needs.yml','public-works.yml'],NEW_CONFIGS);
   assert.equal(prep.schema, 1);
   assert.equal(prep.preparationStatus, 'prepared-not-started');
   assert.equal(prep.processStarted, false);

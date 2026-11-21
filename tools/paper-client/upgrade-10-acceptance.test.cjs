@@ -35,7 +35,7 @@ function snapshots() {
 }
 
 function durableSnapshots(version) {
-  const v11 = version.startsWith('1.1.');
+  const v11 = version.startsWith('1.1.') || version.startsWith('1.2.');
   const { old: life, next: evolved } = snapshots();
   const originalRows = Object.fromEntries(stableTables.map(table => [table, []]));
   Object.assign(originalRows, life.world.rows, {
@@ -72,6 +72,11 @@ test('1.1 permits only the three new tables and validates migration state by cit
   const { old, next } = snapshots();
   assert.doesNotThrow(() => assertLifeEvolution(old, next, '1.1.0'));
   const durable = durableSnapshots('1.1.0');assert.doesNotThrow(() => assertDurable(durable.before,durable.after,'1.1.0'));
+});
+
+test('1.2 keeps the 1.1 schema migration set without introducing another database schema',()=>{
+  assert.deepEqual(expectedAddedTables('1.2.0'),[...BASE_ADDED,...V11_ADDED].sort());
+  const durable=durableSnapshots('1.2.0');assert.doesNotThrow(()=>assertDurable(durable.before,durable.after,'1.2.0'));
 });
 
 test('1.1 rejects deleted legacy progress, lost partial work, invalid budgets, and foreign queue namespaces', () => {

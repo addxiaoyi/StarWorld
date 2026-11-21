@@ -30,6 +30,7 @@ $requiresLifecycleEvidence = $releaseVersion -ge [version]'1.1.0'
 $nativeExamples = @('config.yml', 'definitions.yml', 'evolution.yml', 'logistics.yml', 'exports.yml')
 if ($releaseVersion -ge [version]'0.5.0') { $nativeExamples += 'disaster-response.yml' }
 if ($isFinalRelease) { $nativeExamples += @('public-works.yml', 'civic-needs.yml') }
+if ($releaseVersion -ge [version]'1.2.0') { $nativeExamples += 'climate.yml' }
 $target = Join-Path $RepositoryRoot 'target'
 $pluginJar = Join-Path $target "starworld-$version.jar"
 $sourcesJar = Join-Path $target "starworld-$version-sources.jar"
@@ -352,6 +353,7 @@ try {
         $requiredEntries += @('dev/starworld/works/PublicWorksService.class',
             'dev/starworld/civic/CivicNeedsService.class','dev/starworld/ui/GovernanceMenu.class')
     }
+    if ($releaseVersion -ge [version]'1.2.0') { $requiredEntries += @('dev/starworld/climate/ClimateRules.class','dev/starworld/climate/ClimateDefinitions.class') }
     foreach ($required in $requiredEntries) {
         if ($jarNames -notcontains $required) { throw "Plugin artifact lacks $required" }
     }

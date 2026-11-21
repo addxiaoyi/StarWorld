@@ -7,6 +7,7 @@ import dev.starcore.starcore.module.resource.*;
 import dev.starcore.starcore.module.resource.NationResourceTransactionService.*;
 import dev.starcore.starcore.module.weather.WeatherControlService;
 import dev.starcore.starcore.module.weather.model.WeatherType;
+import dev.starcore.starcore.module.weather.model.WorldWeatherState;
 import dev.starcore.starcore.foundation.epoch.EpochService;
 import dev.starcore.starcore.module.war.WarService;
 import dev.starcore.starcore.module.diplomacy.DiplomacyRelationService;
@@ -57,4 +58,11 @@ class StarCoreExtensionsTest {
         assertEquals(9,snapshot.resourceStock().get("strategic"));assertEquals("rain",snapshot.weather());assertEquals(1.2,snapshot.weatherResourceMultipliers().get("agricultural"));assertEquals(3,snapshot.epoch().number());assertEquals(Set.of(other),snapshot.warOpponents());assertEquals("HOSTILE",snapshot.diplomacy().get(other));assertEquals("smelt",snapshot.processingRecipes().getFirst().id());assertEquals(1,snapshot.factoryCount());assertThrows(UnsupportedOperationException.class,()->snapshot.resourceStock().put("strategic",1L));assertTrue(snapshot.capabilities().get("technology").startsWith("unavailable"));
     }
     @Test void missingOptionalServicesAreExplicitAndDeletedNationReturnsEmpty(){NationSnapshot snapshot=adapter.snapshot(nationUUID,Set.of()).orElseThrow();assertEquals("unknown",snapshot.weather());assertEquals("unavailable: NullPointerException",snapshot.capabilities().get("weather"));assertNull(snapshot.epoch());assertTrue(snapshot.capabilities().get("prosperity-submit").contains("无幂等回执"));when(nations.nationById(id)).thenReturn(Optional.empty());assertTrue(adapter.snapshot(nationUUID,Set.of()).isEmpty());}
+    @Test void worldWeatherUsesThePublicPerWorldStateAndExactControllerNation(){
+        WeatherControlService weather=mock(WeatherControlService.class);WorldWeatherState state=mock(WorldWeatherState.class);services.put(WeatherControlService.class,weather);
+        when(weather.getWorldWeatherState("world")).thenReturn(state);when(state.getCurrentWeather()).thenReturn(WeatherType.RAIN);when(state.getControlledByNation()).thenReturn(id);when(weather.getResourceModifiers(WeatherType.RAIN)).thenReturn(Map.of("agricultural",1.5,"mineral",0.8));
+        var snapshot=adapter.worldWeather("world").orElseThrow();assertEquals("world",snapshot.worldName());assertEquals(nationUUID,snapshot.controlledByNation());assertEquals("rain",snapshot.weatherId());assertEquals(1.5,snapshot.resourceMultipliers().get("agricultural"));
+        when(weather.getWorldWeatherState("uncontrolled")).thenReturn(state);when(state.getControlledByNation()).thenReturn(null);assertNull(adapter.worldWeather("uncontrolled").orElseThrow().controlledByNation());
+        when(weather.getWorldWeatherState("unregistered")).thenReturn(null);assertTrue(adapter.worldWeather("unregistered").isEmpty());
+    }
 }

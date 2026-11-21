@@ -20,6 +20,8 @@ public final class Simulation {
     public interface Hooks {
         Hooks NONE=new Hooks(){};
         default double multiplier(Building building)throws SQLException{return 1;}
+        /** Additional per-recipe factor; used for narrowly mapped inputs such as world weather. */
+        default double recipeMultiplier(Building building,Definitions.Recipe recipe)throws SQLException{return 1;}
         default long capacity(String item){return Long.MAX_VALUE;}
         default Map<String,Double> eventWeights(CityView city,long period)throws SQLException{return Map.of();}
         default boolean filterEvents(){return false;}
@@ -28,11 +30,20 @@ public final class Simulation {
         default void completed(CoreCity core,CityView previous,long period,Map<String,Long> produced,Set<UUID> maintained)throws SQLException{}
     }
     public Settlement settle(CoreCity core,long period,Set<UUID> authorizedBuildings,Hooks hooks) throws SQLException {
+        return settle(core,period,authorizedBuildings,null,hooks);
+    }
+    /** Defer a cycle if the registered buildings changed after their live-world authorization was captured. */
+    public Settlement settle(CoreCity core,long period,Set<UUID> authorizedBuildings,Set<UUID> observedBuildings) throws SQLException {
+        return settle(core,period,authorizedBuildings,observedBuildings,Hooks.NONE);
+    }
+    public Settlement settle(CoreCity core,long period,Set<UUID> authorizedBuildings,Set<UUID> observedBuildings,Hooks hooks) throws SQLException {
         if(period<0)throw new IllegalArgumentException("Invalid period");
+        Set<UUID> observed=observedBuildings==null?null:Set.copyOf(observedBuildings);
         return store.tx(s->{
             store.ensureCity(core);
             CityView city=store.view(core.cityId()).orElseThrow();
             if(city.lastPeriod()>=period || store.settled(city.id(),period))return new Settlement(city.id(),period,false,Map.of(),"此周期已结算/时钟回拨，无重复产出");
+            if(observed!=null&&!matchesBuildings(city,observed))return deferred(city.id(),period);
             Map<String,Long> stock=new TreeMap<>(city.stock()),produced=new TreeMap<>();List<String> report=new ArrayList<>();
             EventState event=advanceEvent(city,period,hooks);Definitions.Civilization civilization=definitions.civilizations().get(city.civilization());
             if(civilization==null)throw new IllegalStateException("Unknown saved civilization: "+city.civilization());
@@ -54,14 +65,16 @@ public final class Simulation {
                 double factor=core.productionMultiplier()*civilization.multipliers().getOrDefault(type.id(),1.0)*adjustedEventFactor;
                 double extra=hooks.multiplier(b);if(!Double.isFinite(extra)||extra<0||extra>10)throw new IllegalArgumentException("Invalid extension multiplier");factor*=extra;
                 factor*=type.id().equals("farm") ? terrain.agriculture() : type.id().equals("sawmill") ? 1.0/Math.max(0.25,terrain.transport()) : 1.0;
-                final double effectiveFactor=Math.min(factor,10);
+                    final double effectiveFactor=Math.min(factor,10);
                 for(Definitions.Recipe recipe:definitions.recipes()) {
                     if(!recipe.building().equals(b.type()) || !canPay(stock,recipe.inputs(),b.level()))continue;
                     if(availableItems!=null && (!availableItems.containsAll(recipe.inputs().keySet()) || !availableItems.containsAll(recipe.outputs().keySet()))){report.add(recipe.id()+": 物品依赖不可用，配方暂停");continue;}
                     long reserveCost=recipe.reserveCost()*b.level();
                     if(recipe.reserve()!=null && reserves.getOrDefault(recipe.reserve(),0L)<reserveCost)continue;
+                    double recipeModifier=hooks.recipeMultiplier(b,recipe);if(!Double.isFinite(recipeModifier)||recipeModifier<0||recipeModifier>10)throw new IllegalArgumentException("Invalid recipe extension multiplier");
+                    double recipeFactor=Math.min(10,effectiveFactor*recipeModifier);
                     Map<String,Long> output=new HashMap<>();
-                    recipe.outputs().forEach((item,amount)->output.put(item,(long)Math.floor(amount*b.level()*effectiveFactor)));
+                    recipe.outputs().forEach((item,amount)->output.put(item,(long)Math.floor(amount*b.level()*recipeFactor)));
                     if(output.values().stream().allMatch(x->x==0L))continue;
                     boolean full=output.entrySet().stream().anyMatch(e->e.getValue()>Math.min(definitions.stockLimit(),hooks.capacity(e.getKey()))-stock.getOrDefault(e.getKey(),0L));
                     if(full) {report.add(recipe.id()+": 仓储已满，原料保留");continue;}
@@ -78,6 +91,9 @@ public final class Simulation {
             return new Settlement(city.id(),period,true,produced,summary);
         });
     }
+    public static Set<UUID> buildingIds(CityView city){Set<UUID> ids=new HashSet<>();for(Building building:city.buildings())ids.add(building.id());return Set.copyOf(ids);}
+    public static boolean matchesBuildings(CityView city,Set<UUID> observed){return observed==null||buildingIds(city).equals(observed);}
+    public static Settlement deferred(UUID city,long period){return new Settlement(city,period,false,Map.of(),"城市设施清单在授权快照后发生变化，本周期延后复核");}
     private EventState advanceEvent(CityView city,long period,Hooks hooks) throws SQLException {
         EventState event=city.event();
         if(event!=null && !definitions.events().containsKey(event.type()))throw new IllegalStateException("Unknown saved event: "+event.type());

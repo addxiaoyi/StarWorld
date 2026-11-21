@@ -68,6 +68,20 @@ public final class StarCoreExtensions implements CoreExtensionPort {
             return Optional.of(new NationSnapshot(nationId,name,Instant.now(),weather.type,weather.multipliers,epoch,technologies,modifiers,policy,policyModifiers,stock,prosperity,opponents,relations,recipes,factories,capabilities));
         }catch(ReflectiveOperationException|RuntimeException|LinkageError failure){return Optional.empty();}
     }
+    /** Captures authoritative per-world weather on Paper's main thread; nation defaults are not substituted. */
+    @Override public Optional<WorldWeatherSnapshot> worldWeather(String worldName) {
+        if(worldName==null||worldName.isBlank()||worldName.length()>128)throw new IllegalArgumentException("Invalid weather world");
+        try {
+            Access access=access();Object service=access.required("module.weather.WeatherControlService");
+            Object state=call(service,"getWorldWeatherState",new Class<?>[]{String.class},worldName);
+            if(state==null)return Optional.empty();
+            Object current=call(state,"getCurrentWeather");if(current==null)return Optional.empty();
+            String weather=Objects.toString(call(current,"getId"),"");if(weather.isBlank())return Optional.empty();
+            Object controller=call(state,"getControlledByNation");UUID controllerId=controller==null?null:(UUID)call(controller,"value");
+            Map<String,Double> modifiers=doubles(call(service,"getResourceModifiers",new Class<?>[]{access.type("module.weather.model.WeatherType")},current));
+            return Optional.of(new WorldWeatherSnapshot(worldName,weather,controllerId,modifiers));
+        }catch(ReflectiveOperationException|RuntimeException|LinkageError unavailable){return Optional.empty();}
+    }
     @Override public Delivery deliver(ResourceRequest request) {
         Objects.requireNonNull(request);
         try {

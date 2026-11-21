@@ -20,6 +20,25 @@ node acceptance.cjs --java C:/jdk21/bin/java.exe --runtime C:/starworld-joint-te
 
 完整扩展使用独立的 `node expansion-acceptance.cjs --help`，参数相同。它使用 `StarWorldEA` 和 `StarWorldEB` 两个真实玩家、两个国家和两个城市，包含20阶段的设施维护/知识/军需/容量、国家实际发展倾向与创始人专长及生产倍率、职业与实际宴会扣费及农场产量、真实持久军团的公共作战扩展、双向实物托管运输、区域文化、核心国家资源回执、撤领和战争封锁、停战恢复、重启及公共核心城市删除后的聚合失效。该套件明确记录玩家物品和国库测试投入；未把 seed 当作产出。测试 helper 明确保活十个测试区块，StarWorld 本身不会加载区块。仅隔离配置关闭 `playability.new-nation-protection-days` 并把 `diplomacy.war.declaration-cost` 设零或公开充值后运行。结果位于 `runtime/expansion-acceptance/<UTC timestamp>`，格式与限制见 [evidence-schema.md](../../docs/evidence-schema.md)。原 `acceptance.cjs` 仍可直接执行原15阶段，亦向扩展套件提供公用服务器和客户端 harness。
 
+逐世界气候验收可用仓库根目录的 `tools/prepare-climate-acceptance.ps1` 准备全新目录。它只复制已验证的 Paper 缓存、插件 JAR 和 YAML 配置，不复制世界或数据库，也不会下载文件。示例：
+
+```powershell
+.\tools\prepare-climate-acceptance.ps1 `
+  -PaperJar C:\paper\paper-1.21.11-132.jar `
+  -StarCoreJar C:\tested\StarCore.jar `
+  -StarWorldJar .\target\starworld-1.2.0.jar `
+  -FixtureJar .\tools\paper-fixture\target\starworld-paper-fixture-0.1.0-test.jar `
+  -BootstrapDirectory C:\paper\prepared-bootstrap `
+  -StarCoreConfig C:\configs\StarCore\config.yml `
+  -StarWorldConfigDirectory C:\configs\StarWorld `
+  -RuntimeDirectory C:\tests\climate-fresh -Port 25673
+node .\tools\paper-client\expansion-acceptance.cjs `
+  --java C:\jdk21\bin\java.exe --paper C:\tests\climate-fresh\paper.jar `
+  --runtime C:\tests\climate-fresh
+```
+
+扩展套件的隔离 Paper 进程固定使用 512 MiB 最大堆和 128 MiB 初始堆；此运行参数写入验收证据，不影响生产服务器默认值。
+
 0.3 进阶验收使用 `node progression-acceptance.cjs --help`，参数与上述套件相同。它要求新的隔离目录和最新 helper，使用 `StarWorldPA`、`StarWorldPB` 两位真实玩家，完成20阶段：已登记地区地图册及GUI保护、核心政策真实扣费与文化增长、持久文化衰减、三处道路节点的双商路、共享运力查询、双方接受改道、完成贸易的文化传播、实物金币挂牌与GUI保护、核心国库转账和回执重放、已付款货物撤领/战争暂停、重启恢复、停战交货一次和国家金币守恒。
 
 仅在该隔离目录把 `evolution.yml` 的 `culture.decay-interval` 设为2，并保留默认500基点衰减与政策倍率；生产周期10秒、随机事件关闭、新国家保护关闭，认领/宣战费用按脚本帮助配置。玩家物品由显式helper种子投入并通过真实 `/sw deposit` 入库，国库测试充值通过公共核心服务完成；两者在证据中明确标记为测试投入。不得把已有世界或前一轮套件状态当作新输入。套件只关闭自己创建的两个服务端进程，完整20阶段、四份客户端和两份服务端日志保存在 `runtime/progression-acceptance/<UTC timestamp>`；证据包要求与最终JAR哈希一致且每阶段全部通过。

@@ -16,6 +16,7 @@ world.city(starCoreCityId).thenAccept(result -> {
 | `version()` | 当前插件版本 |
 | `definitions()` | 不可变地区/文明/设施/产业/事件配置 |
 | `city(UUID)` | `Future<Optional<CityView>>`；已登记扩展城市、库存、设施、事件和最后报告 |
+| `climate(UUID)` | `Future<Optional<ClimateReport>>`；按真实验证过的设施世界读取StarCore逐世界天气控制权及农业/矿井配方倍率；灌溉水网运行状态来自最近结算周期；查询不推进生产 |
 | `development(UUID)` | `Future<Optional<Profile>>`；规划/专长、城市繁荣、稳定、知识、军需、文化、倾向 |
 | `nationDevelopment(UUID)` | `Future<Optional<NationalEvolution.NationDevelopment>>`；最近核心复核的有效归属城市聚合的国家倾向、知识/文化、主导方向和专长；入参为StarCore国家UUID |
 | `culture(UUID)` | `Future<List<Culture>>`；已登记地区各文明传统与影响值 |
@@ -69,6 +70,8 @@ public void onIndustry(IndustrySettledEvent event) {
 ## 现有核心复用
 
 `CoreBridge` 在Paper主线程验证真实国家、城市、成员、管理/统治权限和双层领土，读取实际科技、政策和国家繁荣修正。`StarCoreExtensions` 读取天气、纪元、战争/外交、已解锁科技、当前政策、国家资源以及真实 `ProcessingService` 的配方和工厂。每次返回防御复制的不可变记录，缺模块带capability原因；未知战争或外交不能当作和平。
+
+1.2 气候采样只读取已验证设施所在的有限世界名，通过公开 `getWorldWeatherState(String)` 获取天气及控制国家；本国实际控制该世界时，才把StarCore `agricultural` 直接倍率投影到农场配方、`mineral` 投影到矿井原矿配方。未控制、未知或服务缺失时天气倍率为1.00。已完工且本期实际支付维护的 `irrigation_network` 仅缓解负面农业天气，不影响正常天气或矿产。快照和区块现场验证均在Paper主线程完成，再把不可变值传入既有SQLite结算；不扫描世界、不读取未登记区块、不改核心权威数据。
 
 国家生产倍率为 `clamp((1+speed)*(1+policyGlobal+policyProduction)*prosperity,0,10)`，再组合本地地理/文明/规划/文化/事件/生活效果并有限裁剪。军事/贸易使用对应scope，实体物品不被当作抽象国家资源的别名。
 

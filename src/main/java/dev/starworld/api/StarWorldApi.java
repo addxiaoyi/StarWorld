@@ -11,6 +11,15 @@ public interface StarWorldApi {
     Definitions definitions();
     CompletableFuture<Optional<CityView>> city(UUID cityId);
     Map<String,String> integrationStatus();
+    record ClimateExposure(UUID buildingId,String buildingType,String worldName,String weatherId,
+                           boolean controlledByNation,boolean irrigationOperating,Map<String,Double> recipeFactors) {
+        public ClimateExposure {Objects.requireNonNull(buildingId);Objects.requireNonNull(buildingType);Objects.requireNonNull(worldName);weatherId=weatherId==null?"unknown":weatherId;recipeFactors=Map.copyOf(recipeFactors);}
+    }
+    record ClimateReport(UUID cityId,UUID nationId,List<ClimateExposure> exposures) {
+        public ClimateReport {Objects.requireNonNull(cityId);Objects.requireNonNull(nationId);exposures=List.copyOf(exposures);if(exposures.size()>64)throw new IllegalArgumentException("Too many climate exposures");}
+    }
+    /** Per-world StarCore weather projected onto verified city recipes; irrigation reflects its last settled paid period. Querying never advances production. */
+    default CompletableFuture<Optional<ClimateReport>> climate(UUID cityId){return CompletableFuture.completedFuture(Optional.empty());}
     default CompletableFuture<Optional<dev.starworld.evolution.EvolutionState.Profile>> development(UUID cityId){return CompletableFuture.completedFuture(Optional.empty());}
     default CompletableFuture<List<dev.starworld.evolution.EvolutionState.Culture>> culture(UUID cityId){return CompletableFuture.completedFuture(List.of());}
     default CompletableFuture<Optional<dev.starworld.life.LifeState.LifeView>> life(UUID cityId){return CompletableFuture.completedFuture(Optional.empty());}

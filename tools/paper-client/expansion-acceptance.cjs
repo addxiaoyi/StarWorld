@@ -23,7 +23,7 @@ bounded platforms/plains anchor biomes, and explicitly seeds each player's inven
 Seeded goods are recorded separately from real production. It verifies actual commands,
 warehouse upkeep, knowledge, military supply, life contribution/production, actual national
 development/specialization, two-sided escrow, terrain travel, culture, national resource
-receipt replay, blockade, restart and authoritative city deletion across twenty stages.
+  receipt replay, blockade, restart, world-weather production and authoritative city deletion across twenty-one stages.
 Ten fixture chunks stay loaded.
 Evidence is written to runtime/expansion-acceptance/<timestamp>; no download or config edit.
 `;
@@ -41,7 +41,7 @@ function wheatOutput(snapshot) {
   assert(match, `No actual wheat production in settlement: ${snapshot.city.lastReport}`);
   return Number(match[1]);
 }
-async function fixture(server, action, bot, suffix = '') {
+async function fixture(server, action, bot, suffix = '', timeout = 20000) {
   const from = server.lines.length;
   server.command(`swfixture ${action} ${bot.username}${suffix ? ' ' + suffix : ''}`);
   return waitUntil(() => {
@@ -54,11 +54,11 @@ async function fixture(server, action, bot, suffix = '') {
       if (record.action === action && record.player === bot.username) return record.observed;
     }
     return null;
-  }, 20000, `actual fixture ${action} ${bot.username}`, () => { server.check(); if (bot.failure) throw bot.failure; });
+  }, timeout, `actual fixture ${action} ${bot.username}`, () => { server.check(); if (bot.failure) throw bot.failure; });
 }
 async function snapshot(server, bot) {
   const value = await fixture(server, 'exp-snapshot', bot);
-  assert(value.city && value.development && value.nationalDevelopment && value.life && Array.isArray(value.nodes) && Array.isArray(value.orders), 'Missing actual expansion snapshot');
+  assert(value.city && value.development && value.nationalDevelopment && value.life && value.climate && Array.isArray(value.climate.exposures) && Array.isArray(value.nodes) && Array.isArray(value.orders), 'Missing actual expansion/climate snapshot');
   assert.match(value.city.id, /^[0-9a-f-]{36}$/i);
   assert.deepEqual(value.definitionCounts, { terrains: 6, buildings: 9, civilizations: 5, events: 11 }, 'Default expansion definitions did not load in the actual server');
   for (const [item, count] of Object.entries(value.city.stock)) assert(Number.isSafeInteger(count) && count >= 0, `Invalid actual warehouse stock ${item}`);
@@ -96,7 +96,8 @@ async function offer(server, a, b, routeId) {
 async function main() {
   const args = argumentsOf(process.argv.slice(2)); if (args.help) { process.stdout.write(HELP); return; }
   for (const name of ['java', 'runtime', 'paper']) assert(args[name], `Required --${name}\n${HELP}`);
-  const options = { java: requireFile(args.java), paper: requireFile(args.paper), runtime: path.resolve(args.runtime) };
+  const options = { java: requireFile(args.java), paper: requireFile(args.paper), runtime: path.resolve(args.runtime),
+    jvmArgs: ['-Xms128m', '-Xmx512m', '-XX:ActiveProcessorCount=2', '-XX:+UseSerialGC', '-Dstarcore.weather-change-cooldown-ticks=0'] };
   assert.equal(fs.readFileSync(path.join(options.runtime, '.starworld-smoke-runtime'), 'utf8').trim(), 'StarWorld isolated Paper smoke runtime v1');
   assert.equal(properties(path.join(options.runtime, 'eula.txt')).eula, 'true');
   const propertiesFile = path.join(options.runtime, 'server.properties'), props = properties(propertiesFile);
@@ -115,9 +116,10 @@ async function main() {
     paperSha256: hash(options.paper), pluginJars: {}, configSha256: {}, steps: [], seeds: [],
     testTuning: { periodSeconds: 10, eventChance: 0, newNationProtectionDays: 0, anchorBiome: 'plains', slots: [20, 52],
       fixtureForceLoadedChunks: [20, 21, 22, 23, 24, 52, 53, 54, 55, 56], explicitPlayerInventorySeeds: true,
-      nodeVersion: process.version, nodeExecArgv: process.execArgv, javaOptionsEnvironment: process.env._JAVA_OPTIONS || '' } };
+      jvmArgs: options.jvmArgs, nodeVersion: process.version, nodeExecArgv: process.execArgv,
+      javaOptionsEnvironment: process.env._JAVA_OPTIONS || '' } };
   for (const file of fs.readdirSync(path.join(options.runtime, 'plugins'))) if (/\.jar$/i.test(file)) evidence.pluginJars[file] = hash(path.join(options.runtime, 'plugins', file));
-  for (const file of ['config.yml', 'definitions.yml', 'evolution.yml', 'exports.yml', 'life.yml', 'logistics.yml']) if (fs.existsSync(path.join(configDir, file))) evidence.configSha256[file] = hash(path.join(configDir, file));
+  for (const file of ['config.yml', 'definitions.yml', 'evolution.yml', 'exports.yml', 'life.yml', 'logistics.yml', 'climate.yml']) if (fs.existsSync(path.join(configDir, file))) evidence.configSha256[file] = hash(path.join(configDir, file));
   evidence.configSha256['StarCore/config.yml'] = hash(path.join(options.runtime, 'plugins', 'StarCore', 'config.yml'));
   const save = () => fs.writeFileSync(path.join(directory, 'evidence.json'), JSON.stringify(evidence, null, 2) + '\n');
   const stage = async (name, work) => {
@@ -129,7 +131,7 @@ async function main() {
   try {
     await stage('real Paper startup and two protocol clients', async () => {
       await server.start();
-      for (const file of ['config.yml', 'definitions.yml', 'evolution.yml', 'exports.yml', 'life.yml', 'logistics.yml'])
+      for (const file of ['config.yml', 'definitions.yml', 'evolution.yml', 'exports.yml', 'life.yml', 'logistics.yml', 'climate.yml'])
         evidence.configSha256[file] = hash(path.join(configDir, file));
       a = await connect(mineflayer, { ...options, username: 'StarWorldEA' }, directory, '1-a');
       b = await connect(mineflayer, { ...options, username: 'StarWorldEB' }, directory, '1-b');
@@ -155,12 +157,22 @@ async function main() {
     });
     await stage('four actual registered facilities in each city pay upkeep and develop', async () => {
       await register(server, a, 0, false); await register(server, b, 1, false);
-      const first = await poll(server, a, value => value.development.knowledge > 0 && value.development.supply > 0, 45000, 'real academy/barracks settlement');
-      const second = await poll(server, b, value => value.development.knowledge > 0 && value.development.supply > 0, 45000, 'second city settlement');
+      const expectedCapacity = configuredNumber(path.join(configDir, 'config.yml'), 'stock-limit') / 2;
+      const facilitiesMaintained = value => value.development.knowledge > 0 && value.development.supply > 0
+        && value.capacity === expectedCapacity && value.city.buildings.length === 4
+        && value.city.buildings.every(building => value.verifiedBuildings.includes(building.id))
+        && !value.city.lastReport.includes('领土/建筑失效');
+      const first = await poll(server, a, facilitiesMaintained, 45000, 'real academy/barracks/warehouse settlement');
+      const second = await poll(server, b, facilitiesMaintained, 45000, 'second city warehouse maintenance settlement');
       for (const value of [first, second]) {
-        assert.equal(value.city.buildings.length, 4); assert.equal(value.capacity, configuredNumber(path.join(configDir, 'config.yml'), 'stock-limit') / 2);
+        assert.equal(value.city.buildings.length, 4); assert.equal(value.capacity, expectedCapacity);
         assert(amount(value, 'minecraft:paper') < 64); assert(amount(value, 'minecraft:arrow') < 256); assert(amount(value, 'minecraft:oak_planks') < 128);
       } return { first, second };
+    });
+    await stage('workshop registers on its fifth dual-claimed city chunk for mineral weather coverage',async()=>{
+      const result=await fixture(server,'exp-climate-register',a,'0');await waitUntil(()=>a.messages.some(line=>line.includes('已登记 矿场与军工作坊')),20000,'successful real workshop raycast registration');
+      const state=await snapshot(server,a);assert(state.city.buildings.some(value=>value.type==='workshop'));
+      return {result,workshop:state.city.buildings.find(value=>value.type==='workshop'),climate:state.climate};
     });
     await stage('planning, distinct civilization and paid farm upgrades', async () => {
       await botMessage(a, '/sw plan culture', /城市规划：culture/);
@@ -212,6 +224,28 @@ async function main() {
       assert(wheatOutput(after) > wheatOutput(base), 'National agricultural specialization did not affect actual farm output');
       assert(wheatOutput(after) <= 12 * 3 * 10, 'National specialization escaped the final production multiplier cap');
       return { base, selected, after, baselineWheat: wheatOutput(base), specializedWheat: wheatOutput(after) };
+    });
+    await stage('real StarCore world weather changes only the controlling nation crop chain', async () => {
+      let clear = await snapshot(server, a);
+      clear = await poll(server, a, value => value.city.lastPeriod > clear.city.lastPeriod, 20000, 'baseline production before world weather');
+      const baseline = wheatOutput(clear);
+      const clearFarm=clear.climate.exposures.find(value=>value.buildingType==='farm');
+      assert(clearFarm&&!clearFarm.controlledByNation);assert.equal(clearFarm.recipeFactors.harvest,1.0,'Uncontrolled natural weather must remain neutral');
+      const change = await fixture(server, 'exp-weather', a, 'rain', 75000);
+      assert.equal(change.weather, 'rain'); assert.equal(change.controller, change.nation);
+      const first = await snapshot(server, a), peer = await snapshot(server, b);
+      const farm = first.climate.exposures.find(value => value.buildingType === 'farm');
+      const peerFarm = peer.climate.exposures.find(value => value.buildingType === 'farm');
+      const mine = first.climate.exposures.find(value => value.buildingType === 'workshop');
+      assert(farm && farm.controlledByNation); assert.equal(farm.weatherId, 'rain');
+      assert.equal(farm.recipeFactors.harvest, 1.5, 'Rain agricultural multiplier must be projected onto the real farm');
+      assert(peerFarm && !peerFarm.controlledByNation, 'Another nation sharing this world must not inherit its weather');
+      assert.equal(peerFarm.recipeFactors.harvest, 1.0);
+      assert(mine && mine.controlledByNation);assert.equal(mine.recipeFactors.mine,0.8,'Rain mineral modifier must apply to the actual mine recipe');
+      assert.equal(mine.recipeFactors.smelt,1.0,'Rain mineral modifier must not affect smelting');
+      const actual = await poll(server, a, value => value.city.lastPeriod > first.city.lastPeriod, 20000, 'actual rain-settlement production');
+      assert(wheatOutput(actual) > baseline, `Controlled rain did not raise actual farm output: ${baseline} -> ${wheatOutput(actual)}`);
+      return { change, baselineWheat: baseline, actualWheat: wheatOutput(actual), farm, peerFarm, mine };
     });
     await stage('real persisted armies use the public city readiness combat extension', async () => {
       const funded = await fixture(server, 'exp-armies', a, `${b.username} 0 1`); evidence.seeds.push(funded);

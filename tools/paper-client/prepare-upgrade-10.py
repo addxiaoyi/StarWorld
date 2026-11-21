@@ -14,7 +14,7 @@ import zipfile
 MARKER = 'StarWorld isolated Paper smoke runtime v1'
 OLD_CONFIGS = ('config.yml', 'definitions.yml', 'disaster-response.yml', 'evolution.yml',
                'exports.yml', 'life.yml', 'logistics.yml', 'market.yml')
-NEW_CONFIGS = ('civic-needs.yml', 'public-works.yml')
+BASE_NEW_CONFIGS = ('civic-needs.yml', 'public-works.yml')
 
 
 def sha(file):
@@ -60,10 +60,11 @@ def main():
     checked(evidence['pluginJars']['StarWorld.jar'] == source_sha, 'Source JAR changed after acceptance')
     checked(re.search(r'^version:\s*[\'\"]?0\.5\.0[\'\"]?\s*$', descriptor(source_jar)[0], re.M), 'Expected 0.5.0 source')
     target_descriptor, target_files = descriptor(jar)
-    target_match = re.search(r'^version:\s*[\'\"]?(1\.(?:0|1)\.\d+)[\'\"]?\s*$', target_descriptor, re.M)
-    checked(target_match and set(NEW_CONFIGS) <= target_files,
-            'Expected released 1.0/1.1 JAR with both governance configuration files')
+    target_match = re.search(r'^version:\s*[\'\"]?(1\.(?:0|1|2)\.\d+)[\'\"]?\s*$', target_descriptor, re.M)
+    checked(target_match, 'Expected a released 1.x StarWorld JAR')
     target_version = target_match.group(1)
+    new_configs=BASE_NEW_CONFIGS+(('climate.yml',) if tuple(map(int,target_version.split('.'))) >= (1,2,0) else ())
+    checked(set(new_configs) <= target_files,'Target JAR lacks required additive configuration files')
     checked('dev/starworld/fixture/PublicWorksFixture.class' in descriptor(fixture)[1], 'Expected rebuilt 1.0 Paper fixture')
     server_logs = {}
     for name in ('paper-run-1.log', 'paper-run-2.log'):
@@ -79,7 +80,7 @@ def main():
     properties, replaced = re.subn(r'^server-port=\d+\r?$', f'server-port={args.port}', properties, flags=re.M)
     checked(replaced == 1, 'Missing or ambiguous original port')
     configs = {f'plugins/StarWorld/{name}': sha(source / 'plugins/StarWorld' / name) for name in OLD_CONFIGS}
-    for name in NEW_CONFIGS:
+    for name in new_configs:
         checked(not (source / 'plugins/StarWorld' / name).exists(), f'Source already contains {name}')
     world_files = [source / 'plugins/StarWorld/starworld.db', source / 'plugins/StarCore/starcore.db',
                    source / 'plugins/StarCore.jar', source / 'plugins/StarCore/config.yml']
@@ -107,7 +108,7 @@ def main():
              'sourceEvidence': {'directory': str(evidence_dir), 'jsonSha256': sha(evidence_file), 'status': 'passed', 'steps': 22,
                                 'pluginSha256': source_sha, 'finishedAt': evidence['finishedAt'], 'serverLogSha256': server_logs},
              'sourceDatabaseSha256': {'world': critical['plugins/StarWorld/starworld.db'], 'core': critical['plugins/StarCore/starcore.db']},
-             'sourceCriticalFiles': critical, 'oldConfigurationSha256': configs, 'testPlayer': player,
+             'sourceCriticalFiles': critical, 'oldConfigurationSha256': configs, 'newConfigurationNames': list(new_configs), 'testPlayer': player,
              'serverHost': '127.0.0.1', 'serverPort': args.port, 'serverPropertiesSha256': sha(runtime / 'server.properties')}
     (runtime / 'UPGRADE-PROVENANCE.json').write_text(json.dumps(proof, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(f'Prepared {runtime}: {len(critical)} stopped-save fingerprints, {len(configs)} original configuration files, no process started')

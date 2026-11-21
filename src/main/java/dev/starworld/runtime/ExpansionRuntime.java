@@ -6,6 +6,7 @@ import dev.starworld.domain.WorldState.*;
 import dev.starworld.disaster.*;
 import dev.starworld.works.*;
 import dev.starworld.civic.*;
+import dev.starworld.climate.*;
 import dev.starworld.evolution.*;
 import dev.starworld.evolution.EvolutionState.*;
 import dev.starworld.integration.*;
@@ -29,6 +30,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 /** Wires pure extension modules to explicit Paper thread captures and the single storage worker. */
 public final class ExpansionRuntime {
     private final JavaPlugin plugin;private final WorldRuntime runtime;private final CoreBridge core;
+    private final Definitions definitions;
     private final WorldStore store;private final SchedulerGate scheduler;private final CustomItems items;
     private final EvolutionService evolution;private final ExportDefinitions exports;
     private final NationalEvolution national;
@@ -43,14 +45,16 @@ public final class ExpansionRuntime {
     private final ResourceOutbox outbox;private final CoreExtensionPort extensions;
     private final BorderConflictCapture borderCapture;
     private final StarCoreCombatContributor combat;
+    private final ClimateDefinitions climateDefinitions;private final ClimateRules climate;
     private final AtomicBoolean ticking=new AtomicBoolean();private int decorationCursor;
     private final Set<String> itemIds;
     public ExpansionRuntime(JavaPlugin plugin,WorldRuntime runtime,Definitions definitions,CoreBridge core,CustomItems items,WorldStore store,File folder)throws Exception {
-        this.plugin=plugin;this.runtime=runtime;this.core=core;this.items=items;this.store=store;this.scheduler=new SchedulerGate(plugin);
+        this.plugin=plugin;this.runtime=runtime;this.core=core;this.definitions=definitions;this.items=items;this.store=store;this.scheduler=new SchedulerGate(plugin);
         EvolutionDefinitions options=EvolutionDefinitions.load(new File(folder,"evolution.yml"),definitions);exports=ExportDefinitions.load(new File(folder,"exports.yml"));
         LifeDefinitions.writeDefaults(new File(folder,"life.yml"));LifeDefinitions lifeDefinitions=LifeDefinitions.load(new File(folder,"life.yml"));
         YamlConfiguration transportConfig=new YamlConfiguration();transportConfig.load(new File(folder,"logistics.yml"));
         evolution=new EvolutionService(store,definitions,options,CultureDynamics.Settings.load(new File(folder,"evolution.yml")));logistics=new LogisticsService(store,LogisticsConfig.load(transportConfig));
+        ClimateDefinitions.writeDefaults(new File(folder,"climate.yml"));climateDefinitions=ClimateDefinitions.load(new File(folder,"climate.yml"),definitions);climate=new ClimateRules(climateDefinitions);
         PublicWorksDefinitions.writeDefaults(new File(folder,"public-works.yml"));works=new PublicWorksService(store,PublicWorksDefinitions.load(new File(folder,"public-works.yml"),definitions,options));publicWorks=new PublicWorksController(plugin,runtime,core,works);
         atlas=new RegionAtlas(store,definitions);YamlConfiguration mainConfig=new YamlConfiguration();mainConfig.load(new File(folder,"config.yml"));maintenance=new LedgerMaintenance(store,LedgerMaintenance.Settings.load(mainConfig));
         national=new NationalEvolution(store,definitions,new File(folder,"evolution.yml"));
@@ -119,7 +123,7 @@ public final class ExpansionRuntime {
     public Set<String> itemIds(){return itemIds;}
     public void start(){combat.register();}
     public void close(){scheduler.close();marketplace.close();combat.close();}
-    public Map<String,String> status(){Map<String,String> status=new LinkedHashMap<>(lifePlatform.status());status.put("Logistics","节点、托管、改道确认、运力瓶颈与战争封锁已启用");status.put("Market",marketplace.status());status.put("Disaster governance","实物救灾、次期缓解与有界地区恢复已启用；/sw disaster options");status.put("Public works","起建、逐期施工、维护与下期运行已启用；/sw governance");status.put("Civic needs","社区聚餐/受控演奏需真实已提交凭据；公共空间需不同真实家具维护，CE家具API不可用时暂停该需求，登记不代替维护");status.put("Core exports","幂等国家资源事务 + 持久 outbox");status.put("Core combat",combat.status());return Map.copyOf(status);}
+    public Map<String,String> status(){Map<String,String> status=new LinkedHashMap<>(lifePlatform.status());status.put("Logistics","节点、托管、改道确认、运力瓶颈与战争封锁已启用");status.put("Market",marketplace.status());status.put("Disaster governance","实物救灾、次期缓解与有界地区恢复已启用；/sw disaster options");status.put("Public works","起建、逐期施工、维护与下期运行已启用；/sw governance");status.put("Climate","按建筑所在世界的StarCore受控天气修正农场/矿井；中性降级，详见 /sw climate");status.put("Civic needs","社区聚餐/受控演奏需真实已提交凭据；公共空间需不同真实家具维护，CE家具API不可用时暂停该需求，登记不代替维护");status.put("Core exports","幂等国家资源事务 + 持久 outbox");status.put("Core combat",combat.status());return Map.copyOf(status);}
     public Optional<NationSnapshot> nation(UUID id){return extensions.snapshot(id,Set.of());}
     /** The same main-thread live capture used by normal settlement; caller-supplied IDs cannot manufacture valid anchors. */
     public BorderConflictCapture.Captured captureBorderEvidence(CoreCity current,CityView registered,Set<UUID> verified){
@@ -127,27 +131,62 @@ public final class ExpansionRuntime {
         Set<UUID> actual=new HashSet<>(runtime.verifiedBuildings(registered));actual.retainAll(verified);
         return borderCapture.capture(current,registered,Set.copyOf(actual),runtime.currentPeriod());
     }
+    /** Captures only weather for already verified facility worlds, on the Paper main thread. */
+    public Map<String,ClimateRules.WeatherSnapshot> captureClimate(CoreCity current,CityView registered,Set<UUID> verified){
+        if(!plugin.getServer().isPrimaryThread())throw new IllegalStateException("天气证据必须在Paper主线程读取");
+        if(current==null||registered==null||!current.cityId().equals(registered.id())||!current.nationId().equals(registered.nationId()))return Map.of();
+        Set<UUID> allowed=new HashSet<>(runtime.verifiedBuildings(registered));allowed.retainAll(verified);allowed=Set.copyOf(allowed);if(allowed.size()>64)throw new IllegalArgumentException("Too many climate facility witnesses");
+        Set<String> worlds=new TreeSet<>();for(Building building:registered.buildings())if(allowed.contains(building.id())&&building.cityId().equals(current.cityId())&&building.nationId().equals(current.nationId()))worlds.add(building.site().worldName());
+        if(worlds.size()>64)throw new IllegalArgumentException("Too many climate worlds");
+        Map<String,ClimateRules.WeatherSnapshot> result=new TreeMap<>();for(String world:worlds)extensions.worldWeather(world).filter(c->c.worldName().equals(world)).ifPresent(c->result.put(world,new ClimateRules.WeatherSnapshot(world,c.controlledByNation(),c.weatherId(),c.resourceMultipliers())));
+        return Map.copyOf(result);
+    }
+    /** Immutable weather projection for API consumers; querying never advances a period or changes storage. */
+    public List<dev.starworld.api.StarWorldApi.ClimateExposure> climateExposure(CoreCity current,CityView registered,Set<UUID> verified,boolean irrigationOperating){
+        if(!plugin.getServer().isPrimaryThread())throw new IllegalStateException("气候API必须在Paper主线程捕获StarCore状态");
+        Set<UUID> allowed=new HashSet<>(runtime.verifiedBuildings(registered));allowed.retainAll(verified);if(allowed.size()>64)throw new IllegalArgumentException("Too many climate facility witnesses");
+        Map<String,ClimateRules.WeatherSnapshot> weather=captureClimate(current,registered,allowed);Map<String,Double> typed=extensions.snapshot(current.nationId(),Set.of()).filter(n->n.nationId().equals(current.nationId())).map(NationSnapshot::technologyModifiers).orElse(Map.of());
+        List<dev.starworld.api.StarWorldApi.ClimateExposure> result=new ArrayList<>();for(Building building:registered.buildings())if(allowed.contains(building.id())&&building.cityId().equals(current.cityId())&&building.nationId().equals(current.nationId())){
+            ClimateRules.WeatherSnapshot snapshot=weather.get(building.site().worldName());String weatherId=snapshot==null?"unknown":snapshot.weatherId();boolean controlled=snapshot!=null&&current.nationId().equals(snapshot.controllerNation());Map<String,Double> factors=new TreeMap<>();
+            ClimateRules.WeatherSnapshot effective=snapshot==null?new ClimateRules.WeatherSnapshot(building.site().worldName(),null,"unknown",Map.of()):snapshot;
+            for(Definitions.Recipe recipe:definitions.recipes())if(recipe.building().equals(building.type()))factors.put(recipe.id(),climate.factor(building,recipe,effective,typed,irrigationOperating));
+            result.add(new dev.starworld.api.StarWorldApi.ClimateExposure(building.id(),building.type(),building.site().worldName(),weatherId,controlled,irrigationOperating,factors));
+        }return List.copyOf(result);
+    }
     public Settlement settle(CoreCity core,long period,Set<UUID> valid,Optional<NationSnapshot> nation,Simulation simulation)throws SQLException {
         return settle(core,period,valid,nation,List.of(),simulation);
     }
     public Settlement settle(CoreCity core,long period,Set<UUID> valid,Optional<NationSnapshot> nation,List<BorderWitness> borders,Simulation simulation)throws SQLException {
+        return settle(core,period,valid,nation,borders,Map.of(),simulation);
+    }
+    public Settlement settle(CoreCity core,long period,Set<UUID> valid,Optional<NationSnapshot> nation,List<BorderWitness> borders,Map<String,ClimateRules.WeatherSnapshot> weather,Simulation simulation)throws SQLException {
+        return settle(core,period,valid,nation,borders,weather,null,simulation);
+    }
+    public Settlement settle(CoreCity core,long period,Set<UUID> valid,Optional<NationSnapshot> nation,List<BorderWitness> borders,Map<String,ClimateRules.WeatherSnapshot> weather,Set<UUID> observedBuildings,Simulation simulation)throws SQLException {
         return works.atomicSettlement(s->{s.ensureCity(core);CityView city=s.view(core.cityId()).orElseThrow();
             if(city.lastPeriod()>=period||s.settled(city.id(),period))return simulation.settle(core,period,valid);
-            return simulation.settle(core,period,valid,cycle(core,city,period,valid,nation,borders));
+            if(!Simulation.matchesBuildings(city,observedBuildings))return Simulation.deferred(city.id(),period);
+            return simulation.settle(core,period,valid,observedBuildings,cycle(core,city,period,valid,nation,borders,weather));
         });
     }
     public Simulation.Hooks cycle(CoreCity core,CityView city,long period,Set<UUID> valid,Optional<NationSnapshot> nation)throws SQLException {
         return cycle(core,city,period,valid,nation,List.of());
     }
     public Simulation.Hooks cycle(CoreCity core,CityView city,long period,Set<UUID> valid,Optional<NationSnapshot> nation,List<BorderWitness> borders)throws SQLException {
+        return cycle(core,city,period,valid,nation,borders,Map.of());
+    }
+    public Simulation.Hooks cycle(CoreCity core,CityView city,long period,Set<UUID> valid,Optional<NationSnapshot> nation,List<BorderWitness> borders,Map<String,ClimateRules.WeatherSnapshot> weather)throws SQLException {
+        Map<String,ClimateRules.WeatherSnapshot> capturedWeather=Map.copyOf(weather);
         PublicWorksService.Cycle worksCycle=works.cycle(core,city,period,valid);
         List<String> tradeActions=store.query("SELECT r.order_id FROM logistics_receipt r JOIN logistics_order o ON r.order_id=o.id LEFT JOIN evolution_trade_action a ON a.city=? AND a.receipt=r.order_id WHERE ((o.origin_city=? AND o.origin_nation=?) OR (o.target_city=? AND o.target_nation=?)) AND r.period<=? AND a.receipt IS NULL ORDER BY r.sequence LIMIT 10",r->r.getString(1),city.id(),city.id(),city.nationId(),city.id(),city.nationId(),period);
         for(String receipt:tradeActions)store.execute("INSERT INTO evolution_trade_action(city,receipt,period) VALUES(?,?,?)",city.id(),receipt,period);
         long trades=tradeActions.size();
         Context context=new Context(nation.map(NationSnapshot::weather).orElse("unknown"),nation.map(n->n.epoch()==null?"unknown":Long.toString(n.epoch().number())).orElse("unknown"),nation.map(n->!n.warOpponents().isEmpty()).orElse(false),!borders.isEmpty(),trades,life.drainEvolutionCulture(city.id(),period),life.productionMultiplier(city.id(),period),borders);
         Simulation.Hooks cityHooks=evolution.cycle(core,city,period,valid,context,nation.map(NationSnapshot::policy).orElse(""));Map<String,Double> nationalMultipliers=national.multipliers(core.nationId());DisasterResponseService.Cycle responseCycle=disasters.cycle(core,city,period,valid);
+        boolean irrigationOperating=worksCycle.operating()&&worksCycle.project().map(project->project.definition().id().equals("irrigation_network")).orElse(false);
         return new Simulation.Hooks(){
             @Override public double multiplier(Building b)throws SQLException{return Math.min(10,cityHooks.multiplier(b)*nationalMultipliers.getOrDefault(b.type(),1.0)*worksCycle.multiplier(b));}
+            @Override public double recipeMultiplier(Building b,Definitions.Recipe recipe)throws SQLException{return Math.min(10,climate.factor(b,recipe,capturedWeather.getOrDefault(b.site().worldName(),new ClimateRules.WeatherSnapshot(b.site().worldName(),null,"unknown",Map.of())),nation.map(NationSnapshot::technologyModifiers).orElse(Map.of()),irrigationOperating));}
             @Override public long capacity(String item){return cityHooks.capacity(item);}
             @Override public boolean filterEvents(){return cityHooks.filterEvents();}
             @Override public Map<String,Double> eventWeights(CityView c,long p)throws SQLException{return cityHooks.eventWeights(c,p);}
@@ -192,7 +231,7 @@ public final class ExpansionRuntime {
         if(lifestyle.execute(p,args)||transport.execute(p,args)||marketplace.execute(p,args)||disasterGovernance.execute(p,args)||publicWorks.execute(p,args)||civicNeeds.execute(p,args))return true;
         String sub=args[0].toLowerCase(Locale.ROOT);
         if(sub.equals("maintenance")){if(!p.hasPermission("starworld.admin"))throw new IllegalArgumentException("需要管理员权限");if(args.length>=2&&args[1].equalsIgnoreCase("backup")){require(args,3);runtime.reply(p,runtime.backup(args[2]),backup->p.sendMessage("§a在线备份已完成："+backup.path().getFileName()+" "+backup.bytes()+" bytes；schema "+backup.schemaVersion()+"；SHA "+backup.sha256()));return true;}if(args.length!=1)throw new IllegalArgumentException("/sw maintenance backup <文件名> 或 /sw maintenance");runtime.reply(p,runtime.async(()->maintenance.archives(0,20)),rows->{p.sendMessage("§e最近存档维护："+lastMaintenance);for(var row:rows)p.sendMessage("§7审计归档 "+row.id()+"："+row.rows()+" 条，"+row.bytes()+" bytes；SHA "+row.sha256());});return true;}
-        if(!Set.of("development","plan","specialty","history","culture","export","outbox","nation","nation-development","national-specialty","regions").contains(sub))return false;
+        if(!Set.of("development","plan","specialty","history","culture","export","outbox","nation","nation-development","national-specialty","regions","climate").contains(sub))return false;
         CoreCity city=runtime.playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入 StarCore 城市"));
         switch(sub){
             case "development"->{runtime.reply(p,runtime.open(city).thenCompose(v->runtime.async(()->evolution.profile(city.cityId()))),profile->p.sendMessage("§e城市发展："+profile+"\n§e规划："+evolution.options().plans().keySet()+"；专长："+evolution.options().specialties().keySet()));}
@@ -201,6 +240,7 @@ public final class ExpansionRuntime {
             case "history"->runtime.reply(p,runtime.async(()->evolution.history(city.cityId())),rows->rows.forEach(h->p.sendMessage("§e"+h.period()+" "+h.kind()+" §f"+h.detail())));
             case "culture"->runtime.reply(p,runtime.async(()->evolution.cultures(city.cityId())),rows->rows.forEach(c->p.sendMessage("§e"+c.region()+" §f"+c.tradition()+": "+c.influence())));
             case "regions"->runtime.reply(p,runtime.open(city).thenCompose(v->runtime.async(()->atlas.summary(city.cityId()))),summary->p.sendMessage("§e已登记地区："+summary.regions()+"；地形："+summary.terrains()+"\n§e剩余储量："+summary.reserves()+"；初始容量："+summary.initialCapacities()+"；每期恢复："+summary.regeneration()+"\n§7/sw atlas 查看地图册；数据来自最近有效城市复核，不探测未登记世界"));
+            case "climate"->runtime.reply(p,runtime.climate(city.cityId()),report->{if(runtime.playerCity(p).filter(c->c.cityId().equals(city.cityId())&&c.nationId().equals(city.nationId())).isEmpty())return;report.ifPresentOrElse(value->{p.sendMessage("§e已验证设施所在世界的StarCore天气；无匹配控制权时为中性效果：");for(var exposure:value.exposures())p.sendMessage("§e"+exposure.worldName()+"§f · "+exposure.buildingType()+" · "+exposure.weatherId()+"；"+(exposure.weatherId().equals("unknown")?"天气服务不可用":exposure.controlledByNation()?"本国控制":"未匹配本国控制")+"；灌溉韧性="+exposure.irrigationOperating()+"；配方倍率 "+exposure.recipeFactors());},()->p.sendMessage("§7没有已验证城市设施或城市状态暂不可用"));});
             case "nation"->p.sendMessage("§eStarCore 公共快照："+nation(city.nationId()).map(Object::toString).orElse("不可用"));
             case "nation-development"->runtime.reply(p,runtime.open(city).thenCompose(v->runtime.async(()->national.view(city.nationId()))),v->p.sendMessage("§e国家发展："+v+"\n§e国家专长："+national.specialties()));
             case "national-specialty"->{require(args,2);if(!p.hasPermission("starworld.admin")&&!core.canGovern(p.getUniqueId(),city.cityId()))throw new IllegalArgumentException("国家专长需要国家创始人权限");runtime.reply(p,runtime.open(city),v->{CoreCity fresh=runtime.playerCity(p).filter(c->c.cityId().equals(city.cityId())&&c.nationId().equals(city.nationId())).orElseThrow(()->new IllegalArgumentException("城市归属已变化"));if(!p.hasPermission("starworld.admin")&&!core.canGovern(p.getUniqueId(),fresh.cityId()))throw new IllegalArgumentException("国家治理权限已变化");runtime.reply(p,runtime.async(()->national.choose(fresh.nationId(),args[1],runtime.currentPeriod(),p.getUniqueId().toString())),profile->p.sendMessage("§a国家专长："+profile.specialty()));});}

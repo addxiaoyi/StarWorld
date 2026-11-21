@@ -190,7 +190,9 @@ motd=StarWorld isolated smoke test
             if ($process.ExitCode -ne 0 -or $combined -match 'StarWorld startup failed|Could not flush StarWorld storage|Error occurred while enabling StarWorld') {
                 throw "Paper/StarWorld failed; inspect smoke-run-$Run.log."
             }
-            if ($combined -notmatch 'StarWorld ready:.*transactional schema 2' -or $combined -notmatch ('StarWorld '+[regex]::Escape($pluginVersion)+'(?:\s|$)')) {
+            # Paper may decorate console output with ANSI reset codes immediately after a value.
+            # Match a version boundary rather than requiring whitespace after the version.
+            if ($combined -notmatch 'StarWorld ready:.*transactional schema 2' -or $combined -notmatch ('StarWorld '+[regex]::Escape($pluginVersion)+'(?![A-Za-z0-9.-])')) {
                 throw "Missing plugin schema/status output in smoke-run-$Run.log."
             }
             Write-Output "Paper startup, console status and clean shutdown passed (run $Run)."

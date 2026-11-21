@@ -1,17 +1,24 @@
 {
   "schema": 2,
-  "version": "1.1.0",
-  "recorded_at": "2026-11-20T19:11:48.326837+00:00",
+  "version": "1.2.0",
+  "recorded_at": "2026-11-20T21:59:45.219279+00:00",
   "command": "./mvnw.cmd -B --no-transfer-progress -Dstarworld.testHeap=256m clean verify",
   "java": "21.0.13.1+2",
-  "artifact_sha256": "f8b6988df9fe273448997384b72596636502889ad9af72d8825e751557b3806b",
+  "artifact_sha256": "da942bffa5771f5cf1c231f51347e5bf247fe6f27ac14a9c8eabc445562534d9",
   "totals": {
-    "tests": 444,
+    "tests": 455,
     "failures": 0,
     "errors": 0,
     "skipped": 0
   },
   "suites": [
+    {
+      "suite": "dev.starworld.api.ClimateReportTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
     {
       "suite": "dev.starworld.civic.CivicCooldownMigrationTest",
       "tests": 6,
@@ -29,6 +36,13 @@
     {
       "suite": "dev.starworld.civic.CivicNeedsServiceTest",
       "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.climate.ClimateRulesTest",
+      "tests": 8,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -56,7 +70,7 @@
     },
     {
       "suite": "dev.starworld.domain.SimulationTest",
-      "tests": 16,
+      "tests": 17,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -147,7 +161,7 @@
     },
     {
       "suite": "dev.starworld.integration.StarCoreExtensionsTest",
-      "tests": 8,
+      "tests": 9,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -372,30 +386,30 @@
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 51985,
-      "missed": 14434
+      "covered": 53248,
+      "missed": 15515
     },
     "BRANCH": {
-      "covered": 3722,
-      "missed": 2430
+      "covered": 3858,
+      "missed": 2616
     },
     "LINE": {
-      "covered": 3335,
-      "missed": 603
+      "covered": 3508,
+      "missed": 664
     },
     "COMPLEXITY": {
-      "covered": 2537,
-      "missed": 2517
+      "covered": 2600,
+      "missed": 2670
     },
     "METHOD": {
-      "covered": 1398,
-      "missed": 512
+      "covered": 1428,
+      "missed": 535
     },
     "CLASS": {
-      "covered": 204,
-      "missed": 12
+      "covered": 211,
+      "missed": 13
     }
   },
-  "build_log_sha256": "079663143bc58809ae09c54b6c9b057720430ac141c11a4c8b0628b0288c5377",
-  "sources_sha256": "18c996db11e0e03c3270b240e7a88f673049b89efec2ace333383372f7496a59"
+  "build_log_sha256": "2b2ad6ee801eec05d7be336f1bc0251048478c27713ac16ef96ecca34df6a1ce",
+  "sources_sha256": "3f774d048ccd546eb6bc5b0edcf17641d44237895e448ea9c5b43298aeedd3fa"
 }

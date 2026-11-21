@@ -54,8 +54,8 @@ def main():
                 for counter in ET.parse(root / 'target/site/jacoco/jacoco.xml').getroot().findall('counter')}
     evidence = root / 'docs/evidence'
     previous_file = evidence / 'unit-tests.json'
-    previous = json.loads(previous_file.read_text('utf-8'))
-    if previous['version'] != version:
+    previous = json.loads(previous_file.read_text('utf-8')) if previous_file.is_file() else None
+    if previous is not None and previous['version'] != version:
         history = evidence / 'history' / previous['version']
         history.mkdir(exist_ok=True)
         for file in evidence.glob('*.json'):

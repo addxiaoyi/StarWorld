@@ -24,6 +24,8 @@ final class ExpansionFixture {
         String action=args[0];Player p=Objects.requireNonNull(Bukkit.getPlayerExact(args[1]),"Connected player required");
         switch(action){
             case "exp-setup"->setup(p,slot(args));
+            case "exp-weather"->weather(p,args.length==3?args[2]:"");
+            case "exp-climate-register"->climateRegister(p,slot(args));
             case "exp-register"->register(p,slot(args),false);
             case "exp-disaster-register"->disasterRegister(p,slot(args));
             case "exp-disaster-seed"->disasterSeed(p);
@@ -31,6 +33,7 @@ final class ExpansionFixture {
             case "exp-node"->register(p,slot(args),true);
             case "exp-seed"->seed(p);
             case "exp-snapshot"->snapshot(p);
+            case "exp-climate"->climate(p);
             case "exp-delete-city"->deleteCity(p);
             case "exp-history"->history(p,UUID.fromString(args[2]));
             case "exp-unclaim","exp-reclaim"->claimChange(p,slot(args),action.equals("exp-reclaim"));
@@ -146,19 +149,23 @@ final class ExpansionFixture {
         registerStep(p,slot,node,commands,anchors,index,node?"exp-node":"exp-register");
     }
     private void registerStep(Player p,int slot,boolean node,String[] commands,Material[] anchors,int index,String completedAction){
+        registerStep(p,slot,node,commands,anchors,index,completedAction,node?4:0);
+    }
+    private void registerStep(Player p,int slot,boolean node,String[] commands,Material[] anchors,int index,String completedAction,int chunkOffset){
         if(index==commands.length){registering.remove(p.getUniqueId());emit(completedAction,p,Map.of("dispatched",commands.length,"slot",slot));return;}
         try{
-            int x=(base(slot)+(node?4:index))*16+8;p.getWorld().getBlockAt(x,80,8).setType(anchors[index]);
+            int x=(base(slot)+chunkOffset+index)*16+8;p.getWorld().getBlockAt(x,80,8).setType(anchors[index]);
             Location start=new Location(p.getWorld(),x+.5,80,5.5);start.setDirection(new Vector(x+.5,80.5,8.5).subtract(start.toVector().add(new Vector(0,p.getEyeHeight(),0))));
             if(!p.teleport(start))throw new IllegalStateException("Registration teleport cancelled");
             Bukkit.getScheduler().runTaskLater(owner,()->{
                 try{if(!p.isOnline()||p.getTargetBlockExact(6)==null||p.getTargetBlockExact(6).getType()!=anchors[index])throw new IllegalStateException("Actual raycast misses fixture anchor");
                     if(!p.performCommand(commands[index]))throw new IllegalStateException("Actual command not handled");
-                    Bukkit.getScheduler().runTaskLater(owner,()->registerStep(p,slot,node,commands,anchors,index+1,completedAction),3);
+                    Bukkit.getScheduler().runTaskLater(owner,()->registerStep(p,slot,node,commands,anchors,index+1,completedAction,chunkOffset),3);
                 }catch(Exception failure){registering.remove(p.getUniqueId());failed(failure);}
             },3);
         }catch(Exception failure){registering.remove(p.getUniqueId());failed(failure);}
     }
+    private void climateRegister(Player p,int slot){if(!registering.add(p.getUniqueId()))throw new IllegalStateException("Fixture registration already running");registerStep(p,slot,false,new String[]{"sw register workshop"},new Material[]{Material.BLAST_FURNACE},0,"exp-climate-register",4);}
     private void seed(Player p){
         Map<Material,Integer> quantities=new LinkedHashMap<>();quantities.put(Material.BREAD,128);quantities.put(Material.OAK_PLANKS,128);quantities.put(Material.IRON_INGOT,64);quantities.put(Material.OAK_LOG,32);quantities.put(Material.PAPER,64);quantities.put(Material.ARROW,256);quantities.put(Material.WHEAT,64);
         Map<String,Integer> provided=new LinkedHashMap<>();for(var entry:quantities.entrySet()){for(int remaining=entry.getValue();remaining>0;){int batch=Math.min(64,remaining);if(!p.getInventory().addItem(new ItemStack(entry.getKey(),batch)).isEmpty())throw new IllegalStateException("Seed inventory overflow");remaining-=batch;}provided.put(entry.getKey().getKey().toString(),entry.getValue());}p.saveData();
@@ -240,13 +247,14 @@ final class ExpansionFixture {
         Object nationSnapshot=unwrap(invoke(expansion,"nation",new Class<?>[]{UUID.class},call(nationId,"value")));
         @SuppressWarnings("unchecked") CompletableFuture<Optional<?>> future=(CompletableFuture<Optional<?>>)invoke(runtime,"city",new Class<?>[]{UUID.class},cityId);
         CompletableFuture<?> nationalFuture=(CompletableFuture<?>)invoke(runtime,"nationDevelopment",new Class<?>[]{UUID.class},call(nationId,"value"));
-        CompletableFuture.allOf(future,nationalFuture).whenComplete((ignored,error)->Bukkit.getScheduler().runTask(owner,()->{
-            try{if(error!=null)throw new IllegalStateException(error);Object view=future.join().orElseThrow(),nationalDevelopment=unwrap(nationalFuture.join());Object valid=invoke(runtime,"verifiedBuildings",new Class<?>[]{view.getClass()},view);long period=((Number)call(runtime,"currentPeriod")).longValue();
+        CompletableFuture<?> climateFuture=(CompletableFuture<?>)invoke(runtime,"climate",new Class<?>[]{UUID.class},cityId);
+        CompletableFuture.allOf(future,nationalFuture,climateFuture).whenComplete((ignored,error)->Bukkit.getScheduler().runTask(owner,()->{
+            try{if(error!=null)throw new IllegalStateException(error);Object view=future.join().orElseThrow(),nationalDevelopment=unwrap(nationalFuture.join()),climate=unwrap(climateFuture.join());Object valid=invoke(runtime,"verifiedBuildings",new Class<?>[]{view.getClass()},view);long period=((Number)call(runtime,"currentPeriod")).longValue();
                 async(runtime,()->{
                     Object evolution=call(expansion,"evolution"),life=call(expansion,"life"),logistics=call(expansion,"logistics");
                     Map<String,Object> report=new LinkedHashMap<>();report.put("city",view);report.put("development",invoke(evolution,"profile",new Class<?>[]{UUID.class},cityId));
                     Object definitions=call(runtime,"definitions");report.put("definitionCounts",Map.of("terrains",((Map<?,?>)call(definitions,"terrains")).size(),"buildings",((Map<?,?>)call(definitions,"buildings")).size(),"civilizations",((Map<?,?>)call(definitions,"civilizations")).size(),"events",((Map<?,?>)call(definitions,"events")).size()));
-                    report.put("nationalDevelopment",nationalDevelopment);report.put("nationalMultipliers",invoke(call(expansion,"national"),"multipliers",new Class<?>[]{UUID.class},call(coreCity,"nationId")));
+                    report.put("nationalDevelopment",nationalDevelopment);report.put("nationalMultipliers",invoke(call(expansion,"national"),"multipliers",new Class<?>[]{UUID.class},call(coreCity,"nationId")));report.put("climate",climate);
                     report.put("capacity",invoke(evolution,"capacity",new Class<?>[]{view.getClass(),Set.class},view,valid));report.put("culture",invoke(evolution,"cultures",new Class<?>[]{UUID.class},cityId));
                     report.put("readiness",unwrap(invoke(evolution,"readiness",new Class<?>[]{UUID.class},cityId)));
                     report.put("life",invoke(life,"view",new Class<?>[]{UUID.class,long.class},cityId,period));report.put("profession",invoke(life,"profession",new Class<?>[]{UUID.class},actorId));
@@ -255,6 +263,12 @@ final class ExpansionFixture {
                 }).whenComplete((report,failure)->Bukkit.getScheduler().runTask(owner,()->{if(failure!=null)failed(failure);else emit("exp-snapshot",p,report);}));
             }catch(Exception failure){failed(failure);}
         }));
+    }
+    /** Read the shipped immutable ClimateReport through the registered asynchronous API. */
+    private void climate(Player p)throws Exception {
+        Object runtime=world(),current=unwrap(invoke(runtime,"playerCity",new Class<?>[]{Player.class},p));if(current==null)throw new IllegalStateException("Actual current city required");UUID city=(UUID)call(current,"cityId");
+        CompletableFuture<?> future=(CompletableFuture<?>)invoke(runtime,"climate",new Class<?>[]{UUID.class},city);
+        future.whenComplete((value,error)->Bukkit.getScheduler().runTask(owner,()->{if(error!=null)failed(error);else try{emit("exp-climate",p,Map.of("entryPoint","StarWorldApi.climate","cityId",city,"report",value));}catch(RuntimeException failure){failed(failure);}}));
     }
     private void deleteCity(Player p)throws Exception {
         Object cities=coreService("module.city.CityService"),city=Objects.requireNonNull(unwrap(invoke(cities,"getPlayerCity",new Class<?>[]{UUID.class},p.getUniqueId())),"Actual player city missing");
@@ -333,6 +347,68 @@ final class ExpansionFixture {
         return (CompletableFuture<Object>)invoke(runtime,"async",new Class<?>[]{contract},proxy);
     }
     private Object nation(Player p)throws Exception{return Objects.requireNonNull(unwrap(invoke(coreService("module.nation.NationService"),"nationOf",new Class<?>[]{UUID.class},p.getUniqueId())),"Actual nation missing");}
+    /** Exercise StarCore's public world-weather mutation/read contract in an isolated Paper suite. */
+    private void weather(Player p,String name)throws Exception {
+        String requested=name.toUpperCase(Locale.ROOT);if(!Set.of("CLEAR","RAIN").contains(requested))throw new IllegalArgumentException("Fixture accepts only clear/rain weather");
+        Object nationId=call(nation(p),"id"),service=coreService("module.weather.WeatherControlService");String world=p.getWorld().getName();
+        Object before=invoke(service,"getWorldWeatherState",new Class<?>[]{String.class},world);boolean registered=false;
+        if(before==null) {
+            registered=Boolean.TRUE.equals(invoke(service,"registerWorld",new Class<?>[]{String.class},world));
+            before=invoke(service,"getWorldWeatherState",new Class<?>[]{String.class},world);
+            if(before==null)throw new IllegalStateException("Public StarCore world registration failed: "+world);
+        }
+        // Probe the optional ownership transfer call, then use the public
+        // permission + setWeather mutation contract as the authoritative
+        // write. The latter records the controller on the world state itself.
+        establishWeatherControl(p,requested,service,nationId,world,registered,0);
+    }
+    private void establishWeatherControl(Player p,String requested,Object service,Object nationId,String world,boolean registered,int attempt) {
+      try {
+        Object state=invoke(service,"getWorldWeatherState",new Class<?>[]{String.class},world);
+        if(state==null) {
+            registered=Boolean.TRUE.equals(invoke(service,"registerWorld",new Class<?>[]{String.class},world))||registered;
+            state=invoke(service,"getWorldWeatherState",new Class<?>[]{String.class},world);
+        }
+        boolean controlResult=state!=null&&Boolean.TRUE.equals(invoke(service,"controlWorld",new Class<?>[]{nationId.getClass(),String.class},nationId,world));
+        Class<?> permissionType=type("StarCore",CORE+"module.weather.model.NationWeatherPermission");
+        @SuppressWarnings({"rawtypes","unchecked"}) Object basic=Enum.valueOf((Class<? extends Enum>)permissionType,"CONTROL_FULL");
+        if(!Boolean.TRUE.equals(invoke(service,"setPermission",new Class<?>[]{nationId.getClass(),permissionType},nationId,basic)))throw new IllegalStateException("Public StarCore weather permission setup failed");
+        if(!Boolean.TRUE.equals(invoke(service,"setAutoWeather",new Class<?>[]{nationId.getClass(),boolean.class},nationId,false)))throw new IllegalStateException("Public StarCore auto-weather setup failed");
+        Class<?> weatherType=type("StarCore",CORE+"module.weather.model.WeatherType");@SuppressWarnings({"rawtypes","unchecked"}) Object selected=Enum.valueOf((Class<? extends Enum>)weatherType,requested);
+        long configuredCooldown=Long.getLong("starcore.weather-change-cooldown-ticks",1200L);
+        long cooldownMillis=Math.max(0L,configuredCooldown)*50L;
+        finishWeatherChange(p,requested,service,nationId,world,weatherType,selected,registered,controlResult,cooldownMillis,0);
+      } catch(Exception failure) { failed(failure); }
+    }
+    private void finishWeatherChange(Player p,String requested,Object service,Object nationId,String world,Class<?> weatherType,Object selected,boolean registered,boolean controlResult,long cooldownMillis,int attempt) {
+        try {
+            Object currentState=invoke(service,"getWorldWeatherState",new Class<?>[]{String.class},world);
+            if(currentState==null)throw new IllegalStateException("StarCore world state disappeared: "+world);
+            long lastChange=((Number)call(currentState,"getLastWeatherChange")).longValue();
+            long waitMillis=lastChange+cooldownMillis-System.currentTimeMillis();
+            if(waitMillis>0) {
+                if(attempt>=150)throw new IllegalStateException("StarCore weather cooldown did not expire: world="+world+", lastChange="+lastChange+", waitMillis="+waitMillis);
+                Bukkit.getScheduler().runTaskLater(owner,()->finishWeatherChange(p,requested,service,nationId,world,weatherType,selected,registered,controlResult,cooldownMillis,attempt+1),Math.max(1,(waitMillis+49)/50));
+                return;
+            }
+            // Re-issue the public ownership call immediately before the
+            // weather mutation; StarCore may rebuild its world map while its
+            // scheduled weather task is running.
+            boolean refreshedControl=Boolean.TRUE.equals(invoke(service,"controlWorld",new Class<?>[]{nationId.getClass(),String.class},nationId,world));
+            boolean changed=Boolean.TRUE.equals(invoke(service,"setWeather",new Class<?>[]{nationId.getClass(),String.class,weatherType},nationId,world,selected));
+            if(!changed) {
+                if(attempt<120) {
+                    Bukkit.getScheduler().runTaskLater(owner,()->finishWeatherChange(p,requested,service,nationId,world,weatherType,selected,registered,controlResult,cooldownMillis,attempt+1),10);
+                    return;
+                }
+                throw new IllegalStateException("Public StarCore weather change failed: world="+world+", registeredByFixture="+registered+", controlRetry="+refreshedControl+", permission="+call(invoke(service,"getPermission",new Class<?>[]{nationId.getClass()},nationId),"name")+", hasPermission="+invoke(service,"hasWeatherControlPermission",new Class<?>[]{nationId.getClass()},nationId)+", auto="+invoke(service,"isAutoWeather",new Class<?>[]{nationId.getClass()},nationId)+", lastChange="+lastChange+", waitMillis="+waitMillis);
+            }
+        Object state=invoke(service,"getWorldWeatherState",new Class<?>[]{String.class},world),controller=call(state,"getControlledByNation"),current=call(state,"getCurrentWeather");
+            Map<String,Object> result=new LinkedHashMap<>();result.put("entryPoint","WeatherControlService.registerWorld/controlWorld/setPermission/setAutoWeather/setWeather/getWorldWeatherState");result.put("world",world);result.put("registeredByFixture",registered);result.put("controlWorldResult",controlResult);result.put("permission",call(invoke(service,"getPermission",new Class<?>[]{nationId.getClass()},nationId),"name"));result.put("weather",call(current,"getId"));result.put("controller",call(controller,"value"));result.put("nation",call(nationId,"value"));result.put("lastWeatherChange",lastChange);result.put("cooldownMillis",cooldownMillis);result.put("modifiers",invoke(service,"getResourceModifiers",new Class<?>[]{weatherType},current));
+        if(!call(controller,"value").equals(call(nationId,"value"))||!call(current,"getId").equals(requested.toLowerCase(Locale.ROOT)))throw new IllegalStateException("StarCore public weather readback did not match the mutation");
+        emit("exp-weather",p,result);
+        } catch(Exception failure) { failed(failure); }
+    }
     private Object coreService(String name)throws Exception {Object api=service("StarCore",CORE+"api.StarCoreApi");return Objects.requireNonNull(unwrap(type("StarCore",CORE+"api.StarCoreApi").getMethod("service",Class.class).invoke(api,type("StarCore",CORE+name))),name);}
     private Object world()throws Exception{return service("StarWorld","dev.starworld.api.StarWorldApi");}
     private void emit(String action,Player p,Object values){try{Map<String,Object> record=new LinkedHashMap<>();record.put("schema",2);record.put("action",action);record.put("player",p.getName());record.put("observed",tree(values));owner.getLogger().info("SW_FIXTURE_EXPANSION "+json.toJson(record));}catch(Exception e){failed(e);}}

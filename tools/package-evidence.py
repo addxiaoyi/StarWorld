@@ -305,12 +305,18 @@ def main() -> int:
                 tuning = evidence.get("testTuning", {})
                 config_hashes.update({"config.yml": tuning.get("configSha256"), "definitions.yml": tuning.get("definitionsSha256")})
             if label == "works":
-                require(all(name in config_hashes for name in ("config.yml", "definitions.yml", "evolution.yml", "public-works.yml", "civic-needs.yml", "disaster-response.yml")),
-                        "Works run is missing the final governance configuration fingerprints")
+                required_works_configs = ("config.yml", "definitions.yml", "evolution.yml", "public-works.yml", "civic-needs.yml", "disaster-response.yml")
+                if release_version >= (1, 2, 0):
+                    required_works_configs += ("climate.yml",)
+                require(all(name in config_hashes for name in required_works_configs),
+                        "Works run is missing final configuration fingerprints")
             if label == "upgrade":
                 preserved = preparation_proof.get("oldConfigurationSha256", {})
                 after_start = evidence.get("startupConfigurationSha256", {})
-                require(bool(preserved) and set(after_start) == set(preserved) | {"plugins/StarWorld/civic-needs.yml", "plugins/StarWorld/public-works.yml"} and
+                added_configs = {"plugins/StarWorld/civic-needs.yml", "plugins/StarWorld/public-works.yml"}
+                if release_version >= (1, 2, 0):
+                    added_configs.add("plugins/StarWorld/climate.yml")
+                require(bool(preserved) and set(after_start) == set(preserved) | added_configs and
                         all(after_start.get(name) == fingerprint for name, fingerprint in preserved.items()), "Upgrade configurations were not preserved and supplemented")
                 for name, fingerprint in after_start.items():
                     match = re.fullmatch(r"plugins/StarWorld/([a-z0-9_-]+\.yml)", name)

@@ -6,10 +6,21 @@ import java.util.*;
 /** Immutable boundary: every implementation call belongs on the Paper server thread. */
 public interface CoreExtensionPort {
     Optional<NationSnapshot> snapshot(UUID nationId, Set<UUID> diplomacyPeers);
+    /** A bounded immutable capture for one loaded building world; absent when the public weather API is unavailable. */
+    default Optional<WorldWeatherSnapshot> worldWeather(String worldName) { return Optional.empty(); }
     Delivery deliver(ResourceRequest request);
     Optional<ResourceReceipt> receipt(String transactionId);
 
     record Epoch(boolean enabled, long number, Instant start, Instant nextStart) {}
+    record WorldWeatherSnapshot(String worldName, String weatherId, UUID controlledByNation,
+                                Map<String,Double> resourceMultipliers) {
+        public WorldWeatherSnapshot {
+            if(worldName==null||worldName.isBlank()||worldName.length()>128)throw new IllegalArgumentException("Invalid weather world");
+            if(weatherId==null||weatherId.isBlank()||weatherId.length()>48)throw new IllegalArgumentException("Invalid weather id");
+            Objects.requireNonNull(resourceMultipliers);if(resourceMultipliers.size()>64)throw new IllegalArgumentException("Too many weather modifiers");
+            resourceMultipliers=Map.copyOf(resourceMultipliers);
+        }
+    }
     record ProcessingRecipe(String id, Map<String,Long> inputs, Map<String,Long> outputs, long seconds) {
         public ProcessingRecipe { inputs=Map.copyOf(inputs); outputs=Map.copyOf(outputs); }
     }

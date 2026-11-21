@@ -83,6 +83,17 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
     @Override public CompletableFuture<List<dev.starworld.civic.CivicNeedsState.Request>> civicNeeds(UUID city,int limit,int offset){return async(()->expansion==null?List.of():expansion.civic().requests(city,limit,offset));}
     @Override public CompletableFuture<List<dev.starworld.civic.CivicNeedsState.History>> civicHistory(UUID city,int limit,int offset){return async(()->expansion==null?List.of():expansion.civic().history(city,limit,offset));}
     @Override public CompletableFuture<Optional<dev.starworld.civic.CivicNeedsState.Receipt>> civicReceipt(UUID request){return async(()->expansion==null?Optional.empty():expansion.civic().receipt(request));}
+    private record ClimateRead(Optional<CityView> city,Optional<dev.starworld.works.PublicWorksState.Project> works){}
+    @Override public CompletableFuture<Optional<dev.starworld.api.StarWorldApi.ClimateReport>> climate(UUID id){
+        if(expansion==null)return CompletableFuture.completedFuture(Optional.empty());
+        return async(()->{Optional<CityView> view=store.view(id);Optional<dev.starworld.works.PublicWorksState.Project> worksRecord=view.isEmpty()?Optional.empty():expansion.works().project(id,view.get().nationId());return new ClimateRead(view,worksRecord);})
+                .thenCompose(read->read.city().isEmpty()?CompletableFuture.completedFuture(Optional.empty()):scheduler.globalFuture(()->{
+                    if(expansion==null)return Optional.empty();CityView registered=read.city().get();Optional<CoreCity> current=core.city(id);
+                    if(current.isEmpty()||!current.get().nationId().equals(registered.nationId()))return Optional.empty();Set<UUID> valid=verifiedBuildings(registered);
+                    boolean irrigation=read.works().filter(project->project.definition().id().equals("irrigation_network")&&project.completed()&&project.lastOperationPaid()&&project.lastOperationPeriod()==registered.lastPeriod()).isPresent();
+                    return Optional.of(new dev.starworld.api.StarWorldApi.ClimateReport(id,current.get().nationId(),expansion.climateExposure(current.get(),registered,valid,irrigation)));
+                }));
+    }
     @Override public Map<String,String> integrationStatus(){Map<String,String> s=new LinkedHashMap<>(items.status());s.put("StarCore",core.status());if(expansion!=null)s.putAll(expansion.status());s.put("Folia","未声明支持：当前 StarCore 城市/科技服务不保证区域线程安全，需 Paper");return Map.copyOf(s);}
     public void register(Player p,String type){
         CoreCity city=playerCity(p).orElseThrow(()->new IllegalArgumentException("请先在 StarCore 加入城市"));
@@ -167,8 +178,10 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
                     CompletableFuture<Void> authority=async(()->store.tx(s->{for(CityView view:views){CoreCity city=currentCities.get(view.id());if(city==null)s.invalidateCity(view.id());else s.ensureCity(city);}return null;}));jobs.add(authority);
                     for(CityView view:views){CoreCity current=currentCities.get(view.id());if(current==null)continue;
                     Set<UUID> valid=verifiedBuildings(view);
+                    Set<UUID> observedBuildings=Simulation.buildingIds(view);
                     dev.starworld.integration.BorderConflictCapture.Captured captured=expansion==null?new dev.starworld.integration.BorderConflictCapture.Captured(Optional.empty(),List.of()):expansion.captureBorderEvidence(current,view,valid);
-                    CompletableFuture<Settlement> job=authority.thenCompose(ignored->async(()->expansion==null?simulation.settle(current,period,valid):expansion.settle(current,period,valid,captured.nation(),captured.witnesses(),simulation)));jobs.add(job);
+                    Map<String,dev.starworld.climate.ClimateRules.WeatherSnapshot> weather=expansion==null?Map.of():expansion.captureClimate(current,view,valid);
+                    CompletableFuture<Settlement> job=authority.thenCompose(ignored->async(()->expansion==null?simulation.settle(current,period,valid,observedBuildings):expansion.settle(current,period,valid,captured.nation(),captured.witnesses(),weather,observedBuildings,simulation)));jobs.add(job);
                     job.thenAccept(settlement->{if(settlement.applied()){scheduler.global(()->Bukkit.getPluginManager().callEvent(new IndustrySettledEvent(settlement)));if(expansion!=null)expansion.afterSettlement(view.id());}});
                     jobs.add(job.thenCompose(result->city(view.id())).thenAccept(updated->updated.ifPresent(next->{if(!Objects.equals(view.event(),next.event()))scheduler.global(()->Bukkit.getPluginManager().callEvent(new WorldEvolutionEvent(view.id(),view.event(),next.event())));})));
                 }}catch(Exception e){failure(e);return;}

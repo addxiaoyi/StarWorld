@@ -72,6 +72,26 @@ class SimulationTest {
         }
     }
 
+    @Test void recipeSpecificClimateMultiplierChangesOnlyTheMappedMiningChainAndCommitsOnce()throws Exception{
+        Definitions d=definitions();try(WorldStore store=new WorldStore(temp.resolve("recipe-climate.db"),d.stockLimit())){
+            CoreCity city=city();Building workshop=register(store,d,city,"workshop","plains",0);store.stock(city.cityId(),"minecraft:bread",20);Simulation simulation=new Simulation(store,d);
+            Simulation.Hooks climate=new Simulation.Hooks(){@Override public double recipeMultiplier(Building building,Definitions.Recipe recipe){return recipe.id().equals("mine")?1.5:1.0;}};
+            Settlement first=simulation.settle(city,10,Set.of(workshop.id()),climate);assertEquals(4,first.produced().get("minecraft:raw_iron"));assertEquals(94,store.region(workshop.site().regionKey()).reserves().get("ore"));
+            assertFalse(simulation.settle(city,10,Set.of(workshop.id()),climate).applied());assertEquals(4,amount(store,city,"raw_iron"));
+        }
+    }
+
+    @Test void buildingRegisteredAfterAuthorizationCaptureDefersWithoutChargingOrSettling()throws Exception{
+        Definitions d=definitions();try(WorldStore store=new WorldStore(temp.resolve("building-snapshot.db"),d.stockLimit())){
+            CoreCity city=city();Building farm=register(store,d,city,"farm","plains",0);Simulation simulation=new Simulation(store,d);
+            Settlement deferred=simulation.settle(city,10,Set.of(),Set.of());
+            assertFalse(deferred.applied());assertTrue(deferred.report().contains("延后复核"));assertFalse(store.settled(city.cityId(),10));
+            assertEquals(0,amount(store,city,"bread"));assertTrue(store.stock(city.cityId()).isEmpty());
+            Settlement settled=simulation.settle(city,10,Set.of(farm.id()),Set.of(farm.id()));
+            assertTrue(settled.applied());assertEquals(13,amount(store,city,"wheat"));assertEquals(3,amount(store,city,"bread"));
+        }
+    }
+
     @Test void civilizationTradeoffChangesFarmAndWorkshopProduction() throws Exception {
         Definitions d = definitions();
         try (WorldStore store = new WorldStore(temp.resolve("civilization.db"), d.stockLimit())) {

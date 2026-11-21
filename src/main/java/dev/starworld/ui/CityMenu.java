@@ -20,7 +20,7 @@ public final class CityMenu implements Listener {
     public CityMenu(WorldRuntime runtime,String title){this.runtime=runtime;this.title=title;}
     private static final class Holder implements InventoryHolder {
         private Inventory inventory; private final UUID viewer,city;private UUID nation;
-        private final Map<Integer,String[]> commands=new HashMap<>();private boolean development,atlas,market,disaster;private String nextCursor="";private int marketOffset,disasterOffset,disasterLimit;private String disasterTab="strategies";private CoreCity disasterCity;private EventState disasterEvent;private UUID responseRequest;private String responseStrategy;
+        private final Map<Integer,String[]> commands=new HashMap<>();private boolean development,atlas,market,disaster,climate;private String nextCursor="";private int marketOffset,disasterOffset,disasterLimit;private String disasterTab="strategies";private CoreCity disasterCity;private EventState disasterEvent;private UUID responseRequest;private String responseStrategy;
         Holder(UUID viewer,UUID city){this.viewer=viewer;this.city=city;}
         @Override public Inventory getInventory(){return inventory;}
     }
@@ -42,6 +42,7 @@ public final class CityMenu implements Listener {
             if(runtime.expansion().isPresent())inv.setItem(45,item(Material.MAP,"城市规划与文明世界",List.of("设施、规划、专长、文化与交通","点击打开发展面板")));
             if(runtime.expansion().isPresent())inv.setItem(46,item(Material.WATER_BUCKET,"灾害治理",List.of("预览策略、真实成本与所需设施","提交救灾响应、查看恢复状态与历史")));
             if(runtime.expansion().isPresent())inv.setItem(47,item(Material.BRICKS,"城市治理与公共工程",List.of("工程选择、真实施工维护与城市需求","点击打开独立治理面板")));
+            if(runtime.expansion().isPresent())inv.setItem(48,item(Material.COMPASS,"世界气候与产业",List.of("按设施所在世界读取StarCore天气","查看国家控制权和当前配方倍率","点击查看已验证设施天气影响")));
             inv.setItem(49,item(Material.SUNFLOWER,"刷新",List.of("仅已加载且领土有效的设施生产","不加载区块，不补发离线产量")));
             p.openInventory(inv);
         });
@@ -63,6 +64,7 @@ public final class CityMenu implements Listener {
             inv.setItem(45,item(Material.GOLD_INGOT,"实物金币市场",List.of("真实商品托管、国库付款和商路交货","整批限价挂牌与成交记录")));h.commands.put(45,new String[]{"market-menu"});
             inv.setItem(46,item(Material.WATER_BUCKET,"灾害治理",List.of("干旱、洪灾与饥荒的六项治理策略","实物救灾、次期缓解与长期恢复")));h.commands.put(46,new String[]{"disaster-menu"});
             inv.setItem(47,item(Material.BRICKS,"公共工程与城市需求",List.of("预览起建门槛与物资缺口","请求后真实生活贡献，明确确认完成")));h.commands.put(47,new String[]{"governance"});
+            inv.setItem(48,item(Material.COMPASS,"世界气候与产业",List.of("StarCore逐世界天气影响农场和矿井","科技只按明确映射生效","点击查看已验证设施倍率")));h.commands.put(48,new String[]{"climate"});
             inv.setItem(49,item(Material.ARROW,"返回城市产业",List.of()));inv.setItem(53,item(Material.SUNFLOWER,"刷新发展状态",List.of()));p.openInventory(inv);
         });
     }
@@ -86,6 +88,23 @@ public final class CityMenu implements Listener {
                 region.culture().stream().limit(6).forEach(c->lore.add("文化 "+c.tradition()+"："+c.influence()));h.inventory.setItem(slot++,item(icon,region.terrainName()+" · "+region.chunkX()+","+region.chunkZ(),lore));
             }
             h.inventory.setItem(45,item(Material.ARROW,"第一页",List.of()));h.inventory.setItem(49,item(Material.BOOK,"返回发展面板",List.of("只显示已登记地区；不扫描或加载世界","归属来自最近一次有界核心复核")));if(!h.nextCursor.isEmpty())h.inventory.setItem(53,item(Material.SUNFLOWER,"下一页",List.of()));p.openInventory(h.inventory);
+        });
+    }
+    public void openClimate(Player p){
+        CoreCity city=runtime.playerCity(p).orElseThrow(()->new IllegalArgumentException("请先加入城市"));
+        runtime.reply(p,runtime.climate(city.cityId()),optional->{if(runtime.playerCity(p).filter(c->c.cityId().equals(city.cityId())&&c.nationId().equals(city.nationId())).isEmpty())return;
+            Holder h=new Holder(p.getUniqueId(),city.cityId());h.nation=city.nationId();h.climate=true;h.inventory=Bukkit.createInventory(h,54,Component.text("StarWorld · 世界气候与产业"));
+            h.inventory.setItem(4,item(Material.COMPASS,"本城天气产能快照",List.of("逐设施按所属世界与StarCore天气控制国核验","只有本国控制的世界天气影响对应原料链","未控制/服务缺失时倍率为1.00","查询不推进周期、不加载区块")));
+            List<dev.starworld.api.StarWorldApi.ClimateExposure> exposures=optional.map(dev.starworld.api.StarWorldApi.ClimateReport::exposures).orElse(List.of());int slot=9;
+            for(var exposure:exposures.stream().limit(36).toList()){
+                Material icon=switch(exposure.buildingType()){case "farm"->Material.COMPOSTER;case "workshop"->Material.BLAST_FURNACE;case "sawmill"->Material.STONECUTTER;default->Material.BRICKS;};
+                List<String> lore=new ArrayList<>(List.of("世界："+exposure.worldName(),"天气："+exposure.weatherId(),"控制权："+(exposure.controlledByNation()?"本国匹配":"未匹配；天气倍率中性"),"灌溉水网本期维护："+(exposure.irrigationOperating()?"已运行；缓解农作物负面天气":"未运行")));
+                exposure.recipeFactors().forEach((recipe,factor)->lore.add(recipe+" ×"+String.format(Locale.ROOT,"%.2f",factor)));
+                h.inventory.setItem(slot++,item(icon,exposure.buildingType()+" · "+exposure.buildingId().toString().substring(0,8),lore));
+            }
+            if(exposures.isEmpty())h.inventory.setItem(22,item(Material.PAPER,"没有已验证的设施天气快照",List.of("需要已登记、已加载且领土有效的设施","StarCore缺失时天气按中性倍率处理")));
+            if(exposures.size()>36)h.inventory.setItem(45,item(Material.PAPER,"显示36 / "+exposures.size(),List.of("使用 /sw climate 查看全部设施")));
+            h.inventory.setItem(49,item(Material.ARROW,"返回城市产业",List.of()));h.inventory.setItem(53,item(Material.SUNFLOWER,"刷新天气快照",List.of("实时重新读取当前StarCore控制权")));p.openInventory(h.inventory);
         });
     }
     public void openDisaster(Player p){
@@ -160,13 +179,14 @@ public final class CityMenu implements Listener {
             if(p.getOpenInventory().getTopInventory().getHolder()!=holder)return;
             if(runtime.playerCity(p).map(c->!c.cityId().equals(holder.city)||(holder.nation!=null&&!c.nationId().equals(holder.nation))).orElse(true)){p.closeInventory();return;}
             if(holder.disaster&&!p.hasPermission("starworld.use")){p.closeInventory();return;}
-            try{if(holder.disaster){disasterClick(p,holder,slot);return;}if(holder.market){if(slot==45)openMarket(p,Math.max(0,holder.marketOffset-28));else if(slot==49)openDevelopment(p);else if(slot==53)openMarket(p,holder.marketOffset+28);else if(holder.commands.containsKey(slot)){p.closeInventory();p.sendMessage("§e/sw market buy "+holder.commands.get(slot)[2]+" <卖城至本城商路UUID>");}return;}if(holder.atlas){if(slot==45)openAtlas(p,"");else if(slot==49)openDevelopment(p);else if(slot==53&&!holder.nextCursor.isEmpty())openAtlas(p,holder.nextCursor);return;}if(holder.development){
+            try{if(holder.disaster){disasterClick(p,holder,slot);return;}if(holder.climate){if(slot==49)open(p);else if(slot==53)openClimate(p);return;}if(holder.market){if(slot==45)openMarket(p,Math.max(0,holder.marketOffset-28));else if(slot==49)openDevelopment(p);else if(slot==53)openMarket(p,holder.marketOffset+28);else if(holder.commands.containsKey(slot)){p.closeInventory();p.sendMessage("§e/sw market buy "+holder.commands.get(slot)[2]+" <卖城至本城商路UUID>");}return;}if(holder.atlas){if(slot==45)openAtlas(p,"");else if(slot==49)openDevelopment(p);else if(slot==53&&!holder.nextCursor.isEmpty())openAtlas(p,holder.nextCursor);return;}if(holder.development){
                 if(slot==49){open(p);return;}if(slot==53){openDevelopment(p);return;}String[] command=holder.commands.get(slot);if(command==null)return;p.closeInventory();
-                if(command[0].equals("register"))runtime.register(p,command[1]);else if(command[0].equals("civilization"))runtime.civilization(p,command[1]);else if(command[0].equals("atlas"))openAtlas(p,"");else if(command[0].equals("market-menu"))openMarket(p,0);else if(command[0].equals("disaster-menu"))openDisaster(p);else if(command[0].equals("governance"))p.performCommand("sw governance");else runtime.expansionCommand(p,command);return;
+                if(command[0].equals("register"))runtime.register(p,command[1]);else if(command[0].equals("civilization"))runtime.civilization(p,command[1]);else if(command[0].equals("atlas"))openAtlas(p,"");else if(command[0].equals("market-menu"))openMarket(p,0);else if(command[0].equals("disaster-menu"))openDisaster(p);else if(command[0].equals("governance"))p.performCommand("sw governance");else if(command[0].equals("climate"))openClimate(p);else runtime.expansionCommand(p,command);return;
             }switch(slot){
                 case 45 -> {if(!holder.development)openDevelopment(p);}
                 case 46 -> {if(runtime.expansion().isPresent())openDisaster(p);}
                 case 47 -> {if(runtime.expansion().isPresent())p.performCommand("sw governance");}
+                case 48 -> {if(runtime.expansion().isPresent())openClimate(p);}
                 case 10,12,14 -> {p.closeInventory();runtime.register(p,slot==10?"farm":slot==12?"sawmill":"workshop");}
                 case 16 -> {p.closeInventory();p.sendMessage("§e/sw civilization <"+String.join("|",runtime.definitions().civilizations().keySet())+">");}
                 case 36 -> {p.closeInventory();runtime.reply(p,runtime.city(holder.city),c->c.ifPresent(v->v.buildings().forEach(b->p.sendMessage("§e"+b.id()+" §f"+b.type()+" Lv"+b.level()+" @ "+b.site().x()+","+b.site().y()+","+b.site().z()))));}

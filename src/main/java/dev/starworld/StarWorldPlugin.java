@@ -21,7 +21,7 @@ public final class StarWorldPlugin extends JavaPlugin {
         }
         WorldStore store=null;
         try{
-            saveDefaultConfig();for(String file:java.util.List.of("definitions.yml","evolution.yml","exports.yml","logistics.yml"))if(!new File(getDataFolder(),file).exists())saveResource(file,false);
+            saveDefaultConfig();for(String file:java.util.List.of("definitions.yml","evolution.yml","exports.yml","logistics.yml","climate.yml"))if(!new File(getDataFolder(),file).exists())saveResource(file,false);
             Definitions definitions=ConfigLoader.load(new File(getDataFolder(),"config.yml"),new File(getDataFolder(),"definitions.yml"),new File(getDataFolder(),"evolution.yml"));reloadConfig();
             CustomItems items=new CustomItems(this);items.validate(ConfigLoader.items(definitions));
             CoreBridge core=new StarCoreBridge(this);

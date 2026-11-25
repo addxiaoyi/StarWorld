@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 'use strict';
 
-// Real Paper clients exercise the 0.3 atlas, cultural dynamics, rerouting and national-money market.
+// Real Paper clients exercise atlas, cultural dynamics, rerouting and partial national-money purchases.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {createRequire}=require('node:module');
 const {setTimeout:delay}=require('node:timers/promises');
 const {Paper,connect,botMessage,properties,configuredNumber,hash,requireFile,waitUntil,argumentsOf}=require('./acceptance.cjs');
 const HELP=`Usage: node progression-acceptance.cjs --java <java21> --paper <Paper132.jar> --runtime <fresh-owned-directory> [--client-deps <mineflayer>]
 
-Requires actual StarCore, StarWorld 0.3 or newer and the latest paper fixture, localhost/offline/EULA marker,
+Requires actual StarCore, StarWorld 1.5 or newer and the latest paper fixture, localhost/offline/EULA marker,
 fresh worlds/player/plugin data, ten-second settlement, zero random-event chance, culture decay
 interval 2 (only this disposable runtime), default 500 decay basis points, zero new-nation protection
 and affordable/zero claim/war costs. Keep default cultural policy factors and market costs.
 The fixture records all seeded physical goods and public TreasuryService test deposits separately.
 No SQL, score injection, world scanning or unrelated process management occurs. Evidence and complete
-two-server/four-client transcripts are preserved under runtime/progression-acceptance/<UTC stamp>.
+three-server/six-client transcripts are preserved under runtime/progression-acceptance/<UTC stamp>.
 `;
 function amount(s,item){return s.city.stock[item]||0;}
 function cargo(s,id){return s.orders.find(o=>o.id===id);}
@@ -28,7 +28,7 @@ async function fixture(server,action,bot,suffix=''){
     for(const line of lines){const i=line.indexOf('SW_FIXTURE_EXPANSION ');if(i<0)continue;const parsed=JSON.parse(line.slice(i+'SW_FIXTURE_EXPANSION '.length));if(parsed.action===action&&parsed.player===bot.username)return parsed.observed;}return null;
   },20000,`fixture ${action} ${bot.username}`);
 }
-async function snapshot(server,bot){return waitUntil(async()=>{const s=await fixture(server,'exp-progress',bot);assert(s.city&&s.atlas&&s.geography&&s.development&&s.nation);assert.match(s.version,/^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$/);const [major,minor]=s.version.split('.').map(Number);assert(major>0||minor>=3,'Progression requires StarWorld 0.3 or newer');for(const n of Object.values(s.city.stock))assert(Number.isSafeInteger(n)&&n>=0);
+async function snapshot(server,bot){return waitUntil(async()=>{const s=await fixture(server,'exp-progress',bot);assert(s.city&&s.atlas&&s.geography&&s.development&&s.nation);assert.match(s.version,/^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$/);const [major,minor]=s.version.split('.').map(Number);assert(major>1||(major===1&&minor>=5),'Progression requires StarWorld 1.5 or newer');for(const n of Object.values(s.city.stock))assert(Number.isSafeInteger(n)&&n>=0);
   // Public city/atlas Futures precede the fixture's profile+culture IO job. A normal
   // settlement can commit between those reads, so only compare one coherent period.
   const period=s.city.lastPeriod;if(s.development.lastPeriod!==period||s.atlas.cityLastPeriod!==period||s.geography.cityLastPeriod!==period){console.log(`[RETRY] mixed snapshot ${bot.username}: city=${period}, development=${s.development.lastPeriod}, atlas=${s.atlas.cityLastPeriod}, geography=${s.geography.cityLastPeriod}`);return false;}return s;
@@ -55,7 +55,7 @@ async function main(){
   const coreConfig=path.join(options.runtime,'plugins/StarCore/config.yml');assert.match(fs.readFileSync(coreConfig,'utf8'),/^\s*new-nation-protection-days:\s*0\s*(?:#.*)?$/m,'Disable only this isolated runtime new-nation protection');
   const requireClient=args['client-deps']?createRequire(path.resolve(args['client-deps'],'package.json')):require,mineflayer=requireClient('mineflayer');
   const directory=path.join(options.runtime,'progression-acceptance',new Date().toISOString().replace(/[:.]/g,'-'));fs.mkdirSync(directory,{recursive:true});
-  const evidence={schema:3,suite:'real-paper-progression',status:'running',startedAt:new Date().toISOString(),minecraft:'1.21.11',node:process.version,mineflayer:requireClient('mineflayer/package.json').version,paperSha256:hash(options.paper),pluginJars:{},configSha256:{},seeds:[],steps:[],
+  const evidence={schema:4,suite:'real-paper-progression',status:'running',startedAt:new Date().toISOString(),minecraft:'1.21.11',node:process.version,mineflayer:requireClient('mineflayer/package.json').version,paperSha256:hash(options.paper),runnerSha256:hash(__filename),acceptanceHelperSha256:hash(path.join(__dirname,'acceptance.cjs')),pluginJars:{},configSha256:{},seeds:[],steps:[],
     testTuning:{periodSeconds:10,eventChance:0,cultureDecayInterval:2,cultureDecayBasisPoints:500,fixtureForceLoadedChunks:[20,21,22,23,24,52,53,54,55,56],jvmArgs:options.jvmArgs,physicalSeedsAreProductionEvidence:false,nationalTreasurySeedsAreEarnedIncome:false,
       nodeVersion:process.version,nodeExecArgv:process.execArgv,javaOptionsEnvironment:process.env._JAVA_OPTIONS||''}};
   for(const name of fs.readdirSync(path.join(options.runtime,'plugins')))if(name.endsWith('.jar'))evidence.pluginJars[name]=hash(path.join(options.runtime,'plugins',name));
@@ -63,6 +63,7 @@ async function main(){
   const save=()=>fs.writeFileSync(path.join(directory,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');
   const stage=async(name,run)=>{const step={name,status:'running',startedAt:new Date().toISOString()};evidence.steps.push(step);save();try{step.observed=await run();step.status='passed';console.log(`[PASS] ${name}`);return step.observed;}catch(error){step.status='failed';step.error=error.stack;throw error;}finally{step.finishedAt=new Date().toISOString();save();}};
   let server=new Paper(options,directory,1),a,b,directRoute,alternateRoute,barter,rerouteId,listingId,purchaseId,shipmentId,preRestart,transferReceipt,treasuryBaseline;
+  let partialListing,partialBaseline,partialBeforeRestart;const partialPurchases=[],partialReceipts=[];
   const closePlayers=async()=>{for(const bot of [a,b])if(bot){bot.quit();await bot.finishTranscript();}a=b=null;};
   try{
     await stage('real Paper starts with two actual progression clients',async()=>{await server.start();a=await connect(mineflayer,{...options,username:'StarWorldPA'},directory,'1-a');b=await connect(mineflayer,{...options,username:'StarWorldPB'},directory,'1-b');server.command('deop StarWorldPA');server.command('deop StarWorldPB');for(const name of ['config.yml','definitions.yml','evolution.yml','logistics.yml','exports.yml','life.yml','market.yml'])evidence.configSha256[name]=hash(path.join(configDir,name));return{clients:[a.player.uuid,b.player.uuid]};});
@@ -88,8 +89,48 @@ async function main(){
     await stage('restart restores atlas paid cargo reroute and the exact national receipt',async()=>{await server.start();a=await connect(mineflayer,{...options,username:'StarWorldPA'},directory,'2-a');b=await connect(mineflayer,{...options,username:'StarWorldPB'},directory,'2-b');const after={a:await snapshot(server,a),b:await snapshot(server,b)},receipt=await fixture(server,'exp-market-replay',b,purchaseId),proposal=await fixture(server,'exp-reroute-proof',a,rerouteId);for(const key of ['a','b']){assert.equal(after[key].city.id,preRestart[key].city.id);assert.equal(after[key].geography.regions,4);assert.equal(Number(after[key].treasury),Number(preRestart[key].treasury));assert.equal(amount(after[key],'minecraft:oak_log'),amount(preRestart[key],'minecraft:oak_log'));}assert.equal(proposal.status,'APPLIED');assert.equal(cargo(after.a,barter).status,'COMPLETED');assert.equal(cargo(after.b,shipmentId).status,'PAUSED');assert.equal(receipt.replay.status,'CONFIRMED');assert.equal(Number(receipt.payerBefore),Number(receipt.payerAfter));assert.equal(Number(receipt.receiverBefore),Number(receipt.receiverAfter));assert.deepEqual(receiptPayload(receipt.receipt),receiptPayload(transferReceipt.receipt));return{after,receipt,proposal};});
     await stage('real war keeps restored paid route blocked and progress frozen',async()=>{await fixture(server,'exp-reclaim',b,'1');const war=await fixture(server,'exp-war',a,b.username);const paused=await poll(server,b,s=>cargo(s,shipmentId)?.status==='PAUSED'&&/战争|外交/.test(cargo(s,shipmentId).reason),25000),later=await poll(server,b,s=>cargo(s,shipmentId)?.lastPeriod>cargo(paused,shipmentId).lastPeriod,25000);assert.equal(cargo(later,shipmentId).progressedPeriods,cargo(paused,shipmentId).progressedPeriods);assert.equal(amount(later,'minecraft:oak_log'),treasuryBaseline.buyerLogs);assert.equal(Number(later.treasury),treasuryBaseline.buyer-22);return{war,paused,later};});
     await stage('public peace delivers the same paid goods exactly once with conserved national money',async()=>{const peace=await fixture(server,'exp-peace',a,b.username);const done=await poll(server,b,s=>cargo(s,shipmentId)?.status==='COMPLETED'&&amount(s,'minecraft:oak_log')===treasuryBaseline.buyerLogs+11,120000,'completed paid cargo and destination stock agree'),seller=await snapshot(server,a);assert.equal(amount(done,'minecraft:oak_log'),treasuryBaseline.buyerLogs+11);assert.equal(amount(seller,'minecraft:oak_log'),treasuryBaseline.sellerLogs);assert.equal(Number(done.treasury),treasuryBaseline.buyer-22);assert.equal(Number(seller.treasury),treasuryBaseline.seller+22);assert.equal(Number(done.treasury)+Number(seller.treasury),treasuryBaseline.buyer+treasuryBaseline.seller);assert.equal(seller.prices.filter(p=>p.listingId===listingId).length,1);const later=await nextSettlement(server,b,done);assert.equal(amount(later,'minecraft:oak_log'),amount(done,'minecraft:oak_log'));const replay=await fixture(server,'exp-market-replay',b,purchaseId);assert.equal(Number(replay.payerBefore),Number(replay.payerAfter));assert.equal(Number(replay.receiverBefore),Number(replay.receiverAfter));return{peace,done,seller,later,replay};});
+    await stage('two explicit partial purchases retain independent quantities amounts and paid shipments',async()=>{
+      const seller=await snapshot(server,a),buyer=await snapshot(server,b);
+      partialBaseline={seller:Number(seller.treasury),buyer:Number(buyer.treasury),sellerLogs:amount(seller,'minecraft:oak_log'),buyerLogs:amount(buyer,'minecraft:oak_log')};
+      const listed=await botMessage(a,'/sw market sell minecraft:oak_log 23 1.25',/挂牌已托管真实商品：[0-9a-f-]{36}/);partialListing=listed.match(/挂牌已托管真实商品：([0-9a-f-]{36})/)[1];
+      for(const units of [7,9]){
+        const text=await botMessage(b,`/sw market buy ${partialListing} ${alternateRoute} ${units}`,/购买已准备：[0-9a-f-]{36}/);
+        partialPurchases.push({id:text.match(/购买已准备：([0-9a-f-]{36})/)[1],units});
+      }
+      const shipped=await poll(server,b,s=>partialPurchases.every(p=>s.purchases.some(q=>q.id===p.id&&q.status==='SHIPPED')),45000,'both partial purchases dispatched');
+      for(const expected of partialPurchases){const actual=shipped.purchases.find(p=>p.id===expected.id);assert.equal(actual.units,expected.units);assert.equal(Number(actual.total),expected.units*1.25);expected.shipmentId=actual.shipmentId;expected.transactionId=actual.transactionId;assert.notEqual(cargo(shipped,actual.shipmentId).status,'COMPLETED');}
+      assert.notEqual(partialPurchases[0].transactionId,partialPurchases[1].transactionId);assert.notEqual(partialPurchases[0].shipmentId,partialPurchases[1].shipmentId);
+      assert.equal(Number(shipped.treasury),partialBaseline.buyer-20);assert.equal(Number((await snapshot(server,a)).treasury),partialBaseline.seller+20);
+      return{baseline:partialBaseline,shipped,purchases:partialPurchases};
+    });
+    await stage('closing a partial listing returns only unsold goods while both paid slices remain paused',async()=>{
+      await fixture(server,'exp-unclaim',b,'1');await botMessage(a,`/sw market cancel ${partialListing}`,/挂牌已关闭/);
+      const paused=await poll(server,b,s=>partialPurchases.every(p=>cargo(s,p.shipmentId)?.status==='PAUSED'),30000,'two paid slices paused by lost territory'),seller=await snapshot(server,a),listing=seller.listings.find(l=>l.id===partialListing);
+      assert.equal(listing.status,'CANCELLED');assert.deepEqual([listing.units,listing.availableUnits,listing.reservedUnits,listing.shippedUnits,listing.returnedUnits],[23,0,0,16,7]);
+      assert.equal(amount(seller,'minecraft:oak_log'),partialBaseline.sellerLogs-16);assert.equal(amount(paused,'minecraft:oak_log'),partialBaseline.buyerLogs);
+      assert.equal(seller.prices.filter(h=>h.listingId===partialListing).length,2);
+      for(const p of partialPurchases){const receipt=await fixture(server,'exp-market-receipt',b,p.id);assert.equal(Number(receipt.receipt.amount),p.units*1.25);partialReceipts.push(receipt.receipt);}
+      partialBeforeRestart={seller,buyer:paused};return{seller,paused,receipts:partialReceipts};
+    });
     await stage('second owned Paper process shuts down normally',async()=>{await closePlayers();await server.stop();return{clean:true};});
-    evidence.status='passed';evidence.finishedAt=new Date().toISOString();evidence.ids={directRoute,alternateRoute,barter,rerouteId,listingId,purchaseId,shipmentId};save();console.log(`PASS ${evidence.steps.length} progression stages: ${directory}`);
+    server=new Paper(options,directory,3);
+    await stage('restart preserves closed listing balances and replays each partial payment without recharging',async()=>{
+      await server.start();a=await connect(mineflayer,{...options,username:'StarWorldPA'},directory,'3-a');b=await connect(mineflayer,{...options,username:'StarWorldPB'},directory,'3-b');
+      const seller=await snapshot(server,a),buyer=await snapshot(server,b),replays=[];
+      assert.deepEqual(seller.listings.find(l=>l.id===partialListing),partialBeforeRestart.seller.listings.find(l=>l.id===partialListing));
+      for(const [side,current] of [['seller',seller],['buyer',buyer]]){assert.equal(Number(current.treasury),Number(partialBeforeRestart[side].treasury));assert.equal(amount(current,'minecraft:oak_log'),amount(partialBeforeRestart[side],'minecraft:oak_log'));}
+      for(let i=0;i<partialPurchases.length;i++){const p=partialPurchases[i],replay=await fixture(server,'exp-market-replay',b,p.id);assert.equal(cargo(buyer,p.shipmentId).status,'PAUSED');assert.equal(replay.replay.status,'CONFIRMED');assert.equal(Number(replay.payerBefore),Number(replay.payerAfter));assert.equal(Number(replay.receiverBefore),Number(replay.receiverAfter));assert.deepEqual(receiptPayload(replay.receipt),receiptPayload(partialReceipts[i]));replays.push(replay);}
+      return{seller,buyer,replays};
+    });
+    await stage('restored route delivers exact partial quantities once and counts both purchase histories',async()=>{
+      await fixture(server,'exp-reclaim',b,'1');const done=await poll(server,b,s=>partialPurchases.every(p=>cargo(s,p.shipmentId)?.status==='COMPLETED')&&amount(s,'minecraft:oak_log')===partialBaseline.buyerLogs+16,120000,'both partial deliveries completed');
+      const seller=await snapshot(server,a);assert.equal(Number(seller.treasury),partialBaseline.seller+20);assert.equal(Number(done.treasury),partialBaseline.buyer-20);assert.equal(amount(seller,'minecraft:oak_log'),partialBaseline.sellerLogs-16);
+      const history=seller.prices.filter(h=>h.listingId===partialListing);assert.equal(history.length,2);assert.deepEqual(history.map(h=>h.units).sort((a,b)=>a-b),[7,9]);assert.deepEqual(history.map(h=>h.purchaseId).sort(),partialPurchases.map(p=>p.id).sort());
+      const statistics=await waitUntil(async()=>{const s=await fixture(server,'exp-operations',b,seller.city.id),logs=s.globalDeliveryStats.find(row=>row.item==='minecraft:oak_log');if(logs?.orders!==3)return false;assert.equal(logs.units,27);assert.equal(Number(logs.gross),42);return s;},20000,'all three actual market deliveries counted');
+      const later=await nextSettlement(server,b,done);assert.equal(amount(later,'minecraft:oak_log'),amount(done,'minecraft:oak_log'));return{done,seller,history,statistics,later};
+    });
+    await stage('third owned Paper process shuts down normally',async()=>{await closePlayers();await server.stop();return{clean:true};});
+    evidence.status='passed';evidence.finishedAt=new Date().toISOString();evidence.ids={directRoute,alternateRoute,barter,rerouteId,listingId,purchaseId,shipmentId,partialListing,partialPurchases};save();console.log(`PASS ${evidence.steps.length} progression stages: ${directory}`);
   }catch(error){evidence.status='failed';evidence.error=error.stack;evidence.finishedAt=new Date().toISOString();save();console.error(error.stack);process.exitCode=1;}
   finally{try{await closePlayers();}catch{}if(server.child)try{await server.stop();}catch(error){evidence.status='failed';evidence.cleanupError=error.stack;save();process.exitCode=1;}fs.writeFileSync(path.join(options.runtime,'progression-acceptance','latest.json'),JSON.stringify({directory,status:evidence.status},null,2)+'\n');}
 }

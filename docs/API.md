@@ -28,7 +28,7 @@ world.city(starCoreCityId).thenAccept(result -> {
 | `routePlans(UUID,UUID,Mode,int,int)` | `Future<List<RoutePlan>>`；同方向已声明路线的只读成本排序（周期/距离/容量/节点数/启用状态、按城市每期维护及独立货单全程维护基线），limit为1–100，不授予通行或外交许可 |
 | `orders(UUID,int,int)` | `Future<List<Order>>`；有限分页查询城市相关托管货单 |
 | `transport(UUID)` | `Future<Optional<TransportStatus>>`；当前周期持久运力、共享节点剩余量、维护、待运/暂停及瓶颈；不证明现场领土/锚点或外交有效 |
-| `marketListings(int,int)` | `Future<List<Listing>>`；公开可用的整批实物挂牌，limit 为 1–100，offset 非负 |
+| `marketListings(int,int)` | `Future<List<Listing>>`；公开仍有剩余可买数量的实物挂牌，limit 为 1–100，offset 非负 |
 | `marketPurchases(UUID,int,int)` | `Future<List<Purchase>>`；城市作为买方或卖方的国家付款/实物交接状态，limit 为 1–100，offset 非负 |
 | `marketDeliveryStats(UUID,String,int,int)` | `Future<List<DeliveryStats>>`；仅后台已核对物流 `COMPLETED` 收据的实际市场交货，按物品统计订单、数量、精确总额、加权均价和完成周期；城市可为空，物品可为空；有界回填可能短暂落后于最新交货 |
 | `disasterResponse(UUID)` | `Future<Optional<DisasterState.Response>>`；按稳定请求 UUID 读取救灾成本、生效/到期、原事件身份、恢复步骤与预算快照 |
@@ -97,7 +97,9 @@ public void onIndustry(IndustrySettledEvent event) {
 
 内部 `MarketService` 在串行 IO 保存实物挂牌、锁定、付款 outbox 和物流交接。`list/buy` 接受稳定请求 UUID，并要求调用方在主线程证明城市管理和当前国家治理权限；构造 `AuthoritySnapshot` 不能代替真实授权。派发前仍重新核实双方国家、战争/外交和实际启用节点。`MarketController` 已提供这一调度/授权边界。付款确认后，`createPaidShipment` 的内部 `ReservedCargoClaim` 在同一个 `WorldStore` 事务消费已支付的原托管，不再次扣仓库；这个信任入口不是第三方插件随意发货 API。
 
-`Purchase.SHIPPED` 只代表转入物流，`PriceHistory` 记录该时点成交价格；真实到货由原物流单 `COMPLETED` 证明。消费 API 查询不得再次发物品或支付。恢复、撤单与配置合同见 [市场文档](market.md)。
+1.5中 `Listing.units` 保留原始数量，`availableUnits/reservedUnits/shippedUnits/returnedUnits` 的和始终等于原始数量。`Purchase.units` 为该次不可变份额，`PriceHistory.purchaseId` 唯一标识该次成交；同一挂牌允许多份历史。记录构造签名已扩展，直接构造或反射解析这些记录的扩展需适配新字段。
+
+`Purchase.SHIPPED` 只代表该份额转入物流，`PriceHistory` 记录该时点成交价格；真实到货由原物流单 `COMPLETED` 证明。挂牌关闭不撤销其他已预留份额。消费 API 查询不得再次发物品或支付。恢复、撤单与配置合同见 [市场文档](market.md)。
 
 `CultureDynamics` 为已提交城市结算提供持久地区衰减时钟及公开核心政策对新影响的有限修正，最多处理 64 个地区，不离线多步追赶。`LedgerMaintenance.sweep` 在同库事务有限压缩旧审计、裁剪过期报告；`archives/readArchive` 分页与校验读取原审计，保留所有业务幂等凭据。以上为内部仓储服务，须使用现有串行 IO；详见 [存档维护](storage-maintenance.md) 与 [规模基线](scale.md)。
 

@@ -26,11 +26,15 @@ class MarketServiceTest {
     }
     final class Rig implements AutoCloseable {
         final Path db=temp.resolve(UUID.randomUUID()+".db");final UUID actor=UUID.randomUUID(),world=UUID.randomUUID();final CoreCity seller=new CoreCity(UUID.randomUUID(),UUID.randomUUID(),"卖城","卖国",1,"test"),buyer=new CoreCity(UUID.randomUUID(),UUID.randomUUID(),"买城","买国",1,"test");
-        final Set<String> anchors=new HashSet<>();WorldStore store;LogisticsService logistics;MarketService market;UUID route,left,right;
-        Rig()throws Exception{open();for(CoreCity c:List.of(seller,buyer)){store.ensureCity(c);store.stock(c.cityId(),BREAD,1000);store.stock(c.cityId(),PLANKS,1000);}Site a=new Site(world,"world",0,64,0),b=new Site(world,"world",320,64,0);anchors.add(a.anchorKey());anchors.add(b.anchorKey());left=logistics.registerNode(UUID.randomUUID(),seller.cityId(),NodeType.ROAD,a,"plains",auth(0,seller.cityId())).id();right=logistics.registerNode(UUID.randomUUID(),buyer.cityId(),NodeType.ROAD,b,"plains",auth(0,buyer.cityId())).id();route=logistics.createRoute(UUID.randomUUID(),seller.cityId(),buyer.cityId(),List.of(left,right),Mode.LAND,auth(0,seller.cityId())).id();}
+        final Map<UUID,UUID> ownership=new HashMap<>();final Set<String> anchors=new HashSet<>();WorldStore store;LogisticsService logistics;MarketService market;UUID route,left,right;
+        Rig()throws Exception{ownership.put(seller.cityId(),seller.nationId());ownership.put(buyer.cityId(),buyer.nationId());open();for(CoreCity c:List.of(seller,buyer)){store.ensureCity(c);store.stock(c.cityId(),BREAD,1000);store.stock(c.cityId(),PLANKS,1000);}Site a=new Site(world,"world",0,64,0),b=new Site(world,"world",320,64,0);anchors.add(a.anchorKey());anchors.add(b.anchorKey());left=logistics.registerNode(UUID.randomUUID(),seller.cityId(),NodeType.ROAD,a,"plains",auth(0,seller.cityId())).id();right=logistics.registerNode(UUID.randomUUID(),buyer.cityId(),NodeType.ROAD,b,"plains",auth(0,buyer.cityId())).id();route=logistics.createRoute(UUID.randomUUID(),seller.cityId(),buyer.cityId(),List.of(left,right),Mode.LAND,auth(0,seller.cityId())).id();}
         void open()throws Exception{store=new WorldStore(db,10000);logistics=new LogisticsService(store,LogisticsDefinitions.defaults());market=new MarketService(store,logistics,MarketDefinitions.defaults());}
         void restart()throws Exception{store.close();open();}
-        AuthoritySnapshot auth(long period,UUID... managed)throws Exception{Set<UUID> ids=new HashSet<>();for(Node n:logistics.nodes(100,0))ids.add(n.id());return new AuthoritySnapshot(actor,period,Map.of(seller.cityId(),seller.nationId(),buyer.cityId(),buyer.nationId()),Set.of(managed),anchors,ids,Set.of(TradePair.of(seller.cityId(),buyer.cityId())));}
+        AuthoritySnapshot auth(long period,UUID... managed)throws Exception{Set<UUID> ids=new HashSet<>();for(Node n:logistics.nodes(100,0))ids.add(n.id());return new AuthoritySnapshot(actor,period,ownership,Set.of(managed),anchors,ids,ownership.keySet().stream().filter(c->!c.equals(seller.cityId())).map(c->TradePair.of(seller.cityId(),c)).collect(java.util.stream.Collectors.toSet()));}
+        CoreCity addBuyer()throws Exception{CoreCity city=new CoreCity(UUID.randomUUID(),UUID.randomUUID(),"另一买城","另一买国",1,"test");ownership.put(city.cityId(),city.nationId());store.ensureCity(city);store.stock(city.cityId(),BREAD,1000);store.stock(city.cityId(),PLANKS,1000);return city;}
+        UUID routeTo(CoreCity city)throws Exception{Site site=new Site(world,"world",640,64,0);anchors.add(site.anchorKey());UUID node=logistics.registerNode(UUID.randomUUID(),city.cityId(),NodeType.ROAD,site,"plains",auth(1,city.cityId())).id();return logistics.createRoute(UUID.randomUUID(),seller.cityId(),city.cityId(),List.of(left,node),Mode.LAND,auth(1,seller.cityId())).id();}
+        Purchase partial(Listing listing,CoreCity city,UUID routeId,long units,long period)throws Exception{return market.buy(UUID.randomUUID(),listing.id(),routeId,city.cityId(),city.nationId(),units,auth(period,city.cityId()));}
+        void payAndShip(Purchase p,long period)throws Exception{for(Dispatch d:market.leaseDue(10,period*100000)){market.finish(d,paid(d),period*100000);}market.ship(p.id(),auth(period));}
         Listing list()throws Exception{return market.list(UUID.randomUUID(),seller.cityId(),BREAD,20,new BigDecimal("1.25"),auth(1,seller.cityId()));}
         Purchase buy(Listing l)throws Exception{return market.buy(UUID.randomUUID(),l.id(),route,buyer.cityId(),buyer.nationId(),auth(1,buyer.cityId()));}
         Dispatch lease(long now)throws Exception{return market.leaseDue(10,now).getFirst();}
@@ -57,7 +61,7 @@ class MarketServiceTest {
 
     @Test void failedPaymentBacklogCannotStarveNewPurchaseAcrossRestart()throws Exception{
         try(Rig r=new Rig()){
-            MarketDefinitions d=MarketDefinitions.defaults();MarketDefinitions bulk=new MarketDefinitions(d.items(),200,d.listingLifetimePeriods(),1,d.maxUnits(),d.maximumUnitPrice());
+            MarketDefinitions d=MarketDefinitions.defaults();MarketDefinitions bulk=new MarketDefinitions(d.items(),200,d.listingLifetimePeriods(),1,d.maxUnits(),d.maximumUnitPrice(),200);
             r.market=new MarketService(r.store,r.logistics,bulk);
             Map<UUID,String> originalTransactions=new HashMap<>();for(int i=0;i<130;i++){Purchase old=r.buy(r.market.list(UUID.randomUUID(),r.seller.cityId(),BREAD,1,new BigDecimal("1.00"),r.auth(1,r.seller.cityId())));originalTransactions.put(old.id(),old.transactionId());}
             r.store.execute("UPDATE market_purchase SET state='RETRY',attempts=8,next_attempt=0,created_period=1");
@@ -102,6 +106,136 @@ class MarketServiceTest {
             Purchase old=r.buy(r.list());Dispatch first=r.market.leaseDue(1,0).getFirst();r.market.finish(first,new TreasuryTransferPort.Delivery(old.transactionId(),TreasuryTransferPort.Status.RETRY,null,"later"),0);for(int i=0;i<4;i++)r.buy(r.list());String before=r.store.query("SELECT next_lane FROM starworld_dispatch_cursor WHERE queue='starworld:market-payment'",v->v.getString(1)).getFirst();
             r.store.execute("CREATE TRIGGER reject_market_lease BEFORE UPDATE ON market_purchase WHEN NEW.state='IN_FLIGHT' BEGIN SELECT RAISE(ABORT,'lease rollback'); END");assertThrows(SQLException.class,()->r.market.leaseDue(1,2000));assertEquals(before,r.store.query("SELECT next_lane FROM starworld_dispatch_cursor WHERE queue='starworld:market-payment'",v->v.getString(1)).getFirst());assertEquals(PurchaseStatus.RETRY,r.market.purchase(old.id()).orElseThrow().status());assertEquals(1,r.market.purchase(old.id()).orElseThrow().attempts());assertEquals(0,r.store.query("SELECT COUNT(*) FROM market_purchase WHERE state='IN_FLIGHT'",v->v.getInt(1)).getFirst());
             r.store.execute("DROP TRIGGER reject_market_lease");List<Dispatch> batch=r.market.leaseDue(3,2000);assertEquals(3,batch.size());assertEquals(old.id(),batch.getFirst().purchase().id());assertEquals(3,r.store.query("SELECT COUNT(*) FROM market_purchase WHERE state='IN_FLIGHT'",v->v.getInt(1)).getFirst());assertEquals(2,r.store.query("SELECT COUNT(*) FROM market_purchase WHERE state='PENDING'",v->v.getInt(1)).getFirst());
+        }
+    }
+
+    @Test void twoBuyersReceiveOnlyTheirReservedSlicesAndStatisticsSurviveRestart()throws Exception{
+        try(Rig r=new Rig()){
+            CoreCity second=r.addBuyer();UUID secondRoute=r.routeTo(second);Listing lot=r.list();
+            Purchase first=r.partial(lot,r.buyer,r.route,7,1),other=r.partial(lot,second,secondRoute,13,1);
+            assertEquals(new BigDecimal("8.75"),first.total());assertEquals(new BigDecimal("16.25"),other.total());
+            assertNotEquals(first.transactionId(),other.transactionId());assertNotEquals(first.shipmentId(),other.shipmentId());
+            assertEquals(980,r.stock(r.seller));assertEquals(20,r.market.listing(lot.id()).orElseThrow().reservedUnits());
+            r.payAndShip(first,2);r.restart();Order secondShipment=r.market.ship(other.id(),r.auth(2));
+            assertEquals(Map.of(BREAD,13L),secondShipment.offered());
+            assertEquals(Map.of(BREAD,7L),r.logistics.order(first.shipmentId()).orElseThrow().offered());
+            assertEquals(secondShipment,r.market.ship(other.id(),r.auth(2)));
+            for(int period=3;period<12;period++)r.logistics.settle(r.auth(period),10);
+            assertEquals(2,r.market.reconcileDeliveries(10));r.restart();assertEquals(0,r.market.reconcileDeliveries(10));
+            assertEquals(1007,r.stock(r.buyer));assertEquals(1013,r.stock(second));assertEquals(980,r.stock(r.seller));
+            assertEquals(20,r.market.listing(lot.id()).orElseThrow().shippedUnits());
+            assertEquals(ListingStatus.SHIPPED,r.market.listing(lot.id()).orElseThrow().status());
+            assertEquals(2,r.market.history(BREAD,10,0).size());
+            assertEquals(Set.of(first.id(),other.id()),r.market.history(BREAD,10,0).stream().map(PriceHistory::purchaseId).collect(java.util.stream.Collectors.toSet()));
+            DeliveryStats all=r.market.deliveryStats(null,BREAD,10,0).getFirst();assertEquals(2,all.orders());assertEquals(20,all.units());assertEquals(new BigDecimal("25.00"),all.gross());
+            assertEquals(7,r.market.deliveryStats(r.buyer.cityId(),BREAD,10,0).getFirst().units());
+            assertEquals(13,r.market.deliveryStats(second.cityId(),BREAD,10,0).getFirst().units());
+        }
+    }
+    @Test void remainderClosureCannotReturnAnotherBuyersReservationAndClosedUnsentSliceReturnsOnce()throws Exception{
+        try(Rig r=new Rig()){
+            Listing lot=r.list();Purchase first=r.partial(lot,r.buyer,r.route,7,1);
+            Listing closed=r.market.cancelListing(lot.id(),r.auth(1,r.seller.cityId()));
+            assertEquals(13,closed.returnedUnits());assertEquals(7,closed.reservedUnits());assertEquals(993,r.stock(r.seller));
+            assertEquals(closed,r.market.cancelListing(lot.id(),r.auth(1,r.seller.cityId())));
+            r.restart();Purchase cancelled=r.market.cancelUnsent(first.id(),r.auth(1,r.buyer.cityId()));
+            assertEquals(cancelled,r.market.cancelUnsent(first.id(),r.auth(1,r.buyer.cityId())));assertEquals(1000,r.stock(r.seller));
+            Listing after=r.market.listing(lot.id()).orElseThrow();assertEquals(ListingStatus.CANCELLED,after.status());assertEquals(20,after.returnedUnits());assertEquals(0,after.reservedUnits());assertEquals(0,after.availableUnits());
+            assertTrue(r.market.leaseDue(10,0).isEmpty());
+        }
+    }
+    @Test void paidSliceShipsAfterSellerCancelsOnlyRemainderAndRecordsExactDelivery()throws Exception{
+        try(Rig r=new Rig()){
+            Listing lot=r.list();Purchase purchase=r.partial(lot,r.buyer,r.route,7,1);Dispatch dispatch=r.lease(0);r.market.finish(dispatch,r.paid(dispatch),0);
+            r.market.cancelListing(lot.id(),r.auth(1,r.seller.cityId()));r.restart();r.market.ship(purchase.id(),r.auth(2));
+            for(int period=3;period<8;period++)r.logistics.settle(r.auth(period),10);
+            assertEquals(1,r.market.reconcileDeliveries(10));assertEquals(993,r.stock(r.seller));assertEquals(1007,r.stock(r.buyer));
+            Listing after=r.market.listing(lot.id()).orElseThrow();assertEquals(ListingStatus.CANCELLED,after.status());assertEquals(13,after.returnedUnits());assertEquals(7,after.shippedUnits());
+            assertEquals(new BigDecimal("8.75"),r.market.deliveryStats(null,BREAD,10,0).getFirst().gross());
+        }
+    }
+    @Test void expiryReturnsOnlyUnreservedStockAndPaidSliceStillShips()throws Exception{
+        try(Rig r=new Rig()){
+            Listing lot=r.list();Purchase purchase=r.partial(lot,r.buyer,r.route,4,1);Dispatch dispatch=r.lease(0);r.market.finish(dispatch,r.paid(dispatch),0);
+            assertEquals(1,r.market.expire(r.auth(lot.expiresPeriod()),10));assertEquals(996,r.stock(r.seller));
+            assertEquals(0,r.market.expire(r.auth(lot.expiresPeriod()),10));r.restart();
+            assertEquals(Map.of(BREAD,4L),r.market.ship(purchase.id(),r.auth(lot.expiresPeriod())).offered());
+            Listing after=r.market.listing(lot.id()).orElseThrow();assertEquals(ListingStatus.EXPIRED,after.status());assertEquals(16,after.returnedUnits());assertEquals(4,after.shippedUnits());
+        }
+    }
+    @Test void insufficientRefundCapacityPreservesClosedReservationUntilExplicitRetry()throws Exception{
+        try(Rig r=new Rig()){
+            Listing lot=r.list();Purchase purchase=r.partial(lot,r.buyer,r.route,7,1);r.market.cancelListing(lot.id(),r.auth(1,r.seller.cityId()));r.store.cityCapacity(r.seller.cityId(),995);
+            assertThrows(SQLException.class,()->r.market.cancelUnsent(purchase.id(),r.auth(1,r.buyer.cityId())));
+            assertEquals(PurchaseStatus.PENDING,r.market.purchase(purchase.id()).orElseThrow().status());assertEquals(7,r.market.listing(lot.id()).orElseThrow().reservedUnits());assertEquals(993,r.stock(r.seller));
+            r.restart();r.store.cityCapacity(r.seller.cityId(),1000);r.market.cancelUnsent(purchase.id(),r.auth(1,r.buyer.cityId()));assertEquals(1000,r.stock(r.seller));
+        }
+    }
+    @Test void partialReservationFailureRollsBackThePurchaseAndEveryEscrowBalance()throws Exception{
+        try(Rig r=new Rig()){
+            Listing lot=r.list();r.store.execute("CREATE TRIGGER reject_reservation BEFORE UPDATE ON market_listing BEGIN SELECT RAISE(ABORT,'reserve crash'); END");
+            assertThrows(SQLException.class,()->r.partial(lot,r.buyer,r.route,6,1));assertTrue(r.market.purchases(r.buyer.cityId(),10,0).isEmpty());assertEquals(lot,r.market.listing(lot.id()).orElseThrow());assertEquals(980,r.stock(r.seller));
+            r.store.execute("DROP TRIGGER reject_reservation");Purchase purchase=r.partial(lot,r.buyer,r.route,6,1);Dispatch dispatch=r.lease(0);r.market.finish(dispatch,r.paid(dispatch),0);
+            r.store.execute("CREATE TRIGGER reject_partial_history BEFORE INSERT ON market_history BEGIN SELECT RAISE(ABORT,'history crash'); END");
+            assertThrows(SQLException.class,()->r.market.ship(purchase.id(),r.auth(2)));assertEquals(PurchaseStatus.PAID,r.market.purchase(purchase.id()).orElseThrow().status());assertEquals(6,r.market.listing(lot.id()).orElseThrow().reservedUnits());assertTrue(r.logistics.order(purchase.shipmentId()).isEmpty());
+            r.restart();r.store.execute("DROP TRIGGER reject_partial_history");r.market.ship(purchase.id(),r.auth(2));assertEquals(6,r.market.listing(lot.id()).orElseThrow().shippedUnits());assertEquals(14,r.market.listing(lot.id()).orElseThrow().availableUnits());
+        }
+    }
+    @Test void quantitiesCannotOversellAndRequestReplayRetainsItsFrozenSlice()throws Exception{
+        try(Rig r=new Rig()){
+            Listing lot=r.list();Purchase partial=r.partial(lot,r.buyer,r.route,6,1);r.restart();
+            assertEquals(partial,r.market.buy(partial.id(),lot.id(),r.route,r.buyer.cityId(),r.buyer.nationId(),6,r.auth(1,r.buyer.cityId())));
+            assertThrows(SQLException.class,()->r.market.buy(partial.id(),lot.id(),r.route,r.buyer.cityId(),r.buyer.nationId(),7,r.auth(1,r.buyer.cityId())));
+            assertThrows(SQLException.class,()->r.market.buy(partial.id(),lot.id(),r.route,r.buyer.cityId(),r.buyer.nationId(),r.auth(1,r.buyer.cityId())));
+            assertThrows(SQLException.class,()->r.partial(lot,r.buyer,r.route,15,1));
+            Purchase remaining=r.buy(lot);assertEquals(14,remaining.units());assertEquals(new BigDecimal("17.50"),remaining.total());
+            r.market.cancelUnsent(partial.id(),r.auth(1,r.buyer.cityId()));
+            assertEquals(remaining,r.market.buy(remaining.id(),lot.id(),r.route,r.buyer.cityId(),r.buyer.nationId(),r.auth(1,r.buyer.cityId())));
+            assertEquals(6,r.market.listing(lot.id()).orElseThrow().availableUnits());assertEquals(14,r.market.listing(lot.id()).orElseThrow().reservedUnits());assertEquals(980,r.stock(r.seller));
+        }
+    }
+    @Test void competingPartialRequestsSerializeWithoutDoubleReservation()throws Exception{
+        try(Rig r=new Rig()){
+            Listing lot=r.list();AuthoritySnapshot auth=r.auth(1,r.buyer.cityId());
+            try(var pool=java.util.concurrent.Executors.newFixedThreadPool(2)){
+                var start=new java.util.concurrent.CountDownLatch(1);List<java.util.concurrent.Future<Boolean>> results=new ArrayList<>();
+                for(int i=0;i<2;i++)results.add(pool.submit(()->{start.await();try{r.market.buy(UUID.randomUUID(),lot.id(),r.route,r.buyer.cityId(),r.buyer.nationId(),13,auth);return true;}catch(SQLException unavailable){return false;}}));
+                start.countDown();int success=0;for(var result:results)if(result.get(5,java.util.concurrent.TimeUnit.SECONDS))success++;
+                assertEquals(1,success);assertEquals(1,r.market.purchases(r.buyer.cityId(),10,0).size());
+            }
+            Listing after=r.market.listing(lot.id()).orElseThrow();assertEquals(7,after.availableUnits());assertEquals(13,after.reservedUnits());assertEquals(980,r.stock(r.seller));
+        }
+    }
+    @Test void aLargeLotCanDeliverACapacitySizedSliceWhileItsRemainderStaysAvailable()throws Exception{
+        try(Rig r=new Rig()){
+            Listing lot=r.market.list(UUID.randomUUID(),r.seller.cityId(),BREAD,600,new BigDecimal("1.25"),r.auth(1,r.seller.cityId()));
+            assertThrows(SQLException.class,()->r.partial(lot,r.buyer,r.route,300,1));
+            Purchase slice=r.partial(lot,r.buyer,r.route,200,1);r.payAndShip(slice,2);
+            for(int period=3;period<8;period++)r.logistics.settle(r.auth(period),10);
+            r.market.reconcileDeliveries(10);Listing available=r.market.listing(lot.id()).orElseThrow();
+            assertEquals(ListingStatus.AVAILABLE,available.status());assertEquals(400,available.availableUnits());assertEquals(200,available.shippedUnits());
+            assertEquals(1200,r.stock(r.buyer));assertEquals(400,r.stock(r.seller));
+            DeliveryStats stats=r.market.deliveryStats(null,BREAD,10,0).getFirst();assertEquals(200,stats.units());assertEquals(new BigDecimal("250.00"),stats.gross());
+            r.market.cancelListing(lot.id(),r.auth(8,r.seller.cityId()));assertEquals(800,r.stock(r.seller));
+        }
+    }
+    @Test void loweredQuantityLimitBlocksNewReservationsButCannotRewriteAnExistingReceipt()throws Exception{
+        try(Rig r=new Rig()){
+            Listing lot=r.list();Purchase slice=r.partial(lot,r.buyer,r.route,12,1);MarketDefinitions d=MarketDefinitions.defaults();
+            r.market=new MarketService(r.store,r.logistics,new MarketDefinitions(d.items(),d.maxListingsPerCity(),d.listingLifetimePeriods(),d.dispatchBatch(),5,d.maximumUnitPrice()));
+            assertEquals(slice,r.market.buy(slice.id(),lot.id(),r.route,r.buyer.cityId(),r.buyer.nationId(),12,r.auth(2,r.buyer.cityId())));
+            assertThrows(SQLException.class,()->r.partial(lot,r.buyer,r.route,6,2));
+            assertEquals(8,r.market.listing(lot.id()).orElseThrow().availableUnits());assertEquals(1,r.market.purchases(r.buyer.cityId(),10,0).size());
+            r.payAndShip(slice,3);assertEquals(Map.of(BREAD,12L),r.logistics.order(slice.shipmentId()).orElseThrow().offered());
+        }
+    }
+    @Test void partialPaymentsRemainBoundedAndCancelledAttemptReleasesItsSlot()throws Exception{
+        try(Rig r=new Rig()){
+            MarketDefinitions d=MarketDefinitions.defaults();r.market=new MarketService(r.store,r.logistics,new MarketDefinitions(d.items(),d.maxListingsPerCity(),d.listingLifetimePeriods(),d.dispatchBatch(),d.maxUnits(),d.maximumUnitPrice(),2));
+            Listing lot=r.list();Purchase first=r.partial(lot,r.buyer,r.route,1,1);r.partial(lot,r.buyer,r.route,1,1);
+            assertThrows(SQLException.class,()->r.partial(lot,r.buyer,r.route,1,1));assertEquals(18,r.market.listing(lot.id()).orElseThrow().availableUnits());
+            r.market.cancelUnsent(first.id(),r.auth(1,r.buyer.cityId()));r.partial(lot,r.buyer,r.route,1,1);assertEquals(18,r.market.listing(lot.id()).orElseThrow().availableUnits());assertEquals(2,r.market.listing(lot.id()).orElseThrow().reservedUnits());
+            assertThrows(SQLException.class,()->r.store.execute("UPDATE market_listing SET available_units=19 WHERE id=?",lot.id()));
         }
     }
 

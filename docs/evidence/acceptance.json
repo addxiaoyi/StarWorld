@@ -1,287 +1,44 @@
 {
   "schema": 1,
-  "version": "1.4.0",
-  "status": "passed",
-  "recorded_at": "2026-11-25T10:33:39.435582+00:00",
-  "artifact_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f",
-  "sources_sha256": "045c5d9e8d08101502ea060b3fb6e8aa161ca0024ee8e4b3e034eafe08548e33",
-  "product_source_tree": "89bd607413bb2f9c8181a1eeea64e95b7418f6a2",
-  "code_and_tool_commit": "1ed45f359c5a55751ed35d2ec3cd5ae28655503b",
-  "unit_evidence_sha256": "6dc394d3bb7477c3132cf93289707ea7b5325b08ebad86e56f979dc3b2fbf274",
+  "version": "1.5.0",
+  "status": "feature-acceptance-passed",
+  "release_status": "full-release-suite-not-run",
+  "recorded_at": "2026-11-25T11:12:33.183676+00:00",
+  "artifact_sha256": "7bc7f174632de063d95f5e4fc85fdff7cf6d673d9839db306c5e93a553d22f26",
+  "sources_sha256": "11697cc26d56b9071370bb7a443f6e66f9dcf8a422cad292b9952cfedde88c7b",
+  "unit_evidence_sha256": "c6c5a45d488c9b4ac2b99c470ac20e1b95d37cddd9789030d75e1e497c5687b8",
   "tests": {
-    "java": 475,
-    "java_suites": 53,
+    "java": 493,
+    "java_suites": 54,
     "python": 73,
-    "node": 20,
-    "failures": 0,
-    "errors": 0,
-    "skipped": 0
+    "node": 21
   },
-  "verification_logs": [
-    {
-      "file": "runtime/logs/build-1.4.0.log",
-      "sha256": "d40f2313c500c2da136e28a50f57a92d09c6e3151ed386f15d2aa0ca58ccedaa"
-    },
-    {
-      "file": "runtime/logs/python-tests-final.log",
-      "sha256": "e2fbfca405adf6e0fa575c29f209a3e47be6e76724ca2a389e9e2df0fbff1b63"
-    },
-    {
-      "file": "runtime/logs/node-tests-final.log",
-      "sha256": "88e490bc6222d5007c7ee9e5f64dab3ed830f990a3d0afda3d302585bde68eec"
-    }
-  ],
-  "current_gameplay_suites": 12,
-  "current_gameplay_stages": 217,
-  "runtime_runs": [
-    {
-      "suite": "baseline",
-      "status": "passed",
-      "stages": 15,
-      "started_at": "2026-11-25T08:44:34.302Z",
-      "finished_at": "2026-11-25T08:46:06.530Z",
-      "evidence": "runtime/baseline/client-acceptance/2026-11-25T08-44-34-302Z/evidence.json",
-      "evidence_sha256": "e5f19f96dafa95d5a6db1dfe7af4fce9ab1b6e4f256cab95ff29dce7d8e5b9b2",
-      "plugin_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
-    },
-    {
-      "suite": "expansion",
-      "status": "passed",
-      "stages": 23,
-      "started_at": "2026-11-25T09:53:55.356Z",
-      "finished_at": "2026-11-25T09:58:11.309Z",
-      "evidence": "runtime/expansion-r2/expansion-acceptance/2026-11-25T09-53-55-356Z/evidence.json",
-      "evidence_sha256": "300e92628e348b2775dedec58a355d0b02e11688634e533aab69687495782e3a",
-      "plugin_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
-    },
+  "runtime_stages": 31,
+  "runs": [
     {
       "suite": "progression",
-      "status": "passed",
-      "stages": 20,
-      "started_at": "2026-11-25T09:38:25.772Z",
-      "finished_at": "2026-11-25T09:42:03.403Z",
-      "evidence": "runtime/progression-r3/progression-acceptance/2026-11-25T09-38-25-772Z/evidence.json",
-      "evidence_sha256": "5c94406270a6a1af1c2cdc6b1e1bc996d3f0bbbb6fcfd4ecc0868d59a0f3afeb",
-      "plugin_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
+      "stages": 25,
+      "runtime": "runtime/progression15/progression-acceptance/2026-11-25T11-05-21-095Z",
+      "evidence_sha256": "1808fb9cf2d23632233db77448a908cbf3c66be7676dca85249a7db41d3d3076",
+      "runner_sha256": "14c813c8405c8d3d9a2ccfd1e8e3ec2cb6da5c5d7f3b60aa99f2abfa0de1cf22",
+      "finished_at": "2026-11-25T11:09:56.340Z",
+      "normal_server_stops": 3
     },
     {
-      "suite": "operations",
-      "status": "passed",
-      "stages": 29,
-      "started_at": "2026-11-25T09:34:12.487Z",
-      "finished_at": "2026-11-25T09:38:01.168Z",
-      "evidence": "runtime/operations-r2/operations-acceptance/2026-11-25T09-34-12-487Z/evidence.json",
-      "evidence_sha256": "0c13136b47deeca3205d14ba923b82bbf365b885ee9db47bad00f08e18d19858",
-      "plugin_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
-    },
-    {
-      "suite": "border",
-      "status": "passed",
-      "stages": 11,
-      "started_at": "2026-11-25T10:08:06.786Z",
-      "finished_at": "2026-11-25T10:12:06.356Z",
-      "evidence": "runtime/border-r3/border-acceptance/2026-11-25T10-08-06-786Z/evidence.json",
-      "evidence_sha256": "d02fb6edbfabee7bea306b7d36819509d1cb6860a34e8e98dcfcf7af2d47759f",
-      "plugin_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
-    },
-    {
-      "suite": "disaster",
-      "status": "passed",
-      "stages": 22,
-      "started_at": "2026-11-25T09:58:11.436Z",
-      "finished_at": "2026-11-25T10:00:38.531Z",
-      "evidence": "runtime/disaster-r2/disaster-acceptance/2026-11-25T09-58-11-436Z/evidence.json",
-      "evidence_sha256": "db9c2c1bd9f5fbe3fd1ea8dd2374046e7ba8f8034040f84ad171f59dfcf8ac88",
-      "plugin_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
-    },
-    {
-      "suite": "works",
-      "status": "passed",
-      "stages": 31,
-      "started_at": "2026-11-25T10:24:50.539Z",
-      "finished_at": "2026-11-25T10:32:17.533Z",
-      "evidence": "runtime/works-r4/works-acceptance/2026-11-25T10-24-50-539Z/evidence.json",
-      "evidence_sha256": "769af363b8601c3b6aef50759e13d0724f27c45a66a0326f6c824495fc283d72",
-      "plugin_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
-    },
-    {
-      "suite": "storage",
-      "status": "passed",
-      "stages": 8,
-      "started_at": "2026-11-25T09:08:42.210Z",
-      "finished_at": "2026-11-25T09:10:00.533Z",
-      "evidence": "runtime/storage/survey-acceptance/2026-11-25T09-08-42-210Z/evidence.json",
-      "evidence_sha256": "4960b04736999977b5c46e29d4cdc38874d82871905ae890cb9b8167b2f7e7eb",
-      "plugin_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
-    },
-    {
-      "suite": "civic",
-      "status": "passed",
-      "stages": 30,
-      "started_at": "2026-11-25T09:22:43.436Z",
-      "finished_at": "2026-11-25T09:28:48.901Z",
-      "evidence": "runtime/civic/civic-senluo-acceptance/2026-11-25T09-22-43-436Z/evidence.json",
-      "evidence_sha256": "782f17251082add9814729e92dc9d4f25bf33f2ca0fe41bfa24e05be0e99c777",
-      "plugin_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
-    },
-    {
-      "suite": "upgrade",
-      "status": "passed",
-      "stages": 7,
-      "started_at": "2026-11-25T09:48:45.131Z",
-      "finished_at": "2026-11-25T09:49:18.404Z",
-      "evidence": "runtime/upgrade/upgrade-10-acceptance/2026-11-25T09-48-45-131Z/evidence.json",
-      "evidence_sha256": "2835c8e7449106fa9a74f2395cc9ad87d8b147833d2fa6647dd3e1ee3b9c413a",
-      "plugin_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
-    },
-    {
-      "suite": "life-carry",
-      "status": "passed",
-      "stages": 7,
-      "started_at": "2026-11-25T09:42:03.669Z",
-      "finished_at": "2026-11-25T09:44:23.906Z",
-      "evidence": "runtime/life-candidate-r2/lifecycle-acceptance/candidate-2026-11-25T09-42-03-669Z/evidence.json",
-      "evidence_sha256": "b738ad851540bc6dbf91d8ece9dc35015d49554dccc07af13aea839cd775ed2f",
-      "plugin_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
-    },
-    {
-      "suite": "lifecycle-logistics",
-      "status": "passed",
-      "stages": 14,
-      "started_at": "2026-11-25T09:49:18.536Z",
-      "finished_at": "2026-11-25T09:53:55.155Z",
-      "evidence": "runtime/lifecycle-logistics-r2/lifecycle-logistics-acceptance/2026-11-25T09-49-18-535Z/evidence.json",
-      "evidence_sha256": "5163a5cd78cf55d5cd97ce84c18899586daac55c22097cb69d1f5932ccd4c5cf",
-      "plugin_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
+      "suite": "market-upgrade",
+      "stages": 6,
+      "runtime": "runtime/market-upgrade15-r2/market-upgrade-acceptance/2026-11-25T11-10-25-188Z",
+      "evidence_sha256": "e6f3771cc7493d5b0e11c51cfe2bee5db159f6885d68744bc73a45b5794e8420",
+      "runner_sha256": "32998a73417ff47cd0161bb5a89f48b35e12eb6b7bf6c08bcdd1c991e8218746",
+      "finished_at": "2026-11-25T11:10:56.493Z",
+      "normal_server_stops": 2
     }
   ],
-  "standalone": {
-    "status": "passed",
-    "starts": 2,
-    "schema_version": 3,
-    "evidence": "runtime/smoke-r2/smoke-evidence.json",
-    "evidence_sha256": "36018aa20f30620e1c030f99eca5eeb3b0995087c4ffab3c01f5c19f35fca4ad"
-  },
-  "historical_migration_sources": [
-    {
-      "role": "0.5 saved-world source",
-      "source_commit": "68cb5433c35dd5fce05088c71ab82f08f25c3bec",
-      "source_build_tests": 291,
-      "plugin_sha256": "6ddf1175ee81d23078e3edfabcac8a78cdf9b82e465e5c5f1fc98232985c7f12",
-      "status": "passed",
-      "stages": 22,
-      "evidence": "runtime/disaster-source/disaster-acceptance/2026-11-25T09-14-38-266Z/evidence.json",
-      "evidence_sha256": "ba2163639ba4bce11dace72ce8e4f67f52aa62af6c3bc33e9ac666928f09ee9b"
-    },
-    {
-      "role": "1.0 civic saved-world source",
-      "source_commit": "4cd594e8ebe53afca4ee4469e06d4bbbacbb4077",
-      "source_build_tests": 398,
-      "plugin_sha256": "e6e8de59767b917f03beb367285d7ad3190fc248076e776a3645d9d0a364ce5b",
-      "status": "passed",
-      "stages": 30,
-      "evidence": "runtime/civic-source/civic-senluo-acceptance/2026-11-25T09-17-07-484Z/evidence.json",
-      "evidence_sha256": "7e27428300876231e82a6a69cc0dabe5211d3045e96d30c323ba6a866729a41f"
-    },
-    {
-      "role": "1.0 pending life-culture source",
-      "source_commit": "4cd594e8ebe53afca4ee4469e06d4bbbacbb4077",
-      "source_build_tests": 398,
-      "plugin_sha256": "e6e8de59767b917f03beb367285d7ad3190fc248076e776a3645d9d0a364ce5b",
-      "status": "passed",
-      "stages": 4,
-      "evidence": "runtime/life-source-r2/lifecycle-acceptance/source-2026-11-25T09-38-01-480Z/evidence.json",
-      "evidence_sha256": "f545694ded0dbb6563c31c47eafe0f0d40ca3cbccba686a9f197e22a52c30281"
-    }
-  ],
-  "storage_pressure": {
-    "rounds": 135,
-    "requests": 51840,
-    "accepted": 37133,
-    "rejected": 14707,
-    "heapSamples": 679,
-    "peakHeapBytes": 490536752,
-    "maxHeapBytes": 518979584,
-    "firstRoundMillis": 97,
-    "lastRoundMillis": 99,
-    "elapsedMillis": 60395,
-    "safetyLimitPercent": 95,
-    "requestsPerRound": 384,
-    "recoveryGapMillis": 250,
-    "peakPercentOfMaximum": 94.51946996049848
-  },
-  "release_lifecycle_gate_probe": {
-    "status": "passed",
-    "accepted": "genuine regenerated 1.0 source",
-    "rejected_with_coherently_updated_links": [
-      "altered original stage name",
-      "retained original error",
-      "wrong original version",
-      "wrong original plugin fingerprint"
-    ],
-    "script_sha256": "1f0e58ea39583ff3a6263a5b375e8427d5623d418e05d385783f1fab310539d3"
-  },
-  "scope": "Current gameplay counts exclude all historical source runs. Inputs were created on this Linux host because old-device data was unavailable. Paper servers are project-owned localhost-only runtimes; the Minecraft EULA authorization is limited to them. Windows commit-memory fields are unavailable sentinels on Linux; actual physical memory is checked. The 60-second pressure and SQLite scale runs do not establish long-term player capacity. Release ZIP hashes are recorded outside their own payload to avoid self-reference.",
-  "retained_attempts": {
-    "progression": "isolated StarCore declaration fee was not explicitly zero",
-    "operations": "isolated StarCore declaration fee was not explicitly zero",
-    "border": "event timing preflight rejected",
-    "progression-r2": "cross-query snapshot race; exact stock wait fixed in r3",
-    "life-candidate": "terminal configuration check rejected the new bundled climate default",
-    "expansion,disaster,works,lifecycle-logistics,border-r2": "gameplay passed but StarCore initial configuration rewrite invalidated release fingerprints; new fresh runs used initialized static inputs",
-    "works-r2": "31 gameplay stages passed but runner omitted required climate.yml fingerprint; complete release collector rejected the run; evidence was not rewritten",
-    "works-r3": "25 stages passed; natural rain changed the exact empty-cauldron well anchor to water_cauldron[level=1], confirmed from stopped world; r4 uses client-verified real stone roofs and preserves nine-facility conservation"
-  },
-  "collector_command": [
-    "python3",
-    "tools/package-evidence.py",
-    "--baseline-dir",
-    "/home/add/starword/runtime/baseline/client-acceptance/2026-11-25T08-44-34-302Z",
-    "--expansion-dir",
-    "/home/add/starword/runtime/expansion-r2/expansion-acceptance/2026-11-25T09-53-55-356Z",
-    "--progression-dir",
-    "/home/add/starword/runtime/progression-r3/progression-acceptance/2026-11-25T09-38-25-772Z",
-    "--operations-dir",
-    "/home/add/starword/runtime/operations-r2/operations-acceptance/2026-11-25T09-34-12-487Z",
-    "--border-dir",
-    "/home/add/starword/runtime/border-r3/border-acceptance/2026-11-25T10-08-06-786Z",
-    "--disaster-dir",
-    "/home/add/starword/runtime/disaster-r2/disaster-acceptance/2026-11-25T09-58-11-436Z",
-    "--works-dir",
-    "/home/add/starword/runtime/works-r4/works-acceptance/2026-11-25T10-24-50-539Z",
-    "--storage-dir",
-    "/home/add/starword/runtime/storage/survey-acceptance/2026-11-25T09-08-42-210Z",
-    "--civic-dir",
-    "/home/add/starword/runtime/civic/civic-senluo-acceptance/2026-11-25T09-22-43-436Z",
-    "--upgrade-dir",
-    "/home/add/starword/runtime/upgrade/upgrade-10-acceptance/2026-11-25T09-48-45-131Z",
-    "--lifecycle-source-dir",
-    "/home/add/starword/runtime/life-source-r2/lifecycle-acceptance/source-2026-11-25T09-38-01-480Z",
-    "--lifecycle-dir",
-    "/home/add/starword/runtime/life-candidate-r2/lifecycle-acceptance/candidate-2026-11-25T09-42-03-669Z",
-    "--lifecycle-logistics-dir",
-    "/home/add/starword/runtime/lifecycle-logistics-r2/lifecycle-logistics-acceptance/2026-11-25T09-49-18-535Z",
-    "--smoke-dir",
-    "/home/add/starword/runtime/smoke-r2"
-  ],
-  "release_packaging": {
-    "status": "passed",
-    "collector_check_only": true,
-    "collector_archive": true,
-    "release_script": true,
-    "independent_archive_audit": true,
-    "evidence_entries": 709,
-    "release_entries": 494,
-    "source_files_compared": 351,
-    "checks": [
-      "CRC, unique safe paths and no symlinks",
-      "every evidence manifest size and SHA-256",
-      "exact outer SHA256SUMS payload list and every hash",
-      "all repository source files match current bytes",
-      "Maven/CI dotfiles and executable wrapper preserved",
-      "nested evidence ZIP byte identity",
-      "no worlds, databases, generated trees or third-party JARs"
-    ],
-    "scope": "Final archive hashes and commit-specific audit are written outside the ZIP payload under target/StarWorld-1.4.0.sha256 and target/release-audit.json. The release is regenerated after final documentation edits; no GitHub release is published."
+  "scope": "Partial marketplace purchases and real 1.4 market migration. Other roadmap extensions remain in progress.",
+  "historical_release": "runtime/releases/1.4.0",
+  "tool_logs": {
+    "build-1.5.0.log": "83a5ada126e3687e291a41abc8bd21939ba471cd6a474504c1da37a9f36dd824",
+    "python-tests-1.5.0-r2.log": "adff6625f05befbff66b278770d89f71683b499357297714ec386372cacbb50b",
+    "node-tests-1.5.0-r2.log": "cdca81e2664a6c5a011fd7704e02830d3ba59c10f628d1621349f95841e6e76c"
   }
 }

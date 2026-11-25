@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { assertDurable, assertLifeEvolution, assertAddedTables, expectedAddedTables, stableTables, addedTables } = require('./upgrade-10-acceptance.cjs');
+const { assertDurable, assertLifeEvolution, assertMarketMigration, assertAddedTables, expectedAddedTables, stableTables, addedTables } = require('./upgrade-10-acceptance.cjs');
 const { validateRunConfigurations } = require('../senluo-fixture/lifecycle-acceptance.cjs');
 
 test('life migration permits only the exact new climate default and preserves every original configuration', () => {
@@ -70,6 +70,7 @@ function durableSnapshots(version) {
       world_name: 'world', x: -1, y: 64, z: -17, level: 1 }],
     stock: [], settlement: [], region: [{ id: 'world-a:-1:-2', terrain: 'plains', last_regen: -1 }], reserve: [],
     disaster_response: [], disaster_response_history: [], disaster_recovery_ledger: [],
+    market_schema: [{id:1,version:1,namespace:'original'}],
   });
   if (!v11) originalRows.life_evolution_action = [{ id: 'complete', consumed_period: 8 }];
   const afterRows = structuredClone(originalRows);
@@ -77,6 +78,7 @@ function durableSnapshots(version) {
   if (v13) afterRows.city_region = [{ city: 'city-a', nation: 'nation-a', region: 'world-a:-1:-2', world_name: 'world' }];
   afterRows.public_works_schema = [{ id: 1, version: 1 }];afterRows.civic_schema = [{ id: 1, version: 2 }];
   if (v11) Object.assign(afterRows, evolved.world.rows);
+  if (versionMinor>=5) afterRows.market_schema=[{id:1,version:2,namespace:'original'}];
   const baseTables = [...new Set([...stableTables, ...AUXILIARY_TABLES])];
   const newTables = expectedAddedTables(version);
   const coreRows = { starcore_nation_state: [], starcore_treasury_state: [], starcore_resource_state: [] };
@@ -109,8 +111,8 @@ test('1.2 keeps the 1.1 schema migration set without introducing another databas
   const durable=durableSnapshots('1.2.0');assert.doesNotThrow(()=>assertDurable(durable.before,durable.after,'1.2.0'));
 });
 
-test('1.3 and 1.4 add the nation-scoped atlas schema and backfill real historic facility regions', () => {
-  for (const version of ['1.3.0', '1.4.0']) {
+test('1.3 through 1.5 add the nation-scoped atlas schema and backfill real historic facility regions', () => {
+  for (const version of ['1.3.0', '1.4.0','1.5.0']) {
     const added = [...BASE_ADDED, ...V11_ADDED, ...V13_ADDED].sort();
     assert.deepEqual(expectedAddedTables(version), added);
     assert.doesNotThrow(() => assertAddedTables(['building'], ['building', ...added], version));
@@ -122,6 +124,25 @@ test('1.3 and 1.4 add the nation-scoped atlas schema and backfill real historic 
     durable.after.world.rows.city_region[0].nation = 'another-nation';
     assert.throws(() => assertDurable(durable.before, durable.after, version), /original city and nation atlas/u);
   }
+});
+
+test('1.5 market migration preserves exact payment identity, original quantity and purchase-keyed history',()=>{
+  const original={market_schema:[{id:1,version:1,namespace:'original'}],
+    market_listing:[{id:'listing',units:20,state:'SHIPPED'}],
+    market_purchase:[{id:'purchase',listing:'listing',buyer_city:'buyer',state:'SHIPPED',transaction_id:'payment',shipment:'shipment',total:'25.00'}],
+    market_history:[{listing:'listing',buyer_city:'buyer',period:7}]};
+  const migrated={market_schema:[{id:1,version:2,namespace:'original'}],
+    market_listing:[{...original.market_listing[0],available_units:0,reserved_units:0,shipped_units:20,returned_units:0}],
+    market_purchase:[{...original.market_purchase[0],units:20,buy_all:1}],
+    market_history:[{...original.market_history[0],purchase:'purchase'}]};
+  const before={world:{rows:original}},after={world:{rows:migrated}};
+  assert.doesNotThrow(()=>assertMarketMigration(before,after,'1.5.0'));
+  for(const change of [r=>r.market_purchase[0].transaction_id='new-payment',r=>r.market_purchase[0].units=19,
+    r=>r.market_listing[0].returned_units=1,r=>r.market_history[0].purchase='another',r=>r.market_schema[0].namespace='new']){
+    const bad=structuredClone(after);change(bad.world.rows);assert.throws(()=>assertMarketMigration(before,bad,'1.5.0'));
+  }
+  assert.doesNotThrow(()=>assertMarketMigration(after,structuredClone(after),'1.5.0'));
+  const corrupt=structuredClone(after);corrupt.world.rows.market_purchase[0].total='26.00';assert.throws(()=>assertMarketMigration(after,corrupt,'1.5.0'));
 });
 
 test('1.1 rejects deleted legacy progress, lost partial work, invalid budgets, and foreign queue namespaces', () => {

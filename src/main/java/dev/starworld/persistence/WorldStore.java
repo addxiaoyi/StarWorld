@@ -69,7 +69,8 @@ public final class WorldStore implements AutoCloseable {
         finally { connection.setAutoCommit(true); }
     }
     private static SQLException sql(Exception e) { return e instanceof SQLException se ? se : new SQLException(e.getMessage(),e); }
-    public synchronized void execute(String sql,Object... args) throws SQLException { try(PreparedStatement p=connection.prepareStatement(sql)) { bind(p,args); p.executeUpdate(); } }
+    // SQLite ALTER TABLE with a validated CHECK can report a result set; callers need completion, not an update count.
+    public synchronized void execute(String sql,Object... args) throws SQLException { try(PreparedStatement p=connection.prepareStatement(sql)) { bind(p,args); p.execute(); } }
     private static void bind(PreparedStatement p,Object[] args) throws SQLException { for(int i=0;i<args.length;i++) p.setObject(i+1,args[i] instanceof UUID ? args[i].toString():args[i]); }
     /** Internal extension repositories share this connection and the enclosing transaction. */
     @FunctionalInterface public interface Mapper<T> { T map(ResultSet r) throws SQLException; }

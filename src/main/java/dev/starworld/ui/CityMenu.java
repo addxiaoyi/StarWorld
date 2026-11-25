@@ -61,7 +61,7 @@ public final class CityMenu implements Listener {
             for(int i=0;i<names.length;i++){inv.setItem(37+i,item(icons[i],names[i],List.of("点击查看；更多操作 /sw help")));h.commands.put(37+i,commands[i]);}
             inv.setItem(43,item(Material.GOLDEN_HELMET,"国家倾向与专长",List.of("本国城市的真实产出、贸易、军需和文化共同积累","/sw national-specialty <ID> （国家创始人）")));h.commands.put(43,new String[]{"nation-development"});
             inv.setItem(44,item(Material.FILLED_MAP,"地区地图册",List.of("地形、资源稀缺、恢复与文化分布","查看已登记设施所在地区")));h.commands.put(44,new String[]{"atlas"});
-            inv.setItem(45,item(Material.GOLD_INGOT,"实物金币市场",List.of("真实商品托管、国库付款和商路交货","整批限价挂牌与成交记录")));h.commands.put(45,new String[]{"market-menu"});
+            inv.setItem(45,item(Material.GOLD_INGOT,"实物金币市场",List.of("真实商品托管、国库付款和商路交货","按数量购买与实际交货记录")));h.commands.put(45,new String[]{"market-menu"});
             inv.setItem(46,item(Material.WATER_BUCKET,"灾害治理",List.of("干旱、洪灾与饥荒的六项治理策略","实物救灾、次期缓解与长期恢复")));h.commands.put(46,new String[]{"disaster-menu"});
             inv.setItem(47,item(Material.BRICKS,"公共工程与城市需求",List.of("预览起建门槛与物资缺口","请求后真实生活贡献，明确确认完成")));h.commands.put(47,new String[]{"governance"});
             inv.setItem(48,item(Material.COMPASS,"世界气候与产业",List.of("StarCore逐世界天气影响农场和矿井","科技只按明确映射生效","点击查看已验证设施倍率")));h.commands.put(48,new String[]{"climate"});
@@ -73,7 +73,7 @@ public final class CityMenu implements Listener {
         runtime.reply(p,runtime.marketListings(28,offset),rows->{if(runtime.playerCity(p).filter(c->c.cityId().equals(city.cityId())&&c.nationId().equals(city.nationId())).isEmpty())return;
             Holder h=new Holder(p.getUniqueId(),city.cityId());h.market=true;h.marketOffset=offset;h.inventory=Bukkit.createInventory(h,54,Component.text("StarWorld · 实物金币市场"));
             int slot=0;for(var listing:rows){Material icon=Material.matchMaterial(listing.item());if(icon==null||!icon.isItem())icon=Material.CHEST;
-                h.inventory.setItem(slot,item(icon,listing.item()+" ×"+listing.units(),List.of("单价："+listing.unitPrice()+"；整批："+listing.total(),"卖方城市："+listing.sellerCity(),"挂牌："+listing.id(),"点击显示购买指令；付款须国家创始人","需要由卖城通向本城的有效商路")));h.commands.put(slot++,new String[]{"market","buy",listing.id().toString()});}
+                h.inventory.setItem(slot,item(icon,listing.item()+" 可买 ×"+listing.availableUnits(),List.of("单价："+listing.unitPrice()+"；剩余总价："+listing.availableTotal(),"卖方城市："+listing.sellerCity(),"挂牌："+listing.id(),"点击显示购买指令；付款须国家创始人","需要由卖城通向本城的有效商路")));h.commands.put(slot++,new String[]{"market","buy",listing.id().toString()});}
             h.inventory.setItem(45,item(Material.ARROW,"上一页",List.of()));h.inventory.setItem(49,item(Material.BOOK,"返回发展面板",List.of("/sw market sell <物品ID> <数量> <单价>","/sw market orders 查看付款和物流凭据")));if(rows.size()==28)h.inventory.setItem(53,item(Material.SUNFLOWER,"下一页",List.of()));p.openInventory(h.inventory);
         });
     }
@@ -179,7 +179,7 @@ public final class CityMenu implements Listener {
             if(p.getOpenInventory().getTopInventory().getHolder()!=holder)return;
             if(runtime.playerCity(p).map(c->!c.cityId().equals(holder.city)||(holder.nation!=null&&!c.nationId().equals(holder.nation))).orElse(true)){p.closeInventory();return;}
             if(holder.disaster&&!p.hasPermission("starworld.use")){p.closeInventory();return;}
-            try{if(holder.disaster){disasterClick(p,holder,slot);return;}if(holder.climate){if(slot==49)open(p);else if(slot==53)openClimate(p);return;}if(holder.market){if(slot==45)openMarket(p,Math.max(0,holder.marketOffset-28));else if(slot==49)openDevelopment(p);else if(slot==53)openMarket(p,holder.marketOffset+28);else if(holder.commands.containsKey(slot)){p.closeInventory();p.sendMessage("§e/sw market buy "+holder.commands.get(slot)[2]+" <卖城至本城商路UUID>");}return;}if(holder.atlas){if(slot==45)openAtlas(p,"");else if(slot==49)openDevelopment(p);else if(slot==53&&!holder.nextCursor.isEmpty())openAtlas(p,holder.nextCursor);return;}if(holder.development){
+            try{if(holder.disaster){disasterClick(p,holder,slot);return;}if(holder.climate){if(slot==49)open(p);else if(slot==53)openClimate(p);return;}if(holder.market){if(slot==45)openMarket(p,Math.max(0,holder.marketOffset-28));else if(slot==49)openDevelopment(p);else if(slot==53)openMarket(p,holder.marketOffset+28);else if(holder.commands.containsKey(slot)){p.closeInventory();p.sendMessage("§e/sw market buy "+holder.commands.get(slot)[2]+" <卖城至本城商路UUID> [数量]");}return;}if(holder.atlas){if(slot==45)openAtlas(p,"");else if(slot==49)openDevelopment(p);else if(slot==53&&!holder.nextCursor.isEmpty())openAtlas(p,holder.nextCursor);return;}if(holder.development){
                 if(slot==49){open(p);return;}if(slot==53){openDevelopment(p);return;}String[] command=holder.commands.get(slot);if(command==null)return;p.closeInventory();
                 if(command[0].equals("register"))runtime.register(p,command[1]);else if(command[0].equals("civilization"))runtime.civilization(p,command[1]);else if(command[0].equals("atlas"))openAtlas(p,"");else if(command[0].equals("market-menu"))openMarket(p,0);else if(command[0].equals("disaster-menu"))openDisaster(p);else if(command[0].equals("governance"))p.performCommand("sw governance");else if(command[0].equals("climate"))openClimate(p);else runtime.expansionCommand(p,command);return;
             }switch(slot){

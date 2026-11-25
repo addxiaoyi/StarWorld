@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "version": "1.4.0",
-  "recorded_at": "2026-11-25T08:37:22.718371+00:00",
+  "version": "1.5.0",
+  "recorded_at": "2026-11-25T11:04:58.476322+00:00",
   "command": "./mvnw -B --no-transfer-progress clean verify",
   "java": "OpenJDK 21.0.10+7-Ubuntu-124.04",
-  "artifact_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f",
+  "artifact_sha256": "7bc7f174632de063d95f5e4fc85fdff7cf6d673d9839db306c5e93a553d22f26",
   "totals": {
-    "tests": 475,
+    "tests": 493,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -245,14 +245,21 @@
     },
     {
       "suite": "dev.starworld.market.MarketControllerTest",
-      "tests": 6,
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.market.MarketMigrationTest",
+      "tests": 4,
       "failures": 0,
       "errors": 0,
       "skipped": 0
     },
     {
       "suite": "dev.starworld.market.MarketServiceTest",
-      "tests": 21,
+      "tests": 32,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -386,30 +393,30 @@
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 54312,
-      "missed": 15741
+      "covered": 55291,
+      "missed": 15662
     },
     "BRANCH": {
-      "covered": 3901,
-      "missed": 2652
+      "covered": 3993,
+      "missed": 2664
     },
     "LINE": {
-      "covered": 3643,
-      "missed": 716
+      "covered": 3769,
+      "missed": 720
     },
     "COMPLEXITY": {
-      "covered": 2664,
-      "missed": 2710
+      "covered": 2718,
+      "missed": 2724
     },
     "METHOD": {
-      "covered": 1477,
-      "missed": 550
+      "covered": 1495,
+      "missed": 548
     },
     "CLASS": {
-      "covered": 214,
+      "covered": 215,
       "missed": 13
     }
   },
-  "build_log_sha256": "d40f2313c500c2da136e28a50f57a92d09c6e3151ed386f15d2aa0ca58ccedaa",
-  "sources_sha256": "045c5d9e8d08101502ea060b3fb6e8aa161ca0024ee8e4b3e034eafe08548e33"
+  "build_log_sha256": "83a5ada126e3687e291a41abc8bd21939ba471cd6a474504c1da37a9f36dd824",
+  "sources_sha256": "11697cc26d56b9071370bb7a443f6e66f9dcf8a422cad292b9952cfedde88c7b"
 }

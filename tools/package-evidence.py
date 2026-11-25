@@ -215,6 +215,7 @@ def main() -> int:
     parser.add_argument("--senluo-dir", type=Path, help="Legacy standalone real SenLuo suite (required before 1.0; 1.0 civic suite repeats it)")
     parser.add_argument("--baseline-dir", type=Path, help="Required for 0.3: baseline run on the same final plugin JAR")
     parser.add_argument("--progression-dir", type=Path, help="Required 0.3 geography, reroute and treasury market runtime suite")
+    parser.add_argument("--market-upgrade-dir", type=Path, help="Required from 1.5: real 1.4 market migration and receipt replay")
     parser.add_argument("--upgrade-dir", type=Path, help="Required 0.3 migration from a verified 0.2 server state")
     parser.add_argument("--border-dir", type=Path, help="Required 0.3 real neighboring-resource dispute regression")
     parser.add_argument("--operations-dir", type=Path, help="Required for 0.4: route planning, delivery statistics and online backup acceptance")
@@ -332,6 +333,9 @@ def main() -> int:
     if release_version >= (1, 4, 0):
         require(args.storage_dir is not None, "1.4 delivery requires --storage-dir")
         run_inputs.append(("storage", args.storage_dir, "tools/paper-client/survey-acceptance.cjs"))
+    if release_version >= (1, 5, 0):
+        require(args.market_upgrade_dir is not None, "1.5 delivery requires --market-upgrade-dir")
+        run_inputs.append(("market-upgrade", args.market_upgrade_dir, "tools/paper-client/market-upgrade-acceptance.cjs"))
     if release_version >= (1, 0, 0):
         for label, directory, script in (
                 ("works", args.works_dir, "tools/paper-client/works-acceptance.cjs"),
@@ -351,7 +355,8 @@ def main() -> int:
         "expansion": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
         "senluo": {"client-run-1.log", "client-run-listener-1.log", "client-run-2.log"},
         "baseline": {"client-run-1.log", "client-run-2.log"},
-        "progression": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
+        "progression": {f"client-run-{run}-{player}.log" for run in ((1, 2, 3) if release_version >= (1, 5, 0) else (1, 2)) for player in ("a", "b")},
+        "market-upgrade": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
         "upgrade": {"client-run-1.log", "client-run-2.log"},
         "border": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
         "operations": {f"client-run-{run}-{player}.log" for run in (1, 2, 3) for player in ("a", "b")},
@@ -374,7 +379,7 @@ def main() -> int:
                 all(s.get("status") == "passed" for s in steps), f"{label} run does not prove every current fixture stage")
         require(evidence.get("startedAt") and evidence.get("finishedAt"), f"{label} run has no completed timespan")
         add(f"runtime/{label}/evidence.json", data)
-        preparation_name = "UPGRADE-PROVENANCE.json" if label == "upgrade" else "PREPARATION.json"
+        preparation_name = "UPGRADE-PROVENANCE.json" if label in {"upgrade", "market-upgrade"} else "PREPARATION.json"
         runtime = directory.parent.parent
         preparation = runtime / preparation_name
         preparation_proof = None
@@ -385,7 +390,7 @@ def main() -> int:
             preparation_hash = sha256(preparation_data)
             add(f"runtime/{label}/{preparation_name}", preparation_data)
         else:
-            require(label not in {"upgrade", "senluo", "disaster", "civic", "works"}, f"{label} run lacks its source/preparation provenance")
+            require(label not in {"upgrade", "market-upgrade", "senluo", "disaster", "civic", "works"}, f"{label} run lacks its source/preparation provenance")
         if release_version >= (1, 0, 0):
             require(evidence.get("version", version) == version and evidence.get("targetVersion", version) == version,
                     f"{label} run declares another product version")
@@ -421,6 +426,21 @@ def main() -> int:
                     require(evidence.get("beforeProvenance") == preparation_proof and hash_string(preparation_proof.get("sourcePluginSha256")) and
                             evidence.get("sourcePluginSha256") == preparation_proof["sourcePluginSha256"] != plugin_hash and
                             preparation_proof.get("fixtureSha256") == plugin_jars.get("StarWorldFixture.jar"), "Upgrade source/target provenance mismatch")
+            if label == "market-upgrade":
+                require(evidence.get("sourceVersion") == "1.4.0" and evidence.get("runnerSha256") == sha256(script) and
+                        evidence.get("probeSha256") == sha256(regular_file(root / "tools/paper-client/upgrade-10-acceptance.cjs", root)) and
+                        evidence.get("acceptanceHelperSha256") == shared_launcher_hash and
+                        evidence.get("provenanceSha256") == preparation_hash and preparation_proof.get("targetVersion") == version and
+                        preparation_proof.get("targetPluginSha256") == plugin_hash,
+                        "Market upgrade source/target, runner or provenance mismatch")
+                source_evidence = regular_file(Path(preparation_proof["sourceEvidence"]), Path(preparation_proof["source"]))
+                source_run = read_json(source_evidence, "market source")
+                require(sha256(source_evidence) == preparation_proof.get("sourceEvidenceSha256") and source_run.get("status") == "passed" and
+                        source_run.get("suite") == "real-paper-progression" and len(source_run.get("steps", [])) == 20 and
+                        all(step.get("status") == "passed" for step in source_run["steps"]) and
+                        not any(key in source_run for key in ("error", "cleanupError", "playerCleanupError")),
+                        "Market migration lacks its passed original 1.4 gameplay evidence")
+                add("runtime/market-upgrade/source-evidence.json", source_evidence)
             if label in {"civic", "senluo"}:
                 asset_proof = dict(evidence.get("assetPreparation", {}))
                 require(preparation_proof is not None and preparation_proof.get("starWorldVersion") == version and preparation_proof.get("starWorldSha256") == plugin_hash and
@@ -468,7 +488,7 @@ def main() -> int:
         required_logs = {"paper-run-1.log", "paper-run-2.log"} | expected_clients[label]
         if label == "storage":
             required_logs = {"paper-run-1.log"} | expected_clients[label]
-        if label in {"operations", "works"}:
+        if label in {"operations", "works"} or (label == "progression" and release_version >= (1, 5, 0)):
             required_logs.add("paper-run-3.log")
         require(required_logs.issubset(names), f"{label} run lacks required server/client transcripts: {sorted(required_logs - names)}")
         for file in transcripts:

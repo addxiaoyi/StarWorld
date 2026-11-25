@@ -12,6 +12,7 @@ items:
   - kaleidoscopecookery:baozi
   - kaleidoscope_tavern:wine
 max-listings-per-city: 20
+max-open-purchases-per-city: 100
 listing-lifetime-periods: 48
 dispatch-batch: 10
 max-units: 2304

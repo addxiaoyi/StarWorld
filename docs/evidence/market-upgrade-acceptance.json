@@ -2,15 +2,15 @@
   "schema": 1,
   "suite": "real-paper-market-upgrade",
   "status": "passed",
-  "startedAt": "2026-11-25T11:56:14.765Z",
-  "version": "1.7.0",
+  "startedAt": "2026-11-25T12:30:41.415Z",
+  "version": "1.8.0",
   "sourceVersion": "1.4.0",
-  "artifactSha256": "dba8fdb3da8d06feae42001ad74dad1585f33087767f4b4864a67ea4bdda7659",
-  "runnerSha256": "60396f86c9064081229cd3797dc4abbcd592c45e6ada1d177e0e2ff4b733c007",
-  "probeSha256": "1a8f90f352f1f199d7c9b05fb821f32d63638bc2321ec02dc80c9d59ef521758",
+  "artifactSha256": "c5f2b3f302200580625f032dcf4e1efc5ea8299c8da02cfd44184edc648b2091",
+  "runnerSha256": "76e0836042c5a44034d4c693a91d3329f0a885e74c86a07a021a4730ad08f19f",
+  "probeSha256": "7713d9c17bf2446b3ff607b2a94ede7e3d55fe196c0052b77faa19d5a66207bd",
   "acceptanceHelperSha256": "acf381b88a14203b096e7edad7cccb41a0a11454637d072a3493b49ff3ba0aea",
   "paperSha256": "5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba",
-  "provenanceSha256": "30f5f27af415346e510a380e02df19e9e413f42783b32d3296afc38e8a4986a1",
+  "provenanceSha256": "533c79eda0970195c4cdc72f49d0b1241440161d1fab80a2c16793fbe6d07d35",
   "jvmArgs": [
     "-Xms128m",
     "-Xmx768m",
@@ -23,7 +23,7 @@
   ],
   "pluginJars": {
     "StarCore.jar": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
-    "StarWorld.jar": "dba8fdb3da8d06feae42001ad74dad1585f33087767f4b4864a67ea4bdda7659",
+    "StarWorld.jar": "c5f2b3f302200580625f032dcf4e1efc5ea8299c8da02cfd44184edc648b2091",
     "StarWorldFixture.jar": "a7c3c2f811406c97e682319e23fee335f4894a8d9b75ebf9461edbfd3a54e543"
   },
   "configSha256": {
@@ -43,7 +43,7 @@
     {
       "name": "stopped real 1.4 market and copied state match their original fingerprints",
       "status": "passed",
-      "startedAt": "2026-11-25T11:56:14.829Z",
+      "startedAt": "2026-11-25T12:30:41.477Z",
       "observed": {
         "sourceEvidenceSha256": "5c94406270a6a1af1c2cdc6b1e1bc996d3f0bbbb6fcfd4ecc0868d59a0f3afeb",
         "before": {
@@ -430,7 +430,7 @@
                   "progress": 4,
                   "travel": 4,
                   "completed_period": 179559971,
-                  "reason": "\u53cc\u5411\u5b9e\u7269\u4ea4\u6362\u5df2\u5b8c\u6210"
+                  "reason": "双向实物交换已完成"
                 },
                 {
                   "id": "bba0ef11-3cb8-4b80-80fb-1678af1927f4",
@@ -446,7 +446,7 @@
                   "progress": 4,
                   "travel": 4,
                   "completed_period": 179559961,
-                  "reason": "\u53cc\u5411\u5b9e\u7269\u4ea4\u6362\u5df2\u5b8c\u6210"
+                  "reason": "双向实物交换已完成"
                 }
               ],
               "logistics_receipt": [
@@ -557,7 +557,7 @@
                   "attempts": 1,
                   "next_attempt": 1795599666266,
                   "lease": null,
-                  "last_error": "\u6838\u5fc3\u6301\u4e45\u56fd\u5e93\u56de\u6267\u5df2\u6838\u5b9e",
+                  "last_error": "核心持久国库回执已核实",
                   "created_period": 179559963,
                   "paid_at": "2026-11-25T09:40:32.318200153Z"
                 }
@@ -707,7 +707,7 @@
                   "name": "ExpStarWorldPA",
                   "civilization": "agrarian",
                   "last_period": 179559972,
-                  "last_report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b",
+                  "last_report": "产出 {minecraft:bread=4, minecraft:wheat=26}；",
                   "event_type": null,
                   "event_start": null,
                   "event_end": null,
@@ -719,7 +719,7 @@
                   "name": "ExpStarWorldPB",
                   "civilization": "martial",
                   "last_period": 179559972,
-                  "last_report": "\u4ea7\u51fa {minecraft:bread=3, minecraft:wheat=18}\uff1b",
+                  "last_report": "产出 {minecraft:bread=3, minecraft:wheat=18}；",
                   "event_type": null,
                   "event_start": null,
                   "event_end": null,
@@ -802,212 +802,212 @@
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559952,
-                  "report": "\u4ea7\u51fa {}\uff1b"
+                  "report": "产出 {}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559953,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559954,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559955,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559956,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559957,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559958,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559959,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559960,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559961,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559962,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559963,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559964,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559965,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559966,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559967,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559968,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559969,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=26}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559970,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=26}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559971,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=26}；"
                 },
                 {
                   "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                   "period": 179559972,
-                  "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b"
+                  "report": "产出 {minecraft:bread=4, minecraft:wheat=26}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559952,
-                  "report": "\u4ea7\u51fa {}\uff1b"
+                  "report": "产出 {}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559953,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559954,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559955,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559956,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559957,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559958,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559959,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559960,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559961,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559962,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559963,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559964,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559965,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559966,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559967,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559968,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559969,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559970,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559971,
-                  "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                  "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
                 },
                 {
                   "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                   "period": 179559972,
-                  "report": "\u4ea7\u51fa {minecraft:bread=3, minecraft:wheat=18}\uff1b"
+                  "report": "产出 {minecraft:bread=3, minecraft:wheat=18}；"
                 }
               ],
               "region": [
@@ -1464,7 +1464,7 @@
                 },
                 {
                   "property_key": "transfer.0.description",
-                  "property_value": "StarWorld\u5b9e\u4f53\u8d38\u6613 2b7131b9-fe44-4fec-a67a-3d9e0c234ec2"
+                  "property_value": "StarWorld实体贸易 2b7131b9-fe44-4fec-a67a-3d9e0c234ec2"
                 },
                 {
                   "property_key": "transfer.0.payerId",
@@ -1554,17 +1554,17 @@
           "attempts": 1,
           "next_attempt": 1795599666266,
           "lease": null,
-          "last_error": "\u6838\u5fc3\u6301\u4e45\u56fd\u5e93\u56de\u6267\u5df2\u6838\u5b9e",
+          "last_error": "核心持久国库回执已核实",
           "created_period": 179559963,
           "paid_at": "2026-11-25T09:40:32.318200153Z"
         }
       },
-      "finishedAt": "2026-11-25T11:56:14.831Z"
+      "finishedAt": "2026-11-25T12:30:41.478Z"
     },
     {
       "name": "first upgraded Paper start restores original buyers sellers and inventories",
       "status": "passed",
-      "startedAt": "2026-11-25T11:56:14.831Z",
+      "startedAt": "2026-11-25T12:30:41.478Z",
       "observed": {
         "seller": [
           {
@@ -1581,12 +1581,12 @@
           }
         ]
       },
-      "finishedAt": "2026-11-25T11:56:29.902Z"
+      "finishedAt": "2026-11-25T12:30:56.024Z"
     },
     {
       "name": "original national payment receipt replays without charging after migration",
       "status": "passed",
-      "startedAt": "2026-11-25T11:56:29.902Z",
+      "startedAt": "2026-11-25T12:30:56.024Z",
       "observed": {
         "transactionId": "starworld:market:6dc43b8a-8d05-4661-9a32-cce2e5e3edd2:2b7131b9-fe44-4fec-a67a-3d9e0c234ec2",
         "purchase": {
@@ -1603,7 +1603,7 @@
           "status": "SHIPPED",
           "attempts": 1,
           "nextAttempt": 1795599666266,
-          "detail": "\u6838\u5fc3\u6301\u4e45\u56fd\u5e93\u56de\u6267\u5df2\u6838\u5b9e",
+          "detail": "核心持久国库回执已核实",
           "createdPeriod": 179559963,
           "units": 11
         },
@@ -1629,17 +1629,17 @@
             "category": "OTHER",
             "appliedAt": "2026-11-25T09:40:32.318Z"
           },
-          "detail": "\u6838\u5fc3\u6301\u4e45\u56fd\u5e93\u56de\u6267\u5df2\u6838\u5b9e"
+          "detail": "核心持久国库回执已核实"
         },
         "payerAfter": 978,
         "receiverAfter": 922
       },
-      "finishedAt": "2026-11-25T11:56:30.003Z"
+      "finishedAt": "2026-11-25T12:30:56.125Z"
     },
     {
       "name": "first shutdown proves exact market migration and preserved delivery statistics",
       "status": "passed",
-      "startedAt": "2026-11-25T11:56:30.004Z",
+      "startedAt": "2026-11-25T12:30:56.125Z",
       "observed": {
         "world": {
           "schema": 3,
@@ -1705,6 +1705,7 @@
             "market_history",
             "market_listing",
             "market_purchase",
+            "market_refund",
             "market_schema",
             "nation_state",
             "national_evolution",
@@ -1723,7 +1724,7 @@
             "stock",
             "transfer"
           ],
-          "database_sha256": "ada21fd6ac0030ce6d62a0c5f3ee725e52e06c756be07b36957ad82f9e08d008",
+          "database_sha256": "662f7152084d391b179a300cde271ae77382196a24e3f75ce67eb6abcb400f5d",
           "rows": {
             "building": [
               {
@@ -2025,7 +2026,7 @@
                 "progress": 4,
                 "travel": 4,
                 "completed_period": 179559971,
-                "reason": "\u53cc\u5411\u5b9e\u7269\u4ea4\u6362\u5df2\u5b8c\u6210"
+                "reason": "双向实物交换已完成"
               },
               {
                 "id": "bba0ef11-3cb8-4b80-80fb-1678af1927f4",
@@ -2041,7 +2042,7 @@
                 "progress": 4,
                 "travel": 4,
                 "completed_period": 179559961,
-                "reason": "\u53cc\u5411\u5b9e\u7269\u4ea4\u6362\u5df2\u5b8c\u6210"
+                "reason": "双向实物交换已完成"
               }
             ],
             "logistics_receipt": [
@@ -2119,7 +2120,7 @@
             "market_schema": [
               {
                 "id": 1,
-                "version": 2,
+                "version": 3,
                 "namespace": "6dc43b8a-8d05-4661-9a32-cce2e5e3edd2"
               }
             ],
@@ -2156,7 +2157,7 @@
                 "attempts": 1,
                 "next_attempt": 1795599666266,
                 "lease": null,
-                "last_error": "\u6838\u5fc3\u6301\u4e45\u56fd\u5e93\u56de\u6267\u5df2\u6838\u5b9e",
+                "last_error": "核心持久国库回执已核实",
                 "created_period": 179559963,
                 "paid_at": "2026-11-25T09:40:32.318200153Z",
                 "units": 11,
@@ -2224,6 +2225,10 @@
                 "next_lane": "DUE"
               },
               {
+                "queue": "starworld:market-refund",
+                "next_lane": "DUE"
+              },
+              {
                 "queue": "starworld:resource-export",
                 "next_lane": "DUE"
               }
@@ -2279,6 +2284,7 @@
               }
             ],
             "logistics_corridor": [],
+            "market_refund": [],
             "life_schema": [
               {
                 "id": 1,
@@ -2310,7 +2316,7 @@
                 "name": "ExpStarWorldPA",
                 "civilization": "agrarian",
                 "last_period": 179559972,
-                "last_report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b",
+                "last_report": "产出 {minecraft:bread=4, minecraft:wheat=26}；",
                 "event_type": null,
                 "event_start": null,
                 "event_end": null,
@@ -2322,7 +2328,7 @@
                 "name": "ExpStarWorldPB",
                 "civilization": "martial",
                 "last_period": 179559972,
-                "last_report": "\u4ea7\u51fa {minecraft:bread=3, minecraft:wheat=18}\uff1b",
+                "last_report": "产出 {minecraft:bread=3, minecraft:wheat=18}；",
                 "event_type": null,
                 "event_start": null,
                 "event_end": null,
@@ -2405,212 +2411,212 @@
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559952,
-                "report": "\u4ea7\u51fa {}\uff1b"
+                "report": "产出 {}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559953,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559954,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559955,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559956,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559957,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559958,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559959,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559960,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559961,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559962,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559963,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559964,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559965,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559966,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559967,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559968,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559969,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=26}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559970,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=26}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559971,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=26}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559972,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=26}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559952,
-                "report": "\u4ea7\u51fa {}\uff1b"
+                "report": "产出 {}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559953,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559954,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559955,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559956,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559957,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559958,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559959,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559960,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559961,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559962,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559963,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559964,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559965,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559966,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559967,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559968,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559969,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559970,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559971,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559972,
-                "report": "\u4ea7\u51fa {minecraft:bread=3, minecraft:wheat=18}\uff1b"
+                "report": "产出 {minecraft:bread=3, minecraft:wheat=18}；"
               }
             ],
             "region": [
@@ -2904,7 +2910,7 @@
             "weather_weather_state_meta",
             "zone_state"
           ],
-          "database_sha256": "0a5f76e93bd6a196af92f621a0b9d6e47213116b1043920851896912ef67a472",
+          "database_sha256": "7bafdbe4581db849c575a1c513c8c3e954e101265645a69311d5d38dc74d18f3",
           "rows": {
             "starcore_nation_state": [
               {
@@ -3067,7 +3073,7 @@
               },
               {
                 "property_key": "transfer.0.description",
-                "property_value": "StarWorld\u5b9e\u4f53\u8d38\u6613 2b7131b9-fe44-4fec-a67a-3d9e0c234ec2"
+                "property_value": "StarWorld实体贸易 2b7131b9-fe44-4fec-a67a-3d9e0c234ec2"
               },
               {
                 "property_key": "transfer.0.payerId",
@@ -3135,19 +3141,19 @@
           },
           "integrity": "ok"
         },
-        "pluginVersion": "1.7.0",
+        "pluginVersion": "1.8.0",
         "bundledConfigs": {
           "civic-needs.yml": "90db840f72f6d188794fa3fb13c3e0060839ed4eef53fe3f1554726fff3dec19",
           "public-works.yml": "97828a6ddba97f8a7b070435053d7ea4fed30f3882ce84753eb8120e096764d7",
           "climate.yml": "cf02f0a8a2c128001f518e9c753e8f4cadd9f60062044a61b59bee702f08c922"
         }
       },
-      "finishedAt": "2026-11-25T11:56:31.801Z"
+      "finishedAt": "2026-11-25T12:30:57.759Z"
     },
     {
       "name": "second start preserves inventories and still replays the same national payment",
       "status": "passed",
-      "startedAt": "2026-11-25T11:56:31.806Z",
+      "startedAt": "2026-11-25T12:30:57.764Z",
       "observed": {
         "items": {
           "seller": [
@@ -3181,7 +3187,7 @@
             "status": "SHIPPED",
             "attempts": 1,
             "nextAttempt": 1795599666266,
-            "detail": "\u6838\u5fc3\u6301\u4e45\u56fd\u5e93\u56de\u6267\u5df2\u6838\u5b9e",
+            "detail": "核心持久国库回执已核实",
             "createdPeriod": 179559963,
             "units": 11
           },
@@ -3207,18 +3213,18 @@
               "category": "OTHER",
               "appliedAt": "2026-11-25T09:40:32.318Z"
             },
-            "detail": "\u6838\u5fc3\u6301\u4e45\u56fd\u5e93\u56de\u6267\u5df2\u6838\u5b9e"
+            "detail": "核心持久国库回执已核实"
           },
           "payerAfter": 978,
           "receiverAfter": 922
         }
       },
-      "finishedAt": "2026-11-25T11:56:41.733Z"
+      "finishedAt": "2026-11-25T12:31:06.815Z"
     },
     {
       "name": "second shutdown keeps migrated escrow history money and completed cargo unchanged",
       "status": "passed",
-      "startedAt": "2026-11-25T11:56:41.734Z",
+      "startedAt": "2026-11-25T12:31:06.815Z",
       "observed": {
         "world": {
           "schema": 3,
@@ -3284,6 +3290,7 @@
             "market_history",
             "market_listing",
             "market_purchase",
+            "market_refund",
             "market_schema",
             "nation_state",
             "national_evolution",
@@ -3302,7 +3309,7 @@
             "stock",
             "transfer"
           ],
-          "database_sha256": "ada21fd6ac0030ce6d62a0c5f3ee725e52e06c756be07b36957ad82f9e08d008",
+          "database_sha256": "662f7152084d391b179a300cde271ae77382196a24e3f75ce67eb6abcb400f5d",
           "rows": {
             "building": [
               {
@@ -3604,7 +3611,7 @@
                 "progress": 4,
                 "travel": 4,
                 "completed_period": 179559971,
-                "reason": "\u53cc\u5411\u5b9e\u7269\u4ea4\u6362\u5df2\u5b8c\u6210"
+                "reason": "双向实物交换已完成"
               },
               {
                 "id": "bba0ef11-3cb8-4b80-80fb-1678af1927f4",
@@ -3620,7 +3627,7 @@
                 "progress": 4,
                 "travel": 4,
                 "completed_period": 179559961,
-                "reason": "\u53cc\u5411\u5b9e\u7269\u4ea4\u6362\u5df2\u5b8c\u6210"
+                "reason": "双向实物交换已完成"
               }
             ],
             "logistics_receipt": [
@@ -3698,7 +3705,7 @@
             "market_schema": [
               {
                 "id": 1,
-                "version": 2,
+                "version": 3,
                 "namespace": "6dc43b8a-8d05-4661-9a32-cce2e5e3edd2"
               }
             ],
@@ -3735,7 +3742,7 @@
                 "attempts": 1,
                 "next_attempt": 1795599666266,
                 "lease": null,
-                "last_error": "\u6838\u5fc3\u6301\u4e45\u56fd\u5e93\u56de\u6267\u5df2\u6838\u5b9e",
+                "last_error": "核心持久国库回执已核实",
                 "created_period": 179559963,
                 "paid_at": "2026-11-25T09:40:32.318200153Z",
                 "units": 11,
@@ -3803,6 +3810,10 @@
                 "next_lane": "DUE"
               },
               {
+                "queue": "starworld:market-refund",
+                "next_lane": "DUE"
+              },
+              {
                 "queue": "starworld:resource-export",
                 "next_lane": "DUE"
               }
@@ -3858,6 +3869,7 @@
               }
             ],
             "logistics_corridor": [],
+            "market_refund": [],
             "life_schema": [
               {
                 "id": 1,
@@ -3889,7 +3901,7 @@
                 "name": "ExpStarWorldPA",
                 "civilization": "agrarian",
                 "last_period": 179559972,
-                "last_report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b",
+                "last_report": "产出 {minecraft:bread=4, minecraft:wheat=26}；",
                 "event_type": null,
                 "event_start": null,
                 "event_end": null,
@@ -3901,7 +3913,7 @@
                 "name": "ExpStarWorldPB",
                 "civilization": "martial",
                 "last_period": 179559972,
-                "last_report": "\u4ea7\u51fa {minecraft:bread=3, minecraft:wheat=18}\uff1b",
+                "last_report": "产出 {minecraft:bread=3, minecraft:wheat=18}；",
                 "event_type": null,
                 "event_start": null,
                 "event_end": null,
@@ -3984,212 +3996,212 @@
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559952,
-                "report": "\u4ea7\u51fa {}\uff1b"
+                "report": "产出 {}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559953,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559954,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559955,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559956,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559957,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559958,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559959,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559960,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559961,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559962,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559963,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=24}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=24}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559964,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559965,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559966,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559967,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559968,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=25}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=25}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559969,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=26}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559970,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=26}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559971,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=26}；"
               },
               {
                 "city": "24b7511b-56d3-46c0-9ebf-a8b945893b71",
                 "period": 179559972,
-                "report": "\u4ea7\u51fa {minecraft:bread=4, minecraft:wheat=26}\uff1b"
+                "report": "产出 {minecraft:bread=4, minecraft:wheat=26}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559952,
-                "report": "\u4ea7\u51fa {}\uff1b"
+                "report": "产出 {}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559953,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559954,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559955,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559956,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559957,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559958,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559959,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559960,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559961,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=16}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=16}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559962,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559963,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559964,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559965,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559966,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559967,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559968,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559969,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559970,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559971,
-                "report": "\u4ea7\u51fa {minecraft:bread=2, minecraft:wheat=17}\uff1b"
+                "report": "产出 {minecraft:bread=2, minecraft:wheat=17}；"
               },
               {
                 "city": "3ef2a3df-bc2c-4412-9f1e-167a571d1888",
                 "period": 179559972,
-                "report": "\u4ea7\u51fa {minecraft:bread=3, minecraft:wheat=18}\uff1b"
+                "report": "产出 {minecraft:bread=3, minecraft:wheat=18}；"
               }
             ],
             "region": [
@@ -4483,7 +4495,7 @@
             "weather_weather_state_meta",
             "zone_state"
           ],
-          "database_sha256": "a7bc08a9a4bcd0620de9db90e4332938b8254e995965d3153d5f75eaddfa2096",
+          "database_sha256": "5da6afe1c8b77fdf0aa1f04ab2882987f344a6ce6052ce6bf3c84ff6ce456b0e",
           "rows": {
             "starcore_nation_state": [
               {
@@ -4646,7 +4658,7 @@
               },
               {
                 "property_key": "transfer.0.description",
-                "property_value": "StarWorld\u5b9e\u4f53\u8d38\u6613 2b7131b9-fe44-4fec-a67a-3d9e0c234ec2"
+                "property_value": "StarWorld实体贸易 2b7131b9-fe44-4fec-a67a-3d9e0c234ec2"
               },
               {
                 "property_key": "transfer.0.payerId",
@@ -4714,15 +4726,15 @@
           },
           "integrity": "ok"
         },
-        "pluginVersion": "1.7.0",
+        "pluginVersion": "1.8.0",
         "bundledConfigs": {
           "civic-needs.yml": "90db840f72f6d188794fa3fb13c3e0060839ed4eef53fe3f1554726fff3dec19",
           "public-works.yml": "97828a6ddba97f8a7b070435053d7ea4fed30f3882ce84753eb8120e096764d7",
           "climate.yml": "cf02f0a8a2c128001f518e9c753e8f4cadd9f60062044a61b59bee702f08c922"
         }
       },
-      "finishedAt": "2026-11-25T11:56:45.477Z"
+      "finishedAt": "2026-11-25T12:31:09.190Z"
     }
   ],
-  "finishedAt": "2026-11-25T11:56:45.477Z"
+  "finishedAt": "2026-11-25T12:31:09.192Z"
 }

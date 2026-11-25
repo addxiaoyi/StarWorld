@@ -204,7 +204,7 @@ public final class LogisticsService {
             }
             if(!byKey.isEmpty())throw new IllegalArgumentException("该支付已用于另一货运ID");requireRoute(route,auth);
             if(units(cargo,Map.of())>route.capacity())throw new IllegalArgumentException("货物超过当前商路单周期容量");
-            for(UUID city:List.of(route.originCity(),route.targetCity()))if(count("SELECT COUNT(*) FROM logistics_order WHERE (origin_city=? OR target_city=?) AND state IN ('OFFERED','IN_TRANSIT','PAUSED')",city,city)>=definitions.maxOpenOrdersPerCity())throw new IllegalArgumentException("城市未完成货单已达上限");
+            for(UUID city:List.of(route.originCity(),route.targetCity()))if(count("SELECT COUNT(*) FROM logistics_order WHERE (origin_city=? OR target_city=?) AND state IN ('OFFERED','IN_TRANSIT','PAUSED','REFUNDING')",city,city)>=definitions.maxOpenOrdersPerCity())throw new IllegalArgumentException("城市未完成货单已达上限");
             claim.consume();
             s.execute("INSERT INTO logistics_order(id,route,origin_city,target_city,origin_nation,target_nation,state,created_period,expires_period,last_period,progress,travel,reason) VALUES(?,?,?,?,?,?,'IN_TRANSIT',?,?,?,0,?,'国家支付已确认，实物在运输托管')",shipmentId,routeId,route.originCity(),route.targetCity(),originNation,targetNation,auth.period(),Math.addExact(auth.period(),definitions.offerLifetimePeriods()),auth.period(),route.travelPeriods());
             writeCargo(shipmentId,"OFFERED",cargo);s.execute("INSERT INTO logistics_paid_shipment(order_id,settlement_key,initial_route) VALUES(?,?,?)",shipmentId,settlementKey,routeId);
@@ -213,14 +213,41 @@ public final class LogisticsService {
     }
     public boolean paidShipment(UUID orderId)throws SQLException{return count("SELECT COUNT(*) FROM logistics_paid_shipment WHERE order_id=?",orderId)>0;}
 
+    /** Trusted market transaction: stop delivery before a separately committed treasury reversal. */
+    public Order holdPaidRefund(UUID orderId,String payment,AuthoritySnapshot auth)throws SQLException{
+        return store.tx(s->{fresh(auth);Order order=paidRefundOrder(orderId,payment,auth);
+            if(order.status()==OrderStatus.REFUNDING)return order;
+            if(order.status()!=OrderStatus.IN_TRANSIT&&order.status()!=OrderStatus.PAUSED)throw new IllegalArgumentException("已交付或终止的货物不能申请付款退款");
+            s.execute("UPDATE logistics_order SET state='REFUNDING',reason='双方已确认退款，货物冻结等待原付款逆向回执' WHERE id=?",orderId);
+            s.execute("UPDATE logistics_reroute SET state='CANCELLED' WHERE order_id=? AND state='PENDING'",orderId);
+            return order(orderId).orElseThrow();});
+    }
+
+    /** Called only after market verifies the exact durable refund; full warehouse keeps the hold. */
+    public Order returnPaidRefund(UUID orderId,String payment,Map<String,Long> expected,AuthoritySnapshot auth)throws SQLException{
+        return store.tx(s->{fresh(auth);Order order=paidRefundOrder(orderId,payment,auth);
+            if(!order.offered().equals(expected)||!order.requested().isEmpty())throw new IllegalArgumentException("退款货物与原托管不符");
+            if(order.status()==OrderStatus.CANCELLED)return order;
+            if(order.status()!=OrderStatus.REFUNDING)throw new IllegalArgumentException("退款货物尚未冻结或已交付");
+            if(!canCredit(order.originCity(),order.offered()))throw new IllegalArgumentException("卖方仓储已满，已退款商品继续托管");
+            credit(order.originCity(),order.offered());
+            s.execute("UPDATE logistics_order SET state='CANCELLED',last_period=?,reason='原国家付款已退还，托管商品归还原卖城' WHERE id=?",auth.period(),orderId);
+            s.audit("market-refund","PAID CARGO RETURN "+orderId+" "+payment);return order(orderId).orElseThrow();});
+    }
+    private Order paidRefundOrder(UUID id,String payment,AuthoritySnapshot auth)throws SQLException{
+        Order order=order(id).orElseThrow();requireOwners(order,auth);
+        if(count("SELECT COUNT(*) FROM logistics_paid_shipment WHERE order_id=? AND settlement_key=?",id,payment)!=1)throw new IllegalArgumentException("退款不匹配原已支付货运凭据");
+        return order;
+    }
+
     /** Read-only persisted counters; caller must capture live authority separately before any transport action. */
     public TransportStatus transportStatus(UUID routeId,long period)throws SQLException{
         if(period<0)throw new IllegalArgumentException("Negative transport period");
         return store.tx(s->{Route route=route(routeId).orElseThrow();long used=count("SELECT COALESCE(MAX(used),0) FROM logistics_route_usage WHERE route=? AND period=?",routeId,period);long available=route.enabled()&&routeLimitation(route).isEmpty()?Math.max(0,route.capacity()-used):0;List<NodeTraffic> traffic=new ArrayList<>();
             for(UUID id:route.nodes()){Node n=node(id).orElseThrow();long capacity=Math.multiplyExact(definitions.nodes().get(n.type()).capacity(),n.level()),nodeUsed=count("SELECT COALESCE(MAX(used),0) FROM logistics_node_usage WHERE node=? AND period=?",id,period);long[] maintenance=s.query("SELECT last_maintenance,maintained FROM logistics_node WHERE id=?",r->new long[]{r.getLong(1),r.getLong(2)},id).getFirst();long remaining=n.enabled()?Math.max(0,capacity-nodeUsed):0;traffic.add(new NodeTraffic(id,n.cityId(),n.type(),capacity,nodeUsed,remaining,maintenance[0],maintenance[0]==period&&maintenance[1]==1,n.enabled()));available=Math.min(available,remaining);}
             long minimum=available;List<UUID> bottlenecks=traffic.stream().filter(n->n.remaining()==minimum).map(NodeTraffic::nodeId).toList();Map<String,Integer> reasons=new LinkedHashMap<>();
-            List<long[]> counts=s.query("SELECT state,COUNT(*) FROM logistics_order WHERE route=? AND state IN ('OFFERED','IN_TRANSIT','PAUSED') GROUP BY state",r->new long[]{r.getString(1).equals("PAUSED")?1:0,r.getLong(2)},routeId);int waiting=0,paused=0;for(long[] row:counts){waiting=Math.addExact(waiting,Math.toIntExact(row[1]));if(row[0]==1)paused=Math.toIntExact(row[1]);}
-            for(var row:s.query("SELECT reason,COUNT(*) FROM logistics_order WHERE route=? AND state='PAUSED' GROUP BY reason ORDER BY COUNT(*) DESC,reason LIMIT 16",r->Map.entry(r.getString(1),r.getInt(2)),routeId))reasons.put(row.getKey(),row.getValue());
+            List<long[]> counts=s.query("SELECT state,COUNT(*) FROM logistics_order WHERE route=? AND state IN ('OFFERED','IN_TRANSIT','PAUSED','REFUNDING') GROUP BY state",r->new long[]{Set.of("PAUSED","REFUNDING").contains(r.getString(1))?1:0,r.getLong(2)},routeId);int waiting=0,paused=0;for(long[] row:counts){waiting=Math.addExact(waiting,Math.toIntExact(row[1]));if(row[0]==1)paused=Math.addExact(paused,Math.toIntExact(row[1]));}
+            for(var row:s.query("SELECT reason,COUNT(*) FROM logistics_order WHERE route=? AND state IN ('PAUSED','REFUNDING') GROUP BY reason ORDER BY COUNT(*) DESC,reason LIMIT 16",r->Map.entry(r.getString(1),r.getInt(2)),routeId))reasons.put(row.getKey(),row.getValue());
             return new TransportStatus(routeId,period,route.capacity(),used,available,traffic,bottlenecks,waiting,paused,reasons,route.enabled());});
     }
 
@@ -338,7 +365,7 @@ public final class LogisticsService {
                 return o;
             }
             long units = units(give, take); if (units > r.capacity()) throw new IllegalArgumentException("货单总量超过商路单周期容量");
-            for (UUID city : List.of(r.originCity(), r.targetCity())) if (count("SELECT COUNT(*) FROM logistics_order WHERE (origin_city=? OR target_city=?) AND state IN ('OFFERED','IN_TRANSIT','PAUSED')", city, city) >= definitions.maxOpenOrdersPerCity()) throw new IllegalArgumentException("城市未完成货单已达上限");
+            for (UUID city : List.of(r.originCity(), r.targetCity())) if (count("SELECT COUNT(*) FROM logistics_order WHERE (origin_city=? OR target_city=?) AND state IN ('OFFERED','IN_TRANSIT','PAUSED','REFUNDING')", city, city) >= definitions.maxOpenOrdersPerCity()) throw new IllegalArgumentException("城市未完成货单已达上限");
             debit(r.originCity(), give);
             s.execute("INSERT INTO logistics_order(id,route,origin_city,target_city,origin_nation,target_nation,state,created_period,expires_period,last_period,progress,travel) VALUES(?,?,?,?,?,?,'OFFERED',?,?,?,0,?)", id, routeId, r.originCity(), r.targetCity(), originNation, targetNation, auth.period(), Math.addExact(auth.period(), definitions.offerLifetimePeriods()), auth.period(), r.travelPeriods());
             writeCargo(id, "OFFERED", give); writeCargo(id, "REQUESTED", take);

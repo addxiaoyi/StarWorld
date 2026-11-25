@@ -49,3 +49,5 @@ The suite checks public region API/GUI protection, maintained-policy culture, ac
 ## 0.4 operations acceptance
 
 `exp-operations Player TargetCityUUID` observes the public asynchronous `StarWorldApi.routePlans` and `marketDeliveryStats` projections. It returns actual planning costs, city/global completed-delivery aggregates and entry-point names; it never invokes settlement or reconciliation. `exp-permissions Player` only reads actual `starworld.admin/use` permissions. The new `../paper-client/operations-acceptance.cjs` retains all original twenty progression stages and adds nine operations stages, three owned Paper starts and six client transcripts. Online backup is invoked by the actual temporarily-opped client, then independently inspected read-only by Python; no fixture writes gameplay SQL or bypasses the command's permission check. Existing progression and expansion actions are unchanged.
+
+退款夹具增加 `exp-refund-drain`（通过公开TreasuryService撤出有界测试余额）与 `exp-refund-receipt/replay <refundUUID>`（查询/重放真实核心退款），`exp-progress`在1.8起读取持久退款。`refund-acceptance.cjs`通过普通玩家命令申请、同意和重试；夹具不直接改变产品退款或货物状态。

@@ -80,7 +80,8 @@ function durableSnapshots(version) {
   if (versionMinor >= 7) afterRows.logistics_corridor = [];
   afterRows.public_works_schema = [{ id: 1, version: 1 }];afterRows.civic_schema = [{ id: 1, version: 2 }];
   if (v11) Object.assign(afterRows, evolved.world.rows);
-  if (versionMinor>=5) afterRows.market_schema=[{id:1,version:2,namespace:'original'}];
+  if (versionMinor>=5) afterRows.market_schema=[{id:1,version:versionMinor>=8?3:2,namespace:'original'}];
+  if (versionMinor>=8) {afterRows.market_refund=[];afterRows.starworld_dispatch_cursor.push({queue:'starworld:market-refund',next_lane:'FRESH'});}
   const baseTables = [...new Set([...stableTables, ...AUXILIARY_TABLES])];
   const newTables = expectedAddedTables(version);
   const coreRows = { starcore_nation_state: [], starcore_treasury_state: [], starcore_resource_state: [] };
@@ -194,4 +195,25 @@ test('1.1 rejects deleted legacy progress, lost partial work, invalid budgets, a
   assert.throws(() => assertLifeEvolution(old, { world: { ...next.world, rows: { ...next.world.rows, starworld_dispatch_cursor: [...next.world.rows.starworld_dispatch_cursor, { queue: 'foreign:queue', next_lane: 'DUE' }] } } }, '1.1.0'), /only the market and resource queue namespaces/u);
   const durable = durableSnapshots('1.1.0');durable.after.world.rows.life_action=[];
   assert.throws(() => assertDurable(durable.before,durable.after,'1.1.0'), /Existing durable life_action rows changed/u);
+});
+
+
+test('1.8 upgrades schemas 1 and 2 without inventing refunds or changing payment terms and rejects tampered state',()=>{
+  const {before,after}=durableSnapshots('1.8.0');
+  assert.doesNotThrow(()=>assertDurable(before,after,'1.8.0'));
+  const {after:previous}=durableSnapshots('1.7.0');
+  assert.doesNotThrow(()=>conserved(previous,after,'1.8.0'));
+  for(const change of [
+    s=>s.world.rows.market_refund.push({id:'invented',state:'COMPLETED'}),
+    s=>s.world.rows.market_schema[0].version=2,
+    s=>s.world.rows.market_schema[0].namespace='reset',
+    s=>s.world.tables.splice(s.world.tables.indexOf('market_refund'),1),
+    s=>s.world.rows.starworld_dispatch_cursor.pop(),
+    s=>s.world.rows.starworld_dispatch_cursor.push({queue:'foreign',next_lane:'FRESH'}),
+  ]){const bad=structuredClone(after);change(bad);assert.throws(()=>assertDurable(before,bad,'1.8.0'));assert.throws(()=>conserved(previous,bad,'1.8.0'));}
+  after.world.rows.market_refund.push({id:'original',purchase:'purchase',transaction_id:'refund:original',state:'COMPLETED'});
+  assert.doesNotThrow(()=>conserved(after,structuredClone(after),'1.8.0'));
+  for(const change of [s=>s.world.rows.market_refund[0].transaction_id='changed',s=>s.world.rows.market_refund=[]]){
+    const bad=structuredClone(after);change(bad);assert.throws(()=>conserved(after,bad,'1.8.0'));
+  }
 });

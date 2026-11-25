@@ -23,6 +23,7 @@ const ADDED = ['public_works_schema', 'public_works', 'public_works_history', 'c
 const V11_TABLES = ['life_evolution_pending', 'life_evolution_budget', 'starworld_dispatch_cursor'];
 const V13_TABLES = ['city_region'];
 const V17_TABLES = ['logistics_corridor'];
+const V18_TABLES = ['market_refund'];
 const DISPATCH_QUEUES = ['starworld:market-payment', 'starworld:resource-export'];
 const CONFIGS = ['config.yml', 'definitions.yml', 'disaster-response.yml', 'evolution.yml', 'exports.yml', 'life.yml', 'logistics.yml', 'market.yml'];
 let NEW_CONFIGS = ['civic-needs.yml', 'public-works.yml'];
@@ -76,7 +77,7 @@ function parseArgs(argv) {
   return result;
 }
 function sqliteSnapshot(python, runtime) {
-  const chosen = [...STABLE, ...ADDED, ...V13_TABLES, ...V17_TABLES, 'life_schema', 'life_city', 'city_state', 'stock', 'settlement', 'region', 'reserve', 'disaster_response', 'disaster_response_history', 'disaster_recovery_ledger'];
+  const chosen = [...STABLE, ...ADDED, ...V13_TABLES, ...V17_TABLES, ...V18_TABLES, 'life_schema', 'life_city', 'city_state', 'stock', 'settlement', 'region', 'reserve', 'disaster_response', 'disaster_response_history', 'disaster_recovery_ledger'];
   const result = spawnSync(python, ['-c', PROBE, runtime, chosen.join(',')], { encoding: 'utf8', windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
   assert.equal(result.status, 0, `Read-only stopped SQLite probe failed: ${result.error || result.stderr}`);
   return JSON.parse(result.stdout);
@@ -113,12 +114,16 @@ function is13(version) { return minorVersion(version) >= 3; }
 const MARKET_TABLES = ['market_schema','market_listing','market_purchase','market_history'];
 function assertMarketMigration(before, after, version) {
   const old=before.world.rows,next=after.world.rows;
-  if(minorVersion(version)<5||old.market_schema[0]?.version===2){
-    for(const table of MARKET_TABLES)assert.deepEqual(next[table],old[table],`Existing durable ${table} rows changed`);
+  const target=minorVersion(version)>=8?3:minorVersion(version)>=5?2:old.market_schema[0]?.version;
+  assert.equal(old.market_schema.length,1);
+  assert([1,2,3].includes(old.market_schema[0].version)&&old.market_schema[0].version<=target,'Unknown or newer market schema');
+  assert.deepEqual(next.market_schema,old.market_schema.map(row=>({...row,version:target})),'Market namespace or schema changed unexpectedly');
+  if(minorVersion(version)>=8)assert.deepEqual(next.market_refund,old.market_refund||[],'Upgrade invented or changed refunds');
+  else assert(!Object.hasOwn(next,'market_refund'),'Historical market must not create refunds');
+  if(minorVersion(version)<5||old.market_schema[0].version>=2){
+    for(const table of MARKET_TABLES.filter(t=>t!=='market_schema'))assert.deepEqual(next[table],old[table],`Existing durable ${table} rows changed`);
     return;
   }
-  assert.equal(old.market_schema.length,1);assert.equal(old.market_schema[0].version,1);
-  assert.deepEqual(next.market_schema,old.market_schema.map(row=>({...row,version:2})),'Market namespace or schema changed unexpectedly');
   const listings=indexBy(old.market_listing,'id','old market listings');
   assert.deepEqual(next.market_listing,old.market_listing.map(row=>({...row,
     available_units:row.state==='AVAILABLE'?row.units:0,reserved_units:row.state==='LOCKED'?row.units:0,
@@ -135,7 +140,7 @@ function assertMarketMigration(before, after, version) {
 }
 function expectedAddedTables(version) {
   return [...ADDED.filter(table => is11(version) || !V11_TABLES.includes(table)),
-    ...(is13(version) ? V13_TABLES : []), ...(minorVersion(version) >= 7 ? V17_TABLES : [])].sort();
+    ...(is13(version) ? V13_TABLES : []), ...(minorVersion(version) >= 7 ? V17_TABLES : []), ...(minorVersion(version) >= 8 ? V18_TABLES : [])].sort();
 }
 function assertAddedTables(before, after, version) {
   assert.deepEqual(after.filter(name => !before.includes(name)).sort(), expectedAddedTables(version));
@@ -231,7 +236,7 @@ function assertLifeEvolution(before, after, version) {
   }
 
   const cursor = indexBy(cursorRows, 'queue', 'dispatch cursor namespaces');
-  assert.deepEqual([...cursor.keys()].sort(), [...DISPATCH_QUEUES].sort(), '1.1 may initialize only the market and resource queue namespaces');
+  assert.deepEqual([...cursor.keys()].sort(), [...DISPATCH_QUEUES,...(minorVersion(version)>=8?['starworld:market-refund']:[])].sort(), 'May initialize only the market and resource queue namespaces plus versioned refund dispatch');
   for (const [queue, row] of cursor) assert(['FRESH', 'DUE'].includes(row.next_lane), `Invalid dispatch cursor lane: ${queue}`);
 }
 

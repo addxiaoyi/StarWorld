@@ -20,7 +20,7 @@ node --max-old-space-size=384 acceptance.cjs --java C:/jdk21/bin/java.exe --runt
 
 结果在 `runtime/client-acceptance/<UTC timestamp>/evidence.json`，同目录有完整服务端和客户端日志。只有所有阶段状态均为passed才算成功。`latest.json` 指向最近一次结果，失败不会被重新标为成功。不要把 helper 派发命令或仅日志里出现插件名称当作玩法通过。
 
-准备新候选版的回归目录可使用仓库内的 `tools/prepare-paper-acceptance.py`。从已拥有的隔离模板复制静态配置和依赖，为本次候选 JAR、夹具、运行器及共享资源启动器重新记录指纹；输出 `PREPARATION.json` 包含可执行的 `command` 参数数组。支持 `baseline`、`expansion`、`progression`、`border`、`operations`、`disaster`、`works`、`storage`、`lifecycle-logistics`、`civic` 和 `smoke`。每个套件使用已按该套件调好的模板，工具保留原有 YAML 覆盖，并从候选 JAR 补充缺失的默认配置。
+准备新候选版的回归目录可使用仓库内的 `tools/prepare-paper-acceptance.py`。从已拥有的隔离模板复制静态配置和依赖，为本次候选 JAR、夹具、运行器及共享资源启动器重新记录指纹；输出 `PREPARATION.json` 包含可执行的 `command` 参数数组。支持 `baseline`、`expansion`、`progression`、`border`、`operations`、`disaster`、`works`、`storage`、`corridor`、`refund`、`lifecycle-logistics`、`civic` 和 `smoke`。每个套件使用已按该套件调好的模板，工具保留原有 YAML 覆盖，并从候选 JAR 补充缺失的默认配置。
 
 ```powershell
 python tools/prepare-paper-acceptance.py --suite baseline `
@@ -122,3 +122,9 @@ node --max-old-space-size=384 upgrade-10-acceptance.cjs --java C:/jdk21/bin/java
 公共工程的九设施守恒场景在三个空炼药锅井上方放置实际石质遮雨顶，客户端收到方块后才继续。自然雨水会把露天空锅变成不同的 `WATER_CAULDRON`，按产品精确锚点规则停产；测试不降低九设施断言，也不改写天气、生产账本或设施有效集合。
 
 1.5新增同一挂牌两次显式分批购买、仅余量退回、失地暂停、第三次启动回执重放及准确交货统计。`market-upgrade-acceptance.cjs --help`另提供6阶段真实1.4存档迁移：输入为已通过且停服的1.4进阶证据，新目录逐文件复制世界/玩家/数据库，仅改目标JAR和localhost端口；两次启动核对原国库、订单、历史和统计，原目录不改动。
+
+## 退款实服验收
+
+`refund-acceptance.cjs` 使用两名普通客户端和三次正常启停，验证7/20份额的真实国库付款、买方不能代替卖方同意、余额不足时冻结运输、重启后同ID重试、逆向回执和精确退货、余量撤销及再次重启不重发。物品种子、国库充值及清空卖方余额均明确记为夹具干预，不作为真实生产收入证据。
+
+准备时选择 `--suite refund`，以 `--starcore` 和 `--starcore-provenance` 指定[经过构建验证的核心候选](../../upstream/starcore/README.md)。工具核对候选JAR哈希、提交和测试结果；新目录单独复制插件并记录 `STARCORE-PROVENANCE.json`，保留原模板。测试要求10秒周期、事件概率0、每周期8格运输；新目录独立调整运输速度。启动器仍执行localhost、EULA、固定内存和日志约束。记录位于 `refund-acceptance/<timestamp>/`，失败尝试保留。

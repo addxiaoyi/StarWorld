@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "version": "1.7.0",
-  "recorded_at": "2026-11-25T11:53:15.312553+00:00",
+  "version": "1.8.0",
+  "recorded_at": "2026-11-25T12:29:11.640593+00:00",
   "command": "./mvnw -B --no-transfer-progress -Dstarworld.testHeap=160m clean verify",
-  "java": "OpenJDK 21.0.10+7-Ubuntu-124.04",
-  "artifact_sha256": "dba8fdb3da8d06feae42001ad74dad1585f33087767f4b4864a67ea4bdda7659",
+  "java": "OpenJDK 21.0.10",
+  "artifact_sha256": "c5f2b3f302200580625f032dcf4e1efc5ea8299c8da02cfd44184edc648b2091",
   "totals": {
-    "tests": 515,
+    "tests": 532,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -174,6 +174,13 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.integration.StarCoreTreasuryRefundsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.integration.StarCoreTreasuryTransfersTest",
       "tests": 6,
       "failures": 0,
@@ -266,7 +273,7 @@
     },
     {
       "suite": "dev.starworld.market.MarketControllerTest",
-      "tests": 10,
+      "tests": 15,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -274,6 +281,13 @@
     {
       "suite": "dev.starworld.market.MarketMigrationTest",
       "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.market.MarketRefundServiceTest",
+      "tests": 8,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -421,30 +435,30 @@
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 58122,
-      "missed": 16381
+      "covered": 60770,
+      "missed": 16844
     },
     "BRANCH": {
-      "covered": 4244,
-      "missed": 2778
+      "covered": 4405,
+      "missed": 2852
     },
     "LINE": {
-      "covered": 3971,
-      "missed": 758
+      "covered": 4130,
+      "missed": 767
     },
     "COMPLEXITY": {
-      "covered": 2884,
-      "missed": 2837
+      "covered": 3010,
+      "missed": 2919
     },
     "METHOD": {
-      "covered": 1563,
-      "missed": 573
+      "covered": 1636,
+      "missed": 588
     },
     "CLASS": {
-      "covered": 229,
-      "missed": 13
+      "covered": 241,
+      "missed": 14
     }
   },
-  "build_log_sha256": "772c959210f6f14bf2ebd4951caceebff1f500fcb379dc69c12d071462843408",
-  "sources_sha256": "2f5c366130c9ea4a8a2dd77fb87bdf8ae1811d921f191caef2c19b3e124507f9"
+  "build_log_sha256": "ef7bd85ee453276af2e0365653641acce9df5b9118758bacc3172265012b4a0f",
+  "sources_sha256": "ed11519d7050c009422d96903a521dff2fc67b24f0bb056712e29c3b96449704"
 }

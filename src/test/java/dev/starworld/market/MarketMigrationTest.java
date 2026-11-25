@@ -50,7 +50,7 @@ class MarketMigrationTest {
             List<String> before=store.query("SELECT id||'|'||transaction_id||'|'||shipment||'|'||total||'|'||state||'|'||lease||'|'||attempts||'|'||next_attempt FROM market_purchase ORDER BY id",r->r.getString(1));
             MarketService market=open(store);
             assertEquals(before,store.query("SELECT id||'|'||transaction_id||'|'||shipment||'|'||total||'|'||state||'|'||lease||'|'||attempts||'|'||next_attempt FROM market_purchase ORDER BY id",r->r.getString(1)));
-            assertEquals(2,store.query("SELECT version FROM market_schema",r->r.getInt(1)).getFirst());
+            assertEquals(3,store.query("SELECT version FROM market_schema",r->r.getInt(1)).getFirst());
             assertEquals("original-market-namespace",store.query("SELECT namespace FROM market_schema",r->r.getString(1)).getFirst());
             assertEquals(20,market.listing(available).orElseThrow().availableUnits());assertEquals(20,market.listing(locked).orElseThrow().reservedUnits());
             assertEquals(20,market.listing(shipped).orElseThrow().shippedUnits());assertEquals(20,market.listing(cancelled).orElseThrow().returnedUnits());assertEquals(20,market.listing(expired).orElseThrow().returnedUnits());

@@ -1,6 +1,6 @@
 # StarWorld
 
-持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.7.0**，有限道路和水路通道已通过增量验收；1.6地区地图已通过验证；1.5分批市场的证据已归档；后续扩展按[开发计划](docs/development-plan.md)持续实施。
+持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.8.0**，双方确认退款已通过增量验收；1.7有限道路和水路通道已通过增量验收；1.6地区地图已通过验证；1.5分批市场的证据已归档；后续扩展按[开发计划](docs/development-plan.md)持续实施。
 
 **开发分支：** [`codex/complete-development-stages`](https://github.com/addxiaoyi/StarWorld/tree/codex/complete-development-stages)，对应[草稿PR #2](https://github.com/addxiaoyi/StarWorld/pull/2)。当前状态见[开发计划](docs/development-plan.md)和[测试记录](docs/test-results.md)，已完成的历史发行见[1.4交接说明](docs/handoff-1.4.0.md)。
 
@@ -23,7 +23,7 @@ python -m unittest discover -s tools -p "test_*.py" -v
 npm --prefix tools/paper-client test
 ```
 
-产物为 `target/starworld-1.7.0.jar` 和 `target/starworld-1.7.0-sources.jar`。完整验证证据包和发行 ZIP 只在全部运行套件绑定同一JAR后生成；只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
+产物为 `target/starworld-1.8.0.jar` 和 `target/starworld-1.8.0-sources.jar`。完整验证证据包和发行 ZIP 只在全部运行套件绑定同一JAR后生成；只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
 
 1. 正常关服，备份整个 `plugins/StarWorld/`。升级时保留数据库和持久配置 ID。
 2. 放置插件 JAR，使用 Paper 1.21.11 和审计兼容的 StarCore 启动。
@@ -52,7 +52,7 @@ npm --prefix tools/paper-client test
 | GUI/API | 城市仓储/设施与发展GUI，生活/贸易命令入口；不可变 Future 查询及提交后事件 |
 | 地区地图册 | 分页地形、资源、文化与设施；`/sw map` 方位地图和 `/sw districts` 相邻同地形分组；管理者用 `/sw survey` 勘探脚下已加载且本国、本城拥有的区块，每城最多128个地区 |
 | 商路调度 | 同端点替代商路、双方确认改道、共享运力瓶颈；改道重计完整运时，原当期占用不退款 |
-| 国库实物市场 | 按数量分批购买限价挂牌，实体货物先托管；国家创始人通过核心原子幂等转账付款，确认回执后实际商路交货 |
+| 国库实物市场 | 按数量分批购买限价挂牌，实体货物先托管；国家创始人通过核心原子幂等转账付款，确认回执后实际商路交货；双方确认可冻结未交付份额，匹配逆向回执后退货 |
 | 长期存档 | 有界无损审计压缩归档、旧报表清理；付款/货物/生活活动的关键去重凭据永久保留 |
 | 存储过载 | 单线程 IO 待处理队列上限 256；饱和时 Future 显式失败并沿现有错误路径处理 |
 | 经营反馈 | 已声明路线的时间、容量和双方维护物资比较；仅物流完成后有界归集到货数量、精确总额和均价 |
@@ -91,6 +91,8 @@ npm --prefix tools/paper-client test
 /sw concert <start|list|note UUID 音高|finish UUID|cancel UUID>
 /sw export <契约ID> <批数>
 /sw outbox
+/sw market refund <购买UUID> · refunds [页码]
+/sw market refund-accept|refund-cancel|refund-retry <退款申请UUID>
 ```
 
 `starworld.use` 默认所有玩家。设施、公共仓库、规划、贸易及有成本的生活活动需要城市管理权限；全国文明和国家专长还需 StarCore 国家创始人。`starworld.admin` 默认 OP，可覆盖管理权限，但不能证明无效领土/锚点有效。管理员可用：

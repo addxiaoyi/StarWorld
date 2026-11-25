@@ -108,6 +108,25 @@ class FreshPaperInputTests(unittest.TestCase):
             prepare.prepare(self.args)
         self.assertFalse(self.runtime.exists())
 
+    def test_refund_core_candidate_is_bound_to_its_verified_commit_and_hash(self):
+        self.args.suite = 'refund'
+        self.write('plugins/StarWorld/logistics.yml', 'blocks-per-period: 128\n')
+        self.args.starcore = self.base / 'patched-core.jar'
+        self.args.starcore.write_bytes(b'new audited core')
+        self.args.starcore_provenance = self.base / 'core-proof.json'
+        proof = dict(base='a'*40, commit='b'*40, artifact_sha256='0'*64,
+                     tests=dict(tests=7008, failures=0, errors=0, skipped=21))
+        self.args.starcore_provenance.write_text(json.dumps(proof))
+        with self.assertRaisesRegex(ValueError, 'provenance hash differs'):
+            prepare.prepare(self.args)
+        self.assertFalse(self.runtime.exists())
+        proof['artifact_sha256'] = prepare.sha(self.args.starcore)
+        self.args.starcore_provenance.write_text(json.dumps(proof))
+        result = prepare.prepare(self.args)
+        self.assertEqual(result['starCoreSha256'], proof['artifact_sha256'])
+        self.assertEqual(prepare.read_json(self.runtime / 'STARCORE-PROVENANCE.json'), proof)
+        self.assertEqual((self.template / 'plugins/StarCore.jar').read_bytes(), b'core')
+
     def test_rebuilds_real_05_disaster_source_without_adding_candidate_configuration(self):
         with zipfile.ZipFile(self.jar, 'w') as archive:
             archive.writestr('plugin.yml', "name: StarWorld\nversion: '0.5.0'\n")

@@ -1,29 +1,34 @@
-# StarWorld 1.7.0 有限通道验收
+# StarWorld 1.8.0 双边退款验收
 
-2026-11-25，绑定道路/航道、受阻暂停与恢复、重启及真实旧市场迁移已通过本轮验证。第三国过境、税费退款、上游内容接口和Folia等扩展继续按[开发计划](development-plan.md)实施。本轮为增量验收，未生成完整发行ZIP。
+2026-11-25，未交货退款、余额不足冻结、三次重启重放及真实1.4市场迁移通过本轮增量验收。税费、第三国过境和其他[后续扩展](development-plan.md)继续实施。本轮未生成完整发行ZIP。
 
 | 验证 | 结果 | 证据 |
 | --- | --- | --- |
-| Maven完整构建 | 515项Java / 58套件，0失败、错误、跳过 | [单测索引](evidence/unit-tests.json)，`runtime/logs/build-1.7.0-r2.log` |
-| 工具回归 | Python75、Node23全部通过 | `runtime/logs/python-tests-1.7.0-r2.log`、`node-tests-1.7.0-r3.log` |
-| Paper道路与水路 | 12/12阶段，两次正常启动/停服 | [通道证据](evidence/physical-corridors-acceptance.json) |
-| 真实1.4→1.7市场迁移 | 6/6阶段，两次正常启动/停服 | [迁移证据](evidence/market-upgrade-acceptance.json) |
+| Maven完整构建 | 532项Java / 60套件，0失败、错误、跳过 | [单测索引](evidence/unit-tests.json)，`runtime/logs/refund18-verify-r3.log` |
+| 工具回归 | Python76、Node24全部通过 | `runtime/logs/refund18-python-r2.log`、`refund18-node.log` |
+| Paper双边退款 | 13/13阶段，三次正常启动/停服 | [退款证据](evidence/market-refund-acceptance.json) |
+| 真实1.4→1.8市场迁移 | 6/6阶段，两次正常启动/停服 | [迁移证据](evidence/market-upgrade-acceptance.json) |
 | 千城SQLite | 1,000城 / 2,000设施 / 3,000结算，重启重放1,000城无重复 | [规模报告](scale.md) |
+| 上游结算候选 | 7,008项测试，0失败/错误、21项环境相关跳过；真实退款及重启通过 | [补丁和验证](../upstream/starcore/README.md) |
 
-主JAR SHA-256：`dba8fdb3da8d06feae42001ad74dad1585f33087767f4b4864a67ea4bdda7659`。源码JAR SHA-256：`2f5c366130c9ea4a8a2dd77fb87bdf8ae1811d921f191caef2c19b3e124507f9`。构建使用OpenJDK 21.0.10、Maven堆192 MiB和测试堆160 MiB。产物和索引副本保存在`runtime/releases/1.7.0`；[验收索引](evidence/acceptance.json)绑定准确JAR、源码、测试、运行器与日志。
+主JAR SHA-256：`c5f2b3f302200580625f032dcf4e1efc5ea8299c8da02cfd44184edc648b2091`。源码JAR SHA-256：`ed11519d7050c009422d96903a521dff2fc67b24f0bb056712e29c3b96449704`。构建使用OpenJDK21.0.10、Maven堆192 MiB和测试堆160 MiB。产物与索引副本保存在`runtime/releases/1.8.0`，[验收索引](evidence/acceptance.json)绑定准确源码、JAR、运行器与日志。
 
-## 通道和资金边界
+## 已验证行为
 
-规划测试覆盖有限直角折线、坡度与反向对称、负坐标、跨世界/对角/垂直路径拒绝、1024中心点和水路港口约束。现场捕获测试验证路面缺口、头顶障碍、双层领土、未加载区块、水深/水源/宽度/净空、16,384次读取预算及下一批恢复。50条候选路线超过单次32条上限时，其余路线按缺证据暂停，按周期轮换进入后续核验，不使整批中止。
+真实SQLite回归覆盖买方申请/卖方确认、未发货和部分份额退款、丢失回调与重启、过期租约不落账、错误/缺失回执保持冻结、仓库满/转国暂停退货、退货事务注入失败整体回滚、已交货拒绝退款及待确认申请撤销。控制器验证权限失效、归属变化仅核对历史回执、接口异常保留原凭据并完成本批回调、退休/关闭调度不发起新逆转。物流汇总将普通暂停和退款冻结一起计数。
 
-真实SQLite测试验证绑定不能追溯改变已有货单或市场购买的条件，不能解除；绑定、几何指纹、库存和货物跨重启保留。错误/缺失证据阻止报价、预留和发货；真实控制器回归验证道路损坏时不发起新国库付款，恢复后才允许付款。
+实服从全新存档和两名普通客户端开始，国家/城市与双层claim由真实核心公共服务建立；真实背包物品通过普通命令存入城市。卖方挂牌20个铁锭，买方购买7个，国库真实支付17.50金币后进入四周期物流。夹具通过公开TreasuryService明确撤出卖方余额，买方不能自行代替卖方确认；双方同意后货物冻结、余额不足时重试，跨运输周期不前进、不消耗维护。重启保留原申请、付款ID、物流单和买方982.50/卖方0余额。
 
-实服从空存档开始，通过两名客户端与公开StarCore城市/国家claim准备有限道路和航道。玩家以实际背包物品投入仓库并用真实视线登记锚点。断路拒绝报价且不扣货；接受后断路暂停货物且不扣维护，停服后保持原绑定与托管。恢复道路但撤销中途国家claim时仍暂停，恢复claim后双方精确收到原报价。水路缺少第二层水源时暂停，补齐后只交付一次。两次运行均正常保存全部世界。
+补回卖方17.50金币后，原退款凭据将买方余额恢复到1000、卖方回到0；七个铁锭一次性退回原卖仓。剩余13个挂牌商品可单独撤销，双方最终铁锭库存恢复到各自初值。第三次启动重放原付款与退款回执，余额、商品和退款身份均不重复变化。已付款发货历史仍保留，退款不计入完成交货。资金/物品种子和撤资均为明确测试干预，不计为真实生产收入。
 
-最终通道记录：`runtime/corridor17-r5/corridor-acceptance/2026-11-25T11-53-15-625Z`。迁移记录：`runtime/market-upgrade17-r2/market-upgrade-acceptance/2026-11-25T11-56-14-662Z`。迁移使用已通过1.4进阶验收的停止存档独立副本，原存档逐文件哈希未改变；仅增加空的通道绑定表，旧路线不自动绑定。已完成货运、价格历史、交货统计、原始付款凭据和玩家背包保持一致，两次启动重放旧付款均不重新收款。
+退款运行：`runtime/refund18-r2/refund-acceptance/2026-11-25T12-29-11-988Z`。使用StarCore候选`f540963e`、SHA-256 `79dbaaecf3140d377edeab93b14adf9cfd72738118e4a047738c4cff5f2db079`，公开NationSettlementService完成原子逆转，未拼接非原子国库收付。原Core基线未替换；上游候选只提交在项目内独立工作树，补丁随本仓库保留。
 
-## 保留的尝试与范围
+迁移运行：`runtime/market-upgrade18-r2/market-upgrade-acceptance/2026-11-25T12-30-41-316Z`。基于已通过1.4验收的停止存档独立副本，旧Core继续实际运行；所有源文件哈希不变。市场schema推进到3并新增空退款表/调度队列，原付款、货单、商品份额、价格历史、交货统计与玩家背包保持一致。两次启动重放旧付款不再扣钱。
 
-`corridor17`、`corridor17-r2`、`corridor17-r3`保留夹具视线遮挡、命令频率触发客户端踢出、非原子查询跨提交导致断言过早的失败记录；分别调整锚点瞄准、命令间隔及库存/货单共同收敛条件。`corridor17-r4`和`market-upgrade17`通过的是早期1.7构建；发现50条候选超过32条核验上限后修正并重新完整构建，最终验收仅使用上述修订JAR。早期Java失败日志与同版本旧构建索引也保留。
+## 尝试记录与范围
 
-[1.6地图/重启/压力](history/test-results-1.6.0.md)、[1.5分批市场](history/test-results-1.5.0.md)和[1.4完整发行](history/test-results-1.4.0.md)属于各自历史JAR，不计入当前18个实服阶段。1.6提交`ddc5f5d`的[CI #53](https://github.com/addxiaoyi/StarWorld/actions/runs/45605158315)已核对成功，记录见[CI索引](evidence/ci/1.6.0-20261125.json)。完整发行打包仍要求同一最终JAR的全部套件。
+`runtime/refund18`与`runtime/market-upgrade18`通过早期1.8构建，产物保存在`runtime/releases/1.8.0-candidate1`。复核修正混合暂停数量汇总和退款回执查询异常隔离后重新完整构建；最终仅引用上述修订JAR及-r2实服记录。`refund18-verify-r2.log`保留新增测试使用过旧授权周期导致的失败；修正测试时序后-r3全量通过。最初定向测试中的旧schema预期和玩家权限mock失败也保留。
+
+实服日志保留Paper空超平坦生成器的`No key layers in MapLike`信息及Core缺少可选ProtocolLib后使用替代菜单的提示；StarWorld无运行错误，所有五次停服均完整保存世界。此验证未覆盖MySQL/Redis联机、CE视觉/音效、Folia和长期在线容量，后续按计划单独验证。
+
+[1.7通道](history/test-results-1.7.0.md)、[1.6地图](history/test-results-1.6.0.md)、[1.5分批市场](history/test-results-1.5.0.md)与[1.4完整发行](history/test-results-1.4.0.md)属于各自历史JAR。上一提交`84cc5e7`的[CI #55](https://github.com/addxiaoyi/StarWorld/actions/runs/45609546965)成功，记录见[CI索引](evidence/ci/1.7.0-20261125.json)。完整发行打包仍要求同一最终JAR的全部套件，1.8新增退款套件和精确上游补丁绑定。

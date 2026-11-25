@@ -1,0 +1,1099 @@
+From f540963ea48a9bde9e8a67aff0e08eacca84d50c Mon Sep 17 00:00:00 2001
+From: Hermes Dev <dev@hermes.local>
+Date: Wed, 25 Nov 2026 12:07:01 +0000
+Subject: [PATCH] feat: expose atomic treasury settlements and verifiable full
+ refunds
+
+---
+ .../treasury/NationSettlementService.java     | 155 +++++++
+ .../module/treasury/TreasuryModule.java       | 210 +++++++++-
+ .../module/treasury/TreasuryStateCodec.java   | 217 +++++++++-
+ .../treasury/NationSettlementServiceTest.java | 384 ++++++++++++++++++
+ 4 files changed, 957 insertions(+), 9 deletions(-)
+ create mode 100644 src/main/java/dev/starcore/starcore/module/treasury/NationSettlementService.java
+ create mode 100644 src/test/java/dev/starcore/starcore/module/treasury/NationSettlementServiceTest.java
+
+diff --git a/src/main/java/dev/starcore/starcore/module/treasury/NationSettlementService.java b/src/main/java/dev/starcore/starcore/module/treasury/NationSettlementService.java
+new file mode 100644
+index 00000000..72dc8585
+--- /dev/null
++++ b/src/main/java/dev/starcore/starcore/module/treasury/NationSettlementService.java
+@@ -0,0 +1,155 @@
++package dev.starcore.starcore.module.treasury;
++
++import dev.starcore.starcore.module.nation.model.NationId;
++import java.math.BigDecimal;
++import java.math.RoundingMode;
++import java.time.Instant;
++import java.util.LinkedHashMap;
++import java.util.Map;
++import java.util.Objects;
++import java.util.Optional;
++
++/**
++ * Atomic national payments with at most sixteen beneficiaries and verifiable full reversals.
++ * Callers authorize the economic operation; this service never charges a player wallet or mints
++ * money. A payment and every affected balance share one durable treasury commit. Refunds reverse
++ * exactly the original payment, including every beneficiary, and can succeed only once.
++ */
++public interface NationSettlementService {
++  int MAX_BENEFICIARIES = 16;
++
++  enum SettlementStatus {
++    APPLIED,
++    ALREADY_APPLIED,
++    INSUFFICIENT_FUNDS,
++    REJECTED
++  }
++
++  record SettlementRequest(
++      String transactionId,
++      NationId payerId,
++      Map<NationId, BigDecimal> credits,
++      String description) {
++    public SettlementRequest {
++      transactionId = identifier(transactionId);
++      payerId = Objects.requireNonNull(payerId, "payerId");
++      credits = allocation(payerId, credits);
++      description = description == null ? "" : description;
++      if (description.length() > 512) throw new IllegalArgumentException("Description too long");
++    }
++
++    public BigDecimal total() {
++      return credits.values().stream().reduce(new BigDecimal("0.00"), BigDecimal::add);
++    }
++  }
++
++  record SettlementReceipt(
++      String transactionId,
++      NationId payerId,
++      Map<NationId, BigDecimal> credits,
++      String description,
++      Instant appliedAt) {
++    public SettlementReceipt {
++      SettlementRequest checked =
++          new SettlementRequest(transactionId, payerId, credits, description);
++      transactionId = checked.transactionId();
++      payerId = checked.payerId();
++      credits = checked.credits();
++      description = checked.description();
++      appliedAt = Objects.requireNonNull(appliedAt, "appliedAt");
++    }
++
++    public boolean matches(SettlementRequest request) {
++      return transactionId.equals(request.transactionId())
++          && payerId.equals(request.payerId())
++          && credits.equals(request.credits())
++          && description.equals(request.description());
++    }
++  }
++
++  /** Original payment may be a settlement or an existing NationTransferService transfer. */
++  record SettlementRefundRequest(String transactionId, String originalTransactionId) {
++    public SettlementRefundRequest {
++      transactionId = identifier(transactionId);
++      originalTransactionId = identifier(originalTransactionId);
++      if (transactionId.equals(originalTransactionId))
++        throw new IllegalArgumentException("Refund must have its own transaction ID");
++    }
++  }
++
++  /** credits describes the original beneficiaries; the refund debits them and restores payerId. */
++  record SettlementRefundReceipt(
++      String transactionId,
++      String originalTransactionId,
++      NationId payerId,
++      Map<NationId, BigDecimal> credits,
++      Instant appliedAt) {
++    public SettlementRefundReceipt {
++      SettlementRefundRequest checked =
++          new SettlementRefundRequest(transactionId, originalTransactionId);
++      transactionId = checked.transactionId();
++      originalTransactionId = checked.originalTransactionId();
++      payerId = Objects.requireNonNull(payerId, "payerId");
++      credits = allocation(payerId, credits);
++      appliedAt = Objects.requireNonNull(appliedAt, "appliedAt");
++    }
++  }
++
++  record SettlementResult(
++      SettlementStatus status, String transactionId, Map<NationId, BigDecimal> balancesAfter) {
++    public SettlementResult {
++      status = Objects.requireNonNull(status, "status");
++      transactionId = identifier(transactionId);
++      balancesAfter = Map.copyOf(balancesAfter);
++    }
++
++    public boolean applied() {
++      return status == SettlementStatus.APPLIED || status == SettlementStatus.ALREADY_APPLIED;
++    }
++  }
++
++  SettlementResult settle(SettlementRequest request);
++
++  Optional<SettlementReceipt> settlementReceipt(String transactionId);
++
++  SettlementResult refundSettlement(SettlementRefundRequest request);
++
++  Optional<SettlementRefundReceipt> settlementRefundReceipt(String transactionId);
++
++  Optional<SettlementRefundReceipt> refundForPayment(String originalTransactionId);
++
++  private static String identifier(String value) {
++    if (value == null || value.isBlank() || value.length() > 200)
++      throw new IllegalArgumentException("Invalid settlement transaction ID");
++    return value;
++  }
++
++  private static Map<NationId, BigDecimal> allocation(
++      NationId payer, Map<NationId, BigDecimal> input) {
++    if (input == null || input.isEmpty() || input.size() > MAX_BENEFICIARIES)
++      throw new IllegalArgumentException("A settlement requires one to sixteen beneficiaries");
++    Map<NationId, BigDecimal> result = new LinkedHashMap<>();
++    BigDecimal total = BigDecimal.ZERO;
++    for (var entry : input.entrySet()) {
++      NationId receiver = Objects.requireNonNull(entry.getKey(), "receiverId");
++      if (payer.equals(receiver))
++        throw new IllegalArgumentException("Payer cannot be a beneficiary");
++      BigDecimal value = Objects.requireNonNull(entry.getValue(), "amount");
++      if (value.scale() > 64
++          || value.precision() > 80
++          || value.signum() <= 0
++          || value.compareTo(new BigDecimal("1000000000000000.00")) > 0)
++        throw new IllegalArgumentException("Invalid settlement amount");
++      try {
++        value = value.setScale(2, RoundingMode.UNNECESSARY);
++      } catch (ArithmeticException invalid) {
++        throw new IllegalArgumentException("Settlement amounts require exact cents", invalid);
++      }
++      total = total.add(value);
++      result.put(receiver, value);
++    }
++    if (total.compareTo(new BigDecimal("1000000000000000.00")) > 0)
++      throw new IllegalArgumentException("Settlement total exceeds treasury cap");
++    return Map.copyOf(result);
++  }
++}
+diff --git a/src/main/java/dev/starcore/starcore/module/treasury/TreasuryModule.java b/src/main/java/dev/starcore/starcore/module/treasury/TreasuryModule.java
+index 72771bca..5c29736a 100644
+--- a/src/main/java/dev/starcore/starcore/module/treasury/TreasuryModule.java
++++ b/src/main/java/dev/starcore/starcore/module/treasury/TreasuryModule.java
+@@ -39,6 +39,7 @@ import java.time.LocalDate;
+ import java.time.YearMonth;
+ import java.time.ZoneId;
+ import java.util.EnumMap;
++import java.util.LinkedHashMap;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.Optional;
+@@ -59,7 +60,8 @@ public final class TreasuryModule
+         TreasuryRewardService,
+         NationSpendingService,
+         NationCreditService,
+-        NationTransferService {
++        NationTransferService,
++        NationSettlementService {
+   private static final int SCALE = 2;
+   private static final BigDecimal MIN_TREASURY_AMOUNT = new BigDecimal("0.01");
+   private static final BigDecimal MAX_TREASURY_BALANCE = new BigDecimal("1000000000000000.00");
+@@ -92,13 +94,20 @@ public final class TreasuryModule
+               TreasuryRewardService.class,
+               NationSpendingService.class,
+               NationCreditService.class,
+-              NationTransferService.class),
++              NationTransferService.class,
++              NationSettlementService.class),
+           "Owns national finance, tax, budgets, and public debt abstractions.");
+ 
+   private final ConcurrentMap<NationId, BigDecimal> balances = new ConcurrentHashMap<>();
+   private final ConcurrentMap<String, SpendingReceipt> spendingReceipts = new ConcurrentHashMap<>();
+   private final ConcurrentMap<String, CreditReceipt> creditReceipts = new ConcurrentHashMap<>();
+   private final ConcurrentMap<String, TransferReceipt> transferReceipts = new ConcurrentHashMap<>();
++  private final ConcurrentMap<String, SettlementReceipt> settlementReceipts =
++      new ConcurrentHashMap<>();
++  private final ConcurrentMap<String, SettlementRefundReceipt> settlementRefundReceipts =
++      new ConcurrentHashMap<>();
++  private final ConcurrentMap<String, SettlementRefundReceipt> refundedPayments =
++      new ConcurrentHashMap<>();
+   private final AtomicLong txSeq = new AtomicLong();
+   private final AtomicLong stateGeneration = new AtomicLong();
+   private final AtomicBoolean stateRefreshInProgress = new AtomicBoolean();
+@@ -552,6 +561,10 @@ public final class TreasuryModule
+     if (request == null) {
+       throw new IllegalArgumentException("request must not be null");
+     }
++    if (settlementReceipts.containsKey(request.transactionId())
++        || settlementRefundReceipts.containsKey(request.transactionId()))
++      return new SpendResult(
++          SpendingStatus.REJECTED, request.transactionId(), balance(request.nationId()));
+     SpendingReceipt existing = spendingReceipts.get(request.transactionId());
+     if (existing != null) {
+       SpendingStatus status =
+@@ -644,6 +657,10 @@ public final class TreasuryModule
+     if (request == null) {
+       throw new IllegalArgumentException("request must not be null");
+     }
++    if (settlementReceipts.containsKey(request.transactionId())
++        || settlementRefundReceipts.containsKey(request.transactionId()))
++      return new CreditResult(
++          CreditStatus.REJECTED, request.transactionId(), balance(request.nationId()));
+     CreditReceipt existing = creditReceipts.get(request.transactionId());
+     if (existing != null) {
+       CreditStatus status =
+@@ -744,6 +761,15 @@ public final class TreasuryModule
+     if (request == null) {
+       throw new IllegalArgumentException("request must not be null");
+     }
++    if (settlementReceipts.containsKey(request.transactionId())
++        || settlementRefundReceipts.containsKey(request.transactionId())
++        || refundedPayments.containsKey(request.transactionId())) {
++      return new TransferResult(
++          TransferStatus.REJECTED,
++          request.transactionId(),
++          balance(request.payerId()),
++          balance(request.receiverId()));
++    }
+     TransferReceipt existing = transferReceipts.get(request.transactionId());
+     if (existing != null) {
+       TransferStatus status =
+@@ -815,6 +841,170 @@ public final class TreasuryModule
+     return Optional.ofNullable(transferReceipts.get(transactionId));
+   }
+ 
++  @Override
++  public synchronized SettlementResult settle(SettlementRequest request) {
++    java.util.Objects.requireNonNull(request, "request");
++    SettlementReceipt existing = settlementReceipts.get(request.transactionId());
++    if (existing != null) {
++      return settlementResult(
++          existing.matches(request) && !refundedPayments.containsKey(request.transactionId())
++              ? SettlementStatus.ALREADY_APPLIED
++              : SettlementStatus.REJECTED,
++          request.transactionId(),
++          request.payerId(),
++          request.credits());
++    }
++    if (stateStorage == null || paymentIdInUse(request.transactionId())) {
++      return settlementResult(
++          SettlementStatus.REJECTED, request.transactionId(), request.payerId(), request.credits());
++    }
++    Map<NationId, BigDecimal> previous = settlementBalances(request.payerId(), request.credits());
++    BigDecimal total = request.total();
++    if (previous.get(request.payerId()).compareTo(total) < 0) {
++      return new SettlementResult(
++          SettlementStatus.INSUFFICIENT_FUNDS, request.transactionId(), previous);
++    }
++    for (var credit : request.credits().entrySet()) {
++      if (previous.get(credit.getKey()).add(credit.getValue()).compareTo(MAX_TREASURY_BALANCE)
++          > 0) {
++        return new SettlementResult(SettlementStatus.REJECTED, request.transactionId(), previous);
++      }
++    }
++    SettlementReceipt receipt =
++        new SettlementReceipt(
++            request.transactionId(),
++            request.payerId(),
++            request.credits(),
++            request.description(),
++            Instant.now());
++    balances.put(request.payerId(), previous.get(request.payerId()).subtract(total));
++    request
++        .credits()
++        .forEach((nation, amount) -> balances.put(nation, previous.get(nation).add(amount)));
++    settlementReceipts.put(request.transactionId(), receipt);
++    try {
++      saveStateSyncOrThrow();
++      return settlementResult(
++          SettlementStatus.APPLIED, request.transactionId(), request.payerId(), request.credits());
++    } catch (RuntimeException failure) {
++      settlementReceipts.remove(request.transactionId(), receipt);
++      previous.forEach(this::restoreBalance);
++      logPersistenceFailure("settlement", request.payerId(), total, failure);
++      return settlementResult(
++          SettlementStatus.REJECTED, request.transactionId(), request.payerId(), request.credits());
++    }
++  }
++
++  @Override
++  public synchronized Optional<SettlementReceipt> settlementReceipt(String transactionId) {
++    return transactionId == null
++        ? Optional.empty()
++        : Optional.ofNullable(settlementReceipts.get(transactionId));
++  }
++
++  @Override
++  public synchronized SettlementResult refundSettlement(SettlementRefundRequest request) {
++    java.util.Objects.requireNonNull(request, "request");
++    SettlementRefundReceipt existing = settlementRefundReceipts.get(request.transactionId());
++    if (existing != null) {
++      return settlementResult(
++          existing.originalTransactionId().equals(request.originalTransactionId())
++              ? SettlementStatus.ALREADY_APPLIED
++              : SettlementStatus.REJECTED,
++          request.transactionId(),
++          existing.payerId(),
++          existing.credits());
++    }
++    if (stateStorage == null
++        || paymentIdInUse(request.transactionId())
++        || refundedPayments.containsKey(request.originalTransactionId())) {
++      return new SettlementResult(SettlementStatus.REJECTED, request.transactionId(), Map.of());
++    }
++    SettlementReceipt original = settlementReceipts.get(request.originalTransactionId());
++    if (original == null) {
++      TransferReceipt transfer = transferReceipts.get(request.originalTransactionId());
++      if (transfer == null)
++        return new SettlementResult(SettlementStatus.REJECTED, request.transactionId(), Map.of());
++      original =
++          new SettlementReceipt(
++              transfer.transactionId(),
++              transfer.payerId(),
++              Map.of(transfer.receiverId(), transfer.amount()),
++              "",
++              transfer.appliedAt());
++    }
++    NationId payer = original.payerId();
++    Map<NationId, BigDecimal> credits = original.credits();
++    Map<NationId, BigDecimal> previous = settlementBalances(payer, credits);
++    BigDecimal total = credits.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
++    if (previous.get(payer).add(total).compareTo(MAX_TREASURY_BALANCE) > 0)
++      return new SettlementResult(SettlementStatus.REJECTED, request.transactionId(), previous);
++    for (var credit : credits.entrySet()) {
++      if (previous.get(credit.getKey()).compareTo(credit.getValue()) < 0)
++        return new SettlementResult(
++            SettlementStatus.INSUFFICIENT_FUNDS, request.transactionId(), previous);
++    }
++    SettlementRefundReceipt receipt =
++        new SettlementRefundReceipt(
++            request.transactionId(),
++            request.originalTransactionId(),
++            payer,
++            credits,
++            Instant.now());
++    credits.forEach(
++        (nation, amount) -> balances.put(nation, previous.get(nation).subtract(amount)));
++    balances.put(payer, previous.get(payer).add(total));
++    settlementRefundReceipts.put(request.transactionId(), receipt);
++    refundedPayments.put(request.originalTransactionId(), receipt);
++    try {
++      saveStateSyncOrThrow();
++      return settlementResult(SettlementStatus.APPLIED, request.transactionId(), payer, credits);
++    } catch (RuntimeException failure) {
++      settlementRefundReceipts.remove(request.transactionId(), receipt);
++      refundedPayments.remove(request.originalTransactionId(), receipt);
++      previous.forEach(this::restoreBalance);
++      logPersistenceFailure("settlement-refund", payer, total, failure);
++      return settlementResult(SettlementStatus.REJECTED, request.transactionId(), payer, credits);
++    }
++  }
++
++  @Override
++  public synchronized Optional<SettlementRefundReceipt> settlementRefundReceipt(
++      String transactionId) {
++    return transactionId == null
++        ? Optional.empty()
++        : Optional.ofNullable(settlementRefundReceipts.get(transactionId));
++  }
++
++  @Override
++  public synchronized Optional<SettlementRefundReceipt> refundForPayment(
++      String originalTransactionId) {
++    return originalTransactionId == null
++        ? Optional.empty()
++        : Optional.ofNullable(refundedPayments.get(originalTransactionId));
++  }
++
++  private boolean paymentIdInUse(String id) {
++    return spendingReceipts.containsKey(id)
++        || creditReceipts.containsKey(id)
++        || transferReceipts.containsKey(id)
++        || settlementReceipts.containsKey(id)
++        || settlementRefundReceipts.containsKey(id);
++  }
++
++  private Map<NationId, BigDecimal> settlementBalances(
++      NationId payer, Map<NationId, BigDecimal> credits) {
++    Map<NationId, BigDecimal> result = new LinkedHashMap<>();
++    result.put(payer, balance(payer));
++    credits.keySet().forEach(nation -> result.put(nation, balance(nation)));
++    return result;
++  }
++
++  private SettlementResult settlementResult(
++      SettlementStatus status, String id, NationId payer, Map<NationId, BigDecimal> credits) {
++    return new SettlementResult(status, id, settlementBalances(payer, credits));
++  }
++
+   @Override
+   public String summary() {
+     BigDecimal total =
+@@ -1096,6 +1286,15 @@ public final class TreasuryModule
+     creditReceipts.putAll(state.creditReceipts());
+     transferReceipts.clear();
+     transferReceipts.putAll(state.transferReceipts());
++    settlementReceipts.clear();
++    settlementReceipts.putAll(state.settlementReceipts());
++    settlementRefundReceipts.clear();
++    settlementRefundReceipts.putAll(state.settlementRefundReceipts());
++    refundedPayments.clear();
++    state
++        .settlementRefundReceipts()
++        .values()
++        .forEach(receipt -> refundedPayments.put(receipt.originalTransactionId(), receipt));
+   }
+ 
+   private void restoreBalance(NationId nationId, BigDecimal previous) {
+@@ -1165,7 +1364,12 @@ public final class TreasuryModule
+ 
+   private TreasuryStateCodec.TreasuryState snapshotState() {
+     return new TreasuryStateCodec.TreasuryState(
+-        balances, spendingReceipts, creditReceipts, transferReceipts);
++        balances,
++        spendingReceipts,
++        creditReceipts,
++        transferReceipts,
++        settlementReceipts,
++        settlementRefundReceipts);
+   }
+ 
+   private synchronized void loadState() {
+diff --git a/src/main/java/dev/starcore/starcore/module/treasury/TreasuryStateCodec.java b/src/main/java/dev/starcore/starcore/module/treasury/TreasuryStateCodec.java
+index 62432d1c..b8ad2f82 100644
+--- a/src/main/java/dev/starcore/starcore/module/treasury/TreasuryStateCodec.java
++++ b/src/main/java/dev/starcore/starcore/module/treasury/TreasuryStateCodec.java
+@@ -22,12 +22,24 @@ final class TreasuryStateCodec {
+       Map<NationId, BigDecimal> balances,
+       Map<String, NationSpendingService.SpendingReceipt> spendingReceipts,
+       Map<String, NationCreditService.CreditReceipt> creditReceipts,
+-      Map<String, NationTransferService.TransferReceipt> transferReceipts) {
++      Map<String, NationTransferService.TransferReceipt> transferReceipts,
++      Map<String, NationSettlementService.SettlementReceipt> settlementReceipts,
++      Map<String, NationSettlementService.SettlementRefundReceipt> settlementRefundReceipts) {
+     TreasuryState {
+       balances = Map.copyOf(balances);
+       spendingReceipts = Map.copyOf(spendingReceipts);
+       creditReceipts = Map.copyOf(creditReceipts);
+       transferReceipts = Map.copyOf(transferReceipts);
++      settlementReceipts = Map.copyOf(settlementReceipts);
++      settlementRefundReceipts = Map.copyOf(settlementRefundReceipts);
++    }
++
++    TreasuryState(
++        Map<NationId, BigDecimal> balances,
++        Map<String, NationSpendingService.SpendingReceipt> spendingReceipts,
++        Map<String, NationCreditService.CreditReceipt> creditReceipts,
++        Map<String, NationTransferService.TransferReceipt> transferReceipts) {
++      this(balances, spendingReceipts, creditReceipts, transferReceipts, Map.of(), Map.of());
+     }
+ 
+     static TreasuryState empty() {
+@@ -45,6 +57,7 @@ final class TreasuryStateCodec {
+     writeSpendingReceipts(properties, state.spendingReceipts());
+     writeCreditReceipts(properties, state.creditReceipts());
+     writeTransferReceipts(properties, state.transferReceipts());
++    writeSettlements(properties, state);
+     return properties;
+   }
+ 
+@@ -56,11 +69,203 @@ final class TreasuryStateCodec {
+     if (properties == null || properties.isEmpty()) {
+       return TreasuryState.empty();
+     }
+-    return new TreasuryState(
+-        readBalances(properties),
+-        readSpendingReceipts(properties),
+-        readCreditReceipts(properties),
+-        readTransferReceipts(properties));
++    TreasuryState state =
++        new TreasuryState(
++            readBalances(properties),
++            readSpendingReceipts(properties),
++            readCreditReceipts(properties),
++            readTransferReceipts(properties),
++            readSettlements(properties),
++            readSettlementRefunds(properties));
++    validateSettlements(state);
++    return state;
++  }
++
++  private static void writeSettlements(Properties properties, TreasuryState state) {
++    var payments =
++        state.settlementReceipts().values().stream()
++            .sorted(
++                java.util.Comparator.comparing(
++                    NationSettlementService.SettlementReceipt::transactionId))
++            .toList();
++    properties.setProperty("settlement.count", Integer.toString(payments.size()));
++    for (int i = 0; i < payments.size(); i++) {
++      var value = payments.get(i);
++      String prefix = "settlement." + i + ".";
++      writeAllocation(
++          properties,
++          prefix,
++          value.transactionId(),
++          value.payerId(),
++          value.credits(),
++          value.appliedAt());
++      properties.setProperty(prefix + "description", value.description());
++    }
++    var refunds =
++        state.settlementRefundReceipts().values().stream()
++            .sorted(
++                java.util.Comparator.comparing(
++                    NationSettlementService.SettlementRefundReceipt::transactionId))
++            .toList();
++    properties.setProperty("settlement-refund.count", Integer.toString(refunds.size()));
++    for (int i = 0; i < refunds.size(); i++) {
++      var value = refunds.get(i);
++      String prefix = "settlement-refund." + i + ".";
++      writeAllocation(
++          properties,
++          prefix,
++          value.transactionId(),
++          value.payerId(),
++          value.credits(),
++          value.appliedAt());
++      properties.setProperty(prefix + "originalTransactionId", value.originalTransactionId());
++    }
++  }
++
++  private static void writeAllocation(
++      Properties properties,
++      String prefix,
++      String id,
++      NationId payer,
++      Map<NationId, BigDecimal> credits,
++      Instant appliedAt) {
++    properties.setProperty(prefix + "transactionId", id);
++    properties.setProperty(prefix + "payerId", payer.toString());
++    properties.setProperty(prefix + "appliedAt", Long.toString(appliedAt.toEpochMilli()));
++    var entries =
++        credits.entrySet().stream()
++            .sorted(java.util.Comparator.comparing(e -> e.getKey().toString()))
++            .toList();
++    properties.setProperty(prefix + "credits", Integer.toString(entries.size()));
++    for (int i = 0; i < entries.size(); i++) {
++      properties.setProperty(
++          prefix + "credit." + i + ".nationId", entries.get(i).getKey().toString());
++      properties.setProperty(
++          prefix + "credit." + i + ".amount", entries.get(i).getValue().toPlainString());
++    }
++  }
++
++  /** New receipt namespaces fail closed: silently dropping one could permit a duplicate payment. */
++  private static Map<String, NationSettlementService.SettlementReceipt> readSettlements(
++      Properties properties) {
++    Map<String, NationSettlementService.SettlementReceipt> result = new LinkedHashMap<>();
++    int count = receiptCount(properties, "settlement.");
++    for (int i = 0; i < count; i++) {
++      String prefix = "settlement." + i + ".";
++      var receipt =
++          new NationSettlementService.SettlementReceipt(
++              required(properties, prefix + "transactionId"),
++              strictNation(properties, prefix + "payerId"),
++              readAllocation(properties, prefix),
++              required(properties, prefix + "description"),
++              strictInstant(properties, prefix + "appliedAt"));
++      if (result.putIfAbsent(receipt.transactionId(), receipt) != null)
++        throw new IllegalArgumentException("Duplicate settlement receipt");
++    }
++    return result;
++  }
++
++  private static Map<String, NationSettlementService.SettlementRefundReceipt> readSettlementRefunds(
++      Properties properties) {
++    Map<String, NationSettlementService.SettlementRefundReceipt> result = new LinkedHashMap<>();
++    int count = receiptCount(properties, "settlement-refund.");
++    for (int i = 0; i < count; i++) {
++      String prefix = "settlement-refund." + i + ".";
++      var receipt =
++          new NationSettlementService.SettlementRefundReceipt(
++              required(properties, prefix + "transactionId"),
++              required(properties, prefix + "originalTransactionId"),
++              strictNation(properties, prefix + "payerId"),
++              readAllocation(properties, prefix),
++              strictInstant(properties, prefix + "appliedAt"));
++      if (result.putIfAbsent(receipt.transactionId(), receipt) != null)
++        throw new IllegalArgumentException("Duplicate settlement refund receipt");
++    }
++    return result;
++  }
++
++  private static int receiptCount(Properties properties, String prefix) {
++    String value = properties.getProperty(prefix + "count");
++    if (value == null) {
++      if (properties.stringPropertyNames().stream().anyMatch(key -> key.startsWith(prefix)))
++        throw new IllegalArgumentException("Missing receipt count: " + prefix);
++      return 0;
++    }
++    int count = Integer.parseInt(value);
++    if (count < 0 || count > properties.size())
++      throw new IllegalArgumentException("Invalid receipt count: " + prefix);
++    for (String key : properties.stringPropertyNames()) {
++      if (!key.startsWith(prefix) || key.equals(prefix + "count")) continue;
++      String suffix = key.substring(prefix.length());
++      int dot = suffix.indexOf('.');
++      if (dot < 1) throw new IllegalArgumentException("Invalid receipt property: " + key);
++      int index = Integer.parseInt(suffix.substring(0, dot));
++      if (index < 0 || index >= count)
++        throw new IllegalArgumentException("Orphan receipt property: " + key);
++    }
++    return count;
++  }
++
++  private static Map<NationId, BigDecimal> readAllocation(Properties properties, String prefix) {
++    int count = Integer.parseInt(required(properties, prefix + "credits"));
++    if (count < 1 || count > NationSettlementService.MAX_BENEFICIARIES)
++      throw new IllegalArgumentException("Invalid beneficiary count");
++    for (String key : properties.stringPropertyNames()) {
++      if (!key.startsWith(prefix + "credit.")) continue;
++      String suffix = key.substring((prefix + "credit.").length());
++      int dot = suffix.indexOf('.');
++      if (dot < 1) throw new IllegalArgumentException("Invalid beneficiary property");
++      int index = Integer.parseInt(suffix.substring(0, dot));
++      if (index < 0
++          || index >= count
++          || !List.of("nationId", "amount").contains(suffix.substring(dot + 1)))
++        throw new IllegalArgumentException("Orphan beneficiary property");
++    }
++    Map<NationId, BigDecimal> result = new LinkedHashMap<>();
++    for (int i = 0; i < count; i++) {
++      NationId nation = strictNation(properties, prefix + "credit." + i + ".nationId");
++      BigDecimal amount = new BigDecimal(required(properties, prefix + "credit." + i + ".amount"));
++      if (result.putIfAbsent(nation, amount) != null)
++        throw new IllegalArgumentException("Duplicate beneficiary");
++    }
++    return result;
++  }
++
++  private static void validateSettlements(TreasuryState state) {
++    java.util.Set<String> ids = new java.util.HashSet<>(state.transferReceipts().keySet());
++    ids.addAll(state.spendingReceipts().keySet());
++    ids.addAll(state.creditReceipts().keySet());
++    for (String id : state.settlementReceipts().keySet())
++      if (!ids.add(id)) throw new IllegalArgumentException("Settlement transaction ID collision");
++    java.util.Set<String> originals = new java.util.HashSet<>();
++    for (var refund : state.settlementRefundReceipts().values()) {
++      if (!ids.add(refund.transactionId()) || !originals.add(refund.originalTransactionId()))
++        throw new IllegalArgumentException("Duplicate refund transaction or original payment");
++      var settlement = state.settlementReceipts().get(refund.originalTransactionId());
++      var transfer = state.transferReceipts().get(refund.originalTransactionId());
++      NationId payer =
++          settlement != null ? settlement.payerId() : transfer != null ? transfer.payerId() : null;
++      Map<NationId, BigDecimal> credits =
++          settlement != null
++              ? settlement.credits()
++              : transfer != null ? Map.of(transfer.receiverId(), transfer.amount()) : Map.of();
++      if (!refund.payerId().equals(payer) || !refund.credits().equals(credits))
++        throw new IllegalArgumentException("Refund does not match its original committed payment");
++    }
++  }
++
++  private static String required(Properties properties, String key) {
++    String value = properties.getProperty(key);
++    if (value == null) throw new IllegalArgumentException("Missing treasury receipt field: " + key);
++    return value;
++  }
++
++  private static NationId strictNation(Properties properties, String key) {
++    return new NationId(UUID.fromString(required(properties, key)));
++  }
++
++  private static Instant strictInstant(Properties properties, String key) {
++    return Instant.ofEpochMilli(Long.parseLong(required(properties, key)));
+   }
+ 
+   private static void writeBalances(Properties properties, Map<NationId, BigDecimal> balances) {
+diff --git a/src/test/java/dev/starcore/starcore/module/treasury/NationSettlementServiceTest.java b/src/test/java/dev/starcore/starcore/module/treasury/NationSettlementServiceTest.java
+new file mode 100644
+index 00000000..a02af7a6
+--- /dev/null
++++ b/src/test/java/dev/starcore/starcore/module/treasury/NationSettlementServiceTest.java
+@@ -0,0 +1,384 @@
++package dev.starcore.starcore.module.treasury;
++
++import static org.junit.jupiter.api.Assertions.*;
++
++import dev.starcore.starcore.module.nation.model.NationId;
++import dev.starcore.starcore.module.treasury.NationSettlementService.*;
++import java.lang.reflect.Field;
++import java.lang.reflect.Method;
++import java.math.BigDecimal;
++import java.nio.file.Path;
++import java.util.*;
++import java.util.concurrent.*;
++import java.util.function.Consumer;
++import java.util.logging.Logger;
++import org.junit.jupiter.api.Test;
++import org.junit.jupiter.api.io.TempDir;
++import org.sqlite.SQLiteDataSource;
++
++class NationSettlementServiceTest {
++  @TempDir Path temporary;
++  final NationId payer = NationId.random(),
++      seller = NationId.random(),
++      authority = NationId.random();
++
++  private SettlementRequest payment(String id) {
++    return new SettlementRequest(
++        id, payer, Map.of(seller, money("70"), authority, money("5")), "goods and toll");
++  }
++
++  @Test
++  void oneCommitPaysAllBeneficiariesAndRestartReplaysTheImmutableReceipt() throws Exception {
++    MemoryStorage storage = new MemoryStorage();
++    TreasuryModule module = loaded(storage);
++    assertTrue(module.tryDeposit(payer, money("100")));
++    SettlementRequest request = payment("purchase:a");
++    assertEquals(SettlementStatus.APPLIED, module.settle(request).status());
++    assertEquals(2, storage.saves);
++    balances(module, "25", "70", "5");
++    assertThrows(UnsupportedOperationException.class, () -> request.credits().clear());
++    TreasuryModule restarted = loaded(storage);
++    assertTrue(restarted.settlementReceipt(request.transactionId()).orElseThrow().matches(request));
++    assertEquals(SettlementStatus.ALREADY_APPLIED, restarted.settle(request).status());
++    assertEquals(2, storage.saves);
++    balances(restarted, "25", "70", "5");
++    assertEquals(
++        SettlementStatus.REJECTED,
++        restarted
++            .settle(
++                new SettlementRequest(
++                    request.transactionId(),
++                    payer,
++                    Map.of(seller, money("75")),
++                    request.description()))
++            .status());
++    assertEquals(
++        SettlementStatus.REJECTED,
++        restarted
++            .settle(
++                new SettlementRequest(
++                    request.transactionId(), payer, request.credits(), "different terms"))
++            .status());
++    balances(restarted, "25", "70", "5");
++  }
++
++  @Test
++  void invalidMoneyRecipientsAndOversizedRequestsAreRejectedBeforeMutation() {
++    for (String value : List.of("0", "-1", "0.001", "1.001", "1E+2147483647", "1E-2147483647"))
++      assertThrows(
++          IllegalArgumentException.class,
++          () -> new SettlementRequest("a", payer, Map.of(seller, new BigDecimal(value)), ""));
++    assertThrows(
++        IllegalArgumentException.class,
++        () -> new SettlementRequest("a", payer, Map.of(payer, money("1")), ""));
++    assertThrows(
++        IllegalArgumentException.class, () -> new SettlementRequest("a", payer, Map.of(), ""));
++    Map<NationId, BigDecimal> large = new HashMap<>();
++    for (int i = 0; i < 17; i++) large.put(NationId.random(), money("1"));
++    assertThrows(
++        IllegalArgumentException.class, () -> new SettlementRequest("a", payer, large, ""));
++    assertThrows(
++        IllegalArgumentException.class,
++        () ->
++            new SettlementRequest(
++                "a", payer, Map.of(seller, money("1000000000000000"), authority, money("1")), ""));
++    assertThrows(IllegalArgumentException.class, () -> new SettlementRefundRequest("a", "a"));
++    assertEquals(
++        SettlementStatus.REJECTED, new TreasuryModule().settle(payment("no-storage")).status());
++  }
++
++  @Test
++  void insufficientPaymentAndRecipientCapLeaveEveryBalanceAndReceiptUnchanged() throws Exception {
++    MemoryStorage storage = new MemoryStorage();
++    TreasuryModule module = loaded(storage);
++    assertTrue(module.tryDeposit(payer, money("74")));
++    assertEquals(SettlementStatus.INSUFFICIENT_FUNDS, module.settle(payment("a")).status());
++    assertEquals(1, storage.saves);
++    balances(module, "74", "0", "0");
++    assertTrue(module.tryDeposit(payer, money("26")));
++    assertTrue(module.tryDeposit(authority, money("1000000000000000")));
++    assertEquals(SettlementStatus.REJECTED, module.settle(payment("a")).status());
++    assertTrue(module.settlementReceipt("a").isEmpty());
++    balances(module, "100", "0", "1000000000000000");
++    assertEquals(3, storage.saves);
++  }
++
++  @Test
++  void failedPaymentCommitRollsBackAllBalancesAndTheReceiptBeforeRetry() throws Exception {
++    MemoryStorage storage = new MemoryStorage();
++    TreasuryModule module = loaded(storage);
++    assertTrue(module.tryDeposit(payer, money("100")));
++    storage.failNext = true;
++    assertEquals(SettlementStatus.REJECTED, module.settle(payment("a")).status());
++    balances(module, "100", "0", "0");
++    assertTrue(module.settlementReceipt("a").isEmpty());
++    TreasuryModule restarted = loaded(storage);
++    balances(restarted, "100", "0", "0");
++    assertEquals(SettlementStatus.APPLIED, restarted.settle(payment("a")).status());
++    balances(restarted, "25", "70", "5");
++  }
++
++  @Test
++  void fullRefundReversesEveryBeneficiaryOnceAndPreservesBothReceiptsAfterRestart()
++      throws Exception {
++    MemoryStorage storage = new MemoryStorage();
++    TreasuryModule module = loaded(storage);
++    module.tryDeposit(payer, money("100"));
++    module.settle(payment("a"));
++    SettlementRefundRequest request = new SettlementRefundRequest("refund:a", "a");
++    assertEquals(SettlementStatus.APPLIED, module.refundSettlement(request).status());
++    balances(module, "100", "0", "0");
++    assertEquals(3, storage.saves);
++    TreasuryModule restarted = loaded(storage);
++    assertEquals(SettlementStatus.ALREADY_APPLIED, restarted.refundSettlement(request).status());
++    assertEquals(
++        SettlementStatus.REJECTED,
++        restarted.refundSettlement(new SettlementRefundRequest("refund:b", "a")).status());
++    assertEquals(
++        SettlementStatus.REJECTED,
++        restarted.refundSettlement(new SettlementRefundRequest("refund:a", "unknown")).status());
++    assertTrue(restarted.settlementReceipt("a").isPresent());
++    assertEquals(restarted.refundForPayment("a"), restarted.settlementRefundReceipt("refund:a"));
++    assertEquals(SettlementStatus.REJECTED, restarted.settle(payment("a")).status());
++    balances(restarted, "100", "0", "0");
++    assertEquals(3, storage.saves);
++  }
++
++  @Test
++  void anInsolventBeneficiaryBlocksTheEntireRefundUntilReplenished() throws Exception {
++    MemoryStorage storage = new MemoryStorage();
++    TreasuryModule module = loaded(storage);
++    module.tryDeposit(payer, money("100"));
++    module.settle(payment("a"));
++    assertTrue(module.withdraw(authority, money("1")));
++    SettlementRefundRequest request = new SettlementRefundRequest("refund:a", "a");
++    assertEquals(SettlementStatus.INSUFFICIENT_FUNDS, module.refundSettlement(request).status());
++    assertEquals(3, storage.saves);
++    balances(module, "25", "70", "4");
++    assertTrue(module.refundForPayment("a").isEmpty());
++    module.tryDeposit(authority, money("1"));
++    assertEquals(SettlementStatus.APPLIED, module.refundSettlement(request).status());
++    balances(module, "100", "0", "0");
++  }
++
++  @Test
++  void refundPersistenceFailureLeavesOriginalPaymentAvailableForTheSameRetry() throws Exception {
++    MemoryStorage storage = new MemoryStorage();
++    TreasuryModule module = loaded(storage);
++    module.tryDeposit(payer, money("100"));
++    module.settle(payment("a"));
++    storage.failNext = true;
++    SettlementRefundRequest request = new SettlementRefundRequest("refund:a", "a");
++    assertEquals(SettlementStatus.REJECTED, module.refundSettlement(request).status());
++    balances(module, "25", "70", "5");
++    assertTrue(module.refundForPayment("a").isEmpty());
++    TreasuryModule restarted = loaded(storage);
++    assertEquals(SettlementStatus.APPLIED, restarted.refundSettlement(request).status());
++    balances(restarted, "100", "0", "0");
++  }
++
++  @Test
++  void legacyAtomicTransferCanBeRefundedWithoutInventingASettlement() throws Exception {
++    MemoryStorage storage = new MemoryStorage();
++    TreasuryModule module = loaded(storage);
++    module.tryDeposit(payer, money("100"));
++    var original =
++        new NationTransferService.TransferRequest(
++            "legacy:a",
++            payer,
++            seller,
++            money("25"),
++            NationTransferService.TransferCategory.OTHER,
++            "old purchase");
++    assertTrue(module.transfer(original).applied());
++    // Legacy snapshots do not contain the new namespaces at all.
++    storage.persisted.remove("settlement.count");
++    storage.persisted.remove("settlement-refund.count");
++    TreasuryModule restarted = loaded(storage);
++    assertEquals(
++        SettlementStatus.APPLIED,
++        restarted
++            .refundSettlement(new SettlementRefundRequest("refund:legacy", "legacy:a"))
++            .status());
++    assertTrue(restarted.transferReceipt("legacy:a").isPresent());
++    assertTrue(restarted.settlementReceipt("legacy:a").isEmpty());
++    assertEquals(
++        NationTransferService.TransferStatus.REJECTED, restarted.transfer(original).status());
++    balances(loaded(storage), "100", "0", "0");
++  }
++
++  @Test
++  void duplicateRefundRequestsRacingCannotReverseTheSamePaymentTwice() throws Exception {
++    MemoryStorage storage = new MemoryStorage();
++    TreasuryModule module = loaded(storage);
++    module.tryDeposit(payer, money("100"));
++    module.settle(payment("a"));
++    try (ExecutorService workers = Executors.newFixedThreadPool(2)) {
++      CountDownLatch start = new CountDownLatch(1);
++      Future<SettlementStatus> one =
++          workers.submit(
++              () -> {
++                start.await();
++                return module
++                    .refundSettlement(new SettlementRefundRequest("refund:1", "a"))
++                    .status();
++              });
++      Future<SettlementStatus> two =
++          workers.submit(
++              () -> {
++                start.await();
++                return module
++                    .refundSettlement(new SettlementRefundRequest("refund:2", "a"))
++                    .status();
++              });
++      start.countDown();
++      assertEquals(
++          Set.of(SettlementStatus.APPLIED, SettlementStatus.REJECTED),
++          Set.of(one.get(5, TimeUnit.SECONDS), two.get(5, TimeUnit.SECONDS)));
++    }
++    assertEquals(3, storage.saves);
++    balances(loaded(storage), "100", "0", "0");
++  }
++
++  @Test
++  void corruptedNewReceiptsFailClosedInsteadOfBeingSilentlyDropped() throws Exception {
++    MemoryStorage storage = new MemoryStorage();
++    TreasuryModule module = loaded(storage);
++    module.tryDeposit(payer, money("100"));
++    module.settle(payment("a"));
++    module.refundSettlement(new SettlementRefundRequest("refund:a", "a"));
++    for (Consumer<Properties> corrupt :
++        List.<Consumer<Properties>>of(
++            p -> p.remove("settlement.count"),
++            p -> p.setProperty("settlement.count", "0"),
++            p -> p.remove("settlement.0.payerId"),
++            p -> p.setProperty("settlement.0.credits", "1"),
++            p -> p.setProperty("settlement.0.credit.0.amount", "1.001"),
++            p -> p.setProperty("settlement-refund.0.originalTransactionId", "unknown"),
++            p -> p.setProperty("settlement-refund.0.credit.0.amount", "0.01"),
++            p -> p.setProperty("settlement-refund.0.transactionId", "a"))) {
++      Properties tampered = storage.load();
++      corrupt.accept(tampered);
++      assertThrows(
++          IllegalArgumentException.class, () -> TreasuryStateCodec.stateFromProperties(tampered));
++    }
++    assertEquals(
++        1,
++        TreasuryStateCodec.stateFromProperties(storage.load()).settlementRefundReceipts().size());
++  }
++
++  @Test
++  void paymentIdsCannotBeReusedAcrossSettlementTransferCreditAndSpending() throws Exception {
++    MemoryStorage storage = new MemoryStorage();
++    TreasuryModule module = loaded(storage);
++    module.tryDeposit(payer, money("100"));
++    module.settle(payment("a"));
++    assertEquals(
++        NationTransferService.TransferStatus.REJECTED,
++        module
++            .transfer(
++                new NationTransferService.TransferRequest(
++                    "a",
++                    payer,
++                    seller,
++                    money("1"),
++                    NationTransferService.TransferCategory.OTHER,
++                    ""))
++            .status());
++    assertEquals(
++        NationCreditService.CreditStatus.REJECTED,
++        module
++            .credit(
++                new NationCreditService.CreditRequest(
++                    "a", payer, money("1"), NationCreditService.CreditCategory.OTHER, ""))
++            .status());
++    assertEquals(
++        NationSpendingService.SpendingStatus.REJECTED,
++        module
++            .spend(
++                new NationSpendingService.SpendRequest(
++                    "a", payer, money("1"), NationSpendingService.SpendingCategory.OTHER, ""))
++            .status());
++    module.transfer(
++        new NationTransferService.TransferRequest(
++            "legacy", payer, seller, money("1"), NationTransferService.TransferCategory.OTHER, ""));
++    assertEquals(SettlementStatus.REJECTED, module.settle(payment("legacy")).status());
++    balances(loaded(storage), "24", "71", "5");
++  }
++
++  @Test
++  void sqliteRevisionConflictReloadsTheCommittedReceiptAndNeverPaysTwice() throws Exception {
++    SQLiteDataSource dataSource = new SQLiteDataSource();
++    dataSource.setUrl("jdbc:sqlite:" + temporary.resolve("settlements.db"));
++    SqlTreasuryStateStorage first =
++        new SqlTreasuryStateStorage(dataSource, new Properties(), Logger.getAnonymousLogger());
++    SqlTreasuryStateStorage second =
++        new SqlTreasuryStateStorage(dataSource, new Properties(), Logger.getAnonymousLogger());
++    try {
++      TreasuryModule module = loaded(first);
++      module.tryDeposit(payer, money("100"));
++      TreasuryModule stale = loaded(second);
++      assertEquals(SettlementStatus.APPLIED, module.settle(payment("a")).status());
++      assertEquals(SettlementStatus.REJECTED, stale.settle(payment("a")).status());
++      assertTrue(stale.settlementReceipt("a").orElseThrow().matches(payment("a")));
++      balances(stale, "25", "70", "5");
++      assertEquals(SettlementStatus.ALREADY_APPLIED, stale.settle(payment("a")).status());
++      assertEquals(
++          SettlementStatus.APPLIED,
++          stale.refundSettlement(new SettlementRefundRequest("refund:a", "a")).status());
++      TreasuryModule restarted = loaded(first);
++      balances(restarted, "100", "0", "0");
++      assertEquals(
++          SettlementStatus.ALREADY_APPLIED,
++          restarted.refundSettlement(new SettlementRefundRequest("refund:a", "a")).status());
++    } finally {
++      first.shutdown();
++      second.shutdown();
++    }
++  }
++
++  private void balances(TreasuryModule module, String buyer, String vendor, String toll) {
++    assertEquals(money(buyer), module.balance(payer));
++    assertEquals(money(vendor), module.balance(seller));
++    assertEquals(money(toll), module.balance(authority));
++  }
++
++  private static BigDecimal money(String value) {
++    return new BigDecimal(value).setScale(2);
++  }
++
++  private static TreasuryModule loaded(TreasuryStateStorage storage) throws Exception {
++    TreasuryModule module = new TreasuryModule();
++    Field field = TreasuryModule.class.getDeclaredField("stateStorage");
++    field.setAccessible(true);
++    field.set(module, storage);
++    Method load = TreasuryModule.class.getDeclaredMethod("loadState");
++    load.setAccessible(true);
++    load.invoke(module);
++    return module;
++  }
++
++  private static final class MemoryStorage implements TreasuryStateStorage {
++    int saves;
++    boolean failNext;
++    Properties persisted = new Properties();
++
++    @Override
++    public Properties load() {
++      Properties copy = new Properties();
++      copy.putAll(persisted);
++      return copy;
++    }
++
++    @Override
++    public void save(Properties value) {
++      saves++;
++      if (failNext) {
++        failNext = false;
++        throw new IllegalStateException("Injected commit failure");
++      }
++      persisted = new Properties();
++      persisted.putAll(value);
++    }
++  }
++}
+-- 
+2.43.0
+

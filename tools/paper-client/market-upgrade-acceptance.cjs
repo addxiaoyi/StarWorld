@@ -30,8 +30,14 @@ function conserved(before,after,version){
   assert.equal(after.pluginVersion,version);assert.equal(after.world.integrity,'ok');assert.equal(after.core.integrity,'ok');assert.deepEqual(after.world.foreignKeys,[]);
   const expectedTables=new Set(before.world.tables);
   if(Number(version.split('.')[1])>=7)expectedTables.add('logistics_corridor');
+  if(Number(version.split('.')[1])>=8)expectedTables.add('market_refund');
   assert.deepEqual([...after.world.tables].sort(),[...expectedTables].sort());
   assertMarketMigration(before,after,version);assertCorridorMigration(before,after,version);
+  const queues=new Set(before.world.rows.starworld_dispatch_cursor.map(row=>row.queue));
+  if(Number(version.split('.')[1])>=8)queues.add('starworld:market-refund');
+  const cursors=after.world.rows.starworld_dispatch_cursor;
+  assert.equal(cursors.length,queues.size);assert.deepEqual(cursors.map(row=>row.queue).sort(),[...queues].sort());
+  assert(cursors.every(row=>['FRESH','DUE'].includes(row.next_lane)));
   for(const table of ['market_delivery_receipt','market_delivery_stat','market_delivery_clock','logistics_paid_shipment','logistics_order','logistics_receipt'])
     assert.deepEqual(after.world.rows[table],before.world.rows[table],`Migrated market changed ${table}`);
   const treasury=rows=>rows.filter(r=>r.property_key!=='__starcore_revision__');

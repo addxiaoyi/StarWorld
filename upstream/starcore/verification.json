@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "base": "f769e62799e769a18fe51305b545869a17f80cd1",
+  "commit": "f540963ea48a9bde9e8a67aff0e08eacca84d50c",
+  "local_branch": "codex/starworld-settlement-contract",
+  "patch_sha256": "6958191fd0dcc9990892449b8ee9440ba4c4f61dae1fb3ddf7312609d74050d6",
+  "artifact_sha256": "79dbaaecf3140d377edeab93b14adf9cfd72738118e4a047738c4cff5f2db079",
+  "tests": {
+    "tests": 7008,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 21
+  },
+  "skipped": [
+    {
+      "suite": "dev.starcore.starcore.module.nation.MySqlNationStateConflictIntegrationTest",
+      "count": 1
+    },
+    {
+      "suite": "dev.starcore.starcore.foundation.economy.SqlBalanceStorageMySqlIntegrationTest",
+      "count": 1
+    },
+    {
+      "suite": "dev.starcore.starcore.module.treasury.MySqlTreasuryStateIntegrationTest",
+      "count": 2
+    },
+    {
+      "suite": "dev.starcore.starcore.core.database.MySqlCredentialRotationIntegrationTest",
+      "count": 1
+    },
+    {
+      "suite": "dev.starcore.starcore.core.database.MySqlMigrationIntegrationTest",
+      "count": 1
+    },
+    {
+      "suite": "dev.starcore.starcore.module.policy.MySqlPolicyModuleConflictIntegrationTest",
+      "count": 2
+    },
+    {
+      "suite": "dev.starcore.starcore.module.war.WarModuleAuthorityTest",
+      "count": 2
+    },
+    {
+      "suite": "dev.starcore.starcore.core.event.redis.RedisCrossServerServiceTest",
+      "count": 2
+    },
+    {
+      "suite": "dev.starcore.starcore.core.database.MySqlHistoricalV9IntegrationTest",
+      "count": 1
+    },
+    {
+      "suite": "dev.starcore.starcore.module.narrative.engine.NarrativeEngineTest$SessionLifecycle",
+      "count": 7
+    },
+    {
+      "suite": "dev.starcore.starcore.core.database.MySqlConnectionRecoveryIntegrationTest",
+      "count": 1
+    }
+  ],
+  "build_log": "runtime/logs/core-settlement-verify.log",
+  "build_log_sha256": "8f041cee12f4fe3bcdfe73932f1460bcb9381efff7cd86039ac2801914078fab",
+  "command": "./mvnw -B --no-transfer-progress verify",
+  "status": "build-and-real-paper-refund-passed",
+  "real_server": {
+    "starworld_version": "1.8.0",
+    "starworld_artifact_sha256": "c5f2b3f302200580625f032dcf4e1efc5ea8299c8da02cfd44184edc648b2091",
+    "runtime": "runtime/refund18-r2/refund-acceptance/2026-11-25T12-29-11-988Z",
+    "evidence_sha256": "9a16cd2c70cc1a486042c5bc61da593c912d40a1d50e0d28f6a20efa1243784d",
+    "stages": 13,
+    "normal_server_stops": 3
+  }
+}

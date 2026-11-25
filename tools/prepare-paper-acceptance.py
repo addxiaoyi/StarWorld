@@ -29,6 +29,7 @@ RUNNERS = {
     'works': 'paper-client/works-acceptance.cjs',
     'storage': 'paper-client/survey-acceptance.cjs',
     'corridor': 'paper-client/corridor-acceptance.cjs',
+    'refund': 'paper-client/refund-acceptance.cjs',
     'lifecycle-logistics': 'paper-client/lifecycle-logistics-acceptance.cjs',
     'civic': 'senluo-fixture/civic-acceptance.cjs',
     'smoke': 'smoke-paper.ps1',
@@ -161,7 +162,15 @@ def prepare(args):
     include('plugins/StarWorld.jar', jar)
     if args.suite != 'smoke':
         checked(fixture is not None, 'Gameplay preparation needs --fixture')
-        include('plugins/StarCore.jar')
+        include('plugins/StarCore.jar', getattr(args, 'starcore', None))
+        if getattr(args, 'starcore', None):
+            checked(args.suite == 'refund', 'Explicit StarCore candidate is only supported by the refund suite')
+            checked(getattr(args, 'starcore_provenance', None), 'Explicit StarCore needs --starcore-provenance')
+            provenance = read_json(args.starcore_provenance)
+            checked(provenance['artifact_sha256'] == sha(files['plugins/StarCore.jar']), 'StarCore provenance hash differs')
+            checked(re.fullmatch('[0-9a-f]{40}', provenance['base']) and re.fullmatch('[0-9a-f]{40}', provenance['commit']), 'StarCore provenance requires base and commit')
+            checked(provenance['tests']['tests'] > 0 and provenance['tests']['failures'] == provenance['tests']['errors'] == 0, 'StarCore candidate verification failed')
+            include('STARCORE-PROVENANCE.json', args.starcore_provenance)
         include('plugins/StarCore/config.yml')
         include('plugins/StarWorldFixture.jar', fixture)
     generated = {
@@ -179,7 +188,7 @@ def prepare(args):
                 generated[relative] = data
 
     civic = None
-    if args.suite == 'corridor':
+    if args.suite in ('corridor', 'refund'):
         relative = 'plugins/StarWorld/logistics.yml'
         original = files.pop(relative).read_text(encoding='utf-8') if relative in files else generated[relative].decode()
         adjusted, count = re.subn(r'^blocks-per-period:.*$', 'blocks-per-period: 8', original, flags=re.M)
@@ -310,6 +319,8 @@ def main():
     for name in ('template', 'runtime', 'jar', 'paper', 'java', 'client-deps'):
         cli.add_argument('--' + name, type=Path, required=True)
     cli.add_argument('--fixture', type=Path)
+    cli.add_argument('--starcore', type=Path, help='Explicit locally verified StarCore candidate for refund acceptance')
+    cli.add_argument('--starcore-provenance', type=Path, help='Candidate commit, JAR hash and build verification')
     cli.add_argument('--senluo-fixture', type=Path)
     cli.add_argument('--unit-evidence', type=Path,
                      help='Clean verification for the exact JAR (for a rebuilt historical civic source)')

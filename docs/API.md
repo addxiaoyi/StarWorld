@@ -95,6 +95,8 @@ public void onIndustry(IndustrySettledEvent event) {
 
 1.7 `Route.corridorRequired` 表示该路线已持久绑定物理通道约定，不表示当前畅通。旧构造重载默认为false。`AuthoritySnapshot.corridors` 保存仅本次捕获的不可变 `Corridor.Proof`；旧构造重载没有通道证据，因此不能授权绑定路线。`Corridor.plan` 只计算最多1024个显式中心点，`CorridorCapture` 在Paper主线程验证已加载路面/水体和沿途双层claim。`LogisticsService.bindCorridor` 与其他mutation同属可信内部存储入口，公开可见性不授予玩家写权限。生产绑定入口为 `/sw route bind`。
 
+1.8 `PurchaseStatus` 增加 `REFUNDING`、`REFUNDED`，物流 `OrderStatus` 增加 `REFUNDING`。查询消费者不能将非 `IN_TRANSIT` 状态一概视作完成；退款货单不会产生交货完成凭据。`MarketRefundService` 是使用串行存储事务的内部服务，`ExpansionRuntime.marketRefunds()`供受控集成读取，写操作仍须经过创始人权限捕获和双边确认。`TreasuryRefundPort`承载原付款与逆向回执；生产实现只通过公开核心`NationSettlementService`，必须在Paper主线程调用。
+
 ## 国家金币市场与维护接口
 
 `TreasuryTransferPort` 是国家金币适配边界，调用属于 Paper 主线程。`Request(transactionId,payer,receiver,BigDecimal,description)` 与 `Receipt` 是不可变值；金额精确到两位小数，双方国家不同。`Receipt.matches` 核对国家、金额、ID 和 `OTHER` 分类。`StarCoreTreasuryTransfers` 仅使用公开 `NationTransferService.transfer/transferReceipt`，缺服务时明确降级；不组合两次独立的支出/收入操作，不访问核心账表。

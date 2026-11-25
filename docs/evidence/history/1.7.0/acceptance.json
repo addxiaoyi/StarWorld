@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "version": "1.7.0",
+  "status": "feature-acceptance-passed",
+  "release_status": "full-release-suite-not-run",
+  "recorded_at": "2026-11-25T11:58:38.467012+00:00",
+  "artifact_sha256": "dba8fdb3da8d06feae42001ad74dad1585f33087767f4b4864a67ea4bdda7659",
+  "sources_sha256": "2f5c366130c9ea4a8a2dd77fb87bdf8ae1811d921f191caef2c19b3e124507f9",
+  "unit_evidence_sha256": "795870aa5f2de958f06c4d0a9a58de838eaf664f19de6286750162c057d11f2a",
+  "tests": {
+    "java": 515,
+    "java_suites": 58,
+    "python": 75,
+    "node": 23
+  },
+  "runtime_stages": 18,
+  "runs": [
+    {
+      "suite": "physical-corridors",
+      "stages": 12,
+      "runtime": "runtime/corridor17-r5/corridor-acceptance/2026-11-25T11-53-15-625Z",
+      "evidence_sha256": "09a804da24487e511b6726019435869db2d0ae274d1b6bee50475940dc60c5c4",
+      "runner_sha256": "fe9f7886478806e1671230d855f282fa58dcd146f329e8518616491119c54d10",
+      "finished_at": "2026-11-25T11:55:51.694Z",
+      "normal_server_stops": 2,
+      "logs": {
+        "client-run-2-a.log": "1f5fc6d376b0e4dd11465d94443dac104cb78b091fe946bf3f2c94c2635ca2f2",
+        "client-run-2-b.log": "523c9718cd9f4fc12cc7df73a22a153fd267d42ce9216da86af546c97ef07443",
+        "paper-run-1.log": "c7855049c32551311a40fe378d08c55bef05835bf96bb61b9c26ee9b0bf0f488",
+        "paper-run-2.log": "ce0b038628ce73815c8e1ae997255e2c4751c92dcb7851dcd0be0a1048241bf0",
+        "client-run-1-a.log": "9b7ade4680ec6ec3ce25e93bcbddb94b3e1fd8e26796830da68afacb3216de7a",
+        "client-run-1-b.log": "d3e3ecdc981c188e4e53147a098df0e5030d668fa36776c825630776a257c996"
+      }
+    },
+    {
+      "suite": "market-upgrade",
+      "stages": 6,
+      "runtime": "runtime/market-upgrade17-r2/market-upgrade-acceptance/2026-11-25T11-56-14-662Z",
+      "evidence_sha256": "6077104d6bba0562ec5bcdfae178c4a84b0a26c7d3bd222fd9a0b9d605abaf53",
+      "runner_sha256": "60396f86c9064081229cd3797dc4abbcd592c45e6ada1d177e0e2ff4b733c007",
+      "finished_at": "2026-11-25T11:56:45.477Z",
+      "normal_server_stops": 2,
+      "logs": {
+        "client-run-2-a.log": "28ab309155c3077a06d232b0ea0c5c1ef060bf907433c54516bce5054e85f23d",
+        "client-run-2-b.log": "1fffd3391239648e9aacfde35e979b2936167bca2fc7c310eaba18dc9355bf9b",
+        "paper-run-1.log": "31c4d0542acef750692066c8453655d580d24c84fad6d7eab59c465d2f869283",
+        "paper-run-2.log": "a551586ee5d8951d64b953f2ba003174ca87c8891d058aeadb04db6020d3d355",
+        "client-run-1-a.log": "a324f60b74f5d4298aea79a28286436e77beb1abb33e02196921d70c45b7dfb4",
+        "client-run-1-b.log": "530589c3870413106c00c737999c48e4bccab650ac0bc00baed32cd68c0b85a4"
+      }
+    }
+  ],
+  "scope": "Finite physical road/water capture, frozen route bindings, escrow pause/recovery, restart and real 1.4 market migration. Remaining roadmap work continues.",
+  "historical_release": "runtime/releases/1.4.0",
+  "tool_logs": {
+    "build-1.7.0-r2.log": "772c959210f6f14bf2ebd4951caceebff1f500fcb379dc69c12d071462843408",
+    "python-tests-1.7.0-r2.log": "c284b7a08a540fad7a050ae54f495b9b1033d4ecef2dbfc089310f78fe25a227",
+    "node-tests-1.7.0-r3.log": "43e51a9433b90876035d1c28c43f24c3ebe852b5351d4e23c0b1daf8282c4e94"
+  }
+}

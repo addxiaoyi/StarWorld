@@ -48,6 +48,8 @@ final class ExpansionFixture {
             case "exp-progress-seed"->progressSeed(p);
             case "exp-alt-node"->alternateNode(p,slot(args));
             case "exp-fund"->fund(p,new java.math.BigDecimal(args[2]));
+            case "exp-refund-drain"->refundDrain(p);
+            case "exp-refund-receipt","exp-refund-replay"->refundReceipt(p,UUID.fromString(args[2]),action.equals("exp-refund-replay"));
             case "exp-policy"->policy(p,args[2]);
             case "exp-market-receipt","exp-market-replay"->marketReceipt(p,UUID.fromString(args[2]),action.equals("exp-market-replay"));
             case "exp-reroute-proof"->rerouteProof(p,UUID.fromString(args[2]));
@@ -248,7 +250,8 @@ final class ExpansionFixture {
                     result.put("nodes",invoke(logistics,"cityNodes",new Class<?>[]{UUID.class},city));Object routes=invoke(logistics,"cityRoutes",new Class<?>[]{UUID.class,int.class,int.class},city,100,0);result.put("routes",routes);
                     List<Object> traffic=new ArrayList<>();for(Object route:(Collection<?>)routes)traffic.add(invoke(logistics,"transportStatus",new Class<?>[]{UUID.class,long.class},call(route,"id"),period));result.put("traffic",traffic);
                     result.put("orders",invoke(logistics,"cityOrders",new Class<?>[]{UUID.class,int.class,int.class},city,100,0));result.put("reroutes",invoke(logistics,"pendingReroutes",new Class<?>[]{UUID.class,int.class,int.class},city,100,0));
-                    result.put("listings",invoke(market,"listings",new Class<?>[]{UUID.class,int.class,int.class},city,100,0));result.put("purchases",invoke(market,"purchases",new Class<?>[]{UUID.class,int.class,int.class},city,100,0));result.put("prices",invoke(market,"history",new Class<?>[]{String.class,int.class,int.class},null,100,0));result.put("actor",actor);return result;
+                    result.put("listings",invoke(market,"listings",new Class<?>[]{UUID.class,int.class,int.class},city,100,0));result.put("purchases",invoke(market,"purchases",new Class<?>[]{UUID.class,int.class,int.class},city,100,0));result.put("prices",invoke(market,"history",new Class<?>[]{String.class,int.class,int.class},null,100,0));result.put("actor",actor);
+                    if(Integer.parseInt(call(runtime,"version").toString().split("\\.")[1])>=8)result.put("refunds",invoke(call(expansion,"marketRefunds"),"refunds",new Class<?>[]{UUID.class,int.class,int.class},city,100,0));return result;
                 }).whenComplete((value,failure)->Bukkit.getScheduler().runTask(owner,()->{if(failure!=null)failed(failure);else emit("exp-progress",p,value);}));
             }catch(Exception failure){Bukkit.getScheduler().runTask(owner,()->failed(failure));}
         });
@@ -303,6 +306,25 @@ final class ExpansionFixture {
     private void fund(Player p,java.math.BigDecimal amount)throws Exception {
         if(amount.signum()<=0||amount.compareTo(new java.math.BigDecimal("10000"))>0)throw new IllegalArgumentException("Bounded fixture treasury seed required");Object treasury=coreService("module.treasury.TreasuryService"),id=call(nation(p),"id");Object before=invoke(treasury,"balance",new Class<?>[]{id.getClass()},id);invoke(treasury,"deposit",new Class<?>[]{id.getClass(),java.math.BigDecimal.class},id,amount);
         emit("exp-fund",p,Map.of("source","explicit-public-TreasuryService-test-seed","productionEvidence",false,"nation",call(id,"value"),"before",before,"seed",amount,"after",invoke(treasury,"balance",new Class<?>[]{id.getClass()},id)));
+    }
+    private void refundDrain(Player p)throws Exception {
+        Object treasury=coreService("module.treasury.TreasuryService"),id=call(nation(p),"id");java.math.BigDecimal before=(java.math.BigDecimal)invoke(treasury,"balance",new Class<?>[]{id.getClass()},id);
+        if(before.signum()<=0||before.compareTo(new java.math.BigDecimal("10000"))>0)throw new IllegalArgumentException("Bounded nonzero test balance required");
+        if(!Boolean.TRUE.equals(invoke(treasury,"withdraw",new Class<?>[]{id.getClass(),java.math.BigDecimal.class},id,before)))throw new IllegalStateException("Fixture treasury drain rejected");
+        emit("exp-refund-drain",p,Map.of("source","explicit-public-TreasuryService-insolvency-intervention","productionEvidence",false,"before",before,"after",invoke(treasury,"balance",new Class<?>[]{id.getClass()},id)));
+    }
+    private void refundReceipt(Player p,UUID refundId,boolean replay)throws Exception {
+        Object runtime=world(),expansion=unwrap(call(runtime,"expansion"));async(runtime,()->{
+            Object refund=unwrap(invoke(call(expansion,"marketRefunds"),"refund",new Class<?>[]{UUID.class},refundId));
+            Object purchase=unwrap(invoke(call(expansion,"market"),"purchase",new Class<?>[]{UUID.class},call(refund,"purchaseId")));return List.of(refund,purchase);
+        }).whenComplete((values,error)->Bukkit.getScheduler().runTask(owner,()->{try{
+            if(error!=null)throw new IllegalStateException("Missing refund",error);Object refund=((List<?>)values).get(0),purchase=((List<?>)values).get(1);
+            String tx=(String)call(refund,"transactionId");Class<?> nationId=call(nation(p),"id").getClass();Object payer=nationId.getMethod("of",UUID.class).invoke(null,call(purchase,"buyerNation")),receiver=nationId.getMethod("of",UUID.class).invoke(null,call(purchase,"sellerNation")),treasury=coreService("module.treasury.TreasuryService");
+            Object adapter=type("StarWorld","dev.starworld.integration.StarCoreTreasuryRefunds").getConstructor(JavaPlugin.class).newInstance(Bukkit.getPluginManager().getPlugin("StarWorld"));
+            Map<String,Object> result=new LinkedHashMap<>();result.put("refund",refund);result.put("purchase",purchase);result.put("receipt",unwrap(invoke(adapter,"receipt",new Class<?>[]{String.class},tx)));result.put("entryPoint","NationSettlementService.settlementRefundReceipt");result.put("payerBefore",invoke(treasury,"balance",new Class<?>[]{nationId},payer));result.put("receiverBefore",invoke(treasury,"balance",new Class<?>[]{nationId},receiver));
+            if(replay){Object original=call(purchase,"request");Object request=type("StarWorld","dev.starworld.integration.TreasuryRefundPort$Request").getConstructor(String.class,original.getClass()).newInstance(tx,original);result.put("replay",invoke(adapter,"refund",new Class<?>[]{request.getClass()},request));}
+            result.put("payerAfter",invoke(treasury,"balance",new Class<?>[]{nationId},payer));result.put("receiverAfter",invoke(treasury,"balance",new Class<?>[]{nationId},receiver));emit(replay?"exp-refund-replay":"exp-refund-receipt",p,result);
+        }catch(Exception failure){failed(failure);}}));
     }
     private void policy(Player p,String key)throws Exception {
         if(!key.equals("open_diplomacy"))throw new IllegalArgumentException("Fixture only activates audited open_diplomacy");Object id=call(nation(p),"id"),policies=coreService("module.policy.PolicyService"),treasury=coreService("module.treasury.TreasuryService");Class<?> contract=type("StarCore",CORE+"module.policy.PolicyService");Object before=invoke(treasury,"balance",new Class<?>[]{id.getClass()},id);

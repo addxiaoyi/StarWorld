@@ -37,9 +37,14 @@ final class MarketSchema {
             store.execute("DROP INDEX IF EXISTS market_listing_purchase");
             store.execute("UPDATE market_schema SET version=2 WHERE id=1");
         }
+        if(version<3){
+            store.execute("DROP INDEX IF EXISTS market_purchase_open_buyer");
+            store.execute("DROP INDEX IF EXISTS market_purchase_open_seller");
+            store.execute("UPDATE market_schema SET version=3 WHERE id=1");
+        }
         store.execute("CREATE INDEX IF NOT EXISTS market_listing_purchase ON market_purchase(listing,state)");
-        store.execute("CREATE INDEX IF NOT EXISTS market_purchase_open_buyer ON market_purchase(buyer_city) WHERE state NOT IN ('SHIPPED','CANCELLED')");
-        store.execute("CREATE INDEX IF NOT EXISTS market_purchase_open_seller ON market_purchase(seller_city) WHERE state NOT IN ('SHIPPED','CANCELLED')");
+        store.execute("CREATE INDEX IF NOT EXISTS market_purchase_open_buyer ON market_purchase(buyer_city) WHERE state NOT IN ('SHIPPED','REFUNDED','CANCELLED')");
+        store.execute("CREATE INDEX IF NOT EXISTS market_purchase_open_seller ON market_purchase(seller_city) WHERE state NOT IN ('SHIPPED','REFUNDED','CANCELLED')");
         store.execute("CREATE INDEX IF NOT EXISTS market_listing_open ON market_listing(seller_city) WHERE available_units>0 OR reserved_units>0");
         store.execute("CREATE INDEX IF NOT EXISTS market_history_period ON market_history(period,purchase)");
         // Keep conservation enforced even if a future write path forgets to use the balance helper.

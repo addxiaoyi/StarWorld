@@ -8,7 +8,7 @@ public final class LogisticsState {
     private LogisticsState() {}
     public enum NodeType { ROAD, BRIDGE, PORT, PASS }
     public enum Mode { LAND, SEA }
-    public enum OrderStatus { OFFERED, IN_TRANSIT, PAUSED, COMPLETED, CANCELLED, EXPIRED }
+    public enum OrderStatus { OFFERED, IN_TRANSIT, PAUSED, REFUNDING, COMPLETED, CANCELLED, EXPIRED }
     public enum RerouteStatus { PENDING, APPLIED, CANCELLED, EXPIRED }
 
     /**

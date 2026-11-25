@@ -23,7 +23,7 @@ public final class MarketService {
             s.execute("CREATE TABLE IF NOT EXISTS market_schema(id INTEGER PRIMARY KEY CHECK(id=1),version INTEGER NOT NULL,namespace TEXT NOT NULL)");
             s.execute("INSERT OR IGNORE INTO market_schema(id,version,namespace) VALUES(1,1,?)",UUID.randomUUID());
             int schema=s.query("SELECT version FROM market_schema WHERE id=1",r->r.getInt(1)).getFirst();
-            if(schema<1||schema>2)throw new SQLException("Unsupported physical market schema");
+            if(schema<1||schema>3)throw new SQLException("Unsupported physical market schema");
             s.execute("CREATE TABLE IF NOT EXISTS market_listing(id TEXT PRIMARY KEY,seller_city TEXT NOT NULL REFERENCES city_state(id),seller_nation TEXT NOT NULL,item TEXT NOT NULL,units INTEGER NOT NULL CHECK(units>0),unit_price TEXT NOT NULL,state TEXT NOT NULL,created_period INTEGER NOT NULL,expires_period INTEGER NOT NULL)");
             s.execute("CREATE INDEX IF NOT EXISTS market_listing_city ON market_listing(seller_city,state,created_period)");
             s.execute("CREATE INDEX IF NOT EXISTS market_listing_available ON market_listing(state,expires_period,id)");
@@ -48,6 +48,7 @@ public final class MarketService {
         });
     }
     public MarketDefinitions definitions(){return definitions;}
+    String namespace(){return namespace;}
     void ensureCity(dev.starworld.domain.WorldState.CoreCity city)throws SQLException{store.ensureCity(city);}
     public Optional<Listing> listing(UUID id)throws SQLException{return store.query("SELECT * FROM market_listing WHERE id=?",this::readListing,id).stream().findFirst();}
     public Optional<Purchase> purchase(UUID id)throws SQLException{return store.query("SELECT * FROM market_purchase WHERE id=?",this::readPurchase,id).stream().findFirst();}
@@ -123,8 +124,8 @@ public final class MarketService {
             // Partial sales must not turn a bounded listing count into unbounded outstanding payments.
             for(UUID city:List.of(l.sellerCity(),buyerCity)){
                 // A purchase has distinct endpoint cities; each branch uses its partial open-order index.
-                long open=s.query("SELECT COUNT(*) FROM (SELECT 1 FROM market_purchase WHERE buyer_city=? AND state NOT IN ('SHIPPED','CANCELLED') "
-                        +"UNION ALL SELECT 1 FROM market_purchase WHERE seller_city=? AND state NOT IN ('SHIPPED','CANCELLED') LIMIT ?)",r->r.getLong(1),city,city,definitions.maxOpenPurchasesPerCity()).getFirst();
+                long open=s.query("SELECT COUNT(*) FROM (SELECT 1 FROM market_purchase WHERE buyer_city=? AND state NOT IN ('SHIPPED','REFUNDED','CANCELLED') "
+                        +"UNION ALL SELECT 1 FROM market_purchase WHERE seller_city=? AND state NOT IN ('SHIPPED','REFUNDED','CANCELLED') LIMIT ?)",r->r.getLong(1),city,city,definitions.maxOpenPurchasesPerCity()).getFirst();
                 if(open>=definitions.maxOpenPurchasesPerCity())throw new IllegalArgumentException("城市未完成付款/发货准备已达上限");
             }
             BigDecimal total=TreasuryTransferPort.money(l.unitPrice().multiply(BigDecimal.valueOf(units)));
@@ -197,6 +198,37 @@ public final class MarketService {
         });
     }
     public Purchase retry(UUID id,AuthoritySnapshot auth,UUID governedNation)throws SQLException{return store.tx(s->{fresh(auth);Purchase p=purchase(id).orElseThrow();if(!manager(p.buyerCity(),auth).equals(p.buyerNation())||!p.buyerNation().equals(governedNation))throw new IllegalArgumentException("需要原付款国家统治权限");if(!Set.of(PurchaseStatus.REJECTED,PurchaseStatus.REVIEW,PurchaseStatus.RETRY).contains(p.status()))throw new IllegalArgumentException("当前状态不能重试");s.execute("UPDATE market_purchase SET state='PENDING',next_attempt=0,lease=NULL,last_error='' WHERE id=?",id);return purchase(id).orElseThrow();});}
+
+    /** Same transaction as bilateral refund acceptance; prevents all later shipment/payment jobs. */
+    Purchase holdRefund(UUID id,AuthoritySnapshot auth)throws SQLException{
+        return store.tx(s->{fresh(auth);Purchase p=purchase(id).orElseThrow();refundOwners(p,auth);cargo(listing(p.listingId()).orElseThrow(),p);
+            if(p.status()==PurchaseStatus.REFUNDING)return p;
+            if(p.status()!=PurchaseStatus.PAID&&p.status()!=PurchaseStatus.SHIPPED)throw new IllegalArgumentException("退款需要已核实付款且尚未交付的购买");
+            if(p.status()==PurchaseStatus.SHIPPED)logistics.holdPaidRefund(p.shipmentId(),p.transactionId(),auth);
+            else if(logistics.order(p.shipmentId()).isPresent())throw new IllegalStateException("未发货购买存在不一致的货运");
+            store.execute("UPDATE market_purchase SET state='REFUNDING',lease=NULL,last_error='双方确认退款，托管冻结' WHERE id=?",id);
+            return purchase(id).orElseThrow();});
+    }
+    /** A refund service with a matched durable receipt is the only caller. Goods stay conserved. */
+    Purchase returnRefunded(UUID id,AuthoritySnapshot auth)throws SQLException{
+        return store.tx(s->{fresh(auth);Purchase p=purchase(id).orElseThrow();refundOwners(p,auth);
+            if(p.status()==PurchaseStatus.REFUNDED)return p;
+            if(p.status()!=PurchaseStatus.REFUNDING)throw new IllegalArgumentException("购买尚未冻结退款");
+            Listing l=listing(p.listingId()).orElseThrow();Map<String,Long> goods=cargo(l,p);boolean shipped=logistics.order(p.shipmentId()).isPresent();
+            if(shipped)logistics.returnPaidRefund(p.shipmentId(),p.transactionId(),goods,auth);else refund(l,p.units());
+            long reserved=l.reservedUnits()-(shipped?0:p.units()),inTransit=l.shippedUnits()-(shipped?p.units():0);
+            ListingStatus state=closed(l)?l.status():l.availableUnits()>0?ListingStatus.AVAILABLE:reserved>0?ListingStatus.LOCKED:ListingStatus.CANCELLED;
+            balance(l,l.availableUnits(),reserved,inTransit,Math.addExact(l.returnedUnits(),p.units()),state);
+            store.execute("UPDATE market_purchase SET state='REFUNDED',last_error='原付款已退还，商品已归还原卖城' WHERE id=?",id);
+            store.audit("market-refund","MARKET REFUND COMPLETE "+id+" units="+p.units());return purchase(id).orElseThrow();});
+    }
+    void refundOwners(Purchase p,AuthoritySnapshot auth)throws SQLException{fresh(auth);owner(p.sellerCity(),p.sellerNation(),auth);owner(p.buyerCity(),p.buyerNation(),auth);}
+    void requireRefundable(Purchase p)throws SQLException{
+        if(p.status()==PurchaseStatus.PAID)return;
+        if(p.status()!=PurchaseStatus.SHIPPED)throw new IllegalArgumentException("退款仅适用于已付款且尚未交付的商品");
+        Order order=logistics.order(p.shipmentId()).orElseThrow();
+        if(order.status()!=OrderStatus.IN_TRANSIT&&order.status()!=OrderStatus.PAUSED)throw new IllegalArgumentException("已交付或终止的货物不能申请退款");
+    }
     public List<Listing> expiring(long period,int limit)throws SQLException{page(limit,0);return store.query("SELECT l.* FROM market_listing l LEFT JOIN market_expiry_check c ON c.listing=l.id WHERE l.state='AVAILABLE' AND l.expires_period<=? ORDER BY COALESCE(c.period,-1),l.expires_period,l.id LIMIT ?",this::readListing,period,limit);}
     public int expire(AuthoritySnapshot auth,int limit)throws SQLException{
         return store.tx(s->{
@@ -219,7 +251,7 @@ public final class MarketService {
         return Map.of(listing.item(),purchase.units());
     }
     private void balance(Listing original,long available,long reserved,long shipped,long returned,ListingStatus closure)throws SQLException{
-        ListingStatus status=closure!=null?closure:closed(original)?original.status():available>0?ListingStatus.AVAILABLE:reserved>0?ListingStatus.LOCKED:ListingStatus.SHIPPED;
+        ListingStatus status=closure!=null?closure:closed(original)?original.status():available>0?ListingStatus.AVAILABLE:reserved>0?ListingStatus.LOCKED:returned>0?ListingStatus.CANCELLED:ListingStatus.SHIPPED;
         // Validate the partition before issuing one atomic balance update.
         new Listing(original.id(),original.sellerCity(),original.sellerNation(),original.item(),original.units(),original.unitPrice(),status,original.createdPeriod(),original.expiresPeriod(),available,reserved,shipped,returned);
         store.execute("UPDATE market_listing SET available_units=?,reserved_units=?,shipped_units=?,returned_units=?,state=? WHERE id=?",available,reserved,shipped,returned,status.name(),original.id());

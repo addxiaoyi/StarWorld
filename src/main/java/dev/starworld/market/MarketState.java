@@ -7,7 +7,7 @@ import java.util.*;
 public final class MarketState {
     private MarketState(){}
     public enum ListingStatus { AVAILABLE, LOCKED, SHIPPED, CANCELLED, EXPIRED }
-    public enum PurchaseStatus { PENDING, IN_FLIGHT, RETRY, REJECTED, REVIEW, PAID, SHIPPED, CANCELLED }
+    public enum PurchaseStatus { PENDING, IN_FLIGHT, RETRY, REJECTED, REVIEW, PAID, SHIPPED, REFUNDING, REFUNDED, CANCELLED }
     /** Original quantity is immutable; the four balances always partition that original escrow. */
     public record Listing(UUID id,UUID sellerCity,UUID sellerNation,String item,long units,BigDecimal unitPrice,
                           ListingStatus status,long createdPeriod,long expiresPeriod,

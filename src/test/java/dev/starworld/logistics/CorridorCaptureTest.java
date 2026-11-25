@@ -2,6 +2,9 @@ package dev.starworld.logistics;
 
 import dev.starworld.domain.WorldState.Site;
 import dev.starworld.integration.CoreBridge;
+import dev.starworld.integration.TransitPermitPort;
+import dev.starworld.integration.TransitPermitPort.*;
+import java.math.BigDecimal;
 import dev.starworld.logistics.LogisticsState.*;
 import java.util.*;
 import org.bukkit.*;
@@ -48,5 +51,26 @@ class CorridorCaptureTest {
         Rig r=new Rig(Mode.LAND,512);List<Route> routes=new ArrayList<>();for(int i=0;i<20;i++)routes.add(new Route(UUID.randomUUID(),r.a,r.b,r.route.nodes(),Mode.LAND,true,512,4,128,true));
         var reports=new CorridorCapture(r.server,r.core).capture(routes,r.nodes,r.valid());assertEquals(Corridor.MAX_BLOCK_READS,reports.values().stream().mapToInt(Corridor.Proof::blockReads).sum());assertTrue(reports.values().stream().anyMatch(p->p.pass()));assertTrue(reports.values().stream().anyMatch(p->p.detail().contains("预算")));assertTrue(r.capture().pass());
         assertThrows(IllegalArgumentException.class,()->new CorridorCapture(r.server,r.core).capture(Collections.nCopies(33,r.route),r.nodes,r.valid()));
+    }
+    @Test void thirdCountryRequiresExactFootprintAndLivePermissionBeforeAnyRoadRead(){
+        Rig r=new Rig(Mode.LAND,48);UUID city=UUID.randomUUID(),nation=UUID.randomUUID();Node middle=new Node(UUID.randomUUID(),city,nation,NodeType.ROAD,new Site(r.worldId,"world",24,64,8),"plains",1,true);
+        List<Node> nodes=List.of(r.nodes.getFirst(),middle,r.nodes.getLast());Map<UUID,Node> index=new HashMap<>();nodes.forEach(n->index.put(n.id(),n));
+        Route route=new Route(UUID.randomUUID(),r.a,r.b,nodes.stream().map(Node::id).toList(),Mode.LAND,true,48,2,128,true,"starworld:test:transit");Set<UUID> valid=index.keySet();
+        when(r.core.ownsSite(any(),any())).thenAnswer(call->{UUID owner=call.getArgument(0);int x=((Site)call.getArgument(1)).x()>>4;return owner.equals(r.a)&&x==0||owner.equals(r.b)&&x==3||owner.equals(city)&&(x==1||x==2);});
+        TransitPermitPort permits=mock(TransitPermitPort.class);var footprint=TransitCorridor.describe(r.server,r.core,route,index);assertEquals(2,footprint.parcels().get(nation).size());
+        var absent=new CorridorCapture(r.server,r.core).capture(List.of(route),nodes,valid,permits).get(route.id());assertFalse(absent.pass());assertTrue(absent.detail().contains("尚未批准"));verify(r.world,never()).getBlockAt(anyInt(),anyInt(),anyInt());
+        Terms terms=footprint.terms(nation,new BigDecimal("0.10"),1_000_000);Permit permission=new Permit(terms,1,false,UUID.randomUUID(),1);when(permits.permit(route.transitKey(),nation)).thenReturn(Optional.of(permission));when(permits.allowed(permission)).thenReturn(true);
+        var proof=new CorridorCapture(r.server,r.core).capture(List.of(route),nodes,valid,permits).get(route.id());assertTrue(proof.pass());assertEquals(Map.of(nation,permission),proof.transit());
+        when(permits.allowed(permission)).thenReturn(false);clearInvocations(r.world);assertFalse(new CorridorCapture(r.server,r.core).capture(List.of(route),nodes,valid,permits).get(route.id()).pass());verify(r.world,never()).getBlockAt(anyInt(),anyInt(),anyInt());
+        when(permits.allowed(permission)).thenReturn(true);doReturn(false).when(r.core).ownsSite(eq(city),any());assertFalse(new CorridorCapture(r.server,r.core).capture(List.of(route),nodes,valid,permits).get(route.id()).pass());verify(r.world,never()).getChunkAt(anyInt(),anyInt());
+    }
+    @Test void changedCorridorFingerprintAndWiderWaterClaimsCannotReuseANarrowPermit(){
+        Rig r=new Rig(Mode.SEA,48);UUID city=UUID.randomUUID(),nation=UUID.randomUUID();Node middle=new Node(UUID.randomUUID(),city,nation,NodeType.PORT,new Site(r.worldId,"world",24,64,8),"river",1,true);List<Node> nodes=List.of(r.nodes.getFirst(),middle,r.nodes.getLast());Map<UUID,Node> index=new HashMap<>();nodes.forEach(n->index.put(n.id(),n));
+        Route route=new Route(UUID.randomUUID(),r.a,r.b,nodes.stream().map(Node::id).toList(),Mode.SEA,true,48,2,128,true,"starworld:water:transit");
+        when(r.core.ownsSite(any(),any())).thenAnswer(call->{UUID owner=call.getArgument(0);int x=((Site)call.getArgument(1)).x()>>4;return owner.equals(r.a)&&x<=0||owner.equals(r.b)&&x>=3||owner.equals(city)&&(x==1||x==2);});
+        var footprint=TransitCorridor.describe(r.server,r.core,route,index);Terms correct=footprint.terms(nation,BigDecimal.ZERO,1_000_000);
+        Terms changed=new Terms(correct.routeKey(),"f".repeat(64),nation,correct.originNation(),correct.targetNation(),correct.parcels(),correct.tollPerUnit(),correct.expiresAt());
+        TransitPermitPort port=mock(TransitPermitPort.class);when(port.allowed(any())).thenReturn(true);when(port.permit(route.transitKey(),nation)).thenReturn(Optional.of(new Permit(changed,1,false,UUID.randomUUID(),1)));
+        assertFalse(new CorridorCapture(r.server,r.core).capture(List.of(route),nodes,index.keySet(),port).get(route.id()).pass());verify(port,never()).allowed(any());
     }
 }

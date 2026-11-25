@@ -80,7 +80,7 @@ class MarketControllerTest {
     }
     @Test void positiveTariffRequiresExplicitConsentAndAcceptanceNeverRequotes()throws Exception{
         QuoteRig f=new QuoteRig("0.22");f.buy("buy","6");
-        verify(f.r.player).sendMessage(contains("货款 7.50 · 出口国关税 0.22 · 应付 7.72"));
+        verify(f.r.player).sendMessage(contains("货款 7.50 · 出口国关税 0.22 · 过境费 0.00 · 应付 7.72"));
         verify(f.quotes,never()).accept(any(),any(),any(),any(),anyLong());verifyNoInteractions(f.r.treasury);
         when(f.taxes.quote(any(),any(),any(),any())).thenThrow(new IllegalArgumentException("rate changed or API unavailable"));
         f.accept();verify(f.quotes).accept(eq(f.quoted.id()),eq(f.r.buyer.cityId()),eq(f.r.buyer.nationId()),argThat(a->a.managedCities().contains(f.r.buyer.cityId())),anyLong());

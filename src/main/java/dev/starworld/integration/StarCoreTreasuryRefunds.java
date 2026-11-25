@@ -18,12 +18,13 @@ public final class StarCoreTreasuryRefunds implements TreasuryRefundPort {
         Objects.requireNonNull(request);
         try{
             Access access=access();Optional<Receipt> before=receipt(access,request.transactionId());if(before.isPresent())return checked(request,before.get());
-            var original=transfers.receipt(request.original().transactionId());
+            var original=request.original().credits().size()>1?transfers.receipt(request.original()):transfers.receipt(request.original().transactionId());
             if(original.isEmpty()||!original.get().matches(request.original()))return new Delivery(request.transactionId(),Status.CONFLICT,null,"原国家付款回执缺失或明细不符，保留原货物");
             Object previous=optional(access.contract().getMethod("refundForPayment",String.class).invoke(access.service(),request.original().transactionId())).orElse(null);
             if(previous!=null)return checked(request,readReceipt(access,previous));
             Object nations=access.required("module.nation.NationService");Class<?> nationType=access.type("module.nation.NationService"),idType=access.type("module.nation.model.NationId");
-            for(UUID id:List.of(request.original().payer(),request.original().receiver())){
+            Set<UUID> participants=new HashSet<>(request.original().credits().keySet());participants.add(request.original().payer());
+            for(UUID id:participants){
                 Object nation=idType.getMethod("of",UUID.class).invoke(null,id);
                 if(optional(nationType.getMethod("nationById",idType).invoke(nations,nation)).isEmpty())return new Delivery(request.transactionId(),Status.RETRY,null,"原国家已解散，退款继续待核对");
             }

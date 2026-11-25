@@ -31,6 +31,7 @@ RUNNERS = {
     'corridor': 'paper-client/corridor-acceptance.cjs',
     'refund': 'paper-client/refund-acceptance.cjs',
     'tax': 'paper-client/tax-acceptance.cjs',
+    'transit': 'paper-client/transit-acceptance.cjs',
     'lifecycle-logistics': 'paper-client/lifecycle-logistics-acceptance.cjs',
     'civic': 'senluo-fixture/civic-acceptance.cjs',
     'smoke': 'smoke-paper.ps1',
@@ -165,7 +166,7 @@ def prepare(args):
         checked(fixture is not None, 'Gameplay preparation needs --fixture')
         include('plugins/StarCore.jar', getattr(args, 'starcore', None))
         if getattr(args, 'starcore', None):
-            checked(args.suite in ('refund', 'tax'), 'Explicit StarCore candidate is only supported by the refund and tax suites')
+            checked(args.suite in ('refund', 'tax', 'transit'), 'Explicit StarCore candidate is only supported by the refund, tax and transit suites')
             checked(getattr(args, 'starcore_provenance', None), 'Explicit StarCore needs --starcore-provenance')
             provenance = read_json(args.starcore_provenance)
             checked(provenance['artifact_sha256'] == sha(files['plugins/StarCore.jar']), 'StarCore provenance hash differs')
@@ -189,7 +190,7 @@ def prepare(args):
                 generated[relative] = data
 
     civic = None
-    if args.suite in ('corridor', 'refund', 'tax'):
+    if args.suite in ('corridor', 'refund', 'tax', 'transit'):
         relative = 'plugins/StarWorld/logistics.yml'
         original = files.pop(relative).read_text(encoding='utf-8') if relative in files else generated[relative].decode()
         adjusted, count = re.subn(r'^blocks-per-period:.*$', 'blocks-per-period: 8', original, flags=re.M)
@@ -320,7 +321,7 @@ def main():
     for name in ('template', 'runtime', 'jar', 'paper', 'java', 'client-deps'):
         cli.add_argument('--' + name, type=Path, required=True)
     cli.add_argument('--fixture', type=Path)
-    cli.add_argument('--starcore', type=Path, help='Explicit locally verified StarCore candidate for refund/tax acceptance')
+    cli.add_argument('--starcore', type=Path, help='Explicit locally verified StarCore candidate for refund/tax/transit acceptance')
     cli.add_argument('--starcore-provenance', type=Path, help='Candidate commit, JAR hash and build verification')
     cli.add_argument('--senluo-fixture', type=Path)
     cli.add_argument('--unit-evidence', type=Path,

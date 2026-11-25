@@ -7,13 +7,14 @@ import java.util.*;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/** Uses exactly NationTransferService; never composes separate debit and credit operations. */
+/** Selects one atomic public payment contract; never composes separate debit and credit operations. */
 public final class StarCoreTreasuryTransfers implements TreasuryTransferPort {
     private static final String BASE="dev.starcore.starcore.";
     private final JavaPlugin owner;
     public StarCoreTreasuryTransfers(JavaPlugin owner){this.owner=Objects.requireNonNull(owner);}
     @Override public Delivery transfer(Request request){
         Objects.requireNonNull(request);
+        if(request.credits().size()>1)return new StarCoreTreasurySettlements(owner).transfer(request);
         try {
             Access a=access();Optional<Receipt> before=receipt(a,request.transactionId());if(before.isPresent())return checked(request,before.get());
             Object nations=a.required("module.nation.NationService");Class<?> nationContract=a.type("module.nation.NationService");
@@ -29,6 +30,7 @@ public final class StarCoreTreasuryTransfers implements TreasuryTransferPort {
         }catch(ReflectiveOperationException|RuntimeException|LinkageError failure){return new Delivery(request.transactionId(),Status.RETRY,null,"国库接口暂不可用："+cause(failure).getClass().getSimpleName());}
     }
     @Override public Optional<Receipt> receipt(String transactionId){if(transactionId==null||transactionId.isBlank())throw new IllegalArgumentException("Empty transaction id");try{return receipt(access(),transactionId);}catch(ReflectiveOperationException|RuntimeException|LinkageError e){throw new IllegalStateException("国库回执不可查询，不能证明未付款",cause(e));}}
+    @Override public Optional<Receipt> receipt(Request request){return request.credits().size()>1?new StarCoreTreasurySettlements(owner).receipt(request.transactionId()):receipt(request.transactionId());}
     @Override public String status(){try{access();return "StarCore 原子幂等国库转账与持久回执可用";}catch(ReflectiveOperationException|RuntimeException|LinkageError e){return "国家金币市场停用/待恢复："+cause(e).getClass().getSimpleName();}}
     private Delivery checked(Request r,Receipt receipt){return new Delivery(r.transactionId(),receipt.matches(r)?Status.CONFIRMED:Status.CONFLICT,receipt,"核心持久国库回执已核实");}
     private Optional<Receipt> receipt(Access a,String id)throws ReflectiveOperationException{

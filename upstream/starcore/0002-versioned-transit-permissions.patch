@@ -1,0 +1,1259 @@
+From bc720cda1c9b113667fc33bc521a7a900b1e5d8d Mon Sep 17 00:00:00 2001
+From: Hermes Dev <dev@hermes.local>
+Date: Wed, 25 Nov 2026 13:19:38 +0000
+Subject: [PATCH] feat(diplomacy): expose durable versioned corridor transit
+ permissions
+
+---
+ .../diplomacy/CoreTransitAuthority.java       |  68 +++
+ .../module/diplomacy/DiplomacyModule.java     |  37 +-
+ .../MergingDiplomacyStateStorage.java         |   6 +
+ .../module/diplomacy/TransitPermitLedger.java | 412 ++++++++++++++++++
+ .../diplomacy/TransitPermitService.java       | 145 ++++++
+ .../diplomacy/CoreTransitAuthorityTest.java   | 122 ++++++
+ .../diplomacy/TransitPermitLedgerTest.java    | 347 +++++++++++++++
+ 7 files changed, 1135 insertions(+), 2 deletions(-)
+ create mode 100644 src/main/java/dev/starcore/starcore/module/diplomacy/CoreTransitAuthority.java
+ create mode 100644 src/main/java/dev/starcore/starcore/module/diplomacy/TransitPermitLedger.java
+ create mode 100644 src/main/java/dev/starcore/starcore/module/diplomacy/TransitPermitService.java
+ create mode 100644 src/test/java/dev/starcore/starcore/module/diplomacy/CoreTransitAuthorityTest.java
+ create mode 100644 src/test/java/dev/starcore/starcore/module/diplomacy/TransitPermitLedgerTest.java
+
+diff --git a/src/main/java/dev/starcore/starcore/module/diplomacy/CoreTransitAuthority.java b/src/main/java/dev/starcore/starcore/module/diplomacy/CoreTransitAuthority.java
+new file mode 100644
+index 00000000..19e785bd
+--- /dev/null
++++ b/src/main/java/dev/starcore/starcore/module/diplomacy/CoreTransitAuthority.java
+@@ -0,0 +1,68 @@
++package dev.starcore.starcore.module.diplomacy;
++
++import dev.starcore.starcore.core.StarCoreContext;
++import dev.starcore.starcore.module.city.CityService;
++import dev.starcore.starcore.module.diplomacy.TransitPermitService.Terms;
++import dev.starcore.starcore.module.nation.NationService;
++import dev.starcore.starcore.module.nation.model.NationId;
++import dev.starcore.starcore.module.war.WarService;
++import java.util.Objects;
++import java.util.UUID;
++
++/**
++ * Checks live core authority. Reads claims only and never loads chunks or inspects private models.
++ */
++final class CoreTransitAuthority implements TransitPermitLedger.Authority {
++  private final StarCoreContext context;
++  private final NationService nations;
++  private final DiplomacyRelationService diplomacy;
++
++  CoreTransitAuthority(
++      StarCoreContext context, NationService nations, DiplomacyRelationService diplomacy) {
++    this.context = Objects.requireNonNull(context);
++    this.nations = Objects.requireNonNull(nations);
++    this.diplomacy = Objects.requireNonNull(diplomacy);
++  }
++
++  @Override
++  public void requireFounder(UUID actor, NationId nation) {
++    if (!nations.isFounder(actor, nation)
++        || nations.nationOf(actor).filter(n -> n.id().equals(nation)).isEmpty())
++      throw new IllegalArgumentException(
++          "Transit permission requires the current granting nation's founder");
++  }
++
++  @Override
++  public String limitation(Terms terms) {
++    CityService cities = context.serviceRegistry().find(CityService.class).orElse(null);
++    WarService wars = context.serviceRegistry().find(WarService.class).orElse(null);
++    if (cities == null || wars == null) return "City or war authority is unavailable";
++    if (nations.nationById(terms.grantingNation()).isEmpty()
++        || nations.nationById(terms.originNation()).isEmpty()
++        || nations.nationById(terms.targetNation()).isEmpty())
++      return "A corridor nation no longer exists";
++    for (NationId peer : java.util.List.of(terms.originNation(), terms.targetNation())) {
++      DiplomacyRelation relation = diplomacy.relationBetween(terms.grantingNation(), peer);
++      if (relation == null
++          || relation == DiplomacyRelation.HOSTILE
++          || relation == DiplomacyRelation.WAR
++          || wars.atWar(terms.grantingNation(), peer))
++        return "Transit is blocked by diplomacy or war";
++    }
++    for (var parcel : terms.parcels()) {
++      var world = context.plugin().getServer().getWorld(parcel.worldId());
++      if (world == null || !world.getName().equals(parcel.worldName()))
++        return "Transit world is unavailable or renamed";
++      var city = cities.getCity(parcel.cityId()).orElse(null);
++      if (city == null
++          || !city.nationId().equals(terms.grantingNation())
++          || !city.hasClaim(parcel.worldName(), parcel.chunkX(), parcel.chunkZ()))
++        return "Transit city ownership or claim changed";
++      var claim =
++          nations.claimAt(parcel.worldName(), parcel.chunkX(), parcel.chunkZ()).orElse(null);
++      if (claim == null || !terms.grantingNation().toString().equals(claim.ownerId()))
++        return "Transit national claim changed";
++    }
++    return null;
++  }
++}
+diff --git a/src/main/java/dev/starcore/starcore/module/diplomacy/DiplomacyModule.java b/src/main/java/dev/starcore/starcore/module/diplomacy/DiplomacyModule.java
+index 5c23bb8f..b19d7029 100644
+--- a/src/main/java/dev/starcore/starcore/module/diplomacy/DiplomacyModule.java
++++ b/src/main/java/dev/starcore/starcore/module/diplomacy/DiplomacyModule.java
+@@ -42,6 +42,7 @@ public final class DiplomacyModule
+               DiplomacyRelationService.class,
+               DiplomacyWarService.class,
+               DiplomacyAllianceService.class,
++              TransitPermitService.class,
+               DiplomacyTimingPolicy.class),
+           "Owns relations, treaties, sanctions, and international agreements.");
+ 
+@@ -58,6 +59,7 @@ public final class DiplomacyModule
+ 
+   private NationService nationService;
+   private DiplomacyStateStorage stateStorage;
++  private TransitPermitLedger transitPermits;
+   private StarCoreEventBus eventBus;
+   private StarCoreContext context;
+   private final DiplomacyTimingPolicy timingPolicy = DiplomacyTimingPolicy.defaults();
+@@ -104,6 +106,16 @@ public final class DiplomacyModule
+ 
+     // 从配置读取冷却时间和费用配置
+     loadCooldownConfig(context);
++    this.transitPermits =
++        new TransitPermitLedger(
++            statePersistenceLock,
++            () -> {
++              if (!plugin.getServer().isPrimaryThread())
++                throw new IllegalStateException("Transit authority requires the Paper main thread");
++            },
++            new CoreTransitAuthority(context, nationService, this),
++            this::persistTransit,
++            java.time.Clock.systemUTC());
+     loadState();
+ 
+     // 注册外交服务到 ServiceRegistry（供其他模块和 API 使用）
+@@ -112,6 +124,7 @@ public final class DiplomacyModule
+     context.serviceRegistry().register(DiplomacyWarService.class, this);
+     context.serviceRegistry().register(DiplomacyAllianceService.class, this);
+     context.serviceRegistry().register(DiplomacyTimingPolicy.class, timingPolicy);
++    context.serviceRegistry().register(TransitPermitService.class, transitPermits);
+ 
+     // 注册外交菜单监听器
+     diplomacyMenu =
+@@ -162,6 +175,7 @@ public final class DiplomacyModule
+ 
+   @Override
+   public void disable(StarCoreContext context) {
++    if (transitPermits != null) transitPermits.close();
+     try {
+       flushState();
+     } finally {
+@@ -178,6 +192,7 @@ public final class DiplomacyModule
+       context.serviceRegistry().unregister(DiplomacyRelationService.class);
+       context.serviceRegistry().unregister(DiplomacyAllianceService.class);
+       context.serviceRegistry().unregister(DiplomacyService.class);
++      context.serviceRegistry().unregister(TransitPermitService.class);
+       context.serviceRegistry().unregister(DiplomacyTimingPolicy.class);
+     }
+   }
+@@ -864,12 +879,30 @@ public final class DiplomacyModule
+   }
+ 
+   private Properties stateProperties() {
+-    return DiplomacyCombinedStateCodec.toProperties(
+-        relations, warRecords, relationChangeTimestamps, allianceInvitations);
++    Properties properties =
++        DiplomacyCombinedStateCodec.toProperties(
++            relations, warRecords, relationChangeTimestamps, allianceInvitations);
++    if (transitPermits != null) properties.putAll(transitPermits.properties());
++    return properties;
++  }
++
++  private void persistTransit(Properties update) {
++    synchronized (statePersistenceLock) {
++      if (stateStorage == null)
++        throw new IllegalStateException("Durable transit storage unavailable");
++      Properties combined = stateProperties();
++      combined
++          .keySet()
++          .removeIf(
++              key -> key instanceof String text && text.startsWith(TransitPermitLedger.PREFIX));
++      combined.putAll(update);
++      stateStorage.save(combined);
++    }
+   }
+ 
+   private void loadState() {
+     Properties properties = stateStorage == null ? new Properties() : stateStorage.load();
++    if (transitPermits != null) transitPermits.restore(properties);
+     relations.clear();
+     relations.putAll(DiplomacyStateCodec.fromProperties(properties));
+     warRecords.clear();
+diff --git a/src/main/java/dev/starcore/starcore/module/diplomacy/MergingDiplomacyStateStorage.java b/src/main/java/dev/starcore/starcore/module/diplomacy/MergingDiplomacyStateStorage.java
+index 8d54a268..7d838c83 100644
+--- a/src/main/java/dev/starcore/starcore/module/diplomacy/MergingDiplomacyStateStorage.java
++++ b/src/main/java/dev/starcore/starcore/module/diplomacy/MergingDiplomacyStateStorage.java
+@@ -68,6 +68,12 @@ final class MergingDiplomacyStateStorage implements DiplomacyStateStorage {
+     if (update.containsKey(INTERACTION_VERSION)) {
+       removeInteractionFamily(merged);
+     }
++    if (update.containsKey(TransitPermitLedger.PREFIX + "version")) {
++      merged
++          .keySet()
++          .removeIf(
++              key -> key instanceof String text && text.startsWith(TransitPermitLedger.PREFIX));
++    }
+     merged.putAll(update);
+     return merged;
+   }
+diff --git a/src/main/java/dev/starcore/starcore/module/diplomacy/TransitPermitLedger.java b/src/main/java/dev/starcore/starcore/module/diplomacy/TransitPermitLedger.java
+new file mode 100644
+index 00000000..25669788
+--- /dev/null
++++ b/src/main/java/dev/starcore/starcore/module/diplomacy/TransitPermitLedger.java
+@@ -0,0 +1,412 @@
++package dev.starcore.starcore.module.diplomacy;
++
++import dev.starcore.starcore.module.diplomacy.TransitPermitService.*;
++import dev.starcore.starcore.module.nation.model.NationId;
++import java.math.BigDecimal;
++import java.time.Clock;
++import java.time.Duration;
++import java.util.*;
++import java.util.function.Consumer;
++
++/**
++ * Exact immutable permit snapshots, persisted before publication. No world or treasury mutation.
++ */
++final class TransitPermitLedger implements TransitPermitService {
++  static final String PREFIX = "transit.";
++  private static final int MAX_RECEIPTS = 100_000;
++  private static final long MAX_LIFETIME = Duration.ofDays(30).toMillis();
++
++  interface Authority {
++    void requireFounder(UUID actor, NationId nation);
++
++    String limitation(Terms terms);
++  }
++
++  private record Key(String route, NationId nation) {}
++
++  private final Object lock;
++  private final Runnable thread;
++  private final Authority authority;
++  private final Consumer<Properties> persist;
++  private final Clock clock;
++  private Map<Key, Permit> permits = new LinkedHashMap<>();
++  private Map<UUID, Receipt> receipts = new LinkedHashMap<>();
++  private boolean closed;
++  private boolean storageUncertain = true;
++
++  TransitPermitLedger(
++      Object lock,
++      Runnable thread,
++      Authority authority,
++      Consumer<Properties> persist,
++      Clock clock) {
++    this.lock = Objects.requireNonNull(lock);
++    this.thread = Objects.requireNonNull(thread);
++    this.authority = Objects.requireNonNull(authority);
++    this.persist = Objects.requireNonNull(persist);
++    this.clock = Objects.requireNonNull(clock);
++  }
++
++  @Override
++  public Receipt approve(Approval request) {
++    Objects.requireNonNull(request);
++    check();
++    synchronized (lock) {
++      authority.requireFounder(request.actor(), request.terms().grantingNation());
++      Receipt old = receipts.get(request.requestId());
++      if (old != null) {
++        if (old.action() != Action.APPROVE
++            || old.expectedRevision() != request.expectedRevision()
++            || !old.permit().actor().equals(request.actor())
++            || !old.permit().terms().equals(request.terms()))
++          throw new IllegalArgumentException(
++              "Transit request ID conflicts with its durable receipt");
++        return old;
++      }
++      long now = clock.millis();
++      if (receipts.size() >= MAX_RECEIPTS / 2)
++        throw new IllegalStateException(
++            "Transit approval capacity reached; remaining slots are reserved for revocation");
++      if (request.terms().expiresAt() <= now || request.terms().expiresAt() - now > MAX_LIFETIME)
++        throw new IllegalArgumentException("Transit expiry must be within the next thirty days");
++      String limitation = authority.limitation(request.terms());
++      if (limitation != null) throw new IllegalStateException(limitation);
++      Key key = key(request.terms());
++      Permit current = permits.get(key);
++      if ((current == null ? 0 : current.revision()) != request.expectedRevision())
++        throw new IllegalStateException("Transit permission revision changed");
++      if (current != null && now < current.updatedAt())
++        throw new IllegalStateException("Transit clock moved backwards");
++      long count =
++          permits.values().stream()
++              .filter(
++                  p ->
++                      p.terms().grantingNation().equals(request.terms().grantingNation())
++                          && !p.revoked()
++                          && p.terms().expiresAt() > now
++                          && !key(p.terms()).equals(key))
++              .count();
++      if (count >= MAX_ACTIVE_PER_NATION)
++        throw new IllegalStateException("Active transit permission limit reached");
++      Permit next =
++          new Permit(
++              request.terms(),
++              Math.addExact(request.expectedRevision(), 1),
++              false,
++              request.actor(),
++              now);
++      return commit(
++          new Receipt(request.requestId(), Action.APPROVE, request.expectedRevision(), next));
++    }
++  }
++
++  @Override
++  public Receipt revoke(Revocation request) {
++    Objects.requireNonNull(request);
++    check();
++    synchronized (lock) {
++      authority.requireFounder(request.actor(), request.grantingNation());
++      Receipt old = receipts.get(request.requestId());
++      if (old != null) {
++        if (old.action() != Action.REVOKE
++            || old.expectedRevision() != request.expectedRevision()
++            || !old.permit().actor().equals(request.actor())
++            || !old.permit().terms().routeKey().equals(request.routeKey())
++            || !old.permit().terms().grantingNation().equals(request.grantingNation()))
++          throw new IllegalArgumentException(
++              "Transit request ID conflicts with its durable receipt");
++        return old;
++      }
++      Permit current = permits.get(new Key(request.routeKey(), request.grantingNation()));
++      if (current == null || current.revision() != request.expectedRevision())
++        throw new IllegalStateException("Transit permission revision changed");
++      if (current.revoked())
++        throw new IllegalStateException("Transit permission is already revoked");
++      if (clock.millis() < current.updatedAt())
++        throw new IllegalStateException("Transit clock moved backwards");
++      return commit(
++          new Receipt(
++              request.requestId(),
++              Action.REVOKE,
++              request.expectedRevision(),
++              new Permit(
++                  current.terms(),
++                  Math.addExact(current.revision(), 1),
++                  true,
++                  request.actor(),
++                  clock.millis())));
++    }
++  }
++
++  private Receipt commit(Receipt receipt) {
++    if (receipts.size() >= MAX_RECEIPTS)
++      throw new IllegalStateException(
++          "Transit receipt capacity reached; preserve history and review storage");
++    Map<Key, Permit> nextPermits = new LinkedHashMap<>(permits);
++    Map<UUID, Receipt> nextReceipts = new LinkedHashMap<>(receipts);
++    nextPermits.put(key(receipt.permit().terms()), receipt.permit());
++    nextReceipts.put(receipt.requestId(), receipt);
++    try {
++      persist.accept(encode(nextPermits, nextReceipts));
++    } catch (RuntimeException failure) {
++      storageUncertain = true;
++      throw failure;
++    }
++    permits = nextPermits;
++    receipts = nextReceipts;
++    return receipt;
++  }
++
++  @Override
++  public Optional<Receipt> receipt(UUID id) {
++    Objects.requireNonNull(id);
++    check();
++    synchronized (lock) {
++      return Optional.ofNullable(receipts.get(id));
++    }
++  }
++
++  @Override
++  public Optional<Permit> permit(String route, NationId nation) {
++    check();
++    Objects.requireNonNull(route);
++    Objects.requireNonNull(nation);
++    synchronized (lock) {
++      return Optional.ofNullable(permits.get(new Key(route, nation)));
++    }
++  }
++
++  @Override
++  public Decision evaluate(Terms expected, long revision) {
++    Objects.requireNonNull(expected);
++    check();
++    synchronized (lock) {
++      Permit value = permits.get(key(expected));
++      Optional<Permit> snapshot = Optional.ofNullable(value);
++      if (value == null) return new Decision(snapshot, false, "Transit permission is missing");
++      if (revision != value.revision() || !expected.equals(value.terms()))
++        return new Decision(snapshot, false, "Transit permission terms or revision changed");
++      if (value.revoked()) return new Decision(snapshot, false, "Transit permission was revoked");
++      if (clock.millis() < value.updatedAt() || clock.millis() >= value.terms().expiresAt())
++        return new Decision(snapshot, false, "Transit permission expired or clock moved backwards");
++      String limitation = authority.limitation(expected);
++      return new Decision(
++          snapshot,
++          limitation == null,
++          limitation == null ? "Current transit authority verified" : limitation);
++    }
++  }
++
++  private void check() {
++    thread.run();
++    if (closed || storageUncertain)
++      throw new IllegalStateException(
++          "Transit service is closed or requires verified storage reload");
++  }
++
++  void close() {
++    synchronized (lock) {
++      closed = true;
++    }
++  }
++
++  Properties properties() {
++    synchronized (lock) {
++      if (storageUncertain)
++        throw new IllegalStateException(
++            "Uncertain transit storage must be reloaded before further persistence");
++      return encode(permits, receipts);
++    }
++  }
++
++  /** Strict load: never turn a corrupt permission or receipt into implicitly allowed traffic. */
++  void restore(Properties data) {
++    synchronized (lock) {
++      storageUncertain = true;
++      if (!data.containsKey(PREFIX + "version")) {
++        if (data.stringPropertyNames().stream().anyMatch(k -> k.startsWith(PREFIX)))
++          throw new IllegalStateException("Unversioned transit state");
++        permits = new LinkedHashMap<>();
++        receipts = new LinkedHashMap<>();
++        storageUncertain = false;
++        return;
++      }
++      if (!"1".equals(data.getProperty(PREFIX + "version")))
++        throw new IllegalStateException("Unsupported transit schema");
++      Map<Key, Permit> loadedPermits = new LinkedHashMap<>();
++      Map<UUID, Receipt> loadedReceipts = new LinkedHashMap<>();
++      int count = count(data, PREFIX + "permits");
++      for (int i = 0; i < count; i++) {
++        Permit permit = decodePermit(data, PREFIX + "permit." + i + ".");
++        if (loadedPermits.put(key(permit.terms()), permit) != null)
++          throw new IllegalStateException("Duplicate transit permit");
++      }
++      int receiptCount = count(data, PREFIX + "receipts");
++      for (int i = 0; i < receiptCount; i++) {
++        String prefix = PREFIX + "receipt." + i + ".";
++        Receipt receipt =
++            new Receipt(
++                UUID.fromString(required(data, prefix + "id")),
++                Action.valueOf(required(data, prefix + "action")),
++                Long.parseLong(required(data, prefix + "expected")),
++                decodePermit(data, prefix + "result."));
++        if (loadedReceipts.put(receipt.requestId(), receipt) != null)
++          throw new IllegalStateException("Duplicate transit receipt");
++      }
++      Map<Key, TreeMap<Long, Receipt>> chains = new HashMap<>();
++      for (Receipt receipt : loadedReceipts.values()) {
++        Key key = key(receipt.permit().terms());
++        Permit current = loadedPermits.get(key);
++        if (current == null || receipt.permit().revision() > current.revision())
++          throw new IllegalStateException("Transit receipt has no matching current permit");
++        if (chains
++                .computeIfAbsent(key, ignored -> new TreeMap<>())
++                .put(receipt.permit().revision(), receipt)
++            != null)
++          throw new IllegalStateException("Conflicting transit receipts at one revision");
++      }
++      for (var entry : loadedPermits.entrySet()) {
++        TreeMap<Long, Receipt> chain = chains.get(entry.getKey());
++        Permit current = entry.getValue();
++        if (chain == null
++            || chain.size() != current.revision()
++            || chain.firstKey() != 1L
++            || !chain.lastEntry().getValue().permit().equals(current))
++          throw new IllegalStateException("Transit revision history is incomplete");
++        Permit previous = null;
++        for (Receipt receipt : chain.values()) {
++          Permit result = receipt.permit();
++          if (receipt.action() == Action.APPROVE
++              && (result.terms().expiresAt() <= result.updatedAt()
++                  || result.terms().expiresAt() - result.updatedAt() > MAX_LIFETIME))
++            throw new IllegalStateException("Transit approval history has invalid expiry");
++          if (previous != null
++              && (receipt.permit().updatedAt() < previous.updatedAt()
++                  || receipt.action() == Action.REVOKE
++                      && (previous.revoked()
++                          || !receipt.permit().terms().equals(previous.terms()))))
++            throw new IllegalStateException("Transit revocation history changed");
++          if (previous == null && receipt.action() != Action.APPROVE)
++            throw new IllegalStateException("Transit history must begin with approval");
++          previous = receipt.permit();
++        }
++      }
++      Properties canonical = encode(loadedPermits, loadedReceipts);
++      Set<String> actual = new HashSet<>();
++      data.stringPropertyNames().stream().filter(k -> k.startsWith(PREFIX)).forEach(actual::add);
++      if (!canonical.stringPropertyNames().equals(actual))
++        throw new IllegalStateException("Unexpected or incomplete transit fields");
++      permits = loadedPermits;
++      receipts = loadedReceipts;
++      storageUncertain = false;
++    }
++  }
++
++  private static Properties encode(Map<Key, Permit> permits, Map<UUID, Receipt> receipts) {
++    Properties out = new Properties();
++    out.setProperty(PREFIX + "version", "1");
++    out.setProperty(PREFIX + "permits", "" + permits.size());
++    out.setProperty(PREFIX + "receipts", "" + receipts.size());
++    int index = 0;
++    for (Permit permit :
++        permits.values().stream()
++            .sorted(
++                Comparator.comparing(p -> p.terms().routeKey() + ":" + p.terms().grantingNation()))
++            .toList()) encodePermit(out, PREFIX + "permit." + index++ + ".", permit);
++    index = 0;
++    for (Receipt receipt :
++        receipts.values().stream()
++            .sorted(Comparator.comparing(r -> r.requestId().toString()))
++            .toList()) {
++      String prefix = PREFIX + "receipt." + index++ + ".";
++      out.setProperty(prefix + "id", receipt.requestId().toString());
++      out.setProperty(prefix + "action", receipt.action().name());
++      out.setProperty(prefix + "expected", "" + receipt.expectedRevision());
++      encodePermit(out, prefix + "result.", receipt.permit());
++    }
++    return out;
++  }
++
++  private static void encodePermit(Properties out, String p, Permit value) {
++    Terms t = value.terms();
++    out.setProperty(p + "route", t.routeKey());
++    out.setProperty(p + "fingerprint", t.fingerprint());
++    out.setProperty(p + "grantor", t.grantingNation().toString());
++    out.setProperty(p + "origin", t.originNation().toString());
++    out.setProperty(p + "target", t.targetNation().toString());
++    out.setProperty(p + "toll", t.tollPerUnit().toPlainString());
++    out.setProperty(p + "expiry", "" + t.expiresAt());
++    out.setProperty(p + "revision", "" + value.revision());
++    out.setProperty(p + "revoked", "" + value.revoked());
++    out.setProperty(p + "actor", value.actor().toString());
++    out.setProperty(p + "updated", "" + value.updatedAt());
++    out.setProperty(p + "parcels", "" + t.parcels().size());
++    int index = 0;
++    for (Parcel parcel :
++        t.parcels().stream()
++            .sorted(Comparator.comparingInt(Parcel::chunkX).thenComparingInt(Parcel::chunkZ))
++            .toList()) {
++      String q = p + "parcel." + index++ + ".";
++      out.setProperty(q + "world", parcel.worldId().toString());
++      out.setProperty(q + "name", parcel.worldName());
++      out.setProperty(q + "city", parcel.cityId().toString());
++      out.setProperty(q + "x", "" + parcel.chunkX());
++      out.setProperty(q + "z", "" + parcel.chunkZ());
++    }
++  }
++
++  private static Permit decodePermit(Properties data, String p) {
++    int count = Integer.parseInt(required(data, p + "parcels"));
++    if (count < 1 || count > MAX_PARCELS)
++      throw new IllegalStateException("Transit parcel count exceeds bound");
++    Set<Parcel> parcels = new LinkedHashSet<>();
++    for (int i = 0; i < count; i++) {
++      String q = p + "parcel." + i + ".";
++      if (!parcels.add(
++          new Parcel(
++              UUID.fromString(required(data, q + "world")),
++              required(data, q + "name"),
++              UUID.fromString(required(data, q + "city")),
++              Integer.parseInt(required(data, q + "x")),
++              Integer.parseInt(required(data, q + "z")))))
++        throw new IllegalStateException("Duplicate transit parcel");
++    }
++    Terms terms =
++        new Terms(
++            required(data, p + "route"),
++            required(data, p + "fingerprint"),
++            NationId.of(UUID.fromString(required(data, p + "grantor"))),
++            NationId.of(UUID.fromString(required(data, p + "origin"))),
++            NationId.of(UUID.fromString(required(data, p + "target"))),
++            parcels,
++            new BigDecimal(required(data, p + "toll")),
++            Long.parseLong(required(data, p + "expiry")));
++    String revoked = required(data, p + "revoked");
++    if (!Set.of("true", "false").contains(revoked))
++      throw new IllegalStateException("Invalid transit revocation flag");
++    return new Permit(
++        terms,
++        Long.parseLong(required(data, p + "revision")),
++        Boolean.parseBoolean(revoked),
++        UUID.fromString(required(data, p + "actor")),
++        Long.parseLong(required(data, p + "updated")));
++  }
++
++  private static Key key(Terms terms) {
++    return new Key(terms.routeKey(), terms.grantingNation());
++  }
++
++  private static int count(Properties data, String key) {
++    int count = Integer.parseInt(required(data, key));
++    if (count < 0 || count > MAX_RECEIPTS)
++      throw new IllegalStateException("Transit state count exceeds bound");
++    return count;
++  }
++
++  private static String required(Properties data, String key) {
++    String value = data.getProperty(key);
++    if (value == null || value.isBlank())
++      throw new IllegalStateException("Missing transit field " + key);
++    return value;
++  }
++}
+diff --git a/src/main/java/dev/starcore/starcore/module/diplomacy/TransitPermitService.java b/src/main/java/dev/starcore/starcore/module/diplomacy/TransitPermitService.java
+new file mode 100644
+index 00000000..03c8b916
+--- /dev/null
++++ b/src/main/java/dev/starcore/starcore/module/diplomacy/TransitPermitService.java
+@@ -0,0 +1,145 @@
++package dev.starcore.starcore.module.diplomacy;
++
++import dev.starcore.starcore.module.nation.model.NationId;
++import java.math.BigDecimal;
++import java.math.RoundingMode;
++import java.util.*;
++
++/**
++ * Authoritative, versioned permission for one explicit foreign trade corridor. All calls require
++ * the Paper main thread. Returned values are immutable. A permit does not transfer money; callers
++ * must settle any quoted toll separately and atomically.
++ */
++public interface TransitPermitService {
++  int MAX_PARCELS = 128;
++  int MAX_ACTIVE_PER_NATION = 64;
++
++  record Parcel(UUID worldId, String worldName, UUID cityId, int chunkX, int chunkZ) {
++    public Parcel {
++      Objects.requireNonNull(worldId, "worldId");
++      Objects.requireNonNull(cityId, "cityId");
++      if (worldName == null
++          || worldName.isBlank()
++          || worldName.length() > 128
++          || Math.abs((long) chunkX) > 1_875_000
++          || Math.abs((long) chunkZ) > 1_875_000)
++        throw new IllegalArgumentException("Invalid transit parcel");
++    }
++  }
++
++  record Terms(
++      String routeKey,
++      String fingerprint,
++      NationId grantingNation,
++      NationId originNation,
++      NationId targetNation,
++      Set<Parcel> parcels,
++      BigDecimal tollPerUnit,
++      long expiresAt) {
++    public Terms {
++      routeKey = TransitPermitService.routeKey(routeKey);
++      if (fingerprint == null || !fingerprint.matches("[a-f0-9]{64}"))
++        throw new IllegalArgumentException("A corridor fingerprint is required");
++      Objects.requireNonNull(grantingNation, "grantingNation");
++      Objects.requireNonNull(originNation, "originNation");
++      Objects.requireNonNull(targetNation, "targetNation");
++      if (grantingNation.equals(originNation) || grantingNation.equals(targetNation))
++        throw new IllegalArgumentException("Transit permission requires a third nation");
++      if (parcels == null || parcels.isEmpty() || parcels.size() > MAX_PARCELS)
++        throw new IllegalArgumentException("Transit permits cover one to 128 claimed parcels");
++      parcels = Set.copyOf(parcels);
++      UUID world = parcels.iterator().next().worldId();
++      String name = parcels.iterator().next().worldName();
++      if (parcels.stream().anyMatch(p -> !p.worldId().equals(world) || !p.worldName().equals(name))
++          || parcels.stream().map(p -> p.chunkX() + ":" + p.chunkZ()).distinct().count()
++              != parcels.size())
++        throw new IllegalArgumentException(
++            "Transit parcels require one world and unique coordinates");
++      Objects.requireNonNull(tollPerUnit, "tollPerUnit");
++      if (tollPerUnit.scale() > 64
++          || tollPerUnit.precision() > 80
++          || tollPerUnit.signum() < 0
++          || tollPerUnit.compareTo(new BigDecimal("1000000.00")) > 0
++          || expiresAt < 0) throw new IllegalArgumentException("Invalid transit toll or expiry");
++      tollPerUnit = tollPerUnit.setScale(2, RoundingMode.UNNECESSARY);
++    }
++  }
++
++  record Permit(Terms terms, long revision, boolean revoked, UUID actor, long updatedAt) {
++    public Permit {
++      Objects.requireNonNull(terms, "terms");
++      Objects.requireNonNull(actor, "actor");
++      if (revision < 1 || updatedAt < 0)
++        throw new IllegalArgumentException("Invalid permit revision");
++    }
++  }
++
++  enum Action {
++    APPROVE,
++    REVOKE
++  }
++
++  record Approval(UUID requestId, UUID actor, long expectedRevision, Terms terms) {
++    public Approval {
++      Objects.requireNonNull(requestId, "requestId");
++      Objects.requireNonNull(actor, "actor");
++      Objects.requireNonNull(terms, "terms");
++      if (expectedRevision < 0) throw new IllegalArgumentException("Negative revision");
++    }
++  }
++
++  record Revocation(
++      UUID requestId, UUID actor, long expectedRevision, String routeKey, NationId grantingNation) {
++    public Revocation {
++      Objects.requireNonNull(requestId, "requestId");
++      Objects.requireNonNull(actor, "actor");
++      Objects.requireNonNull(grantingNation, "grantingNation");
++      routeKey = TransitPermitService.routeKey(routeKey);
++      if (expectedRevision < 1) throw new IllegalArgumentException("Missing permit revision");
++    }
++  }
++
++  /**
++   * Durable operation receipt; replay returns this original result, never reinstates old rights.
++   */
++  record Receipt(UUID requestId, Action action, long expectedRevision, Permit permit) {
++    public Receipt {
++      Objects.requireNonNull(requestId, "requestId");
++      Objects.requireNonNull(action, "action");
++      Objects.requireNonNull(permit, "permit");
++      if (expectedRevision < 0
++          || permit.revision() != Math.addExact(expectedRevision, 1)
++          || (action == Action.REVOKE) != permit.revoked())
++        throw new IllegalArgumentException("Invalid transit operation receipt");
++    }
++  }
++
++  record Decision(Optional<Permit> permit, boolean allowed, String detail) {
++    public Decision {
++      permit = Objects.requireNonNull(permit, "permit");
++      Objects.requireNonNull(detail, "detail");
++      if (detail.length() > 512 || allowed && (permit.isEmpty() || permit.get().revoked()))
++        throw new IllegalArgumentException("Invalid transit decision");
++    }
++  }
++
++  Receipt approve(Approval request);
++
++  Receipt revoke(Revocation request);
++
++  Optional<Receipt> receipt(UUID requestId);
++
++  Optional<Permit> permit(String routeKey, NationId grantingNation);
++
++  /**
++   * Checks the exact expected revision and immutable terms, current city/national claims and
++   * current peaceful relations with both endpoints. Missing services or unloaded worlds deny.
++   */
++  Decision evaluate(Terms expected, long expectedRevision);
++
++  private static String routeKey(String key) {
++    if (key == null || !key.matches("[a-zA-Z0-9:_-]{1,160}"))
++      throw new IllegalArgumentException("Invalid transit route key");
++    return key;
++  }
++}
+diff --git a/src/test/java/dev/starcore/starcore/module/diplomacy/CoreTransitAuthorityTest.java b/src/test/java/dev/starcore/starcore/module/diplomacy/CoreTransitAuthorityTest.java
+new file mode 100644
+index 00000000..7ea93134
+--- /dev/null
++++ b/src/test/java/dev/starcore/starcore/module/diplomacy/CoreTransitAuthorityTest.java
+@@ -0,0 +1,122 @@
++package dev.starcore.starcore.module.diplomacy;
++
++import static org.assertj.core.api.Assertions.*;
++import static org.mockito.Mockito.*;
++
++import dev.starcore.starcore.core.StarCoreContext;
++import dev.starcore.starcore.core.service.ServiceRegistry;
++import dev.starcore.starcore.foundation.territory.model.*;
++import dev.starcore.starcore.module.city.CityService;
++import dev.starcore.starcore.module.city.model.City;
++import dev.starcore.starcore.module.diplomacy.TransitPermitService.*;
++import dev.starcore.starcore.module.nation.NationService;
++import dev.starcore.starcore.module.nation.model.Nation;
++import dev.starcore.starcore.module.nation.model.NationId;
++import dev.starcore.starcore.module.war.WarService;
++import java.math.BigDecimal;
++import java.util.*;
++import org.bukkit.Server;
++import org.bukkit.World;
++import org.bukkit.plugin.java.JavaPlugin;
++import org.junit.jupiter.api.Test;
++
++class CoreTransitAuthorityTest {
++  final StarCoreContext context = mock(StarCoreContext.class);
++  final ServiceRegistry services = new ServiceRegistry();
++  final NationService nations = mock(NationService.class);
++  final CityService cities = mock(CityService.class);
++  final DiplomacyRelationService diplomacy = mock(DiplomacyRelationService.class);
++  final WarService wars = mock(WarService.class);
++  final JavaPlugin plugin = mock(JavaPlugin.class);
++  final Server server = mock(Server.class);
++  final World world = mock(World.class);
++  final City city = mock(City.class);
++  final UUID player = UUID.randomUUID(), cityId = UUID.randomUUID(), worldId = UUID.randomUUID();
++  final NationId grantor = NationId.random(),
++      origin = NationId.random(),
++      target = NationId.random();
++  final Terms terms =
++      new Terms(
++          "starworld:route",
++          "a".repeat(64),
++          grantor,
++          origin,
++          target,
++          Set.of(new Parcel(worldId, "world", cityId, 1, -2)),
++          new BigDecimal("0.05"),
++          Long.MAX_VALUE);
++  final CoreTransitAuthority authority;
++
++  CoreTransitAuthorityTest() {
++    when(context.serviceRegistry()).thenReturn(services);
++    when(context.plugin()).thenReturn(plugin);
++    when(plugin.getServer()).thenReturn(server);
++    when(server.getWorld(worldId)).thenReturn(world);
++    when(world.getName()).thenReturn("world");
++    services.register(CityService.class, cities);
++    services.register(WarService.class, wars);
++    for (NationId id : List.of(grantor, origin, target)) {
++      Nation nation = mock(Nation.class);
++      when(nation.id()).thenReturn(id);
++      when(nations.nationById(id)).thenReturn(Optional.of(nation));
++      if (id.equals(grantor)) when(nations.nationOf(player)).thenReturn(Optional.of(nation));
++    }
++    when(nations.isFounder(player, grantor)).thenReturn(true);
++    when(cities.getCity(cityId)).thenReturn(Optional.of(city));
++    when(city.nationId()).thenReturn(grantor);
++    when(city.hasClaim("world", 1, -2)).thenReturn(true);
++    when(nations.claimAt("world", 1, -2))
++        .thenReturn(
++            Optional.of(
++                new TerritoryClaim(grantor.toString(), new ChunkCoordinate("world", 1, -2))));
++    for (NationId peer : List.of(origin, target))
++      when(diplomacy.relationBetween(grantor, peer)).thenReturn(DiplomacyRelation.NEUTRAL);
++    authority = new CoreTransitAuthority(context, nations, diplomacy);
++  }
++
++  @Test
++  void bothClaimLayersAndBothForeignRelationsAreRequiredWithoutLoadingAnyChunk() {
++    assertThat(authority.limitation(terms)).isNull();
++    verify(world).getName();
++    verifyNoMoreInteractions(world);
++    when(city.hasClaim("world", 1, -2)).thenReturn(false);
++    assertThat(authority.limitation(terms)).contains("city");
++    when(city.hasClaim("world", 1, -2)).thenReturn(true);
++    when(nations.claimAt("world", 1, -2)).thenReturn(Optional.empty());
++    assertThat(authority.limitation(terms)).contains("national");
++    when(nations.claimAt("world", 1, -2))
++        .thenReturn(
++            Optional.of(
++                new TerritoryClaim(origin.toString(), new ChunkCoordinate("world", 1, -2))));
++    assertThat(authority.limitation(terms)).contains("national");
++  }
++
++  @Test
++  void warHostilityUnknownServicesAndLostCityOrNationAllBlockPermission() {
++    when(wars.atWar(grantor, origin)).thenReturn(true);
++    assertThat(authority.limitation(terms)).contains("war");
++    when(wars.atWar(grantor, origin)).thenReturn(false);
++    when(diplomacy.relationBetween(grantor, target)).thenReturn(DiplomacyRelation.HOSTILE);
++    assertThat(authority.limitation(terms)).contains("diplomacy");
++    when(diplomacy.relationBetween(grantor, target)).thenReturn(DiplomacyRelation.NEUTRAL);
++    when(city.nationId()).thenReturn(origin);
++    assertThat(authority.limitation(terms)).contains("ownership");
++    when(city.nationId()).thenReturn(grantor);
++    when(nations.nationById(target)).thenReturn(Optional.empty());
++    assertThat(authority.limitation(terms)).contains("no longer exists");
++    services.unregister(WarService.class);
++    assertThat(authority.limitation(terms)).contains("unavailable");
++  }
++
++  @Test
++  void founderClaimRequiresCurrentMembershipAndWorldIdentityMustStillMatch() {
++    assertThatCode(() -> authority.requireFounder(player, grantor)).doesNotThrowAnyException();
++    when(nations.nationOf(player)).thenReturn(Optional.empty());
++    assertThatThrownBy(() -> authority.requireFounder(player, grantor))
++        .hasMessageContaining("founder");
++    when(world.getName()).thenReturn("renamed");
++    assertThat(authority.limitation(terms)).contains("renamed");
++    when(server.getWorld(worldId)).thenReturn(null);
++    assertThat(authority.limitation(terms)).contains("unavailable");
++  }
++}
+diff --git a/src/test/java/dev/starcore/starcore/module/diplomacy/TransitPermitLedgerTest.java b/src/test/java/dev/starcore/starcore/module/diplomacy/TransitPermitLedgerTest.java
+new file mode 100644
+index 00000000..9ba44c9f
+--- /dev/null
++++ b/src/test/java/dev/starcore/starcore/module/diplomacy/TransitPermitLedgerTest.java
+@@ -0,0 +1,347 @@
++package dev.starcore.starcore.module.diplomacy;
++
++import static org.assertj.core.api.Assertions.*;
++
++import com.zaxxer.hikari.HikariConfig;
++import com.zaxxer.hikari.HikariDataSource;
++import dev.starcore.starcore.module.diplomacy.TransitPermitService.*;
++import dev.starcore.starcore.module.nation.model.NationId;
++import java.math.BigDecimal;
++import java.nio.file.Path;
++import java.time.*;
++import java.util.*;
++import java.util.concurrent.atomic.AtomicBoolean;
++import java.util.function.Consumer;
++import java.util.logging.Logger;
++import org.junit.jupiter.api.Test;
++import org.junit.jupiter.api.io.TempDir;
++
++class TransitPermitLedgerTest {
++  @TempDir Path temp;
++  final UUID actor = UUID.randomUUID(), world = UUID.randomUUID(), city = UUID.randomUUID();
++  final NationId grantor = NationId.random(),
++      origin = NationId.random(),
++      target = NationId.random();
++  final long now = Instant.parse("2026-11-25T00:00:00Z").toEpochMilli();
++  final Clock clock = Clock.fixed(Instant.ofEpochMilli(now), ZoneOffset.UTC);
++
++  final class Authority implements TransitPermitLedger.Authority {
++    boolean founder = true;
++    String reason;
++
++    @Override
++    public void requireFounder(UUID player, NationId nation) {
++      if (!founder || !player.equals(actor) || !nation.equals(grantor))
++        throw new IllegalArgumentException("founder");
++    }
++
++    @Override
++    public String limitation(Terms terms) {
++      return reason;
++    }
++  }
++
++  final class Memory {
++    Properties state = new Properties();
++    int writes;
++
++    void save(Properties value) {
++      state = new Properties();
++      state.putAll(value);
++      writes++;
++    }
++  }
++
++  Terms terms(String route) {
++    return new Terms(
++        route,
++        "a".repeat(64),
++        grantor,
++        origin,
++        target,
++        Set.of(new Parcel(world, "world", city, 10, -20)),
++        new BigDecimal("0.03"),
++        now + 60_000);
++  }
++
++  TransitPermitLedger ledger(
++      Authority authority, Consumer<Properties> save, Properties initial, Clock time) {
++    var ledger = new TransitPermitLedger(new Object(), () -> {}, authority, save, time);
++    ledger.restore(initial);
++    return ledger;
++  }
++
++  TransitPermitLedger ledger(Authority authority, Memory data) {
++    return ledger(authority, data::save, data.state, clock);
++  }
++
++  Approval approval(Terms terms, long revision) {
++    return new Approval(UUID.randomUUID(), actor, revision, terms);
++  }
++
++  @Test
++  void approvalRevocationAndOldRequestReplaySurviveRestartWithoutRestoringOldRights() {
++    var auth = new Authority();
++    var data = new Memory();
++    var service = ledger(auth, data);
++    Terms terms = terms("starworld:route");
++    Approval request = approval(terms, 0);
++    Receipt approved = service.approve(request);
++    assertThat(approved.permit().revision()).isEqualTo(1);
++    assertThat(service.evaluate(terms, 1).allowed()).isTrue();
++    var revoke = new Revocation(UUID.randomUUID(), actor, 1, terms.routeKey(), grantor);
++    Receipt revoked = service.revoke(revoke);
++    assertThat(revoked.permit().revision()).isEqualTo(2);
++    assertThat(service.approve(request)).isEqualTo(approved);
++    assertThat(service.revoke(revoke)).isEqualTo(revoked);
++    assertThat(data.writes).isEqualTo(2);
++    service = ledger(auth, data);
++    assertThat(service.receipt(request.requestId())).contains(approved);
++    assertThat(service.approve(request)).isEqualTo(approved);
++    assertThat(service.evaluate(terms, 1).allowed()).isFalse();
++    assertThat(service.evaluate(terms, 2).allowed()).isFalse();
++    assertThat(service.permit(terms.routeKey(), grantor)).contains(revoked.permit());
++    Receipt restored = service.approve(approval(terms, 2));
++    assertThat(restored.permit().revision()).isEqualTo(3);
++    assertThat(service.evaluate(terms, 2).allowed()).isFalse();
++    assertThat(service.evaluate(terms, 3).allowed()).isTrue();
++  }
++
++  @Test
++  void actorRevisionAndRequestConflictsAreRejectedWithoutReplacingTheOriginalReceipt() {
++    var auth = new Authority();
++    var data = new Memory();
++    var service = ledger(auth, data);
++    Terms terms = terms("route");
++    Approval request = approval(terms, 0);
++    Receipt receipt = service.approve(request);
++    assertThatThrownBy(() -> service.approve(approval(terms, 0))).hasMessageContaining("revision");
++    Terms changed =
++        new Terms(
++            terms.routeKey(),
++            terms.fingerprint(),
++            grantor,
++            origin,
++            target,
++            terms.parcels(),
++            new BigDecimal("0.04"),
++            terms.expiresAt());
++    assertThatThrownBy(() -> service.approve(new Approval(request.requestId(), actor, 0, changed)))
++        .hasMessageContaining("conflicts");
++    assertThatThrownBy(
++            () -> service.revoke(new Revocation(request.requestId(), actor, 1, "route", grantor)))
++        .hasMessageContaining("conflicts");
++    auth.founder = false;
++    assertThatThrownBy(() -> service.approve(request)).hasMessageContaining("founder");
++    assertThatThrownBy(
++            () -> service.revoke(new Revocation(UUID.randomUUID(), actor, 1, "route", grantor)))
++        .hasMessageContaining("founder");
++    assertThat(data.writes).isEqualTo(1);
++    assertThat(service.receipt(request.requestId())).contains(receipt);
++  }
++
++  @Test
++  void changedClaimsWarExpiryAndClockRollbackDenyEvenWithUnchangedPermitRevision() {
++    var auth = new Authority();
++    var data = new Memory();
++    var service = ledger(auth, data);
++    Terms terms = terms("route");
++    service.approve(approval(terms, 0));
++    for (String reason :
++        List.of("lost city claim", "lost nation claim", "war", "missing service")) {
++      auth.reason = reason;
++      assertThat(service.evaluate(terms, 1).allowed()).isFalse();
++      assertThatThrownBy(() -> service.approve(approval(terms, 1))).hasMessageContaining(reason);
++    }
++    auth.reason = null;
++    assertThat(service.evaluate(terms, 1).allowed()).isTrue();
++    assertThat(
++            ledger(
++                    auth,
++                    data::save,
++                    data.state,
++                    Clock.fixed(Instant.ofEpochMilli(terms.expiresAt()), ZoneOffset.UTC))
++                .evaluate(terms, 1)
++                .allowed())
++        .isFalse();
++    assertThat(
++            ledger(
++                    auth,
++                    data::save,
++                    data.state,
++                    Clock.fixed(Instant.ofEpochMilli(now - 1), ZoneOffset.UTC))
++                .evaluate(terms, 1)
++                .allowed())
++        .isFalse();
++    assertThat(data.writes).isEqualTo(1);
++  }
++
++  @Test
++  void activePermitBoundCountsOnlyLivePermissionsAndNeverPreventsRevocation() {
++    var auth = new Authority();
++    var data = new Memory();
++    var service = ledger(auth, data);
++    for (int i = 0; i < 64; i++) service.approve(approval(terms("route:" + i), 0));
++    assertThatThrownBy(() -> service.approve(approval(terms("route:64"), 0)))
++        .hasMessageContaining("limit");
++    service.revoke(new Revocation(UUID.randomUUID(), actor, 1, "route:0", grantor));
++    service.approve(approval(terms("route:64"), 0));
++    assertThat(service.evaluate(terms("route:64"), 1).allowed()).isTrue();
++  }
++
++  @Test
++  void failedSaveAndLostAcknowledgementDisableReadsAndWritesUntilDurableReload() {
++    for (boolean committed : List.of(false, true)) {
++      var auth = new Authority();
++      var data = new Memory();
++      Approval request = approval(terms("route"), 0);
++      var service =
++          ledger(
++              auth,
++              properties -> {
++                if (committed) data.save(properties);
++                throw new IllegalStateException("lost persistence acknowledgement");
++              },
++              data.state,
++              clock);
++      assertThatThrownBy(() -> service.approve(request)).hasMessageContaining("acknowledgement");
++      assertThatThrownBy(() -> service.evaluate(request.terms(), 1)).hasMessageContaining("reload");
++      assertThatThrownBy(service::properties).hasMessageContaining("Uncertain");
++      assertThatThrownBy(() -> service.approve(request)).hasMessageContaining("reload");
++      var restarted = ledger(auth, data);
++      Receipt result = restarted.approve(request);
++      assertThat(result.permit().revision()).isEqualTo(1);
++      assertThat(data.writes).isEqualTo(1);
++      assertThat(restarted.evaluate(request.terms(), 1).allowed()).isTrue();
++    }
++  }
++
++  @Test
++  void corruptReceiptsRevisionsAndUnknownFieldsCannotLoadAsPermission() {
++    var auth = new Authority();
++    var data = new Memory();
++    var service = ledger(auth, data);
++    service.approve(approval(terms("route"), 0));
++    service.revoke(new Revocation(UUID.randomUUID(), actor, 1, "route", grantor));
++    List<Consumer<Properties>> changes =
++        List.of(
++            p -> p.remove("transit.version"), p -> p.setProperty("transit.version", "2"),
++            p -> p.setProperty("transit.permit.0.revoked", "no"),
++                p -> p.setProperty("transit.permit.0.revision", "1"),
++            p -> p.setProperty("transit.receipts", "1"),
++                p -> p.setProperty("transit.permit.0.parcels", "129"),
++            p -> p.setProperty("transit.permit.0.toll", "0.031"),
++                p -> p.setProperty("transit.unrecognized", "unsafe"));
++    for (var change : changes) {
++      Properties invalid = new Properties();
++      invalid.putAll(data.state);
++      change.accept(invalid);
++      assertThatThrownBy(() -> ledger(auth, data::save, invalid, clock))
++          .isInstanceOf(RuntimeException.class);
++      assertThatThrownBy(() -> service.restore(invalid)).isInstanceOf(RuntimeException.class);
++      assertThatThrownBy(() -> service.evaluate(terms("route"), 2)).hasMessageContaining("reload");
++      service.restore(data.state);
++    }
++  }
++
++  @Test
++  void restoreRejectsConsistentlyAlteredExpiryAndConsecutiveRevocations() {
++    var auth = new Authority();
++    var data = new Memory();
++    var service = ledger(auth, data);
++    service.approve(approval(terms("route"), 0));
++    for (long expiry : List.of(now, now + Duration.ofDays(31).toMillis())) {
++      Properties invalid = new Properties();
++      invalid.putAll(data.state);
++      invalid.setProperty("transit.permit.0.expiry", "" + expiry);
++      invalid.setProperty("transit.receipt.0.result.expiry", "" + expiry);
++      assertThatThrownBy(() -> ledger(auth, data::save, invalid, clock))
++          .hasMessageContaining("expiry");
++    }
++    service.revoke(new Revocation(UUID.randomUUID(), actor, 1, "route", grantor));
++    service.approve(approval(terms("route"), 2));
++    Properties invalid = new Properties();
++    invalid.putAll(data.state);
++    invalid.setProperty("transit.permit.0.revoked", "true");
++    for (int i = 0; i < 3; i++) {
++      String prefix = "transit.receipt." + i + ".";
++      if ("3".equals(invalid.getProperty(prefix + "result.revision"))) {
++        invalid.setProperty(prefix + "action", "REVOKE");
++        invalid.setProperty(prefix + "result.revoked", "true");
++      }
++    }
++    assertThatThrownBy(() -> ledger(auth, data::save, invalid, clock))
++        .hasMessageContaining("revocation history");
++  }
++
++  @Test
++  void closedServiceOrWrongThreadNeverPersistsOrReadsAuthority() {
++    var auth = new Authority();
++    var data = new Memory();
++    AtomicBoolean main = new AtomicBoolean(false);
++    var service =
++        new TransitPermitLedger(
++            new Object(),
++            () -> {
++              if (!main.get()) throw new IllegalStateException("wrong thread");
++            },
++            auth,
++            data::save,
++            clock);
++    service.restore(data.state);
++    assertThatThrownBy(() -> service.approve(approval(terms("route"), 0)))
++        .hasMessageContaining("thread");
++    main.set(true);
++    service.close();
++    assertThatThrownBy(() -> service.approve(approval(terms("route"), 0)))
++        .hasMessageContaining("closed");
++    assertThat(data.writes).isZero();
++  }
++
++  @Test
++  void actualSqliteSnapshotsPreserveOtherDiplomacyFamiliesAndRejectStaleWriters() {
++    HikariConfig config = new HikariConfig();
++    config.setJdbcUrl("jdbc:sqlite:" + temp.resolve("transit.db"));
++    config.setMaximumPoolSize(1);
++    try (HikariDataSource database = new HikariDataSource(config)) {
++      var first = sql(database);
++      var second = sql(database);
++      var auth = new Authority();
++      var one = ledger(auth, first::save, first.load(), clock);
++      var two = ledger(auth, second::save, second.load(), clock);
++      Approval approved = approval(terms("route"), 0);
++      one.approve(approved);
++      assertThatThrownBy(() -> two.approve(approval(terms("other"), 0)))
++          .isInstanceOf(DiplomacyStateConflictException.class);
++      assertThatThrownBy(two::properties).hasMessageContaining("Uncertain");
++      Properties saved = first.load();
++      var merged = new MergingDiplomacyStateStorage(sql(database));
++      merged.load();
++      Properties relation = new Properties();
++      relation.setProperty("count", "0");
++      relation.setProperty("warCount", "0");
++      merged.save(relation);
++      var restarted = ledger(auth, merged::save, merged.load(), clock);
++      assertThat(restarted.approve(approved).permit().revision()).isEqualTo(1);
++      restarted.revoke(new Revocation(UUID.randomUUID(), actor, 1, "route", grantor));
++      Properties finalState = merged.load();
++      assertThat(finalState).containsEntry("count", "0").containsEntry("warCount", "0");
++      var last =
++          ledger(
++              auth,
++              ignored -> {
++                throw new AssertionError("read-only restart");
++              },
++              finalState,
++              clock);
++      assertThat(last.evaluate(terms("route"), 1).allowed()).isFalse();
++      assertThat(last.permit("route", grantor).orElseThrow().revision()).isEqualTo(2);
++      assertThat(saved.getProperty("transit.receipts")).isEqualTo("1");
++    }
++  }
++
++  private SqlDiplomacyStateStorage sql(HikariDataSource database) {
++    return new SqlDiplomacyStateStorage(
++        () -> Optional.of(database), Properties::new, Logger.getLogger("transit-test"));
++  }
++}
+-- 
+2.43.0
+

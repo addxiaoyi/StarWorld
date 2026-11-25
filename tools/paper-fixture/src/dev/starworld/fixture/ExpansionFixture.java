@@ -63,12 +63,20 @@ final class ExpansionFixture {
             case "exp-corridor-build","exp-corridor-gap","exp-corridor-repair","exp-corridor-shallow","exp-corridor-water-repair"->corridorWorld(p,action);
             case "exp-corridor-node"->corridorNode(p,Integer.parseInt(args[2]),args[3]);
             case "exp-corridor-unclaim","exp-corridor-reclaim"->corridorClaim(p,action.equals("exp-corridor-reclaim"));
+            case "exp-transit-setup"->{int slot=Integer.parseInt(args[2]);if(slot<0||slot>2)throw new IllegalArgumentException("Transit slot 0..2 required");corridorSetup(p,slot,"exp-transit-setup");}
+            case "exp-transit-build","exp-transit-gap","exp-transit-repair"->transitWorld(p,action);
+            case "exp-transit-node"->corridorNode(p,Integer.parseInt(args[2]),"land","exp-transit-node",2);
+            case "exp-transit-unclaim","exp-transit-reclaim"->transitClaim(p,action.equals("exp-transit-reclaim"));
+            case "exp-transit-permit"->transitPermit(p,UUID.fromString(args[2]));
             default->throw new IllegalArgumentException("Unknown expansion fixture action");
         }return true;
     }
     private static int slot(String[] args){if(args.length!=3)throw new IllegalArgumentException("A slot 0 or 1 is required");int n=Integer.parseInt(args[2]);if(n<0||n>1)throw new IllegalArgumentException("Slot must be 0 or 1");return n;}
     private static int base(int slot){return 20+slot*32;}
     private void corridorSetup(Player p,int slot)throws Exception{
+        corridorSetup(p,slot,"exp-corridor-setup");
+    }
+    private void corridorSetup(Player p,int slot,String action)throws Exception{
         Object nations=coreService("module.nation.NationService"),cities=coreService("module.city.CityService");
         Object nation=unwrap(invoke(nations,"nationOf",new Class<?>[]{UUID.class},p.getUniqueId()));
         if(nation==null)nation=invoke(nations,"createNation",new Class<?>[]{UUID.class,String.class,String.class},p.getUniqueId(),p.getName(),"SWPath"+p.getName());
@@ -76,7 +84,7 @@ final class ExpansionFixture {
         if(city==null){Object made=invoke(cities,"createCity",new Class<?>[]{nationId.getClass(),String.class,UUID.class,Location.class},nationId,"Path"+p.getName(),p.getUniqueId(),new Location(p.getWorld(),start*16+8,81,8));if(!Boolean.TRUE.equals(call(made,"success")))throw new IllegalStateException(String.valueOf(call(made,"message")));city=call(made,"city");}
         UUID cityId=(UUID)call(city,"id");for(int chunk=start;chunk<start+2;chunk++){claim(nations,p,nationId,chunk);invoke(cities,"addClaim",new Class<?>[]{UUID.class,String.class,int.class,int.class},cityId,p.getWorld().getName(),chunk,0);platform(p.getWorld(),chunk*16+8,false);}
         if(!p.teleport(new Location(p.getWorld(),start*16+8.5,81,5.5)))throw new IllegalStateException("Corridor setup teleport failed");
-        emit("exp-corridor-setup",p,Map.of("cityId",cityId,"nationId",call(nationId,"value"),"chunks",List.of(start,start+1),"forceLoadedChunks",List.of()));
+        emit(action,p,Map.of("cityId",cityId,"nationId",call(nationId,"value"),"chunks",List.of(start,start+1),"forceLoadedChunks",List.of()));
     }
     /** All terrain is a fixed disposable fixture; actual route verification runs in the product. */
     private void corridorWorld(Player p,String action){
@@ -98,16 +106,34 @@ final class ExpansionFixture {
         emit(action,p,Map.of("fixedBounds",List.of(327,78,4,361,84,14),"source","explicit-test-terrain","forceLoadedChunks",List.of()));
     }
     private void corridorNode(Player p,int slot,String mode){
-        if(slot<0||slot>1||!Set.of("land","sea").contains(mode))throw new IllegalArgumentException("corridor slot/mode");int x=(20+slot*2)*16+8,z=mode.equals("land")?8:12;Material material=mode.equals("land")?Material.LODESTONE:Material.BARREL;
+        corridorNode(p,slot,mode,"exp-corridor-node",1);
+    }
+    private void corridorNode(Player p,int slot,String mode,String action,int maximumSlot){
+        if(slot<0||slot>maximumSlot||!Set.of("land","sea").contains(mode))throw new IllegalArgumentException("corridor slot/mode");int x=(20+slot*2)*16+8,z=mode.equals("land")?8:12;Material material=mode.equals("land")?Material.LODESTONE:Material.BARREL;
         p.getWorld().getBlockAt(x,80,z).setType(material,false);Location start=new Location(p.getWorld(),x+.5,81,z-2.5);start.setDirection(new Vector(x+.5,80.99,z+.5).subtract(start.toVector().add(new Vector(0,p.getEyeHeight(),0))));
         if(!p.teleport(start))throw new IllegalStateException("Corridor node teleport failed");Bukkit.getScheduler().runTaskLater(owner,()->{
-            try{if(p.getTargetBlockExact(6)==null||p.getTargetBlockExact(6).getType()!=material)throw new IllegalStateException("Corridor node raycast missed");p.performCommand("sw node register "+(mode.equals("land")?"road":"port"));emit("exp-corridor-node",p,Map.of("mode",mode,"x",x,"z",z));}catch(Exception failure){failed(failure);}
+            try{if(p.getTargetBlockExact(6)==null||p.getTargetBlockExact(6).getType()!=material)throw new IllegalStateException("Corridor node raycast missed");p.performCommand("sw node register "+(mode.equals("land")?"road":"port"));emit(action,p,Map.of("mode",mode,"x",x,"z",z));}catch(Exception failure){failed(failure);}
         },3);
     }
     private void corridorClaim(Player p,boolean restore)throws Exception{
         Object nations=coreService("module.nation.NationService"),nationId=call(nation(p),"id");
         if(restore)claim(nations,p,nationId,21);else invoke(nations,"unclaimCurrentChunk",new Class<?>[]{UUID.class,String.class,int.class,int.class},p.getUniqueId(),p.getWorld().getName(),21,0);
         Object actual=unwrap(invoke(nations,"claimAt",new Class<?>[]{String.class,int.class,int.class},p.getWorld().getName(),21,0));if((actual!=null)!=restore)throw new IllegalStateException("Corridor claim did not change");emit(restore?"exp-corridor-reclaim":"exp-corridor-unclaim",p,Map.of("chunk",21,"nationalClaimPresent",actual!=null,"endpointClaimsPreserved",true));
+    }
+    private void transitWorld(Player p,String action){
+        World world=p.getWorld();for(int chunk=20;chunk<=24;chunk++)if(!world.isChunkLoaded(chunk,0))throw new IllegalStateException("Transit fixture requires already loaded chunks");
+        if(action.equals("exp-transit-build")){for(int x=327;x<=393;x++)for(int z=4;z<=10;z++){world.getBlockAt(x,79,z).setType(Material.STONE,false);world.getBlockAt(x,80,z).setType(Material.STONE,false);for(int y=81;y<=84;y++)world.getBlockAt(x,y,z).setType(Material.AIR,false);}}
+        else world.getBlockAt(376,80,8).setType(action.equals("exp-transit-gap")?Material.AIR:Material.STONE,false);
+        emit(action,p,Map.of("fixedBounds",List.of(327,79,4,393,84,10),"source","explicit-test-terrain","forceLoadedChunks",List.of()));
+    }
+    private void transitClaim(Player p,boolean restore)throws Exception{
+        Object nations=coreService("module.nation.NationService"),id=call(nation(p),"id");if(restore)claim(nations,p,id,23);else invoke(nations,"unclaimCurrentChunk",new Class<?>[]{UUID.class,String.class,int.class,int.class},p.getUniqueId(),p.getWorld().getName(),23,0);
+        Object actual=unwrap(invoke(nations,"claimAt",new Class<?>[]{String.class,int.class,int.class},p.getWorld().getName(),23,0));if((actual!=null)!=restore)throw new IllegalStateException("Transit claim did not change");emit(restore?"exp-transit-reclaim":"exp-transit-unclaim",p,Map.of("chunk",23,"nationalClaimPresent",actual!=null,"nodeClaimsPreserved",true));
+    }
+    private void transitPermit(Player p,UUID routeId)throws Exception{
+        Object runtime=world(),expansion=unwrap(call(runtime,"expansion"));async(runtime,()->unwrap(invoke(call(expansion,"logistics"),"route",new Class<?>[]{UUID.class},routeId))).whenComplete((route,error)->Bukkit.getScheduler().runTask(owner,()->{try{
+            if(error!=null)throw new IllegalStateException(error);Class<?> contract=type("StarCore",CORE+"module.diplomacy.TransitPermitService");Object service=coreService("module.diplomacy.TransitPermitService"),nationId=call(nation(p),"id"),permit=unwrap(contract.getMethod("permit",String.class,nationId.getClass()).invoke(service,call(route,"transitKey"),nationId));Map<String,Object> result=new LinkedHashMap<>();result.put("route",route);result.put("permit",permit);if(permit!=null){Object terms=call(permit,"terms");result.put("evaluation",contract.getMethod("evaluate",terms.getClass(),long.class).invoke(service,terms,call(permit,"revision")));}emit("exp-transit-permit",p,result);
+        }catch(Exception failure){failed(failure);}}));
     }
     private void setup(Player p,int slot)throws Exception {
         Object nations=coreService("module.nation.NationService"),cities=coreService("module.city.CityService");
@@ -337,8 +363,8 @@ final class ExpansionFixture {
             String tx=(String)call(refund,"transactionId");Class<?> nationId=call(nation(p),"id").getClass();Object payer=nationId.getMethod("of",UUID.class).invoke(null,call(purchase,"buyerNation")),receiver=nationId.getMethod("of",UUID.class).invoke(null,call(purchase,"sellerNation")),treasury=coreService("module.treasury.TreasuryService");
             Object adapter=type("StarWorld","dev.starworld.integration.StarCoreTreasuryRefunds").getConstructor(JavaPlugin.class).newInstance(Bukkit.getPluginManager().getPlugin("StarWorld"));
             Map<String,Object> result=new LinkedHashMap<>();result.put("refund",refund);result.put("purchase",purchase);result.put("receipt",unwrap(invoke(adapter,"receipt",new Class<?>[]{String.class},tx)));result.put("entryPoint","NationSettlementService.settlementRefundReceipt");result.put("payerBefore",invoke(treasury,"balance",new Class<?>[]{nationId},payer));result.put("receiverBefore",invoke(treasury,"balance",new Class<?>[]{nationId},receiver));
-            if(replay){Object original=call(purchase,"request");Object request=type("StarWorld","dev.starworld.integration.TreasuryRefundPort$Request").getConstructor(String.class,original.getClass()).newInstance(tx,original);result.put("replay",invoke(adapter,"refund",new Class<?>[]{request.getClass()},request));}
-            result.put("payerAfter",invoke(treasury,"balance",new Class<?>[]{nationId},payer));result.put("receiverAfter",invoke(treasury,"balance",new Class<?>[]{nationId},receiver));emit(replay?"exp-refund-replay":"exp-refund-receipt",p,result);
+            result.put("balancesBefore",purchaseBalances(purchase));if(replay){Object original=call(purchase,"request");Object request=type("StarWorld","dev.starworld.integration.TreasuryRefundPort$Request").getConstructor(String.class,original.getClass()).newInstance(tx,original);result.put("replay",invoke(adapter,"refund",new Class<?>[]{request.getClass()},request));}
+            result.put("payerAfter",invoke(treasury,"balance",new Class<?>[]{nationId},payer));result.put("receiverAfter",invoke(treasury,"balance",new Class<?>[]{nationId},receiver));result.put("balancesAfter",purchaseBalances(purchase));emit(replay?"exp-refund-replay":"exp-refund-receipt",p,result);
         }catch(Exception failure){failed(failure);}}));
     }
     private void policy(Player p,String key)throws Exception {
@@ -349,10 +375,15 @@ final class ExpansionFixture {
     private void marketReceipt(Player p,UUID purchaseId,boolean replay)throws Exception {
         Object runtime=world(),expansion=unwrap(call(runtime,"expansion"));async(runtime,()->unwrap(invoke(call(expansion,"market"),"purchase",new Class<?>[]{UUID.class},purchaseId))).whenComplete((purchase,error)->Bukkit.getScheduler().runTask(owner,()->{try{
             if(error!=null||purchase==null)throw new IllegalStateException("Missing purchase",error);String tx=(String)call(purchase,"transactionId");Object id=call(nation(p),"id"),treasury=coreService("module.treasury.TreasuryService");Class<?> nationId=id.getClass();Object payer=nationId.getMethod("of",UUID.class).invoke(null,call(purchase,"buyerNation")),receiver=nationId.getMethod("of",UUID.class).invoke(null,call(purchase,"sellerNation"));
-            Object adapter=type("StarWorld","dev.starworld.integration.StarCoreTreasuryTransfers").getConstructor(JavaPlugin.class).newInstance(Bukkit.getPluginManager().getPlugin("StarWorld"));Object receipt=unwrap(invoke(adapter,"receipt",new Class<?>[]{String.class},tx));Map<String,Object> result=new LinkedHashMap<>();result.put("transactionId",tx);result.put("purchase",purchase);result.put("receipt",receipt);result.put("entryPoint","NationTransferService.transferReceipt");result.put("payerBefore",invoke(treasury,"balance",new Class<?>[]{nationId},payer));result.put("receiverBefore",invoke(treasury,"balance",new Class<?>[]{nationId},receiver));
-            if(replay){Object request=call(purchase,"request");result.put("replay",invoke(adapter,"transfer",new Class<?>[]{request.getClass()},request));}
-            result.put("payerAfter",invoke(treasury,"balance",new Class<?>[]{nationId},payer));result.put("receiverAfter",invoke(treasury,"balance",new Class<?>[]{nationId},receiver));emit(replay?"exp-market-replay":"exp-market-receipt",p,result);
+            Object adapter=type("StarWorld","dev.starworld.integration.StarCoreTreasuryTransfers").getConstructor(JavaPlugin.class).newInstance(Bukkit.getPluginManager().getPlugin("StarWorld"));Object payment=call(purchase,"request");boolean multi=Integer.parseInt(call(runtime,"version").toString().split("\\.")[1])>=10&&((Map<?,?>)call(payment,"credits")).size()>1;Object receipt=unwrap(invoke(adapter,"receipt",multi?new Class<?>[]{payment.getClass()}:new Class<?>[]{String.class},multi?payment:tx));Map<String,Object> result=new LinkedHashMap<>();result.put("transactionId",tx);result.put("purchase",purchase);result.put("receipt",receipt);result.put("entryPoint",multi?"NationSettlementService.settlementReceipt":"NationTransferService.transferReceipt");result.put("payerBefore",invoke(treasury,"balance",new Class<?>[]{nationId},payer));result.put("receiverBefore",invoke(treasury,"balance",new Class<?>[]{nationId},receiver));
+            result.put("balancesBefore",purchaseBalances(purchase));if(replay){Object request=call(purchase,"request");result.put("replay",invoke(adapter,"transfer",new Class<?>[]{request.getClass()},request));}
+            result.put("payerAfter",invoke(treasury,"balance",new Class<?>[]{nationId},payer));result.put("receiverAfter",invoke(treasury,"balance",new Class<?>[]{nationId},receiver));result.put("balancesAfter",purchaseBalances(purchase));emit(replay?"exp-market-replay":"exp-market-receipt",p,result);
         }catch(Exception failure){failed(failure);}}));
+    }
+    private Map<String,Object> purchaseBalances(Object purchase)throws Exception{
+        Set<UUID> participants=new HashSet<>();participants.add((UUID)call(purchase,"buyerNation"));participants.add((UUID)call(purchase,"sellerNation"));
+        if(Integer.parseInt(call(world(),"version").toString().split("\\.")[1])>=10){Map<?,?> credits=(Map<?,?>)call(call(purchase,"request"),"credits");for(Object nation:credits.keySet())participants.add((UUID)nation);}
+        Class<?> id=type("StarCore",CORE+"module.nation.model.NationId");Object treasury=coreService("module.treasury.TreasuryService");Map<String,Object> result=new TreeMap<>();for(UUID nation:participants)result.put(nation.toString(),invoke(treasury,"balance",new Class<?>[]{id},id.getMethod("of",UUID.class).invoke(null,nation)));return result;
     }
     private void rerouteProof(Player p,UUID request)throws Exception{Object runtime=world(),expansion=unwrap(call(runtime,"expansion"));async(runtime,()->unwrap(invoke(call(expansion,"logistics"),"reroute",new Class<?>[]{UUID.class},request))).whenComplete((value,error)->Bukkit.getScheduler().runTask(owner,()->{if(error!=null)failed(error);else emit("exp-reroute-proof",p,value);}));}
     private void snapshot(Player p)throws Exception {

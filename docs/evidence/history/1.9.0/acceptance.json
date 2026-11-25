@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "version": "1.9.0",
+  "status": "feature-acceptance-passed",
+  "release_status": "full-release-suite-not-run",
+  "recorded_at": "2026-11-25T12:55:25.701827+00:00",
+  "artifact_sha256": "1381e9f938bfe0eb97f0377dde920c47e885d7365df03d7e183d2559994eb527",
+  "sources_sha256": "e95f7116712bdcd80d77d69cc176c921b1b3551b070effeb3429d77f88b6296b",
+  "unit_evidence_sha256": "29589455e164471996517b697e899d46322e0161520ef9b6ab74dfc27b30fbc9",
+  "tests": {
+    "java": 548,
+    "java_suites": 62,
+    "python": 77,
+    "node": 25
+  },
+  "runtime_stages": 34,
+  "runs": [
+    {
+      "suite": "market-tax",
+      "stages": 15,
+      "runtime": "runtime/tax19/tax-acceptance/2026-11-25T12-48-40-351Z",
+      "evidence_sha256": "5d361a4a06d91ed23cb088a387db71532541927a522168b1205c5f36ad7d3e72",
+      "runner_sha256": "9dc35880216b97cc98515e16b4f56ec6fe04e89d556e3b4e8f9b39bb23e63c31",
+      "finished_at": "2026-11-25T12:51:27.867Z",
+      "normal_server_stops": 3,
+      "logs": {
+        "client-run-1-a.log": "1f843567c3e1ad8a31e833c79b35e2b7a43194634220fe5115e53aa37a8c0151",
+        "client-run-1-b.log": "1c33cca55a27a785da2bdf59eb3bdaf474ca920ba32ae9e6f59f8ffae81a0391",
+        "client-run-2-a.log": "546d7ad69550958635d38e1e713c6c76495016383c4087311f5b9e2b8fedfb72",
+        "client-run-2-b.log": "7b471700789496fca0b35fa115a6510742f3f792105abe2158c2bf39814595e2",
+        "client-run-3-a.log": "cbe54114183f1c43c4c7b15d5b5707c87d0872ee377183478e98e413ff5caa89",
+        "client-run-3-b.log": "13b5b7e7582f0448152dd9c235abd6da39b33ff59f000e62eb60ffe0ab463541",
+        "paper-run-1.log": "f408d7c0044a69303be26551b535d4dcecd105521aebfc9ef435dd091507b70b",
+        "paper-run-2.log": "b9116232a160ed7d5bdd743fb02c3df05ca19ae0b80d9227afd745e00570fa5e",
+        "paper-run-3.log": "7d5c6a6f1d4ef140a3788bd79977c6d8c925c7138546a288055a3e26ac7f6b2a"
+      }
+    },
+    {
+      "suite": "market-refund",
+      "stages": 13,
+      "runtime": "runtime/refund19/refund-acceptance/2026-11-25T12-52-52-899Z",
+      "evidence_sha256": "1d9a8969551ac21a24bb00bb357df0445bd306a5edec5b5d2ebe56f363ea1025",
+      "runner_sha256": "4387f13f7745fc4af3c43cfdc1633e88820717870b74d726b3f00dc613f0c023",
+      "finished_at": "2026-11-25T12:54:19.538Z",
+      "normal_server_stops": 3,
+      "logs": {
+        "client-run-1-a.log": "7d7ae423346feabcad7c9f1e530e55e143bc8ec5a358a7dc93a3019e6d7a899b",
+        "client-run-1-b.log": "902aedb71dade4cbb51d0852abc400b22bc714d5439f0ae261972d6046acc7c8",
+        "client-run-2-a.log": "b008310fd4d6e48b496b65aedbf2929b3b9c9d091ec6f9d0a2d56c42c8a1c95a",
+        "client-run-2-b.log": "ed5aae86fc58c53beae74288c195db4a35c6b6aa89e9c377ff523b2ccbccd57d",
+        "client-run-3-a.log": "9d360bca42040f3ccf6b181599cb4b660ff52d027cbdbbf6e97913f53671df58",
+        "client-run-3-b.log": "a9f30fa92cf74bc2adc2bcd9e06fd3d46e4213a34197a29f9157da53fe9e9b64",
+        "paper-run-1.log": "7484c4797e8e58b14b93ddfc00f3f43667a6c2f6fc1ee84c77d49a0da12db0a3",
+        "paper-run-2.log": "484fa07778db51f0df2d9955089c7087b38c33d4e60211444f2b6c2d6522f0a6",
+        "paper-run-3.log": "57941e2e0d4baadb18ea14831e078be59f6436cdea52447a2ebedb036de59dda"
+      }
+    },
+    {
+      "suite": "market-upgrade",
+      "stages": 6,
+      "runtime": "runtime/market-upgrade19/market-upgrade-acceptance/2026-11-25T12-52-16-438Z",
+      "evidence_sha256": "b8fc0b48057cf928f64bc654e67e80153cd91b6e25930b57739621996aab5b18",
+      "runner_sha256": "e6c29b2163b8db5094f74063d6d498bbeae4a26da136e92e1e61c50018df25ff",
+      "finished_at": "2026-11-25T12:52:52.545Z",
+      "normal_server_stops": 2,
+      "logs": {
+        "client-run-1-a.log": "223fc10b288ed489736bc3b8e91b228e64ed85eb19683349dbfa52f80d9ca0c5",
+        "client-run-1-b.log": "675561123ef5eada977927cfae3dbde14cbe44503940c568c27a45a274cb7a85",
+        "client-run-2-a.log": "c8c14d501b8a8c11dd7f40f8d0f77cc1a9b0fef8f0ce79f54933823a2dd9bf57",
+        "client-run-2-b.log": "c6b29c306cd98684900170dc48bcd6299d257ab6c5238c48f4db2a337d3afadb",
+        "paper-run-1.log": "ab08c3df01536d1a3b0fe3209a5c9e6d53554bc89fd6dab70c9abff3885f768e",
+        "paper-run-2.log": "4a29dc91e9b342631cf9b3afb2b83e4570ea6639c7b576093c63a5d27ac593d9"
+      }
+    }
+  ],
+  "scope": "Frozen public export tariff quotes, explicit positive-tax consent, exact payment/reversal, goods-only statistics, zero-tax refund regression and real 1.4 migration. Further roadmap work continues.",
+  "historical_release": "runtime/releases/1.4.0",
+  "tool_logs": {
+    "tax19-verify.log": "4ca909467b95c404e789bfd38efb69c1b778c619cbad1148806b5b7261bb297d",
+    "tax19-python.log": "c20d8a23aba4d182b518520ee1b04d1bb677499377bf3bae64551ab58809f8ac",
+    "tax19-node.log": "9faca8a5a012231b0d2f5d6ee33732023397fb839a4c58862de04c80f4ce3691"
+  }
+}

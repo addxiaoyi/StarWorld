@@ -1,6 +1,8 @@
 package dev.starworld.logistics;
 
 import dev.starworld.domain.WorldState.Site;
+import dev.starworld.integration.TransitPermitCodec;
+import dev.starworld.integration.TransitPermitPort.Permit;
 import dev.starworld.logistics.LogisticsState.*;
 import dev.starworld.persistence.WorldStore;
 import java.sql.*;
@@ -13,10 +15,15 @@ import java.util.*;
 public final class LogisticsService {
     private final WorldStore store;
     private final LogisticsDefinitions definitions;
+    private final String transitNamespace;
+    private final TransitProposalService transitProposals;
 
     public LogisticsService(WorldStore store, LogisticsDefinitions definitions) throws SQLException {
         this.store = Objects.requireNonNull(store); this.definitions = Objects.requireNonNull(definitions);
-        store.tx(s -> {
+        transitNamespace=store.tx(s -> {
+            s.execute("CREATE TABLE IF NOT EXISTS logistics_transit_schema(id INTEGER PRIMARY KEY CHECK(id=1),version INTEGER NOT NULL,namespace TEXT NOT NULL)");
+            s.execute("INSERT OR IGNORE INTO logistics_transit_schema(id,version,namespace) VALUES(1,1,?)",UUID.randomUUID());
+            if(s.query("SELECT version FROM logistics_transit_schema WHERE id=1",r->r.getInt(1)).getFirst()!=1)throw new SQLException("Unsupported transit schema");
             s.execute("CREATE TABLE IF NOT EXISTS logistics_node(id TEXT PRIMARY KEY,city TEXT NOT NULL REFERENCES city_state(id),nation TEXT NOT NULL,type TEXT NOT NULL,world TEXT NOT NULL,world_name TEXT NOT NULL,x INTEGER NOT NULL,y INTEGER NOT NULL,z INTEGER NOT NULL,terrain TEXT NOT NULL,level INTEGER NOT NULL,enabled INTEGER NOT NULL,last_maintenance INTEGER NOT NULL DEFAULT -1,maintained INTEGER NOT NULL DEFAULT 0,UNIQUE(world,x,y,z))");
             s.execute("CREATE INDEX IF NOT EXISTS logistics_node_city ON logistics_node(city)");
             s.execute("CREATE TABLE IF NOT EXISTS logistics_route(id TEXT PRIMARY KEY,origin_city TEXT NOT NULL REFERENCES city_state(id),target_city TEXT NOT NULL REFERENCES city_state(id),mode TEXT NOT NULL,enabled INTEGER NOT NULL)");
@@ -34,6 +41,7 @@ public final class LogisticsService {
             s.execute("CREATE TABLE IF NOT EXISTS logistics_cargo(order_id TEXT NOT NULL REFERENCES logistics_order(id),side TEXT NOT NULL,item TEXT NOT NULL,amount INTEGER NOT NULL CHECK(amount>0),PRIMARY KEY(order_id,side,item))");
             s.execute("CREATE TABLE IF NOT EXISTS logistics_route_usage(route TEXT NOT NULL REFERENCES logistics_route(id),period INTEGER NOT NULL,used INTEGER NOT NULL,PRIMARY KEY(route,period))");
             s.execute("CREATE TABLE IF NOT EXISTS logistics_node_usage(node TEXT NOT NULL REFERENCES logistics_node(id),period INTEGER NOT NULL,used INTEGER NOT NULL,PRIMARY KEY(node,period))");
+            s.execute("CREATE TABLE IF NOT EXISTS logistics_transit_maintenance(node TEXT NOT NULL REFERENCES logistics_node(id),sponsor TEXT NOT NULL REFERENCES city_state(id),period INTEGER NOT NULL,maintained INTEGER NOT NULL CHECK(maintained IN (0,1)),PRIMARY KEY(node,sponsor,period))");
             s.execute("CREATE TABLE IF NOT EXISTS logistics_receipt(sequence INTEGER PRIMARY KEY AUTOINCREMENT,order_id TEXT NOT NULL UNIQUE REFERENCES logistics_order(id),period INTEGER NOT NULL)");
             s.execute("CREATE TABLE IF NOT EXISTS logistics_demand(city TEXT NOT NULL REFERENCES city_state(id),item TEXT NOT NULL,desired INTEGER NOT NULL CHECK(desired>=0),PRIMARY KEY(city,item))");
             s.execute("CREATE TABLE IF NOT EXISTS logistics_clock(id INTEGER PRIMARY KEY CHECK(id=1),period INTEGER NOT NULL)");
@@ -41,12 +49,15 @@ public final class LogisticsService {
             s.execute("CREATE UNIQUE INDEX IF NOT EXISTS logistics_reroute_pending ON logistics_reroute(order_id) WHERE state='PENDING'");
             s.execute("CREATE INDEX IF NOT EXISTS logistics_reroute_expiry ON logistics_reroute(state,expires_period)");
             s.execute("CREATE TABLE IF NOT EXISTS logistics_paid_shipment(order_id TEXT PRIMARY KEY REFERENCES logistics_order(id),settlement_key TEXT NOT NULL UNIQUE,initial_route TEXT NOT NULL REFERENCES logistics_route(id))");
+            s.execute("CREATE TABLE IF NOT EXISTS logistics_paid_transit(order_id TEXT PRIMARY KEY REFERENCES logistics_paid_shipment(order_id),terms TEXT NOT NULL)");
             s.execute("INSERT OR IGNORE INTO logistics_clock(id,period) VALUES(1,-1)");
-            return null;
+            return s.query("SELECT namespace FROM logistics_transit_schema WHERE id=1",r->r.getString(1)).getFirst();
         });
+        transitProposals=new TransitProposalService(store,this);
     }
 
     public LogisticsDefinitions definitions() { return definitions; }
+    public TransitProposalService transitProposals(){return transitProposals;}
 
     public Optional<Node> node(UUID id) throws SQLException { return store.query("SELECT * FROM logistics_node WHERE id=?", this::readNode, id).stream().findFirst(); }
     public List<Node> nodes(int limit, int offset) throws SQLException { page(limit, offset); return store.query("SELECT * FROM logistics_node ORDER BY id LIMIT ? OFFSET ?", this::readNode, limit, offset); }
@@ -68,22 +79,22 @@ public final class LogisticsService {
                 origin, target, mode.name(), definitions.maxRoutesPerCity() + 1);
         if (declared.size() > definitions.maxRoutesPerCity()) throw new IllegalArgumentException("城市商路数量超过当前规划上限");
         if (declared.isEmpty()) return List.of();
-        // One bounded read per relation, not one node query per route/waypoint. Node registration
-        // already caps each endpoint; corrupt/legacy excess is rejected rather than scanned forever.
-        List<Node> declaredNodes = store.query("SELECT * FROM logistics_node WHERE city IN (?,?) ORDER BY id LIMIT ?",this::readNode,
-                origin,target,Math.addExact(Math.multiplyExact(definitions.maxNodesPerCity(),2),1));
-        if(declaredNodes.size()>definitions.maxNodesPerCity()*2)throw new IllegalArgumentException("端点交通节点数量超过当前规划上限");
+        // Only nodes linked to the bounded declared routes, including explicitly named third nations.
+        int nodeBound=Math.multiplyExact(definitions.maxRoutesPerCity(),64);
+        List<Node> declaredNodes = store.query("SELECT DISTINCT n.* FROM logistics_node n JOIN logistics_route_node rn ON rn.node=n.id JOIN logistics_route r ON r.id=rn.route WHERE r.origin_city=? AND r.target_city=? AND r.mode=? ORDER BY n.id LIMIT ?",this::readNode,
+                origin,target,mode.name(),Math.addExact(nodeBound,1));
+        if(declaredNodes.size()>nodeBound)throw new IllegalArgumentException("规划节点数量超过上限");
         Map<UUID,Node> nodesById=new HashMap<>();declaredNodes.forEach(n->nodesById.put(n.id(),n));
         List<Link> links=store.query("SELECT rn.route,rn.position,rn.node FROM logistics_route_node rn JOIN logistics_route r ON r.id=rn.route WHERE r.origin_city=? AND r.target_city=? AND r.mode=? ORDER BY rn.route,rn.position LIMIT ?",
                 row->new Link(uuid(row,"route"),row.getInt("position"),uuid(row,"node")),origin,target,mode.name(),Math.addExact(Math.multiplyExact(definitions.maxRoutesPerCity(),64),1));
         Map<UUID,List<UUID>> paths=new HashMap<>();
         for(Link link:links){List<UUID> path=paths.computeIfAbsent(link.route(),ignored->new ArrayList<>());if(link.position()!=path.size()||path.size()>=64)throw new IllegalArgumentException("声明路线节点序列超过持久化安全上限或不连续");path.add(link.node());}
         List<RoutePlan> unsorted=new ArrayList<>();
-        for(Header header:declared){List<UUID> path=paths.getOrDefault(header.id(),List.of());List<Node> nodes=new ArrayList<>();for(UUID id:path){Node node=nodesById.get(id);if(node==null)throw new IllegalArgumentException("声明路线引用了端点城市之外或缺失的节点");nodes.add(node);}
+        for(Header header:declared){List<UUID> path=paths.getOrDefault(header.id(),List.of());List<Node> nodes=new ArrayList<>();for(UUID id:path){Node node=nodesById.get(id);if(node==null)throw new IllegalArgumentException("声明路线引用了缺失节点");nodes.add(node);}
             Metrics metrics=metrics(nodes,mode,false);
             if(nodes.size()>definitions.maxWaypoints()||metrics.periods()>definitions.maxTravelPeriods())continue;
             Map<UUID,Map<String,Long>> upkeep=new HashMap<>(),journey=new HashMap<>();
-            for(Node node:nodes){Map<String,Long> cityCost=upkeep.computeIfAbsent(node.cityId(),ignored->new TreeMap<>());scale(definitions.nodes().get(node.type()).maintenance(),node.level()).forEach((item,amount)->cityCost.merge(item,amount,Math::addExact));}
+            for(Node node:nodes){UUID sponsor=node.cityId().equals(target)?target:origin;Map<String,Long> cityCost=upkeep.computeIfAbsent(sponsor,ignored->new TreeMap<>());scale(definitions.nodes().get(node.type()).maintenance(),node.level()).forEach((item,amount)->cityCost.merge(item,amount,Math::addExact));}
             upkeep.forEach((city,items)->{Map<String,Long> total=new TreeMap<>();items.forEach((item,amount)->total.put(item,Math.multiplyExact(amount,metrics.periods())));journey.put(city,total);});
             unsorted.add(new RoutePlan(header.id(),origin,target,mode,header.enabled(),metrics.distance(),metrics.periods(),metrics.capacity(),nodes.size(),upkeep,journey));
         }
@@ -123,7 +134,7 @@ public final class LogisticsService {
             // This indexed set cannot exceed the configured origin-city route limit.
             List<Route> candidates=declaredAlternatives(orderId,16);
             List<Route> result=new ArrayList<>();
-            for(Route r:candidates){try{requireRoute(r,auth);if(o.cargoUnits()<=r.capacity())result.add(r);}catch(IllegalArgumentException invalid){/* Omitted authority never means valid. */}}
+            for(Route r:candidates){try{requireAlternative(o,r,auth);if(o.cargoUnits()<=r.capacity())result.add(r);}catch(IllegalArgumentException invalid){/* Omitted authority never means valid. */}}
             result.sort(Comparator.comparingInt(Route::travelPeriods).thenComparing(Comparator.comparingLong(Route::capacity).reversed()).thenComparing(Route::id));
             return List.copyOf(result.subList(0,Math.min(limit,result.size())));
         });
@@ -192,7 +203,11 @@ public final class LogisticsService {
      * This is not a permission-free player API. A paid shipment cannot use barter cancellation/refunds.
      */
     public Order createPaidShipment(UUID shipmentId,UUID routeId,String settlementKey,Map<String,Long> goods,AuthoritySnapshot auth,ReservedCargoClaim claim)throws SQLException{
+        return createPaidShipment(shipmentId,routeId,settlementKey,goods,auth,Map.of(),claim);
+    }
+    public Order createPaidShipment(UUID shipmentId,UUID routeId,String settlementKey,Map<String,Long> goods,AuthoritySnapshot auth,Map<UUID,Permit> transit,ReservedCargoClaim claim)throws SQLException{
         Objects.requireNonNull(shipmentId);Objects.requireNonNull(routeId);Objects.requireNonNull(claim);Map<String,Long> cargo=cargo(goods);
+        String encoded=TransitPermitCodec.encode(transit);
         if(cargo.isEmpty()||cargo.size()>definitions.maxItemsPerOrder()||settlementKey==null||!settlementKey.matches("[A-Za-z0-9:_./-]{1,160}"))throw new IllegalArgumentException("Invalid paid shipment payload");
         return store.tx(s->{
             fresh(auth);Route route=route(routeId).orElseThrow();UUID originNation=owner(route.originCity(),auth),targetNation=manager(route.targetCity(),auth);
@@ -200,18 +215,22 @@ public final class LogisticsService {
             if(previous.isPresent()){
                 Order order=previous.get();List<String[]> marker=s.query("SELECT settlement_key,initial_route FROM logistics_paid_shipment WHERE order_id=?",r->new String[]{r.getString(1),r.getString(2)},shipmentId);
                 if(marker.isEmpty()||!marker.getFirst()[0].equals(settlementKey)||!marker.getFirst()[1].equals(routeId.toString())||!order.originNation().equals(originNation)||!order.targetNation().equals(targetNation)||!order.offered().equals(cargo)||!order.requested().isEmpty())throw new IllegalArgumentException("已支付货运ID与原支付/货物不一致");
+                if(!paidTransit(shipmentId).equals(transit))throw new IllegalArgumentException("已支付货运与冻结过境费不一致");
                 return order;
             }
             if(!byKey.isEmpty())throw new IllegalArgumentException("该支付已用于另一货运ID");requireRoute(route,auth);
+            TransitCharges.requireCovered(route,auth,transit);
             if(units(cargo,Map.of())>route.capacity())throw new IllegalArgumentException("货物超过当前商路单周期容量");
             for(UUID city:List.of(route.originCity(),route.targetCity()))if(count("SELECT COUNT(*) FROM logistics_order WHERE (origin_city=? OR target_city=?) AND state IN ('OFFERED','IN_TRANSIT','PAUSED','REFUNDING')",city,city)>=definitions.maxOpenOrdersPerCity())throw new IllegalArgumentException("城市未完成货单已达上限");
             claim.consume();
             s.execute("INSERT INTO logistics_order(id,route,origin_city,target_city,origin_nation,target_nation,state,created_period,expires_period,last_period,progress,travel,reason) VALUES(?,?,?,?,?,?,'IN_TRANSIT',?,?,?,0,?,'国家支付已确认，实物在运输托管')",shipmentId,routeId,route.originCity(),route.targetCity(),originNation,targetNation,auth.period(),Math.addExact(auth.period(),definitions.offerLifetimePeriods()),auth.period(),route.travelPeriods());
             writeCargo(shipmentId,"OFFERED",cargo);s.execute("INSERT INTO logistics_paid_shipment(order_id,settlement_key,initial_route) VALUES(?,?,?)",shipmentId,settlementKey,routeId);
+            if(!transit.isEmpty())s.execute("INSERT INTO logistics_paid_transit(order_id,terms) VALUES(?,?)",shipmentId,encoded);
             s.audit(auth.actor().toString(),"PAID SHIPMENT "+shipmentId+" "+settlementKey);return order(shipmentId).orElseThrow();
         });
     }
     public boolean paidShipment(UUID orderId)throws SQLException{return count("SELECT COUNT(*) FROM logistics_paid_shipment WHERE order_id=?",orderId)>0;}
+    private Map<UUID,Permit> paidTransit(UUID order)throws SQLException{return store.query("SELECT terms FROM logistics_paid_transit WHERE order_id=?",r->TransitPermitCodec.decode(r.getString(1)),order).stream().findFirst().orElse(Map.of());}
 
     /** Trusted market transaction: stop delivery before a separately committed treasury reversal. */
     public Order holdPaidRefund(UUID orderId,String payment,AuthoritySnapshot auth)throws SQLException{
@@ -244,7 +263,7 @@ public final class LogisticsService {
     public TransportStatus transportStatus(UUID routeId,long period)throws SQLException{
         if(period<0)throw new IllegalArgumentException("Negative transport period");
         return store.tx(s->{Route route=route(routeId).orElseThrow();long used=count("SELECT COALESCE(MAX(used),0) FROM logistics_route_usage WHERE route=? AND period=?",routeId,period);long available=route.enabled()&&routeLimitation(route).isEmpty()?Math.max(0,route.capacity()-used):0;List<NodeTraffic> traffic=new ArrayList<>();
-            for(UUID id:route.nodes()){Node n=node(id).orElseThrow();long capacity=Math.multiplyExact(definitions.nodes().get(n.type()).capacity(),n.level()),nodeUsed=count("SELECT COALESCE(MAX(used),0) FROM logistics_node_usage WHERE node=? AND period=?",id,period);long[] maintenance=s.query("SELECT last_maintenance,maintained FROM logistics_node WHERE id=?",r->new long[]{r.getLong(1),r.getLong(2)},id).getFirst();long remaining=n.enabled()?Math.max(0,capacity-nodeUsed):0;traffic.add(new NodeTraffic(id,n.cityId(),n.type(),capacity,nodeUsed,remaining,maintenance[0],maintenance[0]==period&&maintenance[1]==1,n.enabled()));available=Math.min(available,remaining);}
+            for(UUID id:route.nodes()){Node n=node(id).orElseThrow();long capacity=Math.multiplyExact(definitions.nodes().get(n.type()).capacity(),n.level()),nodeUsed=count("SELECT COALESCE(MAX(used),0) FROM logistics_node_usage WHERE node=? AND period=?",id,period);long[] maintenance=s.query("SELECT last_maintenance,maintained FROM logistics_node WHERE id=?",r->new long[]{r.getLong(1),r.getLong(2)},id).getFirst();if(!n.cityId().equals(route.originCity())&&!n.cityId().equals(route.targetCity()))maintenance=s.query("SELECT period,maintained FROM logistics_transit_maintenance WHERE node=? AND sponsor=? ORDER BY period DESC LIMIT 1",r->new long[]{r.getLong(1),r.getLong(2)},id,route.originCity()).stream().findFirst().orElse(new long[]{-1,0});long remaining=n.enabled()?Math.max(0,capacity-nodeUsed):0;traffic.add(new NodeTraffic(id,n.cityId(),n.type(),capacity,nodeUsed,remaining,maintenance[0],maintenance[0]==period&&maintenance[1]==1,n.enabled()));available=Math.min(available,remaining);}
             long minimum=available;List<UUID> bottlenecks=traffic.stream().filter(n->n.remaining()==minimum).map(NodeTraffic::nodeId).toList();Map<String,Integer> reasons=new LinkedHashMap<>();
             List<long[]> counts=s.query("SELECT state,COUNT(*) FROM logistics_order WHERE route=? AND state IN ('OFFERED','IN_TRANSIT','PAUSED','REFUNDING') GROUP BY state",r->new long[]{Set.of("PAUSED","REFUNDING").contains(r.getString(1))?1:0,r.getLong(2)},routeId);int waiting=0,paused=0;for(long[] row:counts){waiting=Math.addExact(waiting,Math.toIntExact(row[1]));if(row[0]==1)paused=Math.addExact(paused,Math.toIntExact(row[1]));}
             for(var row:s.query("SELECT reason,COUNT(*) FROM logistics_order WHERE route=? AND state IN ('PAUSED','REFUNDING') GROUP BY reason ORDER BY COUNT(*) DESC,reason LIMIT 16",r->Map.entry(r.getString(1),r.getInt(2)),routeId))reasons.put(row.getKey(),row.getValue());
@@ -294,7 +313,7 @@ public final class LogisticsService {
         });
     }
 
-    /** Only endpoint cities may supply waypoints, so a route cannot charge a third city's warehouse. */
+    /** Third-country declarations bind a finite corridor immediately; passage needs separate permits. */
     public Route createRoute(UUID id, UUID origin, UUID target, List<UUID> path, Mode mode, AuthoritySnapshot auth) throws SQLException {
         List<UUID> copy = List.copyOf(path); Objects.requireNonNull(id); Objects.requireNonNull(mode);
         return store.tx(s -> {
@@ -303,8 +322,13 @@ public final class LogisticsService {
             if (copy.size() < 2 || copy.size() > definitions.maxWaypoints() || new HashSet<>(copy).size() != copy.size()) throw new IllegalArgumentException("商路需要二至上限数量的不重复节点");
             List<Node> nodes = new ArrayList<>(); for (UUID nodeId : copy) { Node n = node(nodeId).orElseThrow(); requireNode(n, auth); nodes.add(n); }
             if (!nodes.getFirst().cityId().equals(origin) || !nodes.getLast().cityId().equals(target)) throw new IllegalArgumentException("商路起终点必须属于双方城市");
-            for (Node n : nodes) if (!n.cityId().equals(origin) && !n.cityId().equals(target)) throw new IllegalArgumentException("路径不得向第三城市收取维护费");
+            Set<UUID> third=new HashSet<>();for(Node n:nodes)if(!n.cityId().equals(origin)&&!n.cityId().equals(target)){
+                if(n.nationId().equals(auth.cityNations().get(origin))||n.nationId().equals(auth.cityNations().get(target)))throw new IllegalArgumentException("额外城市节点须属于独立第三国");third.add(n.nationId());
+            }
+            if(third.size()>15)throw new IllegalArgumentException("每条商路最多15个过境国");
             metrics(nodes, mode);
+            Corridor.Plan corridor=null;
+            if(!third.isEmpty()){Map<UUID,Node> index=new HashMap<>();nodes.forEach(n->index.put(n.id(),n));corridor=Corridor.plan(new Route(id,origin,target,copy,mode,true,0,1,1,true,transitKey(id)),index);}
             Optional<Route> previous = route(id);
             if (previous.isPresent()) {
                 Route r = previous.get();
@@ -314,6 +338,7 @@ public final class LogisticsService {
             if (count("SELECT COUNT(*) FROM logistics_route WHERE origin_city=?", origin) >= definitions.maxRoutesPerCity()) throw new IllegalArgumentException("城市发起商路已达上限");
             s.execute("INSERT INTO logistics_route(id,origin_city,target_city,mode,enabled) VALUES(?,?,?,?,1)", id, origin, target, mode.name());
             for (int i = 0; i < copy.size(); i++) s.execute("INSERT INTO logistics_route_node(route,position,node) VALUES(?,?,?)", id, i, copy.get(i));
+            if(corridor!=null)s.execute("INSERT INTO logistics_corridor(route,fingerprint,created_period,actor) VALUES(?,?,?,?)",id,corridor.fingerprint(),auth.period(),auth.actor());
             s.audit(auth.actor().toString(), "LOGISTICS ROUTE " + id + " " + origin + " -> " + target);
             return route(id).orElseThrow();
         });
@@ -349,6 +374,11 @@ public final class LogisticsService {
         if(!route.corridorRequired())return;
         String expected=store.query("SELECT fingerprint FROM logistics_corridor WHERE route=?",r->r.getString(1),route.id()).stream().findFirst().orElseThrow();
         if(!expected.equals(auth.corridors().get(route.id()).fingerprint()))throw new IllegalArgumentException("商路通道证据与绑定路线不符");
+        if(route.requiresTransit()){
+            Set<UUID> grantors=new HashSet<>();for(UUID id:route.nodes()){Node n=node(id).orElseThrow();if(!n.cityId().equals(route.originCity())&&!n.cityId().equals(route.targetCity()))grantors.add(n.nationId());}
+            var permits=auth.corridors().get(route.id()).transit();
+            if(!grantors.equals(permits.keySet())||permits.values().stream().anyMatch(p->!p.terms().routeKey().equals(route.transitKey())||!p.terms().fingerprint().equals(expected)||!p.terms().originNation().equals(auth.cityNations().get(route.originCity()))||!p.terms().targetNation().equals(auth.cityNations().get(route.targetCity()))))throw new IllegalArgumentException("过境许可与商路声明国家或绑定通道不符");
+        }
     }
 
     public Order createOffer(UUID id, UUID routeId, Map<String, Long> offered, Map<String, Long> requested, AuthoritySnapshot auth) throws SQLException {
@@ -358,6 +388,7 @@ public final class LogisticsService {
             fresh(auth);
             Route r = route(routeId).orElseThrow(); UUID originNation = manager(r.originCity(), auth); UUID targetNation = owner(r.targetCity(), auth);
             requireRoute(r, auth);
+            TransitCharges.requireFree(r,auth);
             Optional<Order> previous = order(id);
             if (previous.isPresent()) {
                 Order o = previous.get();
@@ -381,6 +412,7 @@ public final class LogisticsService {
             if (o.status() == OrderStatus.IN_TRANSIT || o.status() == OrderStatus.PAUSED || o.status() == OrderStatus.COMPLETED) return o;
             if (o.status() != OrderStatus.OFFERED || auth.period() >= o.expiresPeriod()) throw new IllegalArgumentException("报价已取消或过期");
             Route r = route(o.routeId()).orElseThrow(); requireRoute(r, auth);
+            TransitCharges.requireFree(r,auth);
             if (o.cargoUnits() > r.capacity()) throw new IllegalArgumentException("货单超过当前商路容量，请撤销并拆分报价");
             debit(o.targetCity(), o.requested());
             s.execute("UPDATE logistics_order SET state='IN_TRANSIT',last_period=?,travel=?,reason='' WHERE id=?", auth.period(), r.travelPeriods(), id);
@@ -446,7 +478,7 @@ public final class LogisticsService {
                 String invalid = invalid(o, r, auth);
                 if (invalid != null) { touch(o, auth.period(), OrderStatus.PAUSED, invalid); paused++; continue; }
                 boolean maintained = true;
-                for (UUID nodeId : r.nodes()) if (!maintain(node(nodeId).orElseThrow(), auth.period())) maintained = false;
+                for (UUID nodeId : r.nodes()) if (!maintain(node(nodeId).orElseThrow(),r,auth.period())) maintained = false;
                 if (!maintained) { touch(o, auth.period(), OrderStatus.PAUSED, "道路/桥梁/港口/关隘维护物资不足"); paused++; continue; }
                 long used = count("SELECT COALESCE(MAX(used),0) FROM logistics_route_usage WHERE route=? AND period=?", r.id(), auth.period());
                 if (o.cargoUnits() > r.capacity() - used) { touch(o, auth.period(), OrderStatus.PAUSED, "本周期商路容量不足"); paused++; continue; }
@@ -475,6 +507,7 @@ public final class LogisticsService {
             // A route usage row is irrelevant once its period is older than all current processing.
             s.execute("DELETE FROM logistics_route_usage WHERE period<?", Math.max(0, auth.period() - 2));
             s.execute("DELETE FROM logistics_node_usage WHERE period<?", Math.max(0, auth.period() - 2));
+            s.execute("DELETE FROM logistics_transit_maintenance WHERE period<?",Math.max(0,auth.period()-2));
             return new BatchResult(auth.period(), orders.size(), progressed, completed, paused, expired);
         });
     }
@@ -501,7 +534,7 @@ public final class LogisticsService {
     }
 
     private String invalid(Order o, Route r, AuthoritySnapshot auth) throws SQLException {
-        try { requireOwners(o, auth); requireRoute(r, auth); return null; }
+        try { requireOwners(o, auth); requireRoute(r, auth);requireCovered(o,r,auth);return null; }
         catch (IllegalArgumentException failure) { return failure.getMessage(); }
     }
     private void fresh(AuthoritySnapshot auth) throws SQLException {
@@ -518,7 +551,9 @@ public final class LogisticsService {
     private void requireAlternative(Order order,Route route,AuthoritySnapshot auth)throws SQLException{
         if(!route.originCity().equals(order.originCity())||!route.targetCity().equals(order.targetCity()))throw new IllegalArgumentException("替代商路须保持货单同方向的双方城市");
         requireRoute(route,auth);if(order.cargoUnits()>route.capacity())throw new IllegalArgumentException("替代商路容量不足");
+        requireCovered(order,route,auth);
     }
+    private void requireCovered(Order order,Route route,AuthoritySnapshot auth)throws SQLException{if(paidShipment(order.id()))TransitCharges.requireCovered(route,auth,paidTransit(order.id()));else TransitCharges.requireFree(route,auth);}
     private void expireReroute(Reroute reroute,long period)throws SQLException{if(reroute.status()==RerouteStatus.PENDING&&period>=reroute.expiresPeriod())store.execute("UPDATE logistics_reroute SET state='EXPIRED' WHERE id=?",reroute.id());}
     private boolean ownersValid(Order o, AuthoritySnapshot auth) throws SQLException { try { requireOwners(o, auth); return true; } catch (IllegalArgumentException failure) { return false; } }
     private void requireOwners(Order o, AuthoritySnapshot auth) throws SQLException { requireOwner(o.originCity(), o.originNation(), auth); requireOwner(o.targetCity(), o.targetNation(), auth); }
@@ -534,6 +569,14 @@ public final class LogisticsService {
     private void requireRouteLimits(Route route){routeLimitation(route).ifPresent(reason->{throw new IllegalArgumentException(reason);});}
     private void requireRoute(Route r, AuthoritySnapshot auth) throws SQLException { if (!r.enabled()) throw new IllegalArgumentException("商路已停用");requireRouteLimits(r); requireTrade(r.originCity(), r.targetCity(), auth); for (UUID id : r.nodes()) requireNode(node(id).orElseThrow(), auth);requireCorridor(r,auth); }
 
+    private boolean maintain(Node n,Route route,long period)throws SQLException{
+        if(n.cityId().equals(route.originCity())||n.cityId().equals(route.targetCity()))return maintain(n,period);
+        List<Integer> paid=store.query("SELECT maintained FROM logistics_transit_maintenance WHERE node=? AND sponsor=? AND period=?",r->r.getInt(1),n.id(),route.originCity(),period);
+        if(!paid.isEmpty())return paid.getFirst()==1;
+        Map<String,Long> upkeep=scale(definitions.nodes().get(n.type()).maintenance(),n.level()),stock=store.stock(route.originCity());
+        boolean enough=upkeep.entrySet().stream().allMatch(e->stock.getOrDefault(e.getKey(),0L)>=e.getValue());if(enough)debit(route.originCity(),upkeep);
+        store.execute("INSERT INTO logistics_transit_maintenance(node,sponsor,period,maintained) VALUES(?,?,?,?)",n.id(),route.originCity(),period,enough?1:0);return enough;
+    }
     private boolean maintain(Node n, long period) throws SQLException {
         List<long[]> state = store.query("SELECT last_maintenance,maintained FROM logistics_node WHERE id=?", r -> new long[]{r.getLong(1), r.getLong(2)}, n.id());
         if (state.getFirst()[0] >= period) return state.getFirst()[0] == period && state.getFirst()[1] == 1;
@@ -566,8 +609,10 @@ public final class LogisticsService {
     private Route readRoute(ResultSet r) throws SQLException {
         UUID id = uuid(r, "id"); List<UUID> ids = store.query("SELECT node FROM logistics_route_node WHERE route=? ORDER BY position", row -> UUID.fromString(row.getString(1)), id);
         List<Node> nodes = new ArrayList<>(); for (UUID nodeId : ids) nodes.add(node(nodeId).orElseThrow()); Mode mode = Mode.valueOf(r.getString("mode")); Metrics metrics = metrics(nodes, mode,false);
-        return new Route(id, uuid(r, "origin_city"), uuid(r, "target_city"), ids, mode, r.getInt("enabled") == 1, metrics.distance(), metrics.periods(), metrics.capacity(),count("SELECT COUNT(*) FROM logistics_corridor WHERE route=?",id)==1);
+        UUID origin=uuid(r,"origin_city"),target=uuid(r,"target_city");boolean third=nodes.stream().anyMatch(n->!n.cityId().equals(origin)&&!n.cityId().equals(target));
+        return new Route(id,origin,target,ids,mode,r.getInt("enabled")==1,metrics.distance(),metrics.periods(),metrics.capacity(),count("SELECT COUNT(*) FROM logistics_corridor WHERE route=?",id)==1,third?transitKey(id):"");
     }
+    private String transitKey(UUID route){return "starworld:transit:"+transitNamespace+":"+route;}
     private Order readOrder(ResultSet r) throws SQLException {
         UUID id = uuid(r, "id"); return new Order(id, uuid(r, "route"), uuid(r, "origin_city"), uuid(r, "target_city"), uuid(r, "origin_nation"), uuid(r, "target_nation"), readCargo(id, "OFFERED"), readCargo(id, "REQUESTED"), OrderStatus.valueOf(r.getString("state")), r.getLong("created_period"), r.getLong("expires_period"), r.getLong("last_period"), r.getInt("progress"), r.getInt("travel"), r.getLong("completed_period"), r.getString("reason"));
     }

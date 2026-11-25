@@ -80,6 +80,30 @@ def recorded_artifact_hash(proof: dict) -> str | None:
             proof.get("artifacts", {}).get("jar", {}).get("sha256"))
 
 
+def candidate_patches(root: Path, upstream: dict, label: str) -> dict[str, bytes]:
+    """Bind a runtime candidate to its complete, reviewed local patch chain."""
+    folder = root / "upstream/starcore"
+    settlement = read_json(regular_file(folder / "verification.json", root), "settlement candidate")
+    transit_path = folder / "transit-verification.json"
+    transit = read_json(regular_file(transit_path, root), "transit candidate") if transit_path.exists() else None
+    is_transit = transit is not None and upstream.get("commit") == transit.get("commit")
+    expected = transit if is_transit else settlement
+    require(label != "transit" or is_transit, "Transit acceptance requires the transit candidate")
+    for key in ("base", "commit", "patch_sha256", "artifact_sha256"):
+        require(upstream.get(key) == expected.get(key), f"{label} upstream {key} differs")
+    patches = {"0001-atomic-settlements-and-refunds.patch": settlement}
+    if is_transit:
+        require(upstream.get("parent") == transit.get("parent") == settlement.get("commit") and
+                transit.get("base") == settlement.get("base"), "Transit candidate parent chain differs")
+        patches["0002-versioned-transit-permissions.patch"] = transit
+    result = {}
+    for name, provenance in patches.items():
+        data = regular_file(folder / name, root)
+        require(sha256(data) == provenance.get("patch_sha256"), f"{label} upstream patch changed: {name}")
+        result[name] = data
+    return result
+
+
 def validate_storage_evidence(evidence: dict, script: bytes, plugin_hash: str) -> dict:
     require(evidence.get("suite") == "real-paper-survey-and-storage-backpressure" and
             evidence.get("runnerSha256") == sha256(script) and
@@ -223,6 +247,7 @@ def main() -> int:
     parser.add_argument("--storage-dir", type=Path, help="Required from 1.4: bounded storage pressure and heap recovery acceptance")
     parser.add_argument("--corridor-dir", type=Path, help="Required from 1.7: physical road/water blockage and restart acceptance")
     parser.add_argument("--refund-dir", type=Path, help="Required from 1.8: bilateral refunds, insolvency and replay over three Paper starts")
+    parser.add_argument("--transit-dir", type=Path, help="Required from 1.10: third-country permission, atomic toll settlement, revocation and recovery")
     parser.add_argument("--tax-dir", type=Path, help="Required from 1.9: frozen tariff consent, full reversal and goods-only delivery statistics")
     parser.add_argument("--works-dir", type=Path, help="Required for 1.0: public works under three consecutive starts")
     parser.add_argument("--civic-dir", type=Path, help="Required for 1.0: real SenLuo integrations and civic needs, including the original fifteen stages")
@@ -345,6 +370,9 @@ def main() -> int:
     if release_version >= (1, 8, 0):
         require(args.refund_dir is not None, "1.8 delivery requires --refund-dir")
         run_inputs.append(("refund", args.refund_dir, "tools/paper-client/refund-acceptance.cjs"))
+    if release_version >= (1, 10, 0):
+        require(args.transit_dir is not None, "1.10 delivery requires --transit-dir")
+        run_inputs.append(("transit", args.transit_dir, "tools/paper-client/transit-acceptance.cjs"))
     if release_version >= (1, 9, 0):
         require(args.tax_dir is not None, "1.9 delivery requires --tax-dir")
         run_inputs.append(("tax", args.tax_dir, "tools/paper-client/tax-acceptance.cjs"))
@@ -376,6 +404,7 @@ def main() -> int:
         "storage": {f"client-run-{run}.log" for run in ((1, 2) if release_version >= (1, 6, 0) else (1,))},
         "corridor": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
         "refund": {f"client-run-{run}-{player}.log" for run in (1, 2, 3) for player in ("a", "b")},
+        "transit": {f"client-run-{run}-{player}.log" for run in (1, 2, 3) for player in ("a", "b", "c")},
         "tax": {f"client-run-{run}-{player}.log" for run in (1, 2, 3) for player in ("a", "b")},
         "works": {f"client-run-{run}-{slot}.log" for run in (1, 2, 3) for slot in range(3)},
         "civic": {"client-run-1.log", "client-run-listener-1.log", "client-run-2.log"},
@@ -405,7 +434,7 @@ def main() -> int:
             preparation_hash = sha256(preparation_data)
             add(f"runtime/{label}/{preparation_name}", preparation_data)
         else:
-            require(label not in {"upgrade", "market-upgrade", "senluo", "disaster", "civic", "works", "corridor", "refund", "tax"}, f"{label} run lacks its source/preparation provenance")
+            require(label not in {"upgrade", "market-upgrade", "senluo", "disaster", "civic", "works", "corridor", "refund", "tax", "transit"}, f"{label} run lacks its source/preparation provenance")
         if release_version >= (1, 0, 0):
             require(evidence.get("version", version) == version and evidence.get("targetVersion", version) == version,
                     f"{label} run declares another product version")
@@ -464,8 +493,9 @@ def main() -> int:
                         preparation_proof.get("targetPluginSha256") == plugin_hash and
                         preparation_proof.get("fixtureSha256") == plugin_jars.get("StarWorldFixture.jar"),
                         "Corridor preparation, runner or artifact fingerprint differs")
-            if label in {"refund", "tax"}:
-                require(evidence.get("suite") == f"real-paper-market-{label}" and
+            if label in {"refund", "tax", "transit"}:
+                expected_suite = "real-paper-third-country-transit" if label == "transit" else f"real-paper-market-{label}"
+                require(evidence.get("suite") == expected_suite and
                         evidence.get("runnerSha256") == sha256(script) and
                         evidence.get("acceptanceHelperSha256") == shared_launcher_hash and
                         evidence.get("preparationSha256") == preparation_hash and
@@ -474,15 +504,16 @@ def main() -> int:
                         preparation_proof.get("fixtureSha256") == plugin_jars.get("StarWorldFixture.jar"),
                         f"{label} preparation, runner or artifact fingerprint differs")
                 upstream_data = regular_file(runtime / "STARCORE-PROVENANCE.json", runtime)
-                upstream = read_json(upstream_data, "refund StarCore candidate")
+                upstream = read_json(upstream_data, f"{label} StarCore candidate")
                 require(upstream == evidence.get("upstream") and upstream.get("artifact_sha256") == plugin_jars.get("StarCore.jar") and
                         re.fullmatch(r"[0-9a-f]{40}", upstream.get("commit", "")) is not None,
-                        "Refund acceptance lacks its exact upstream candidate")
-                patch = regular_file(root / "upstream/starcore/0001-atomic-settlements-and-refunds.patch", root)
-                require(sha256(patch) == upstream.get("patch_sha256"), "Refund upstream patch changed")
+                        f"{label} acceptance lacks its exact upstream candidate")
+                patches = candidate_patches(root, upstream, label)
                 add(f"runtime/{label}/STARCORE-PROVENANCE.json", upstream_data)
-                if label == "refund":
-                    add("upstream/starcore/0001-atomic-settlements-and-refunds.patch", patch)
+                for name, patch in patches.items():
+                    destination = f"upstream/starcore/{name}"
+                    if destination not in entries:
+                        add(destination, patch)
             if label in {"civic", "senluo"}:
                 asset_proof = dict(evidence.get("assetPreparation", {}))
                 require(preparation_proof is not None and preparation_proof.get("starWorldVersion") == version and preparation_proof.get("starWorldSha256") == plugin_hash and
@@ -530,7 +561,7 @@ def main() -> int:
         required_logs = {"paper-run-1.log", "paper-run-2.log"} | expected_clients[label]
         if label == "storage" and release_version < (1, 6, 0):
             required_logs = {"paper-run-1.log"} | expected_clients[label]
-        if label in {"operations", "works", "refund", "tax"} or (label == "progression" and release_version >= (1, 5, 0)):
+        if label in {"operations", "works", "refund", "tax", "transit"} or (label == "progression" and release_version >= (1, 5, 0)):
             required_logs.add("paper-run-3.log")
         require(required_logs.issubset(names), f"{label} run lacks required server/client transcripts: {sorted(required_logs - names)}")
         for file in transcripts:

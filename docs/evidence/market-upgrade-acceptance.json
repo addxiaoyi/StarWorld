@@ -2,15 +2,15 @@
   "schema": 1,
   "suite": "real-paper-market-upgrade",
   "status": "passed",
-  "startedAt": "2026-11-25T12:52:16.581Z",
-  "version": "1.9.0",
+  "startedAt": "2026-11-25T13:52:12.844Z",
+  "version": "1.10.0",
   "sourceVersion": "1.4.0",
-  "artifactSha256": "1381e9f938bfe0eb97f0377dde920c47e885d7365df03d7e183d2559994eb527",
-  "runnerSha256": "e6c29b2163b8db5094f74063d6d498bbeae4a26da136e92e1e61c50018df25ff",
-  "probeSha256": "7adc847d96b3213142fa735d60d31565f9c6f98067e5d18d53809189bf7ec148",
+  "artifactSha256": "962cd4c9b9ef95b9048ccd585e1d50c7d4d0c8eb9fe873651106b169180617da",
+  "runnerSha256": "0a7c01746a7622914168805f7bb3dfc8d41bac3f8862aa5549051261430ea29c",
+  "probeSha256": "61ed94be8e05993ee5ef45a141b66e8a072daca99d77f7b3c8c9be8c675d7c40",
   "acceptanceHelperSha256": "acf381b88a14203b096e7edad7cccb41a0a11454637d072a3493b49ff3ba0aea",
   "paperSha256": "5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba",
-  "provenanceSha256": "46847e511e071887cf491380e7bcf3c54d9169ccf6bfc632bebe316824e773a2",
+  "provenanceSha256": "816f25eea8a68c96ada4849291e889186235e05a6d5278974b67f62467633344",
   "jvmArgs": [
     "-Xms128m",
     "-Xmx768m",
@@ -23,7 +23,7 @@
   ],
   "pluginJars": {
     "StarCore.jar": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
-    "StarWorld.jar": "1381e9f938bfe0eb97f0377dde920c47e885d7365df03d7e183d2559994eb527",
+    "StarWorld.jar": "962cd4c9b9ef95b9048ccd585e1d50c7d4d0c8eb9fe873651106b169180617da",
     "StarWorldFixture.jar": "a7c3c2f811406c97e682319e23fee335f4894a8d9b75ebf9461edbfd3a54e543"
   },
   "configSha256": {
@@ -43,7 +43,7 @@
     {
       "name": "stopped real 1.4 market and copied state match their original fingerprints",
       "status": "passed",
-      "startedAt": "2026-11-25T12:52:16.656Z",
+      "startedAt": "2026-11-25T13:52:12.908Z",
       "observed": {
         "sourceEvidenceSha256": "5c94406270a6a1af1c2cdc6b1e1bc996d3f0bbbb6fcfd4ecc0868d59a0f3afeb",
         "before": {
@@ -1559,12 +1559,12 @@
           "paid_at": "2026-11-25T09:40:32.318200153Z"
         }
       },
-      "finishedAt": "2026-11-25T12:52:16.658Z"
+      "finishedAt": "2026-11-25T13:52:12.910Z"
     },
     {
       "name": "first upgraded Paper start restores original buyers sellers and inventories",
       "status": "passed",
-      "startedAt": "2026-11-25T12:52:16.659Z",
+      "startedAt": "2026-11-25T13:52:12.910Z",
       "observed": {
         "seller": [
           {
@@ -1581,12 +1581,12 @@
           }
         ]
       },
-      "finishedAt": "2026-11-25T12:52:37.041Z"
+      "finishedAt": "2026-11-25T13:52:29.662Z"
     },
     {
       "name": "original national payment receipt replays without charging after migration",
       "status": "passed",
-      "startedAt": "2026-11-25T12:52:37.041Z",
+      "startedAt": "2026-11-25T13:52:29.663Z",
       "observed": {
         "transactionId": "starworld:market:6dc43b8a-8d05-4661-9a32-cce2e5e3edd2:2b7131b9-fe44-4fec-a67a-3d9e0c234ec2",
         "purchase": {
@@ -1607,7 +1607,8 @@
           "createdPeriod": 179559963,
           "units": 11,
           "goodsTotal": 22,
-          "taxAmount": 0
+          "taxAmount": 0,
+          "transit": {}
         },
         "receipt": {
           "transactionId": "starworld:market:6dc43b8a-8d05-4661-9a32-cce2e5e3edd2:2b7131b9-fe44-4fec-a67a-3d9e0c234ec2",
@@ -1615,7 +1616,11 @@
           "receiver": "df7a67e2-59ff-47fc-b542-542f98363042",
           "amount": 22,
           "category": "OTHER",
-          "appliedAt": "2026-11-25T09:40:32.318Z"
+          "appliedAt": "2026-11-25T09:40:32.318Z",
+          "credits": {
+            "df7a67e2-59ff-47fc-b542-542f98363042": 22
+          },
+          "description": ""
         },
         "entryPoint": "NationTransferService.transferReceipt",
         "payerBefore": 978,
@@ -1629,19 +1634,23 @@
             "receiver": "df7a67e2-59ff-47fc-b542-542f98363042",
             "amount": 22,
             "category": "OTHER",
-            "appliedAt": "2026-11-25T09:40:32.318Z"
+            "appliedAt": "2026-11-25T09:40:32.318Z",
+            "credits": {
+              "df7a67e2-59ff-47fc-b542-542f98363042": 22
+            },
+            "description": ""
           },
           "detail": "核心持久国库回执已核实"
         },
         "payerAfter": 978,
         "receiverAfter": 922
       },
-      "finishedAt": "2026-11-25T12:52:37.141Z"
+      "finishedAt": "2026-11-25T13:52:29.764Z"
     },
     {
       "name": "first shutdown proves exact market migration and preserved delivery statistics",
       "status": "passed",
-      "startedAt": "2026-11-25T12:52:37.142Z",
+      "startedAt": "2026-11-25T13:52:29.764Z",
       "observed": {
         "world": {
           "schema": 3,
@@ -1693,11 +1702,15 @@
             "logistics_node_usage",
             "logistics_order",
             "logistics_paid_shipment",
+            "logistics_paid_transit",
             "logistics_receipt",
             "logistics_reroute",
             "logistics_route",
             "logistics_route_node",
             "logistics_route_usage",
+            "logistics_transit_maintenance",
+            "logistics_transit_proposal",
+            "logistics_transit_schema",
             "market_clock",
             "market_delivery_clock",
             "market_delivery_receipt",
@@ -1727,7 +1740,7 @@
             "stock",
             "transfer"
           ],
-          "database_sha256": "379b51790cbd0f73f0501d1d6b9fc007fc6f1a3a344a6706d7a521f9a36b9321",
+          "database_sha256": "7e2259cfc1fd3515d53799a7fdd6b1f356692d2594e076df97472a5881abfd17",
           "rows": {
             "building": [
               {
@@ -2123,7 +2136,7 @@
             "market_schema": [
               {
                 "id": 1,
-                "version": 4,
+                "version": 5,
                 "namespace": "6dc43b8a-8d05-4661-9a32-cce2e5e3edd2"
               }
             ],
@@ -2167,7 +2180,8 @@
                 "buy_all": 1,
                 "goods_total": "22.00",
                 "tax_amount": "0.00",
-                "tax_quote": null
+                "tax_quote": null,
+                "transit_terms": ""
               }
             ],
             "market_history": [
@@ -2292,6 +2306,16 @@
             "logistics_corridor": [],
             "market_refund": [],
             "market_quote": [],
+            "logistics_transit_schema": [
+              {
+                "id": 1,
+                "version": 1,
+                "namespace": "3dc07fa4-7f4f-47ef-a01a-0985369712de"
+              }
+            ],
+            "logistics_transit_proposal": [],
+            "logistics_transit_maintenance": [],
+            "logistics_paid_transit": [],
             "life_schema": [
               {
                 "id": 1,
@@ -2917,7 +2941,7 @@
             "weather_weather_state_meta",
             "zone_state"
           ],
-          "database_sha256": "c0af92fcf2cef0cbaa8b73b66b390eb3a650bfc268b99f5eb0fd55d25592a3f9",
+          "database_sha256": "30307c9d58344cc114f24738b1de5aca716baa4301b2843dc81e71182e09bf1e",
           "rows": {
             "starcore_nation_state": [
               {
@@ -3148,19 +3172,19 @@
           },
           "integrity": "ok"
         },
-        "pluginVersion": "1.9.0",
+        "pluginVersion": "1.10.0",
         "bundledConfigs": {
           "civic-needs.yml": "90db840f72f6d188794fa3fb13c3e0060839ed4eef53fe3f1554726fff3dec19",
           "public-works.yml": "97828a6ddba97f8a7b070435053d7ea4fed30f3882ce84753eb8120e096764d7",
           "climate.yml": "cf02f0a8a2c128001f518e9c753e8f4cadd9f60062044a61b59bee702f08c922"
         }
       },
-      "finishedAt": "2026-11-25T12:52:38.501Z"
+      "finishedAt": "2026-11-25T13:52:31.772Z"
     },
     {
       "name": "second start preserves inventories and still replays the same national payment",
       "status": "passed",
-      "startedAt": "2026-11-25T12:52:38.506Z",
+      "startedAt": "2026-11-25T13:52:31.776Z",
       "observed": {
         "items": {
           "seller": [
@@ -3198,7 +3222,8 @@
             "createdPeriod": 179559963,
             "units": 11,
             "goodsTotal": 22,
-            "taxAmount": 0
+            "taxAmount": 0,
+            "transit": {}
           },
           "receipt": {
             "transactionId": "starworld:market:6dc43b8a-8d05-4661-9a32-cce2e5e3edd2:2b7131b9-fe44-4fec-a67a-3d9e0c234ec2",
@@ -3206,7 +3231,11 @@
             "receiver": "df7a67e2-59ff-47fc-b542-542f98363042",
             "amount": 22,
             "category": "OTHER",
-            "appliedAt": "2026-11-25T09:40:32.318Z"
+            "appliedAt": "2026-11-25T09:40:32.318Z",
+            "credits": {
+              "df7a67e2-59ff-47fc-b542-542f98363042": 22
+            },
+            "description": ""
           },
           "entryPoint": "NationTransferService.transferReceipt",
           "payerBefore": 978,
@@ -3220,7 +3249,11 @@
               "receiver": "df7a67e2-59ff-47fc-b542-542f98363042",
               "amount": 22,
               "category": "OTHER",
-              "appliedAt": "2026-11-25T09:40:32.318Z"
+              "appliedAt": "2026-11-25T09:40:32.318Z",
+              "credits": {
+                "df7a67e2-59ff-47fc-b542-542f98363042": 22
+              },
+              "description": ""
             },
             "detail": "核心持久国库回执已核实"
           },
@@ -3228,12 +3261,12 @@
           "receiverAfter": 922
         }
       },
-      "finishedAt": "2026-11-25T12:52:50.551Z"
+      "finishedAt": "2026-11-25T13:52:42.178Z"
     },
     {
       "name": "second shutdown keeps migrated escrow history money and completed cargo unchanged",
       "status": "passed",
-      "startedAt": "2026-11-25T12:52:50.552Z",
+      "startedAt": "2026-11-25T13:52:42.178Z",
       "observed": {
         "world": {
           "schema": 3,
@@ -3285,11 +3318,15 @@
             "logistics_node_usage",
             "logistics_order",
             "logistics_paid_shipment",
+            "logistics_paid_transit",
             "logistics_receipt",
             "logistics_reroute",
             "logistics_route",
             "logistics_route_node",
             "logistics_route_usage",
+            "logistics_transit_maintenance",
+            "logistics_transit_proposal",
+            "logistics_transit_schema",
             "market_clock",
             "market_delivery_clock",
             "market_delivery_receipt",
@@ -3319,7 +3356,7 @@
             "stock",
             "transfer"
           ],
-          "database_sha256": "379b51790cbd0f73f0501d1d6b9fc007fc6f1a3a344a6706d7a521f9a36b9321",
+          "database_sha256": "7e2259cfc1fd3515d53799a7fdd6b1f356692d2594e076df97472a5881abfd17",
           "rows": {
             "building": [
               {
@@ -3715,7 +3752,7 @@
             "market_schema": [
               {
                 "id": 1,
-                "version": 4,
+                "version": 5,
                 "namespace": "6dc43b8a-8d05-4661-9a32-cce2e5e3edd2"
               }
             ],
@@ -3759,7 +3796,8 @@
                 "buy_all": 1,
                 "goods_total": "22.00",
                 "tax_amount": "0.00",
-                "tax_quote": null
+                "tax_quote": null,
+                "transit_terms": ""
               }
             ],
             "market_history": [
@@ -3884,6 +3922,16 @@
             "logistics_corridor": [],
             "market_refund": [],
             "market_quote": [],
+            "logistics_transit_schema": [
+              {
+                "id": 1,
+                "version": 1,
+                "namespace": "3dc07fa4-7f4f-47ef-a01a-0985369712de"
+              }
+            ],
+            "logistics_transit_proposal": [],
+            "logistics_transit_maintenance": [],
+            "logistics_paid_transit": [],
             "life_schema": [
               {
                 "id": 1,
@@ -4509,7 +4557,7 @@
             "weather_weather_state_meta",
             "zone_state"
           ],
-          "database_sha256": "d01542d0454d624a82c9e202427dd9b236dc47acc130c7d6ef8beeead8975e3a",
+          "database_sha256": "57ec4ed86d914d78b3f6eba14b6634fe7c37e2c46e061694f6f0f1a2e4216ef6",
           "rows": {
             "starcore_nation_state": [
               {
@@ -4740,15 +4788,15 @@
           },
           "integrity": "ok"
         },
-        "pluginVersion": "1.9.0",
+        "pluginVersion": "1.10.0",
         "bundledConfigs": {
           "civic-needs.yml": "90db840f72f6d188794fa3fb13c3e0060839ed4eef53fe3f1554726fff3dec19",
           "public-works.yml": "97828a6ddba97f8a7b070435053d7ea4fed30f3882ce84753eb8120e096764d7",
           "climate.yml": "cf02f0a8a2c128001f518e9c753e8f4cadd9f60062044a61b59bee702f08c922"
         }
       },
-      "finishedAt": "2026-11-25T12:52:52.544Z"
+      "finishedAt": "2026-11-25T13:52:44.529Z"
     }
   ],
-  "finishedAt": "2026-11-25T12:52:52.545Z"
+  "finishedAt": "2026-11-25T13:52:44.531Z"
 }

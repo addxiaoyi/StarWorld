@@ -25,6 +25,7 @@ const V13_TABLES = ['city_region'];
 const V17_TABLES = ['logistics_corridor'];
 const V18_TABLES = ['market_refund'];
 const V19_TABLES = ['market_quote'];
+const V110_TABLES = ['logistics_transit_schema','logistics_transit_proposal','logistics_transit_maintenance','logistics_paid_transit'];
 const DISPATCH_QUEUES = ['starworld:market-payment', 'starworld:resource-export'];
 const CONFIGS = ['config.yml', 'definitions.yml', 'disaster-response.yml', 'evolution.yml', 'exports.yml', 'life.yml', 'logistics.yml', 'market.yml'];
 let NEW_CONFIGS = ['civic-needs.yml', 'public-works.yml'];
@@ -78,7 +79,7 @@ function parseArgs(argv) {
   return result;
 }
 function sqliteSnapshot(python, runtime) {
-  const chosen = [...STABLE, ...ADDED, ...V13_TABLES, ...V17_TABLES, ...V18_TABLES, ...V19_TABLES, 'life_schema', 'life_city', 'city_state', 'stock', 'settlement', 'region', 'reserve', 'disaster_response', 'disaster_response_history', 'disaster_recovery_ledger'];
+  const chosen = [...STABLE, ...ADDED, ...V13_TABLES, ...V17_TABLES, ...V18_TABLES, ...V19_TABLES, ...V110_TABLES, 'life_schema', 'life_city', 'city_state', 'stock', 'settlement', 'region', 'reserve', 'disaster_response', 'disaster_response_history', 'disaster_recovery_ledger'];
   const result = spawnSync(python, ['-c', PROBE, runtime, chosen.join(',')], { encoding: 'utf8', windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
   assert.equal(result.status, 0, `Read-only stopped SQLite probe failed: ${result.error || result.stderr}`);
   return JSON.parse(result.stdout);
@@ -115,15 +116,16 @@ function is13(version) { return minorVersion(version) >= 3; }
 const MARKET_TABLES = ['market_schema','market_listing','market_purchase','market_history'];
 function assertMarketMigration(before, after, version) {
   const old=before.world.rows,next=after.world.rows;
-  const target=minorVersion(version)>=9?4:minorVersion(version)>=8?3:minorVersion(version)>=5?2:old.market_schema[0]?.version;
+  const target=minorVersion(version)>=10?5:minorVersion(version)>=9?4:minorVersion(version)>=8?3:minorVersion(version)>=5?2:old.market_schema[0]?.version;
   assert.equal(old.market_schema.length,1);
-  assert([1,2,3,4].includes(old.market_schema[0].version)&&old.market_schema[0].version<=target,'Unknown or newer market schema');
+  assert([1,2,3,4,5].includes(old.market_schema[0].version)&&old.market_schema[0].version<=target,'Unknown or newer market schema');
   assert.deepEqual(next.market_schema,old.market_schema.map(row=>({...row,version:target})),'Market namespace or schema changed unexpectedly');
   if(minorVersion(version)>=8)assert.deepEqual(next.market_refund,old.market_refund||[],'Upgrade invented or changed refunds');
   else assert(!Object.hasOwn(next,'market_refund'),'Historical market must not create refunds');
-  if(minorVersion(version)>=9)assert.deepEqual(next.market_quote,old.market_quote||[],'Upgrade invented or changed tax quotes');
+  const transitTerms=row=>target>=5&&old.market_schema[0].version<5?{...row,transit_terms:''}:row;
+  if(minorVersion(version)>=9)assert.deepEqual(next.market_quote,(old.market_quote||[]).map(transitTerms),'Upgrade invented or changed tax quotes');
   else assert(!Object.hasOwn(next,'market_quote'),'Historical market must not create tax quotes');
-  const taxTerms=row=>target>=4&&old.market_schema[0].version<4?{...row,goods_total:row.total,tax_amount:'0.00',tax_quote:null}:row;
+  const taxTerms=row=>transitTerms(target>=4&&old.market_schema[0].version<4?{...row,goods_total:row.total,tax_amount:'0.00',tax_quote:null}:row);
   if(minorVersion(version)<5||old.market_schema[0].version>=2){
     for(const table of MARKET_TABLES.filter(t=>t!=='market_schema'))assert.deepEqual(next[table],table==='market_purchase'?old[table].map(taxTerms):old[table],`Existing durable ${table} rows changed`);
     return;
@@ -142,9 +144,21 @@ function assertMarketMigration(before, after, version) {
   const byPurchase=(a,b)=>a.purchase.localeCompare(b.purchase);
   assert.deepEqual([...next.market_history].sort(byPurchase),histories.sort(byPurchase),'Legacy price history changed or was duplicated');
 }
+function assertTransitMigration(before,after,version){
+  if(minorVersion(version)<10)return;
+  const old=before.world.rows,next=after.world.rows;
+  for(const table of V110_TABLES){
+    assert(after.world.tables.includes(table),'Missing transit table '+table);
+    if(old[table])assert.deepEqual(next[table],old[table],'Existing transit state changed '+table);
+    else if(table==='logistics_transit_schema'){
+      assert.equal(next[table].length,1);assert.equal(next[table][0].id,1);assert.equal(next[table][0].version,1);assert.match(next[table][0].namespace,/^[0-9a-f-]{36}$/);
+      assert.deepEqual(Object.keys(next[table][0]).sort(),['id','namespace','version']);
+    }else assert.deepEqual(next[table],[],'Migration invented transit authority or payment '+table);
+  }
+}
 function expectedAddedTables(version) {
   return [...ADDED.filter(table => is11(version) || !V11_TABLES.includes(table)),
-    ...(is13(version) ? V13_TABLES : []), ...(minorVersion(version) >= 7 ? V17_TABLES : []), ...(minorVersion(version) >= 8 ? V18_TABLES : []), ...(minorVersion(version) >= 9 ? V19_TABLES : [])].sort();
+    ...(is13(version) ? V13_TABLES : []), ...(minorVersion(version) >= 7 ? V17_TABLES : []), ...(minorVersion(version) >= 8 ? V18_TABLES : []), ...(minorVersion(version) >= 9 ? V19_TABLES : []), ...(minorVersion(version) >= 10 ? V110_TABLES : [])].sort();
 }
 function assertAddedTables(before, after, version) {
   assert.deepEqual(after.filter(name => !before.includes(name)).sort(), expectedAddedTables(version));
@@ -357,7 +371,7 @@ function assertDurable(before, after, version = VERSION) {
     assert.deepEqual(rows, old[table], `Existing durable ${table} rows changed`);
   }
   assertMarketMigration(before,after,version);
-  assertCorridorMigration(before,after,version);
+  assertCorridorMigration(before,after,version);assertTransitMigration(before,after,version);
   for (const table of ADDED) {
     if (V11_TABLES.includes(table)) continue;
     if (table.endsWith('_schema')) assert.deepEqual(next[table], [{ id: 1, version: table === 'civic_schema' ? 2 : 1 }]);
@@ -573,4 +587,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(error => { console.error(error.stack); process.exitCode = 1; });
-module.exports = { sqliteSnapshot, assertDurable, assertLifeEvolution, assertMarketMigration, assertCorridorMigration, assertAddedTables, expectedAddedTables, stableTables: STABLE, addedTables: ADDED };
+module.exports = { sqliteSnapshot, assertDurable, assertLifeEvolution, assertMarketMigration, assertCorridorMigration, assertTransitMigration, assertAddedTables, expectedAddedTables, stableTables: STABLE, addedTables: ADDED };

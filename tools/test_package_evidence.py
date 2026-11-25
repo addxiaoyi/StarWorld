@@ -2,6 +2,7 @@ import json
 import importlib.util
 from pathlib import Path
 import unittest
+import tempfile
 
 _SPEC = importlib.util.spec_from_file_location("package_evidence", Path(__file__).with_name("package-evidence.py"))
 package = importlib.util.module_from_spec(_SPEC)
@@ -77,6 +78,42 @@ class PaperResourceLogTests(unittest.TestCase):
         log = self.log().replace(b"-Xmx512m", b"-Xmx1g")
         with self.assertRaisesRegex(package.EvidenceError, "Paper maximum heap exceeded 768 MiB"):
             package.validate_paper_resource_log(log, "baseline", self.runner_hash, self.helper_hash)
+
+
+class CandidatePatchTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.folder = self.root / "upstream/starcore"
+        self.folder.mkdir(parents=True)
+        self.settlement = {"base": "a" * 40, "commit": "b" * 40,
+                           "patch_sha256": package.sha256(b"settlement"), "artifact_sha256": "c" * 64}
+        self.transit = {"base": "a" * 40, "parent": "b" * 40, "commit": "d" * 40,
+                        "patch_sha256": package.sha256(b"transit"), "artifact_sha256": "e" * 64}
+        for name, value in (("verification.json", self.settlement), ("transit-verification.json", self.transit)):
+            (self.folder / name).write_text(json.dumps(value))
+        (self.folder / "0001-atomic-settlements-and-refunds.patch").write_bytes(b"settlement")
+        (self.folder / "0002-versioned-transit-permissions.patch").write_bytes(b"transit")
+
+    def test_each_financial_suite_accepts_the_complete_transit_chain(self):
+        for label in ("refund", "tax", "transit"):
+            self.assertEqual(len(package.candidate_patches(self.root, self.transit, label)), 2)
+        self.assertEqual(len(package.candidate_patches(self.root, self.settlement, "refund")), 1)
+
+    def test_transit_cannot_use_a_candidate_without_permission_authority(self):
+        with self.assertRaisesRegex(package.EvidenceError, "requires the transit candidate"):
+            package.candidate_patches(self.root, self.settlement, "transit")
+
+    def test_rejects_runtime_artifact_and_parent_substitution(self):
+        for key in ("artifact_sha256", "parent"):
+            with self.subTest(key=key), self.assertRaises(package.EvidenceError):
+                package.candidate_patches(self.root, {**self.transit, key: "f" * 64}, "tax")
+
+    def test_transit_requires_the_unchanged_settlement_patch_too(self):
+        (self.folder / "0001-atomic-settlements-and-refunds.patch").write_bytes(b"altered")
+        with self.assertRaisesRegex(package.EvidenceError, "upstream patch changed"):
+            package.candidate_patches(self.root, self.transit, "transit")
 
 
 if __name__ == "__main__":

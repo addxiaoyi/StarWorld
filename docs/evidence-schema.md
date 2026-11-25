@@ -51,3 +51,5 @@ fixture 输出一行 `SW_FIXTURE_EXPANSION {schema:2,action,player,observed}`。
 `border-acceptance.cjs` 使用 schema 1、`suite=real-paper-border-resource-dispute`，保存两份服务端及四份客户端日志。它用真实公开国家claim和宣战/停战调用验证远方战争及和平邻居两个阴性条件，邻国交战时由正常生产周期自然产生事件；不调用管理员事件命令或构造假边境证据。对端撤领后，经过原事件、余波和冷却结束仍只能保留一条历史。独立配置采用概率1、只保留border规则、持续12期/余波2期及重复宣战冷却0；全部定义、JAR、配置和Node/JVM内存调优均记录。常规回归保持各自的零随机概率设置。
 
 `package-evidence.py` 逐项比对当前脚本阶段名、全部passed状态、最终插件SHA256及完整两次启动日志；当前机器摘要不得混入其他JAR证据。森罗和升级还必须保留源内容/升级准备文件，其他套件如有 `PREPARATION.json` 也一并收录。历史0.2及早期0.1观察保存在 `docs/evidence/history/`，不作为0.3通过证明。
+
+1.10 `real-paper-third-country-transit`套件绑定三名普通客户端、三次正常启停、完整Core候选出处与准备目录哈希。阶段覆盖精确许可、旧版本拒绝、三方原子付款、撤销/旧批准重放、单一收款方余额不足时整笔退款冻结、恢复/重启、战争/失地/道路破坏、免费替代路线和货款统计。每次金融回放保存全部受益国的`balancesBefore/balancesAfter`。物资种子、国库注入/撤出及地形修改分别标记为测试干预，不当作生产收入或天然地理证据。

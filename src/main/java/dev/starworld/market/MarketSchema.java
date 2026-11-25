@@ -53,6 +53,11 @@ final class MarketSchema {
             store.execute("UPDATE market_schema SET version=4 WHERE id=1");
         }
         store.execute("CREATE UNIQUE INDEX IF NOT EXISTS market_purchase_tax_quote ON market_purchase(tax_quote) WHERE tax_quote IS NOT NULL");
+        if(version<5){
+            store.execute("ALTER TABLE market_quote ADD COLUMN transit_terms TEXT NOT NULL DEFAULT ''");
+            store.execute("ALTER TABLE market_purchase ADD COLUMN transit_terms TEXT NOT NULL DEFAULT ''");
+            store.execute("UPDATE market_schema SET version=5 WHERE id=1");
+        }
         store.execute("CREATE INDEX IF NOT EXISTS market_listing_purchase ON market_purchase(listing,state)");
         store.execute("CREATE INDEX IF NOT EXISTS market_purchase_open_buyer ON market_purchase(buyer_city) WHERE state NOT IN ('SHIPPED','REFUNDED','CANCELLED')");
         store.execute("CREATE INDEX IF NOT EXISTS market_purchase_open_seller ON market_purchase(seller_city) WHERE state NOT IN ('SHIPPED','REFUNDED','CANCELLED')");

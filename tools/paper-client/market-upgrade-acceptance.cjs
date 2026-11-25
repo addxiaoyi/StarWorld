@@ -5,7 +5,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {createRequire}=require('node:module');
 const {Paper,connect,properties,hash,requireFile,waitUntil}=require('./acceptance.cjs');
-const {sqliteSnapshot,assertMarketMigration,assertCorridorMigration}=require('./upgrade-10-acceptance.cjs');
+const {sqliteSnapshot,assertMarketMigration,assertCorridorMigration,assertTransitMigration}=require('./upgrade-10-acceptance.cjs');
 const MARKER='StarWorld isolated Paper smoke runtime v1';
 const read=file=>JSON.parse(fs.readFileSync(file,'utf8').replace(/^\uFEFF/,''));
 const omit=new Set(['logs','crash-reports','.paper-remapped','session.lock','PREPARATION.json','UNIT-EVIDENCE.json']);
@@ -32,8 +32,9 @@ function conserved(before,after,version){
   if(Number(version.split('.')[1])>=7)expectedTables.add('logistics_corridor');
   if(Number(version.split('.')[1])>=8)expectedTables.add('market_refund');
   if(Number(version.split('.')[1])>=9)expectedTables.add('market_quote');
+  if(Number(version.split('.')[1])>=10)for(const table of ['logistics_transit_schema','logistics_transit_proposal','logistics_transit_maintenance','logistics_paid_transit'])expectedTables.add(table);
   assert.deepEqual([...after.world.tables].sort(),[...expectedTables].sort());
-  assertMarketMigration(before,after,version);assertCorridorMigration(before,after,version);
+  assertMarketMigration(before,after,version);assertCorridorMigration(before,after,version);assertTransitMigration(before,after,version);
   const queues=new Set(before.world.rows.starworld_dispatch_cursor.map(row=>row.queue));
   if(Number(version.split('.')[1])>=8)queues.add('starworld:market-refund');
   const cursors=after.world.rows.starworld_dispatch_cursor;

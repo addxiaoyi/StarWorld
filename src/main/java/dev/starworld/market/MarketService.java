@@ -1,6 +1,9 @@
 package dev.starworld.market;
 
 import dev.starworld.integration.TreasuryTransferPort;
+import dev.starworld.integration.TransitPermitCodec;
+import dev.starworld.integration.TransitPermitPort.Permit;
+import dev.starworld.logistics.TransitCharges;
 import dev.starworld.logistics.LogisticsService;
 import dev.starworld.logistics.LogisticsState.*;
 import dev.starworld.market.MarketState.*;
@@ -23,7 +26,7 @@ public final class MarketService {
             s.execute("CREATE TABLE IF NOT EXISTS market_schema(id INTEGER PRIMARY KEY CHECK(id=1),version INTEGER NOT NULL,namespace TEXT NOT NULL)");
             s.execute("INSERT OR IGNORE INTO market_schema(id,version,namespace) VALUES(1,1,?)",UUID.randomUUID());
             int schema=s.query("SELECT version FROM market_schema WHERE id=1",r->r.getInt(1)).getFirst();
-            if(schema<1||schema>4)throw new SQLException("Unsupported physical market schema");
+            if(schema<1||schema>5)throw new SQLException("Unsupported physical market schema");
             s.execute("CREATE TABLE IF NOT EXISTS market_listing(id TEXT PRIMARY KEY,seller_city TEXT NOT NULL REFERENCES city_state(id),seller_nation TEXT NOT NULL,item TEXT NOT NULL,units INTEGER NOT NULL CHECK(units>0),unit_price TEXT NOT NULL,state TEXT NOT NULL,created_period INTEGER NOT NULL,expires_period INTEGER NOT NULL)");
             s.execute("CREATE INDEX IF NOT EXISTS market_listing_city ON market_listing(seller_city,state,created_period)");
             s.execute("CREATE INDEX IF NOT EXISTS market_listing_available ON market_listing(state,expires_period,id)");
@@ -109,6 +112,7 @@ public final class MarketService {
         if(l.status()!=ListingStatus.AVAILABLE||auth.period()>=l.expiresPeriod()||units<1||units>l.availableUnits()||units>definitions.maxUnits())throw new IllegalArgumentException("挂牌可购买数量不足、已关闭或到期");
         if(units>route(l,buyerCity,route,auth).capacity())throw new IllegalArgumentException("本次报价数量超过商路运力");return l;
     }
+    Map<UUID,Permit> transitTerms(UUID route,AuthoritySnapshot auth)throws SQLException{return TransitCharges.snapshot(logistics.route(route).orElseThrow(),auth);}
     private Purchase reserve(UUID id,UUID listingId,UUID routeId,UUID buyerCity,UUID governedNation,Long requested,AuthoritySnapshot auth,MarketQuoteService.Quote quote)throws SQLException{
         Objects.requireNonNull(id);Objects.requireNonNull(governedNation);
         return store.tx(s->{
@@ -129,6 +133,8 @@ public final class MarketService {
             if(l.status()!=ListingStatus.AVAILABLE||auth.period()>=l.expiresPeriod()||units<1||units>l.availableUnits()||units>definitions.maxUnits())
                 throw new IllegalArgumentException("挂牌可购买数量不足、已关闭或到期");
             Route route=route(l,buyerCity,routeId,auth);
+            Map<UUID,Permit> transit=transitTerms(routeId,auth);
+            if(quote==null&&!transit.isEmpty()||quote!=null&&!quote.transit().equals(transit))throw new IllegalArgumentException("过境许可或收费已变化，请重新预览并确认报价");
             if(units>route.capacity())throw new IllegalArgumentException("本次购买数量超过商路运力，请减少购买数量");
             // Partial sales must not turn a bounded listing count into unbounded outstanding payments.
             for(UUID city:List.of(l.sellerCity(),buyerCity)){
@@ -139,11 +145,11 @@ public final class MarketService {
             }
             BigDecimal goodsTotal=TreasuryTransferPort.money(l.unitPrice().multiply(BigDecimal.valueOf(units))),tax=quote==null?new BigDecimal("0.00"):quote.taxAmount();
             if(quote!=null&&(!quote.listingId().equals(listingId)||!quote.routeId().equals(routeId)||!quote.buyerCity().equals(buyerCity)||!quote.buyerNation().equals(buyer)||!quote.sellerNation().equals(l.sellerNation())||quote.units()!=units||quote.goodsTotal().compareTo(goodsTotal)!=0))throw new IllegalArgumentException("购买与冻结税费报价不符");
-            BigDecimal total=TreasuryTransferPort.money(goodsTotal.add(tax));
+            BigDecimal total=TreasuryTransferPort.money(goodsTotal.add(tax).add(TreasuryTransferPort.total(TransitCharges.tolls(transit,units))));
             UUID shipment=UUID.nameUUIDFromBytes((namespace+":shipment:"+id).getBytes(StandardCharsets.UTF_8));
             String transaction="starworld:market:"+namespace+":"+id;
-            s.execute("INSERT INTO market_purchase(id,listing,buyer_city,buyer_nation,seller_city,seller_nation,route,shipment,transaction_id,total,state,created_period,units,buy_all,goods_total,tax_amount,tax_quote) VALUES(?,?,?,?,?,?,?,?,?,?,'PENDING',?,?,?,?,?,?)",
-                    id,l.id(),buyerCity,buyer,l.sellerCity(),l.sellerNation(),routeId,shipment,transaction,total.toPlainString(),auth.period(),units,requested==null?1:0,goodsTotal.toPlainString(),tax.toPlainString(),quote==null?null:quote.id());
+            s.execute("INSERT INTO market_purchase(id,listing,buyer_city,buyer_nation,seller_city,seller_nation,route,shipment,transaction_id,total,state,created_period,units,buy_all,goods_total,tax_amount,tax_quote,transit_terms) VALUES(?,?,?,?,?,?,?,?,?,?,'PENDING',?,?,?,?,?,?,?)",
+                    id,l.id(),buyerCity,buyer,l.sellerCity(),l.sellerNation(),routeId,shipment,transaction,total.toPlainString(),auth.period(),units,requested==null?1:0,goodsTotal.toPlainString(),tax.toPlainString(),quote==null?null:quote.id(),TransitPermitCodec.encode(transit));
             balance(l,l.availableUnits()-units,Math.addExact(l.reservedUnits(),units),l.shippedUnits(),l.returnedUnits(),null);
             s.audit(auth.actor().toString(),"MARKET BUY PREPARE "+id+" units="+units+" total="+total);
             return purchase(id).orElseThrow();
@@ -168,7 +174,7 @@ public final class MarketService {
             // The original buyer consent was durably authorized; dispatch captures current owners only.
             Set<UUID> managed=new HashSet<>(auth.managedCities());managed.add(p.buyerCity());
             AuthoritySnapshot shipmentAuthority=new AuthoritySnapshot(auth.actor(),auth.period(),auth.cityNations(),managed,auth.controlledAnchors(),auth.validNodes(),auth.permittedTrades(),auth.corridors());
-            return logistics.createPaidShipment(p.shipmentId(),p.routeId(),p.transactionId(),cargo(l,p),shipmentAuthority,()->{
+            return logistics.createPaidShipment(p.shipmentId(),p.routeId(),p.transactionId(),cargo(l,p),shipmentAuthority,p.transit(),()->{
                 Purchase current=purchase(p.id()).orElseThrow();Listing reserved=listing(l.id()).orElseThrow();
                 if(current.status()!=PurchaseStatus.PAID||reserved.reservedUnits()<p.units())
                     throw new IllegalStateException("购买份额托管已消费或付款状态变化");
@@ -274,7 +280,7 @@ public final class MarketService {
     private UUID manager(UUID city,AuthoritySnapshot auth)throws SQLException{UUID nation=owner(city,auth);if(!auth.managedCities().contains(city))throw new IllegalArgumentException("需要城市管理权限");return nation;}
     private void fresh(AuthoritySnapshot auth)throws SQLException{Objects.requireNonNull(auth);long saved=store.query("SELECT period FROM market_clock WHERE id=1",r->r.getLong(1)).getFirst();if(auth.period()<saved)throw new IllegalArgumentException("市场授权周期已过期");store.execute("UPDATE market_clock SET period=? WHERE id=1",auth.period());}
     private Listing readListing(ResultSet r)throws SQLException{return new Listing(uuid(r,"id"),uuid(r,"seller_city"),uuid(r,"seller_nation"),r.getString("item"),r.getLong("units"),new BigDecimal(r.getString("unit_price")),ListingStatus.valueOf(r.getString("state")),r.getLong("created_period"),r.getLong("expires_period"),r.getLong("available_units"),r.getLong("reserved_units"),r.getLong("shipped_units"),r.getLong("returned_units"));}
-    private Purchase readPurchase(ResultSet r)throws SQLException{return new Purchase(uuid(r,"id"),uuid(r,"listing"),uuid(r,"buyer_city"),uuid(r,"buyer_nation"),uuid(r,"seller_city"),uuid(r,"seller_nation"),uuid(r,"route"),uuid(r,"shipment"),r.getString("transaction_id"),new BigDecimal(r.getString("total")),PurchaseStatus.valueOf(r.getString("state")),r.getInt("attempts"),r.getLong("next_attempt"),r.getString("last_error"),r.getLong("created_period"),r.getLong("units"),new BigDecimal(r.getString("goods_total")),new BigDecimal(r.getString("tax_amount")),r.getString("tax_quote")==null?null:uuid(r,"tax_quote"));}
+    private Purchase readPurchase(ResultSet r)throws SQLException{return new Purchase(uuid(r,"id"),uuid(r,"listing"),uuid(r,"buyer_city"),uuid(r,"buyer_nation"),uuid(r,"seller_city"),uuid(r,"seller_nation"),uuid(r,"route"),uuid(r,"shipment"),r.getString("transaction_id"),new BigDecimal(r.getString("total")),PurchaseStatus.valueOf(r.getString("state")),r.getInt("attempts"),r.getLong("next_attempt"),r.getString("last_error"),r.getLong("created_period"),r.getLong("units"),new BigDecimal(r.getString("goods_total")),new BigDecimal(r.getString("tax_amount")),r.getString("tax_quote")==null?null:uuid(r,"tax_quote"),TransitPermitCodec.decode(r.getString("transit_terms")));}
     private static UUID uuid(ResultSet r,String key)throws SQLException{return UUID.fromString(r.getString(key));}
     private static void page(int limit,int offset){if(limit<1||limit>100||offset<0)throw new IllegalArgumentException("市场每页1至100项");}
 }

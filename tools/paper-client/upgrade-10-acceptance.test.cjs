@@ -80,9 +80,10 @@ function durableSnapshots(version) {
   if (versionMinor >= 7) afterRows.logistics_corridor = [];
   afterRows.public_works_schema = [{ id: 1, version: 1 }];afterRows.civic_schema = [{ id: 1, version: 2 }];
   if (v11) Object.assign(afterRows, evolved.world.rows);
-  if (versionMinor>=5) afterRows.market_schema=[{id:1,version:versionMinor>=9?4:versionMinor>=8?3:2,namespace:'original'}];
+  if (versionMinor>=5) afterRows.market_schema=[{id:1,version:versionMinor>=10?5:versionMinor>=9?4:versionMinor>=8?3:2,namespace:'original'}];
   if (versionMinor>=8) {afterRows.market_refund=[];afterRows.starworld_dispatch_cursor.push({queue:'starworld:market-refund',next_lane:'FRESH'});}
   if (versionMinor>=9) afterRows.market_quote=[];
+  if (versionMinor>=10) {afterRows.logistics_transit_schema=[{id:1,version:1,namespace:'01234567-0123-0123-0123-012345678901'}];for(const table of ['logistics_transit_proposal','logistics_transit_maintenance','logistics_paid_transit'])afterRows[table]=[];}
   const baseTables = [...new Set([...stableTables, ...AUXILIARY_TABLES])];
   const newTables = expectedAddedTables(version);
   const coreRows = { starcore_nation_state: [], starcore_treasury_state: [], starcore_resource_state: [] };
@@ -186,6 +187,23 @@ test('1.5 market migration preserves exact payment identity, original quantity a
   }
   assert.doesNotThrow(()=>assertMarketMigration(after,structuredClone(after),'1.5.0'));
   const corrupt=structuredClone(after);corrupt.world.rows.market_purchase[0].total='26.00';assert.throws(()=>assertMarketMigration(after,corrupt,'1.5.0'));
+});
+
+test('1.10 preserves accepted tariff terms and never invents transit permissions or toll allocations during migration',()=>{
+  const {before,after}=durableSnapshots('1.10.0');assert.doesNotThrow(()=>assertDurable(before,after,'1.10.0'));
+  const {after:previous}=durableSnapshots('1.9.0');
+  const quote={id:'accepted',purchase:'purchase',goods_total:'25.00',tax_amount:'0.50'};
+  const purchase={id:'purchase',listing:'listing',buyer_city:'buyer',state:'SHIPPED',transaction_id:'payment',shipment:'shipment',total:'25.50',goods_total:'25.00',tax_amount:'0.50',tax_quote:'accepted',units:20,buy_all:1};
+  previous.world.rows.market_quote=[quote];previous.world.rows.market_purchase=[purchase];
+  after.world.rows.market_quote=[{...quote,transit_terms:''}];after.world.rows.market_purchase=[{...purchase,transit_terms:''}];
+  assert.doesNotThrow(()=>conserved(previous,after,'1.10.0'));
+  for(const mutate of [s=>s.world.rows.market_quote[0].transit_terms='fabricated',s=>s.world.rows.market_purchase[0].total='26.00',
+    s=>s.world.rows.logistics_paid_transit.push({order_id:'shipment',terms:'invented'}),s=>s.world.rows.logistics_transit_schema[0].namespace='bad',
+    s=>s.world.rows.logistics_transit_proposal.push({id:'invented'})]){const bad=structuredClone(after);mutate(bad);assert.throws(()=>conserved(previous,bad,'1.10.0'));}
+  after.world.rows.market_quote[0].transit_terms='durable-terms';after.world.rows.market_purchase[0].transit_terms='durable-terms';
+  after.world.rows.logistics_paid_transit.push({order_id:'shipment',terms:'durable-terms'});after.world.rows.logistics_transit_proposal.push({id:'approved',approved_revision:1});
+  assert.doesNotThrow(()=>conserved(after,structuredClone(after),'1.10.0'));
+  for(const mutate of [s=>s.world.rows.logistics_paid_transit=[],s=>s.world.rows.logistics_transit_schema[0].namespace='01234567-0123-0123-0123-012345678902',s=>s.world.rows.market_purchase[0].transit_terms='repriced']){const bad=structuredClone(after);mutate(bad);assert.throws(()=>conserved(after,bad,'1.10.0'));}
 });
 
 test('1.9 migrates every legacy market schema to exact zero-tax terms and preserves accepted quotes on restart',()=>{

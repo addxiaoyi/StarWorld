@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "version": "1.9.0",
-  "recorded_at": "2026-11-25T12:47:47.450052+00:00",
-  "command": "./mvnw -B --no-transfer-progress -Dstarworld.testHeap=160m clean verify",
+  "version": "1.10.0",
+  "recorded_at": "2026-11-25T13:49:17.886006+00:00",
+  "command": "./mvnw -o -B --no-transfer-progress -Dstarworld.testHeap=160m clean verify",
   "java": "OpenJDK 21.0.10",
-  "artifact_sha256": "1381e9f938bfe0eb97f0377dde920c47e885d7365df03d7e183d2559994eb527",
+  "artifact_sha256": "962cd4c9b9ef95b9048ccd585e1d50c7d4d0c8eb9fe873651106b169180617da",
   "totals": {
-    "tests": 548,
+    "tests": 566,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -181,6 +181,13 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.integration.StarCoreTransitPermitsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.integration.StarCoreTreasuryRefundsTest",
       "tests": 4,
       "failures": 0,
@@ -188,8 +195,22 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.integration.StarCoreTreasurySettlementsTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.integration.StarCoreTreasuryTransfersTest",
       "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.integration.TransitPermitCodecTest",
+      "tests": 1,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -231,7 +252,7 @@
     },
     {
       "suite": "dev.starworld.logistics.CorridorCaptureTest",
-      "tests": 4,
+      "tests": 6,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -309,6 +330,13 @@
     {
       "suite": "dev.starworld.market.MarketServiceTest",
       "tests": 34,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.market.TransitMarketTest",
+      "tests": 5,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -449,30 +477,30 @@
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 62412,
-      "missed": 16950
+      "covered": 67093,
+      "missed": 18282
     },
     "BRANCH": {
-      "covered": 4523,
-      "missed": 2907
+      "covered": 4881,
+      "missed": 3127
     },
     "LINE": {
-      "covered": 4231,
-      "missed": 768
+      "covered": 4463,
+      "missed": 818
     },
     "COMPLEXITY": {
-      "covered": 3081,
-      "missed": 2976
+      "covered": 3296,
+      "missed": 3200
     },
     "METHOD": {
-      "covered": 1674,
-      "missed": 591
+      "covered": 1787,
+      "missed": 626
     },
     "CLASS": {
-      "covered": 250,
-      "missed": 14
+      "covered": 267,
+      "missed": 16
     }
   },
-  "build_log_sha256": "4ca909467b95c404e789bfd38efb69c1b778c619cbad1148806b5b7261bb297d",
-  "sources_sha256": "e95f7116712bdcd80d77d69cc176c921b1b3551b070effeb3429d77f88b6296b"
+  "build_log_sha256": "badd36f89a7c4cb9221a584c8ff2bde6145612cf179f2cf49fe469ce504ac2da",
+  "sources_sha256": "16bc41321963ca47d39445b3fe7149c42a3b628f570837a7d4a1e9371c50099c"
 }

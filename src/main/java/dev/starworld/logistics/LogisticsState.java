@@ -49,9 +49,11 @@ public final class LogisticsState {
     }
 
     public record Route(UUID id, UUID originCity, UUID targetCity, List<UUID> nodes, Mode mode,
-                        boolean enabled, double distanceBlocks, int travelPeriods, long capacity,boolean corridorRequired) {
-        public Route { nodes = List.copyOf(nodes); }
+                        boolean enabled, double distanceBlocks, int travelPeriods, long capacity,boolean corridorRequired,String transitKey) {
+        public Route { nodes = List.copyOf(nodes);Objects.requireNonNull(transitKey);if(!transitKey.isEmpty()&&(!corridorRequired||!transitKey.matches("[a-zA-Z0-9:_-]{1,160}")))throw new IllegalArgumentException("过境路线必须绑定通道"); }
+        public Route(UUID id,UUID origin,UUID target,List<UUID> nodes,Mode mode,boolean enabled,double distance,int periods,long capacity,boolean bound){this(id,origin,target,nodes,mode,enabled,distance,periods,capacity,bound,"");}
         public Route(UUID id,UUID origin,UUID target,List<UUID> nodes,Mode mode,boolean enabled,double distance,int periods,long capacity){this(id,origin,target,nodes,mode,enabled,distance,periods,capacity,false);}
+        public boolean requiresTransit(){return !transitKey.isEmpty();}
     }
 
     /** Read-only planning projection; it never grants route or transit authority. */

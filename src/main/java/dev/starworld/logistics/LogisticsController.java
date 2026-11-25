@@ -23,11 +23,15 @@ public final class LogisticsController {
     private final CoreBridge core;
     private final CoreExtensionPort extensions;
     private final LogisticsService service;
+    private final TransitPermitPort transit;
+    private final TransitController transitCommands;
     private final AtomicBoolean ticking = new AtomicBoolean();
 
     public LogisticsController(JavaPlugin plugin, WorldRuntime runtime, CoreBridge core, CoreExtensionPort extensions, LogisticsService service) {
         this.plugin = Objects.requireNonNull(plugin); this.runtime = Objects.requireNonNull(runtime); this.core = Objects.requireNonNull(core);
         this.extensions = Objects.requireNonNull(extensions); this.service = Objects.requireNonNull(service);
+        this.transit = new StarCoreTransitPermits(plugin);
+        this.transitCommands = new TransitController(plugin,runtime,core,service,transit);
     }
     public LogisticsService service() { return service; }
 
@@ -80,7 +84,7 @@ public final class LogisticsController {
         List<Route> physical=new ArrayList<>(routes.stream().filter(r->inspectUnbound||r.corridorRequired()).sorted(Comparator.comparing(Route::id)).toList());
         // A full batch can exceed its physical-read budget. Rotate priority so later routes recover too.
         if(!physical.isEmpty())Collections.rotate(physical,-(int)(runtime.currentPeriod()%physical.size()));
-        Map<UUID,Corridor.Proof> corridors=budget.capture(physical.stream().limit(Corridor.MAX_ROUTES).toList(),nodes,valid);
+        Map<UUID,Corridor.Proof> corridors=budget.capture(physical.stream().limit(Corridor.MAX_ROUTES).toList(),nodes,valid,transit);
         return new Captured(new AuthoritySnapshot(actor, runtime.currentPeriod(), nations, managed, anchors, valid, permitted,corridors), new ArrayList<>(cities.values()));
     }
 
@@ -95,6 +99,7 @@ public final class LogisticsController {
 
     /** args[0] is node/route/trade/demand. Returns false for an unrelated WorldCommand subcommand. */
     public boolean execute(Player p, String[] args) {
+        if(transitCommands.execute(p,args))return true;
         if (args.length == 0 || !Set.of("node", "route", "trade", "demand").contains(args[0].toLowerCase(Locale.ROOT))) return false;
         try {
             switch (args[0].toLowerCase(Locale.ROOT)) {
@@ -160,7 +165,7 @@ public final class LogisticsController {
                 require(ids.size() >= 2 && ids.size() <= service.definitions().maxWaypoints(), "商路节点数量超出范围；按起点、途经点、终点顺序填写");
                 UUID id = UUID.randomUUID(); Route proposed = new Route(id, city.cityId(), target, ids, mode, true, 0, 1, 1);
                 load(p, () -> { List<Node> nodes = new ArrayList<>(); for (UUID node : ids) nodes.add(service.node(node).orElseThrow(() -> new IllegalArgumentException("未知路径节点"))); return new Context(nodes, List.of(proposed), List.of()); }, context ->
-                        act(p, context, Set.of(city.cityId(), target), auth -> service.createRoute(id, city.cityId(), target, ids, mode, auth), r -> p.sendMessage("§a商路 " + r.id() + " · " + r.travelPeriods() + "周期 · 容量" + r.capacity() + "；交易由目标城市接受货单后生效")));
+                        act(p, context, Set.of(city.cityId(), target), auth -> service.createRoute(id, city.cityId(), target, ids, mode, auth), r -> p.sendMessage("§a商路 " + r.id() + " · " + r.travelPeriods() + "周期 · 容量" + r.capacity() + "；第三国节点维护由起点城承担；过境路线须获第三国许可并确认收费")));
             }
             case "list" -> {
                 require(args.length <= 3, "/sw route list [页码]"); CoreCity city = current(p); int offset = offset(args, 2);
@@ -191,7 +196,7 @@ public final class LogisticsController {
                     status.pausedReasons().forEach((reason,count)->p.sendMessage("§c"+count+"单 · "+reason));
                 });
             }
-            default -> { p.sendMessage("§e/sw route create <目标城市UUID> <land|sea> <起点UUID,途经UUID,终点UUID>"); p.sendMessage("§e/sw route list [页码] · compare <目标城市UUID> [land|sea] [页码] · enable|disable|status|inspect|bind <商路UUID>"); }
+            default -> { p.sendMessage("§e/sw route create <目标城市UUID> <land|sea> <起点UUID,途经UUID,终点UUID>"); p.sendMessage("§e/sw route list [页码] · compare <目标城市UUID> [land|sea] [页码] · enable|disable|status|inspect|bind <商路UUID>"); p.sendMessage("§e/sw route transit <商路UUID> · transit-propose <商路UUID> <每件通行费> <小时1–720>"); p.sendMessage("§e/sw route transit-approve <许可草案UUID> · transit-revoke <商路UUID> <当前版本> （过境国创始人）"); }
         }
     }
 

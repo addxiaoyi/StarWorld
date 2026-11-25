@@ -1,6 +1,6 @@
 # StarWorld
 
-持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.9.0**，出口关税报价、明确确认和含税退款已通过增量验收；1.8双方确认退款、1.7有限道路和水路通道、1.6地区地图、1.5分批市场的对应证据已归档。后续扩展按[开发计划](docs/development-plan.md)持续实施。
+持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.10.0**，第三国过境许可、原子通行费、撤销暂停和退款已通过三国实服验收；1.8双方确认退款、1.7有限道路和水路通道、1.6地区地图、1.5分批市场的对应证据已归档。后续扩展按[开发计划](docs/development-plan.md)持续实施。
 
 **开发分支：** [`codex/complete-development-stages`](https://github.com/addxiaoyi/StarWorld/tree/codex/complete-development-stages)，对应[草稿PR #2](https://github.com/addxiaoyi/StarWorld/pull/2)。当前状态见[开发计划](docs/development-plan.md)和[测试记录](docs/test-results.md)，已完成的历史发行见[1.4交接说明](docs/handoff-1.4.0.md)。
 
@@ -23,7 +23,7 @@ python -m unittest discover -s tools -p "test_*.py" -v
 npm --prefix tools/paper-client test
 ```
 
-产物为 `target/starworld-1.9.0.jar` 和 `target/starworld-1.9.0-sources.jar`。完整验证证据包和发行 ZIP 只在全部运行套件绑定同一JAR后生成；只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
+产物为 `target/starworld-1.10.0.jar` 和 `target/starworld-1.10.0-sources.jar`。完整验证证据包和发行 ZIP 只在全部运行套件绑定同一JAR后生成；只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
 
 1. 正常关服，备份整个 `plugins/StarWorld/`。升级时保留数据库和持久配置 ID。
 2. 放置插件 JAR，使用 Paper 1.21.11 和审计兼容的 StarCore 启动。
@@ -45,7 +45,7 @@ npm --prefix tools/paper-client test
 | 国家发展 | 按当前归属城市的真实结算聚合农业、工业、贸易、军需和文化倾向；五类国家专长有知识/行为门槛与六周期冷却，失去贡献城市会暂停加成 |
 | 区域文化 | 有效设施积累本国传统；完成贸易后凭唯一回执交流；地域文化有限影响产业 |
 | 十一种事件 | 干旱、暴雪、丰收、洪水、饥荒、资源危机、商业繁荣、文化节庆、边境争端、衰落、复兴；条件/权重/冷却/余波 |
-| 交通贸易 | 道路、桥梁、港口、关隘；显式商路、地形运时、共享容量、维护、双向实物托管、供需与战争封锁 |
+| 交通贸易 | 道路、桥梁、港口、关隘；有限物理通道、第三国许可/撤销/通行费、共享容量、起点赞助维护、实物托管与战争封锁 |
 | 生活职业 | 厨师、酿酒师、装饰工匠、乐师；仓库消耗、个人/城市限额、临时产业效果和重启恢复 |
 | 国家资源出口 | 配置实物成本兑换已有国家抽象资源分类；outbox、稳定事务 ID、核心持久回执、退避重试 |
 | 核心军队战斗 | 已提交真实军需与地形通过公开army_combat贡献点影响有效设施区块的军队伤害 |
@@ -92,6 +92,9 @@ npm --prefix tools/paper-client test
 /sw export <契约ID> <批数>
 /sw outbox
 /sw market quote <挂牌UUID> <正向商路UUID> [数量] · buy-quote <报价UUID>
+/sw route transit <商路UUID>
+/sw route transit-propose <商路UUID> <每件通行费> <小时1–720>
+/sw route transit-approve <许可草案UUID> · transit-revoke <商路UUID> <当前版本>
 /sw market refund <购买UUID> · refunds [页码]
 /sw market refund-accept|refund-cancel|refund-retry <退款申请UUID>
 ```

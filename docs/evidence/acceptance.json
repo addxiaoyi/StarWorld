@@ -1,83 +1,114 @@
 {
   "schema": 1,
-  "version": "1.9.0",
+  "version": "1.10.0",
   "status": "feature-acceptance-passed",
   "release_status": "full-release-suite-not-run",
-  "recorded_at": "2026-11-25T12:55:25.701827+00:00",
-  "artifact_sha256": "1381e9f938bfe0eb97f0377dde920c47e885d7365df03d7e183d2559994eb527",
-  "sources_sha256": "e95f7116712bdcd80d77d69cc176c921b1b3551b070effeb3429d77f88b6296b",
-  "unit_evidence_sha256": "29589455e164471996517b697e899d46322e0161520ef9b6ab74dfc27b30fbc9",
+  "recorded_at": "2026-11-25T13:56:11.082477+00:00",
+  "artifact_sha256": "962cd4c9b9ef95b9048ccd585e1d50c7d4d0c8eb9fe873651106b169180617da",
+  "sources_sha256": "16bc41321963ca47d39445b3fe7149c42a3b628f570837a7d4a1e9371c50099c",
+  "unit_evidence_sha256": "44bfffa59628ff4c44c3c625c415c1a49c88ed0576b43e31a685cc1406443d44",
   "tests": {
-    "java": 548,
-    "java_suites": 62,
-    "python": 77,
-    "node": 25
+    "java": 566,
+    "java_suites": 66,
+    "python": 81,
+    "node": 26
   },
-  "runtime_stages": 34,
+  "runtime_stages": 54,
   "runs": [
+    {
+      "suite": "transit",
+      "stages": 20,
+      "runtime": "runtime/transit110-r2/transit-acceptance/2026-11-25T13-49-31-934Z",
+      "evidence_sha256": "82ba4ac948c30f99c8e994c9ff26cf15f8367b316e8a928cfe4a55c6137bb0dc",
+      "runner_sha256": "230974d390d3cf1a0eb22fd057aed2f2a83b0e8704d8a6f1aaa742c4630236e8",
+      "finished_at": "2026-11-25T13:52:34.555Z",
+      "normal_server_stops": 3,
+      "logs": {
+        "paper-run-1.log": "6b7cfa4f94546d6377ba3b8e6395d8b5b8b0f08386dcc7397b5a0b92ed51ddba",
+        "client-run-1-a.log": "fcbb04f3bcda9c186bb3b779e950ebf36b38bfd9daae84e285650c8dad68ca95",
+        "client-run-1-b.log": "d4d062527f3e939830e175a4a0e2db4e48e62d44177cc09a10e17968988b60a0",
+        "client-run-1-c.log": "bb7497384b59dfefceeb3a1dba19a758dca58299a6bc60faa47e2f5a616a7491",
+        "paper-run-2.log": "1c7a175ee7bd13317cde587ea195d546f354b8803e0544397a25fa61cabbbbd6",
+        "client-run-2-a.log": "638850bd903b322df7a888f4f80c25a4c422b2158673550b7e4dc38323e97eaf",
+        "client-run-2-b.log": "9a1fb6b5c5441ba0c1f1d771f13b1a207d8140ce594068689a4d5a77d2578f74",
+        "client-run-2-c.log": "f70635fedb52de692db974a42a95d6df776970b247f51f3b9bdb9b89187ee5b5",
+        "paper-run-3.log": "00f60a9d99749f46b2835d090d662e755e3bfac45ca2dfb1e44c82e74ecf89c2",
+        "client-run-3-a.log": "7d3bb6e583c8ad776b077e01b5bb7ba833b39ee0f56ae3c1f618b7e21890a690",
+        "client-run-3-b.log": "66ae08553ef7c3c945ebda15f81d4c6a8419a21dfe905f7576f77c082aa6e269",
+        "client-run-3-c.log": "3398093d6f2b141c1ec3fb3b1466966b12e05985b4b880cae62051b9b6c505e1"
+      }
+    },
     {
       "suite": "market-tax",
       "stages": 15,
-      "runtime": "runtime/tax19/tax-acceptance/2026-11-25T12-48-40-351Z",
-      "evidence_sha256": "5d361a4a06d91ed23cb088a387db71532541927a522168b1205c5f36ad7d3e72",
+      "runtime": "runtime/tax110/tax-acceptance/2026-11-25T13-52-10-971Z",
+      "evidence_sha256": "d00e9b49ee40db61d07383c180b8e76b21115fd1cf764a975589f5f32c235d0e",
       "runner_sha256": "9dc35880216b97cc98515e16b4f56ec6fe04e89d556e3b4e8f9b39bb23e63c31",
-      "finished_at": "2026-11-25T12:51:27.867Z",
+      "finished_at": "2026-11-25T13:54:53.844Z",
       "normal_server_stops": 3,
       "logs": {
-        "client-run-1-a.log": "1f843567c3e1ad8a31e833c79b35e2b7a43194634220fe5115e53aa37a8c0151",
-        "client-run-1-b.log": "1c33cca55a27a785da2bdf59eb3bdaf474ca920ba32ae9e6f59f8ffae81a0391",
-        "client-run-2-a.log": "546d7ad69550958635d38e1e713c6c76495016383c4087311f5b9e2b8fedfb72",
-        "client-run-2-b.log": "7b471700789496fca0b35fa115a6510742f3f792105abe2158c2bf39814595e2",
-        "client-run-3-a.log": "cbe54114183f1c43c4c7b15d5b5707c87d0872ee377183478e98e413ff5caa89",
-        "client-run-3-b.log": "13b5b7e7582f0448152dd9c235abd6da39b33ff59f000e62eb60ffe0ab463541",
-        "paper-run-1.log": "f408d7c0044a69303be26551b535d4dcecd105521aebfc9ef435dd091507b70b",
-        "paper-run-2.log": "b9116232a160ed7d5bdd743fb02c3df05ca19ae0b80d9227afd745e00570fa5e",
-        "paper-run-3.log": "7d5c6a6f1d4ef140a3788bd79977c6d8c925c7138546a288055a3e26ac7f6b2a"
+        "paper-run-1.log": "ce06d91c4037aee0a5cfa1edeb7a924ed6310c4d4f52ef1e6a3773562e3e89aa",
+        "client-run-1-a.log": "912f4ce287479e17f31399a156f9d9c4afc79aaca381221cd8edb3920025372b",
+        "client-run-1-b.log": "5a27b54c3c8ed07eee4cec09aeb2a751fe957445bb663426e78c178722f14c19",
+        "paper-run-2.log": "35931babdbd8863438e46e593e195669707c32fe8a376e2e6d4c07e3e5e6ae5a",
+        "client-run-2-a.log": "f3898fe5b746caf9643a6c6d69ac1b4e41cec8009b3f4dff684d44fca4d04c65",
+        "client-run-2-b.log": "c7cf8f980b093f57dd3ddc235f7ce66edb97e07ed471bf82ab20dd22e04c774f",
+        "paper-run-3.log": "f3c606965668e426813b149103ef5b39ecaf0ae557f017a963ce35faf5b378ea",
+        "client-run-3-a.log": "8fb3f2c65a34074ca4de360024b3d0d086873efb0daf9884f47955f8cf3ccf68",
+        "client-run-3-b.log": "869144f2e33416e6a1f2d8d652ddc9e81fda5de98c5536120129cf1196510a84"
       }
     },
     {
       "suite": "market-refund",
       "stages": 13,
-      "runtime": "runtime/refund19/refund-acceptance/2026-11-25T12-52-52-899Z",
-      "evidence_sha256": "1d9a8969551ac21a24bb00bb357df0445bd306a5edec5b5d2ebe56f363ea1025",
+      "runtime": "runtime/refund110/refund-acceptance/2026-11-25T13-53-15-487Z",
+      "evidence_sha256": "fddc224d8ee3ab42671958a2b76139654c2d05bc65773c9332d5c7aa03c8ca5f",
       "runner_sha256": "4387f13f7745fc4af3c43cfdc1633e88820717870b74d726b3f00dc613f0c023",
-      "finished_at": "2026-11-25T12:54:19.538Z",
+      "finished_at": "2026-11-25T13:54:43.937Z",
       "normal_server_stops": 3,
       "logs": {
-        "client-run-1-a.log": "7d7ae423346feabcad7c9f1e530e55e143bc8ec5a358a7dc93a3019e6d7a899b",
-        "client-run-1-b.log": "902aedb71dade4cbb51d0852abc400b22bc714d5439f0ae261972d6046acc7c8",
-        "client-run-2-a.log": "b008310fd4d6e48b496b65aedbf2929b3b9c9d091ec6f9d0a2d56c42c8a1c95a",
-        "client-run-2-b.log": "ed5aae86fc58c53beae74288c195db4a35c6b6aa89e9c377ff523b2ccbccd57d",
-        "client-run-3-a.log": "9d360bca42040f3ccf6b181599cb4b660ff52d027cbdbbf6e97913f53671df58",
-        "client-run-3-b.log": "a9f30fa92cf74bc2adc2bcd9e06fd3d46e4213a34197a29f9157da53fe9e9b64",
-        "paper-run-1.log": "7484c4797e8e58b14b93ddfc00f3f43667a6c2f6fc1ee84c77d49a0da12db0a3",
-        "paper-run-2.log": "484fa07778db51f0df2d9955089c7087b38c33d4e60211444f2b6c2d6522f0a6",
-        "paper-run-3.log": "57941e2e0d4baadb18ea14831e078be59f6436cdea52447a2ebedb036de59dda"
+        "paper-run-1.log": "a27190181e164f0d8fcf27e8ec48515687faf14d06e232cf9014e9348480cbdb",
+        "client-run-1-a.log": "bdafaf4d05765fffe993cacbce4da2b84a2ad89e0c635533a34a210dc9515c4f",
+        "client-run-1-b.log": "add59d28ae192a77d8b6f4ddfa0994fef3e5e6bf9e8ccb051aef8fdb7cd7ad06",
+        "paper-run-2.log": "a97a59b504d6129da53ee697df88108f27d7610a9e2d80a7db608da43e7b4fdd",
+        "client-run-2-a.log": "c16ca30cf5950d3b5a2fa0f32ffeb6d6e9f48823e98871c7d7442a896b262cb2",
+        "client-run-2-b.log": "999df3dec476e61248125a5d6ee04206e1888b9c723fd689b5402ad6b92a5713",
+        "paper-run-3.log": "a21550050788dc6801fb21c9c0794c3c861566cd8d4d905f406c93f63c13fc06",
+        "client-run-3-a.log": "b7c97e291e6cff981d86a7cf9b17b73896703387483271af43a8fff49fb8333e",
+        "client-run-3-b.log": "1f3ad0cfac472e40a174b9052deba6a508f8c01cf310aa0a2ad20c8a220972c5"
       }
     },
     {
       "suite": "market-upgrade",
       "stages": 6,
-      "runtime": "runtime/market-upgrade19/market-upgrade-acceptance/2026-11-25T12-52-16-438Z",
-      "evidence_sha256": "b8fc0b48057cf928f64bc654e67e80153cd91b6e25930b57739621996aab5b18",
-      "runner_sha256": "e6c29b2163b8db5094f74063d6d498bbeae4a26da136e92e1e61c50018df25ff",
-      "finished_at": "2026-11-25T12:52:52.545Z",
+      "runtime": "runtime/market-upgrade110/market-upgrade-acceptance/2026-11-25T13-52-12-736Z",
+      "evidence_sha256": "ad1620665b65e037535374bba4569ded4489fc70e1e08fe47d1f0d92f3373555",
+      "runner_sha256": "0a7c01746a7622914168805f7bb3dfc8d41bac3f8862aa5549051261430ea29c",
+      "finished_at": "2026-11-25T13:52:44.531Z",
       "normal_server_stops": 2,
       "logs": {
-        "client-run-1-a.log": "223fc10b288ed489736bc3b8e91b228e64ed85eb19683349dbfa52f80d9ca0c5",
-        "client-run-1-b.log": "675561123ef5eada977927cfae3dbde14cbe44503940c568c27a45a274cb7a85",
-        "client-run-2-a.log": "c8c14d501b8a8c11dd7f40f8d0f77cc1a9b0fef8f0ce79f54933823a2dd9bf57",
-        "client-run-2-b.log": "c6b29c306cd98684900170dc48bcd6299d257ab6c5238c48f4db2a337d3afadb",
-        "paper-run-1.log": "ab08c3df01536d1a3b0fe3209a5c9e6d53554bc89fd6dab70c9abff3885f768e",
-        "paper-run-2.log": "4a29dc91e9b342631cf9b3afb2b83e4570ea6639c7b576093c63a5d27ac593d9"
+        "paper-run-1.log": "c38507f7bc2a91dacbedfce0f2a8646922100a585c68f1cc57b87e030b786e42",
+        "client-run-1-a.log": "9c4709b18a16247e333ad8de51d6002a7a80ae430619d66d865f132b0d31bd15",
+        "client-run-1-b.log": "c4727a312ccbc637a12d2a4b7b8966de2d47420e35e4058aed798da0cb723817",
+        "paper-run-2.log": "be9d57529d2080c4706a0606867727f4eb189f464c8be2720cf018995d2d1330",
+        "client-run-2-a.log": "edf5daedfe328a77de56819e41afda7be9708d34d43cf56faaa7bea434f64348",
+        "client-run-2-b.log": "66d926f7b8b5de7b80b28927270bd1f5457edeeb1f61eb67b4cc121f2bdaaa1c"
       }
     }
   ],
-  "scope": "Frozen public export tariff quotes, explicit positive-tax consent, exact payment/reversal, goods-only statistics, zero-tax refund regression and real 1.4 migration. Further roadmap work continues.",
+  "scope": "Versioned third-country permission, frozen consent, atomic toll allocation and full reversal, origin-sponsored foreign-node upkeep, revocation/war/claims/road gating, free reroute, receipt replay, tariff and refund regression, real 1.4 migration. Further roadmap work continues.",
   "historical_release": "runtime/releases/1.4.0",
+  "failed_attempts": [
+    {
+      "runtime": "runtime/transit110/transit-acceptance/2026-11-25T13-43-30-128Z",
+      "artifact_sha256": "b2a90f5fbd69055014c92dc113962ec7de98bc2b6afcf8ac2fe4dce7781522c3",
+      "evidence_sha256": "0628cd32fd3a54aecdd22a20b37935cf5e08087886f71b144c046d0859fc3afa",
+      "reason": "Test fixture reflected on package-private TransitPermitLedger. Changed fixture to invoke public TransitPermitService; failed runtime and initial build retained."
+    }
+  ],
   "tool_logs": {
-    "tax19-verify.log": "4ca909467b95c404e789bfd38efb69c1b778c619cbad1148806b5b7261bb297d",
-    "tax19-python.log": "c20d8a23aba4d182b518520ee1b04d1bb677499377bf3bae64551ab58809f8ac",
-    "tax19-node.log": "9faca8a5a012231b0d2f5d6ee33732023397fb839a4c58862de04c80f4ce3691"
+    "transit110-verify-r2.log": "badd36f89a7c4cb9221a584c8ff2bde6145612cf179f2cf49fe469ce504ac2da",
+    "transit110-python-r2.log": "ad09f1cf2805ca14248f8a062a06b876ebaffb2ae3937eb0e8fac00bc0de40d0",
+    "transit110-node.log": "6a0de7fa3189d308fd03ee1e7554c151acb7ab32be225bbf3691237f749a2605"
   }
 }

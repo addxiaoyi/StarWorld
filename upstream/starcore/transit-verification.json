@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "base": "f769e62799e769a18fe51305b545869a17f80cd1",
+  "parent": "f540963ea48a9bde9e8a67aff0e08eacca84d50c",
+  "commit": "bc720cda1c9b113667fc33bc521a7a900b1e5d8d",
+  "local_branch": "codex/starworld-transit-contract",
+  "patch_sha256": "58e580f5838221e7fa7ff592dc00d6aa8fae62778422138f25edf7568bac18cb",
+  "artifact_sha256": "bb7b8a2c66334964389eeda15c8cbe38c97a370acc9f6bec264dc19e1e95dd9c",
+  "tests": {
+    "tests": 7020,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 21
+  },
+  "skipped": [
+    {
+      "suite": "dev.starcore.starcore.module.nation.MySqlNationStateConflictIntegrationTest",
+      "count": 1
+    },
+    {
+      "suite": "dev.starcore.starcore.foundation.economy.SqlBalanceStorageMySqlIntegrationTest",
+      "count": 1
+    },
+    {
+      "suite": "dev.starcore.starcore.module.treasury.MySqlTreasuryStateIntegrationTest",
+      "count": 2
+    },
+    {
+      "suite": "dev.starcore.starcore.core.database.MySqlCredentialRotationIntegrationTest",
+      "count": 1
+    },
+    {
+      "suite": "dev.starcore.starcore.core.database.MySqlMigrationIntegrationTest",
+      "count": 1
+    },
+    {
+      "suite": "dev.starcore.starcore.module.policy.MySqlPolicyModuleConflictIntegrationTest",
+      "count": 2
+    },
+    {
+      "suite": "dev.starcore.starcore.module.war.WarModuleAuthorityTest",
+      "count": 2
+    },
+    {
+      "suite": "dev.starcore.starcore.core.event.redis.RedisCrossServerServiceTest",
+      "count": 2
+    },
+    {
+      "suite": "dev.starcore.starcore.core.database.MySqlHistoricalV9IntegrationTest",
+      "count": 1
+    },
+    {
+      "suite": "dev.starcore.starcore.module.narrative.engine.NarrativeEngineTest$SessionLifecycle",
+      "count": 7
+    },
+    {
+      "suite": "dev.starcore.starcore.core.database.MySqlConnectionRecoveryIntegrationTest",
+      "count": 1
+    }
+  ],
+  "build_log": "runtime/logs/core-transit-verify.log",
+  "build_log_sha256": "bbbafc1eba3283f8500a3bd00317273783f55f07c35d41df4a0ab7733bd89a5c",
+  "command": "./mvnw -o -B --no-transfer-progress verify",
+  "status": "build-and-real-paper-passed",
+  "real_paper": {
+    "suite": "real-paper-third-country-transit",
+    "version": "1.10.0",
+    "starworld_artifact_sha256": "962cd4c9b9ef95b9048ccd585e1d50c7d4d0c8eb9fe873651106b169180617da",
+    "runtime": "runtime/transit110-r2/transit-acceptance/2026-11-25T13-49-31-934Z",
+    "evidence_sha256": "82ba4ac948c30f99c8e994c9ff26cf15f8367b316e8a928cfe4a55c6137bb0dc",
+    "stages": 20,
+    "normal_server_stops": 3,
+    "finished_at": "2026-11-25T13:52:34.555Z"
+  }
+}

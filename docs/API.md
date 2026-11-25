@@ -105,7 +105,7 @@ public void onIndustry(IndustrySettledEvent event) {
 
 1.5中 `Listing.units` 保留原始数量，`availableUnits/reservedUnits/shippedUnits/returnedUnits` 的和始终等于原始数量。`Purchase.units` 为该次不可变份额，`PriceHistory.purchaseId` 唯一标识该次成交；同一挂牌允许多份历史。记录构造签名已扩展，直接构造或反射解析这些记录的扩展需适配新字段。
 
-1.9 `Purchase`增加`goodsTotal/taxAmount/taxQuote`，`total`为两项金额之和，`taxQuote`在旧版或内部零税购买中可以为空。旧构造签名仍按零税解释。价格历史与`DeliveryStats.gross`只含货款。`MarketTaxPort`是公开核心税费评估的只读端口，生产实现`StarCoreMarketTaxes`只能在Paper主线程调用；`MarketQuoteService`在串行IO内保存及接受60秒报价，`ExpansionRuntime.marketQuotes()`供受控集成读取。它不是免权限的玩家写接口，接受前须捕获当前国家创始人、城市管理、领土及贸易权限。
+1.9 `Purchase`增加`goodsTotal/taxAmount/taxQuote`，`total`为货款、税费以及1.10过境费之和，`taxQuote`在旧版或内部零税购买中可以为空。旧构造签名仍按零税解释。价格历史与`DeliveryStats.gross`只含货款。`MarketTaxPort`是公开核心税费评估的只读端口，生产实现`StarCoreMarketTaxes`只能在Paper主线程调用；`MarketQuoteService`在串行IO内保存及接受60秒报价，`ExpansionRuntime.marketQuotes()`供受控集成读取。它不是免权限的玩家写接口，接受前须捕获当前国家创始人、城市管理、领土及贸易权限。
 
 `Purchase.SHIPPED` 只代表该份额转入物流，`PriceHistory` 记录该时点成交价格；真实到货由原物流单 `COMPLETED` 证明。挂牌关闭不撤销其他已预留份额。消费 API 查询不得再次发物品或支付。恢复、撤单与配置合同见 [市场文档](market.md)。
 
@@ -132,3 +132,5 @@ public void onIndustry(IndustrySettledEvent event) {
 `PublicWorksService` 在演化服务之后初始化，`CivicNeedsService` 在生活服务建表之后初始化，各自配置和物品ID独立加入扩展存入白名单。正常城市结算由 `works.atomicSettlement` 包住整个 `ensureCity`、重复周期检查、扩展周期和 `Simulation.settle`。工程运行维护在 Simulation 读取库存之前扣除，工程倍率与既有城市/国家倍率组合并继续受总上限约束；建设推进在正常演化和救灾恢复之后、最终结算回执之前执行，完成当期不享受运行倍率。即使外层调用方捕获异常并继续提交其他工作，工程 savepoint 也会回滚该失败结算的库存、储量、演化、生活消费、救灾与工程水位。
 
 工程/需求公开 Future 方法仅调用相应仓储的只读列表、历史和完成回执查询，不推进施工、收维护费、完成需求或生成生活凭据。Civic 完成更新已提交 profile，后续正常结算从新 profile 捕获，不用旧快照覆盖有限奖励。内部 `cycle`/`completed` 必须遵守上述完整结算事务，不是查询 API。详情见[公共工程](public-works.md)和[城市需求](civic-needs.md)。
+
+1.10 `Route`增加`transitKey`，`Purchase`和`Quote`增加不可变`transit`许可映射，原构造签名仍以无过境费解释。`Corridor.Proof`包含实际核对的公开许可。`TransitPermitPort`及适配器负责主线程权威操作；`TransitProposalService`在串行IO内保存草案和核对回执，不自行授予权利。`TreasuryTransferPort.Request`保存完整受益国金额映射，单收款方仍可使用旧构造方法及`receiver()`；多收款方请求调用`receiver()`会拒绝，应使用`credits()`。回执保留总额`amount`，多方回执的旧`receiver`为null。查询回执必须传入完整Request以选用原转账或多方结算契约；缺少服务不能解释为未付款。

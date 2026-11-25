@@ -133,3 +133,9 @@ StarCore 采用模块生命周期 + StarCoreContext + ServiceRegistry 架构，�
 StarWorld 的 `StarCoreBridgeTest` 使用仅位于 `src/test` 的真实包名/公开签名 fixture，覆盖服务缺失、已关闭 provider、城市/国家删除、成员索引失效、国家治理授权、负坐标区块、双重领土、世界身份、真实政策/科技/繁荣数值、可选服务降级和主线程限制。这些 fixture 不随插件发货；它们验证适配协议与权限逻辑，不冒充完整 StarCore 服务器实测。最终 Maven 测试及 Paper 运行结果以本项目测试报告为准。
 
 对 StarCore 本身的完整 Maven 套件、本次新组合的 Folia、CraftEngine 及森罗各插件实服联测，不因“源码审计通过”而视作通过。目标 API/版本改变时应重新核对本文件记录的 commit 与签名。
+
+## 1.10 第三国许可与多方付款
+
+后续候选 `bc720cda1c9b113667fc33bc521a7a900b1e5d8d`在结算候选之上提供公开 `TransitPermitService`：`permit`、`evaluate`、`approve`、`revoke`及`receipt`。值对象均不可变；所有调用限定Paper主线程。许可存储在Core外交模块并受该模块持久化故障隔离。每次评估读取实际双层claim和战争关系，无强制区块加载。身份验证包括当前国家创始人和当前成员，历史请求重放也不绕过。
+
+StarWorld使用公开接口类反射调用，许可批准不动国库。收费以 `NationSettlementService.settle`一次提交全部受益国；完整回执中的付款国、每国金额和原描述逐项核对，退款沿原分账一次逆转。补丁、构建和运行出处见[候选说明](../upstream/starcore/README.md)与[验证索引](../upstream/starcore/transit-verification.json)。原Core仍提供旧单收款方付款；没有新契约时不默认允许第三国通行或将多方付款拆开。

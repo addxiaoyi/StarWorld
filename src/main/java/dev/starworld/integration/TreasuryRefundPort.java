@@ -13,7 +13,7 @@ public interface TreasuryRefundPort {
         public Receipt {id(transactionId);id(originalTransactionId);Objects.requireNonNull(payer);Objects.requireNonNull(appliedAt);
             if(credits==null||credits.isEmpty()||credits.size()>16)throw new IllegalArgumentException("退款收款明细无效");
             Map<UUID,BigDecimal> normalized=new HashMap<>();credits.forEach((nation,amount)->{Objects.requireNonNull(nation);if(nation.equals(payer))throw new IllegalArgumentException("退款原付款方不能是原收款方");normalized.put(nation,TreasuryTransferPort.money(amount));});credits=Map.copyOf(normalized);}
-        public boolean matches(Request request){var original=request.original();return transactionId.equals(request.transactionId())&&originalTransactionId.equals(original.transactionId())&&payer.equals(original.payer())&&credits.equals(Map.of(original.receiver(),original.amount()));}
+        public boolean matches(Request request){var original=request.original();return transactionId.equals(request.transactionId())&&originalTransactionId.equals(original.transactionId())&&payer.equals(original.payer())&&credits.equals(original.credits());}
     }
     record Delivery(String transactionId,TreasuryTransferPort.Status status,Receipt receipt,String detail) {
         public Delivery {id(transactionId);Objects.requireNonNull(status);detail=detail==null?"":detail.substring(0,Math.min(1000,detail.length()));}

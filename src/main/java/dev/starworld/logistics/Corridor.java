@@ -1,6 +1,7 @@
 package dev.starworld.logistics;
 
 import dev.starworld.domain.WorldState.Site;
+import dev.starworld.integration.TransitPermitPort.Permit;
 import dev.starworld.logistics.LogisticsState.*;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
@@ -13,10 +14,12 @@ public final class Corridor {
     public record Plan(String fingerprint,List<Site> columns,Set<Site> berths) {
         public Plan {columns=List.copyOf(columns);berths=Set.copyOf(berths);}
     }
-    public record Proof(UUID routeId,String fingerprint,boolean pass,int checkedColumns,int blockReads,String detail) {
+    public record Proof(UUID routeId,String fingerprint,boolean pass,int checkedColumns,int blockReads,String detail,Map<UUID,Permit> transit) {
         public Proof {Objects.requireNonNull(routeId);Objects.requireNonNull(fingerprint);Objects.requireNonNull(detail);
+            transit=Map.copyOf(transit);if(transit.size()>15||transit.entrySet().stream().anyMatch(e->!e.getKey().equals(e.getValue().terms().grantingNation())||e.getValue().revoked()))throw new IllegalArgumentException("Invalid transit proof");
             if(checkedColumns<0||checkedColumns>MAX_COLUMNS||blockReads<0||blockReads>MAX_BLOCK_READS||detail.length()>512
                     ||(pass&&(!fingerprint.matches("[a-f0-9]{64}")||checkedColumns<2||blockReads<1)))throw new IllegalArgumentException("Invalid corridor proof");}
+        public Proof(UUID route,String fingerprint,boolean pass,int columns,int reads,String detail){this(route,fingerprint,pass,columns,reads,detail,Map.of());}
     }
     public static Plan plan(Route route,Map<UUID,Node> nodes){
         if(route.nodes().size()<2||route.nodes().size()>64)throw new IllegalArgumentException("通道节点数量超限");
@@ -48,6 +51,8 @@ public final class Corridor {
     public static Optional<String> limitation(Route route,Proof proof){
         if(!route.corridorRequired())return Optional.empty();
         if(proof==null||!route.id().equals(proof.routeId()))return Optional.of("商路通道缺少本次现场证据，运输暂停");
-        return proof.pass()?Optional.empty():Optional.of("商路通道受阻："+proof.detail());
+        if(!proof.pass())return Optional.of("商路通道受阻："+proof.detail());
+        if(route.requiresTransit()&&proof.transit().isEmpty())return Optional.of("第三国过境缺少本次有效许可，运输暂停");
+        return Optional.empty();
     }
 }

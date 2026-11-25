@@ -22,6 +22,7 @@ and zero/funded isolated national/city/claim creation costs. No setting is chang
 The fixture explicitly seeds player inventories (recorded as seeds, never production), makes
 three real nations/cities with both city and nation territory, places nine bounded real anchors
 per city in six forced chunks [180,181,212,213,244,245], and dispatches real raycast registrations.
+Three client-verified stone roofs keep rain from changing the empty-cauldron well anchors.
 Knowledge/culture come only from maintained academies. Founders choose civilization/plans and
 pay projects using ordinary commands. Actual warehouse deposits/withdrawals remain player actions.
 The suite exercises GUI read protection, 3/5/4-step projects, territory pause, restart,
@@ -188,7 +189,20 @@ async function main() {
   const resupply = async (bot, needs, purpose) => { const result = []; for (const [item, minimum, amount] of needs) { let before = await snapshot(server, bot); if (stock(before, item) >= minimum) { result.push({ item, needed: false, warehouse: stock(before, item) }); continue; } before = await fresh(server, bot); const seed = await fixture(server, 'works-resupply', bot, `${item} ${amount}`); evidence.seeds.push({ player: bot.username, purpose, ...seed }); await botMessage(bot, `/sw deposit ${item} ${amount}`, new RegExp(`已存入 ${amount} ${item}`)); const after = await snapshot(server, bot); assert.equal(after.city.lastPeriod, before.city.lastPeriod); assert.equal(stock(after, item), stock(before, item) + amount); result.push({ before, seed, after }); } return result; };
   try {
     await stage('one owned Paper and three non-operator real clients', async () => { await server.start(); await connectAll(1); return { clients: bots.map(b => ({ name: b.username, uuid: b.player.uuid })), serverRun: 1 }; });
-    await stage('three real countries cities and independently verified national and city claims', async () => { const setup = []; for (const spec of SPEC) setup.push(await fixture(server, 'works-setup', bots[spec.slot], String(spec.slot))); assert.equal(new Set(setup.map(s => s.cityId)).size, 3); assert.equal(new Set(setup.map(s => s.nationId)).size, 3); assert(setup.every(s => s.dualTerritoryVerified && s.chunks.length === 2)); return setup; });
+    await stage('three real countries cities and independently verified national and city claims', async () => {
+      const setup = [];
+      for (const spec of SPEC) {
+        const bot = bots[spec.slot], observed = await fixture(server, 'works-setup', bot, String(spec.slot));
+        // This suite accounts for nine maintained anchors. Natural rain can turn
+        // CAULDRON into WATER_CAULDRON, so protect the real block with a small roof.
+        const roof = new bot.entity.position.constructor(observed.chunks[0] * 16 + 11, 84, 3);
+        server.command(`setblock ${roof.x} ${roof.y} ${roof.z} minecraft:stone`);
+        await waitUntil(() => bot.blockAt(roof)?.name === 'stone', 20000, 'actual stone roof over the empty well cauldron', () => server.check());
+        observed.wellRoof = { x: roof.x, y: roof.y, z: roof.z, block: bot.blockAt(roof).name, entryPoint: 'vanilla console setblock; verified by real client' };
+        setup.push(observed);
+      }
+      assert.equal(new Set(setup.map(s => s.cityId)).size, 3); assert.equal(new Set(setup.map(s => s.nationId)).size, 3); assert(setup.every(s => s.dualTerritoryVerified && s.chunks.length === 2)); return setup;
+    });
     await stage('explicit inventory seeds enter warehouses only through ordinary player deposit commands', async () => { const result = []; for (const spec of SPEC) { const bot = bots[spec.slot], baseline = await fixture(server, 'works-inventory', bot), seed = await fixture(server, 'works-seed', bot); evidence.seeds.push({ player: spec.name, ...seed }); for (const [item, amount] of Object.entries(seed.items)) await botMessage(bot, `/sw deposit ${item} ${amount}`, new RegExp(`已存入 ${amount} ${item}`)); const inventory = await fixture(server, 'works-inventory', bot); assert.deepEqual(inventory.items, baseline.items, 'Deposits must remove the seed while preserving unrelated inventory'); const s = await snapshot(server, bot); assert.equal(s.city.buildings.length, 0); for (const [item, amount] of Object.entries(seed.items)) assert.equal(stock(s, item), amount); assert.equal(s.projects.length, 0, 'Requires a fresh unused national project slot'); result.push({ seed, baseline, inventory, warehouse: s.city.stock }); } return result; });
     await stage('ordinary founder commands choose distinct civilizations and appropriate real plans', async () => { const result = []; for (const spec of SPEC) { const bot = bots[spec.slot]; await botMessage(bot, `/sw civilization ${spec.civilization}`, /国家文明已转型/); await botMessage(bot, `/sw plan ${spec.plan}`, /城市规划/); result.push(await snapshot(server, bot)); } return result; });
     await stage('twenty seven real raycast registrations preserve two-region city atlases', async () => { const result = []; for (const spec of SPEC) { const bot = bots[spec.slot], from = bot.messages.length; const dispatched = await fixture(server, 'works-register', bot, String(spec.slot)); await waitUntil(() => bot.messages.slice(from).filter(m => m.includes('已登记 ')).length === 9, 20000, 'nine successful real registrations'); const s = await poll(server, bot, s => s.city.buildings.length === 9 && s.atlas.regions.length === 2); assert(s.atlas.regions.every(r => r.terrain === 'plains')); result.push({ dispatched, snapshot: s }); } return result; });

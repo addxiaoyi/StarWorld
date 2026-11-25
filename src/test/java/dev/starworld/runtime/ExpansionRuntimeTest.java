@@ -1,0 +1,156 @@
+package dev.starworld.runtime;
+
+import dev.starworld.config.ConfigLoader;
+import dev.starworld.domain.*;
+import dev.starworld.domain.WorldState.*;
+import dev.starworld.integration.*;
+import dev.starworld.logistics.LogisticsState.*;
+import dev.starworld.persistence.WorldStore;
+import java.nio.file.*;
+import java.sql.SQLException;
+import java.util.*;
+import org.bukkit.Material;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+
+class ExpansionRuntimeTest {
+    @TempDir Path temp;Definitions definitions;
+    @BeforeEach void prepare()throws Exception{
+        for(String file:List.of("config.yml","definitions.yml","evolution.yml","exports.yml","logistics.yml"))try(var in=getClass().getResourceAsStream("/"+file)){Files.copy(Objects.requireNonNull(in),temp.resolve(file));}
+        Files.writeString(temp.resolve("config.yml"),"config-version: 2\nsimulation:\n  event-chance: 0\n");
+        try(var mock=mockStatic(Material.class)){Material block=mock(Material.class);when(block.isBlock()).thenReturn(true);mock.when(()->Material.matchMaterial(anyString())).thenReturn(block);definitions=ConfigLoader.load(temp.resolve("config.yml").toFile(),temp.resolve("definitions.yml").toFile(),temp.resolve("evolution.yml").toFile());}
+    }
+    ExpansionRuntime expansion(WorldStore store)throws Exception{JavaPlugin plugin=mock(JavaPlugin.class);org.bukkit.Server server=mock(org.bukkit.Server.class);when(plugin.getServer()).thenReturn(server);when(server.getPluginManager()).thenReturn(mock(org.bukkit.plugin.PluginManager.class));return new ExpansionRuntime(plugin,mock(WorldRuntime.class),definitions,mock(CoreBridge.class),mock(CustomItems.class),store,temp.toFile());}
+    CoreCity city(){return new CoreCity(UUID.randomUUID(),UUID.randomUUID(),"城市","国家",1.1,"public API");}
+    AuthoritySnapshot tradeAuthority(CoreCity a,CoreCity b,long period,Set<String> anchors,Set<UUID> nodes){return new AuthoritySnapshot(a.cityId(),period,Map.of(a.cityId(),a.nationId(),b.cityId(),b.nationId()),Set.of(a.cityId(),b.cityId()),anchors,nodes,Set.of(TradePair.of(a.cityId(),b.cityId())));}
+    void completePhysicalTrade(WorldStore s,ExpansionRuntime x,CoreCity a,CoreCity b,long period)throws Exception{
+        for(CoreCity c:List.of(a,b)){s.ensureCity(c);for(String item:List.of("minecraft:bread","minecraft:iron_ingot","minecraft:oak_planks"))s.stock(c.cityId(),item,100);}
+        UUID world=UUID.randomUUID();Site first=new Site(world,"world",0,64,0),second=new Site(world,"world",32,64,0);Set<String> anchors=Set.of(first.anchorKey(),second.anchorKey());
+        var logistics=x.logistics();AuthoritySnapshot registration=tradeAuthority(a,b,period-1,anchors,Set.of());
+        Node left=logistics.registerNode(UUID.randomUUID(),a.cityId(),NodeType.ROAD,first,"plains",registration),right=logistics.registerNode(UUID.randomUUID(),b.cityId(),NodeType.ROAD,second,"plains",registration);
+        Set<UUID> nodes=Set.of(left.id(),right.id());AuthoritySnapshot managers=tradeAuthority(a,b,period-1,anchors,nodes);
+        Route route=logistics.createRoute(UUID.randomUUID(),a.cityId(),b.cityId(),List.of(left.id(),right.id()),Mode.LAND,managers);
+        var order=logistics.createOffer(UUID.randomUUID(),route.id(),Map.of("minecraft:bread",10L),Map.of("minecraft:iron_ingot",2L),managers);logistics.accept(order.id(),managers);
+        assertEquals(1,logistics.settle(tradeAuthority(a,b,period,anchors,nodes),10).completed());assertEquals(OrderStatus.COMPLETED,logistics.order(order.id()).orElseThrow().status());
+    }
+    long tradeActions(WorldStore s,UUID city)throws Exception{return s.query("SELECT COUNT(*) FROM evolution_trade_action WHERE city=?",r->r.getLong(1),city).getFirst();}
+    @Test void completedTradeContributesOnceAcrossLaterCyclesAndRestart()throws Exception{
+        Path db=temp.resolve("trade-once.db");CoreCity a=city(),b=city();
+        try(WorldStore s=new WorldStore(db,definitions.stockLimit())){ExpansionRuntime x=expansion(s);completePhysicalTrade(s,x,a,b,10);Simulation sim=new Simulation(s,definitions);
+            assertTrue(x.settle(a,11,Set.of(),Optional.empty(),sim).applied());assertEquals(1,x.evolution().profile(a.cityId()).tendencies().get("commerce"));assertEquals(1,tradeActions(s,a.cityId()));
+            assertFalse(x.settle(a,11,Set.of(),Optional.empty(),sim).applied());assertTrue(x.settle(a,12,Set.of(),Optional.empty(),sim).applied());assertEquals(1,x.evolution().profile(a.cityId()).tendencies().get("commerce"));
+            assertTrue(x.settle(b,12,Set.of(),Optional.empty(),sim).applied());assertEquals(1,x.evolution().profile(b.cityId()).tendencies().get("commerce"));assertEquals(1,tradeActions(s,b.cityId()),"Each legitimate endpoint consumes its own contribution once");
+        }
+        try(WorldStore s=new WorldStore(db,definitions.stockLimit())){ExpansionRuntime x=expansion(s);assertTrue(x.settle(a,13,Set.of(),Optional.empty(),new Simulation(s,definitions)).applied());assertEquals(1,x.evolution().profile(a.cityId()).tendencies().get("commerce"));assertEquals(1,tradeActions(s,a.cityId()));}
+    }
+    @Test void failedSettlementDoesNotConsumeTradeReceiptAndRestartCanRetryExactlyOnce()throws Exception{
+        Path db=temp.resolve("trade-rollback.db");CoreCity a=city(),b=city();
+        try(WorldStore s=new WorldStore(db,definitions.stockLimit())){ExpansionRuntime x=expansion(s);completePhysicalTrade(s,x,a,b,10);s.execute("CREATE TRIGGER reject_trade_settlement BEFORE INSERT ON settlement BEGIN SELECT RAISE(ABORT,'trade receipt crash boundary'); END");
+            assertThrows(SQLException.class,()->x.settle(a,11,Set.of(),Optional.empty(),new Simulation(s,definitions)));assertEquals(0,tradeActions(s,a.cityId()));assertEquals(0,x.evolution().profile(a.cityId()).tendencies().get("commerce"));assertFalse(s.settled(a.cityId(),11));
+        }
+        try(WorldStore s=new WorldStore(db,definitions.stockLimit())){ExpansionRuntime x=expansion(s);assertEquals(0,tradeActions(s,a.cityId()));s.execute("DROP TRIGGER reject_trade_settlement");Simulation sim=new Simulation(s,definitions);assertTrue(x.settle(a,11,Set.of(),Optional.empty(),sim).applied());assertTrue(x.settle(a,12,Set.of(),Optional.empty(),sim).applied());assertEquals(1,x.evolution().profile(a.cityId()).tendencies().get("commerce"));assertEquals(1,tradeActions(s,a.cityId()));}
+    }
+    @Test void priorNationTradeCannotCreditConqueringNationAndRemainsAvailableToOriginalOwner()throws Exception{
+        try(WorldStore s=new WorldStore(temp.resolve("trade-ownership.db"),definitions.stockLimit())){ExpansionRuntime x=expansion(s);CoreCity a=city(),b=city();completePhysicalTrade(s,x,a,b,10);CoreCity conquered=new CoreCity(a.cityId(),UUID.randomUUID(),a.cityName(),"新国",1,"current core snapshot");Simulation sim=new Simulation(s,definitions);
+            assertTrue(x.settle(conquered,11,Set.of(),Optional.empty(),sim).applied());assertEquals(0,x.evolution().profile(a.cityId()).tendencies().get("commerce"));assertEquals(0,tradeActions(s,a.cityId()));assertEquals(0,x.national().view(conquered.nationId()).tendencies().get("commerce"));
+            assertTrue(x.settle(a,12,Set.of(),Optional.empty(),sim).applied());assertEquals(1,x.evolution().profile(a.cityId()).tendencies().get("commerce"));assertEquals(1,tradeActions(s,a.cityId()));
+        }
+    }
+    @Test void lateLifeContributionIsAppliedOnNextSettlementAndDuplicateTickCannotDrainIt()throws Exception{
+        try(WorldStore s=new WorldStore(temp.resolve("late.db"),definitions.stockLimit())){CoreCity c=city();s.ensureCity(c);ExpansionRuntime x=expansion(s);Simulation sim=new Simulation(s,definitions);
+            x.settle(c,10,Set.of(),Optional.empty(),sim);s.stock(c.cityId(),"minecraft:bread",30);UUID chef=UUID.randomUUID();x.life().chooseProfession(chef,"chef",10);x.life().feast(UUID.randomUUID(),c,chef,"community",10,Set.of("minecraft:bread"));
+            long before=x.evolution().profile(c.cityId()).culture();assertFalse(x.settle(c,10,Set.of(),Optional.empty(),sim).applied());assertEquals(before,x.evolution().profile(c.cityId()).culture());
+            assertTrue(x.settle(c,11,Set.of(),Optional.empty(),sim).applied());assertEquals(before+12,x.evolution().profile(c.cityId()).culture());x.settle(c,12,Set.of(),Optional.empty(),sim);assertEquals(before+12,x.evolution().profile(c.cityId()).culture());
+        }
+    }
+    @Test void failingReceiptRollsBackCrossModuleLifeDrainAndMilitaryReadinessThenRestartRecovers()throws Exception {
+        Path db=temp.resolve("atomic.db");CoreCity c=city();UUID soldier=UUID.randomUUID();Building b=new Building(UUID.randomUUID(),c.cityId(),c.nationId(),"barracks",new Site(UUID.randomUUID(),"world",0,64,0),1);
+        try(WorldStore s=new WorldStore(db,definitions.stockLimit())){s.ensureCity(c);s.addBuilding(b,"mountains",definitions);ExpansionRuntime x=expansion(s);s.stock(c.cityId(),"minecraft:bread",40);s.stock(c.cityId(),"minecraft:arrow",40);x.life().chooseProfession(soldier,"chef",10);x.life().feast(UUID.randomUUID(),c,soldier,"community",10,Set.of("minecraft:bread"));s.execute("CREATE TRIGGER reject_final_receipt BEFORE INSERT ON settlement BEGIN SELECT RAISE(ABORT,'crash boundary'); END");
+            assertThrows(Exception.class,()->x.settle(c,11,Set.of(b.id()),Optional.empty(),new Simulation(s,definitions)));assertTrue(x.evolution().readiness(c.cityId()).isEmpty());assertEquals(40,s.stock(c.cityId()).get("minecraft:arrow"));assertEquals(0,s.query("SELECT COUNT(*) FROM life_evolution_action",r->r.getInt(1)).getFirst());s.execute("DROP TRIGGER reject_final_receipt");
+        }
+        try(WorldStore s=new WorldStore(db,definitions.stockLimit())){ExpansionRuntime x=expansion(s);assertTrue(x.settle(c,11,Set.of(b.id()),Optional.empty(),new Simulation(s,definitions)).applied());assertEquals(12,x.evolution().profile(c.cityId()).culture());var readiness=x.evolution().readiness(c.cityId()).orElseThrow();assertEquals(4,readiness.provided());assertEquals(1.6,readiness.terrainDefense());assertEquals(1.6,readiness.readiness());assertEquals(36,s.stock(c.cityId()).get("minecraft:arrow"));}
+    }
+    @Test void specialtyCallbackRechecksMembershipBeforeMutatingPreviousCity()throws Exception{
+        try(WorldStore s=new WorldStore(temp.resolve("revoked.db"),definitions.stockLimit())){
+            CoreCity c=city();s.ensureCity(c);JavaPlugin plugin=mock(JavaPlugin.class);org.bukkit.Server server=mock(org.bukkit.Server.class);when(plugin.getServer()).thenReturn(server);when(server.getPluginManager()).thenReturn(mock(org.bukkit.plugin.PluginManager.class));WorldRuntime runtime=mock(WorldRuntime.class);org.bukkit.entity.Player player=mock(org.bukkit.entity.Player.class);when(player.getUniqueId()).thenReturn(UUID.randomUUID());when(runtime.playerCity(player)).thenReturn(Optional.of(c),Optional.empty());when(runtime.manage(player,c.cityId())).thenReturn(true);when(runtime.open(c)).thenReturn(java.util.concurrent.CompletableFuture.completedFuture(s.view(c.cityId()).orElseThrow()));
+            doAnswer(call->{java.util.concurrent.CompletableFuture<?> future=call.getArgument(1);java.util.function.Consumer<Object> action=call.getArgument(2);action.accept(future.join());return null;}).when(runtime).reply(any(),any(),any());
+            ExpansionRuntime x=new ExpansionRuntime(plugin,runtime,definitions,mock(CoreBridge.class),mock(CustomItems.class),s,temp.toFile());
+            assertThrows(IllegalArgumentException.class,()->x.command(player,new String[]{"specialty","granary"}));assertEquals("",x.evolution().profile(c.cityId()).specialty());verify(runtime,never()).verifiedBuildings(any());
+        }
+    }
+    @Test void publicBorderCaptureRechecksActualBuildingsRatherThanTrustingCallerIds()throws Exception{
+        try(WorldStore s=new WorldStore(temp.resolve("border-capture.db"),definitions.stockLimit())){
+            CoreCity c=city();s.ensureCity(c);Building b=new Building(UUID.randomUUID(),c.cityId(),c.nationId(),"farm",new Site(UUID.randomUUID(),"world",0,64,0),1);s.addBuilding(b,"plains",definitions);var registered=s.view(c.cityId()).orElseThrow();
+            JavaPlugin plugin=mock(JavaPlugin.class);org.bukkit.Server server=mock(org.bukkit.Server.class);when(plugin.getServer()).thenReturn(server);when(server.isPrimaryThread()).thenReturn(true);when(server.getPluginManager()).thenReturn(mock(org.bukkit.plugin.PluginManager.class));WorldRuntime runtime=mock(WorldRuntime.class);CoreBridge core=mock(CoreBridge.class);when(runtime.currentPeriod()).thenReturn(10L);when(runtime.verifiedBuildings(registered)).thenReturn(Set.of());
+            ExpansionRuntime x=new ExpansionRuntime(plugin,runtime,definitions,core,mock(CustomItems.class),s,temp.toFile());assertTrue(x.captureBorderEvidence(c,registered,Set.of(b.id())).witnesses().isEmpty());verifyNoInteractions(core);when(runtime.verifiedBuildings(registered)).thenReturn(Set.of(b.id()));when(core.foreignNeighbors(c,b.site())).thenReturn(List.of());x.captureBorderEvidence(c,registered,Set.of(b.id()));verify(core).foreignNeighbors(c,b.site());
+        }
+    }
+    private record ResponseCity(CoreCity city,Building farm,Building well){Set<UUID> valid(){return Set.of(farm.id(),well.id());}}
+    private ResponseCity responseCity(WorldStore store,Simulation simulation)throws Exception{
+        CoreCity city=city();store.ensureCity(city);UUID world=UUID.randomUUID();Building farm=new Building(UUID.randomUUID(),city.cityId(),city.nationId(),"farm",new Site(world,"world",0,64,0),1),well=new Building(UUID.randomUUID(),city.cityId(),city.nationId(),"well",new Site(world,"world",2,64,0),1);
+        store.addBuilding(farm,"plains",definitions);store.addBuilding(well,"plains",definitions);store.reserve(farm.site().regionKey(),"fertility",100);for(String item:List.of("minecraft:bread","minecraft:oak_planks","minecraft:wheat"))store.stock(city.cityId(),item,100);simulation.trigger(city.cityId(),"drought",10);return new ResponseCity(city,farm,well);
+    }
+    @Test void disasterResponseAffectsOnlyTheNextSettlementThenRecoversOneStepWithoutOfflineCatchup()throws Exception{
+        try(WorldStore store=new WorldStore(temp.resolve("disaster-wiring.db"),definitions.stockLimit())){
+            ExpansionRuntime x=expansion(store);Simulation simulation=new Simulation(store,definitions);ResponseCity protectedCity=responseCity(store,simulation),baseline=responseCity(store,simulation);UUID request=UUID.randomUUID();
+            x.disasters().request(request,protectedCity.city(),"drought_irrigation",10,protectedCity.valid(),"manager");assertEquals(88,store.stock(protectedCity.city().cityId()).get("minecraft:bread"));
+            Settlement first=x.settle(protectedCity.city(),10,protectedCity.valid(),Optional.empty(),simulation),baseFirst=x.settle(baseline.city(),10,baseline.valid(),Optional.empty(),simulation);assertEquals(baseFirst.produced(),first.produced());assertEquals(0,x.disasters().response(request).orElseThrow().steps());
+            Settlement next=x.settle(protectedCity.city(),11,protectedCity.valid(),Optional.empty(),simulation),baseNext=x.settle(baseline.city(),11,baseline.valid(),Optional.empty(),simulation);assertTrue(next.produced().get("minecraft:wheat")>baseNext.produced().get("minecraft:wheat"));assertEquals(store.region(baseline.farm().site().regionKey()).reserves().get("fertility")+5,store.region(protectedCity.farm().site().regionKey()).reserves().get("fertility"));assertEquals(1,x.disasters().response(request).orElseThrow().steps());
+            assertFalse(x.settle(protectedCity.city(),11,protectedCity.valid(),Optional.empty(),simulation).applied());assertEquals(1,x.disasters().response(request).orElseThrow().steps());assertTrue(x.settle(protectedCity.city(),20,protectedCity.valid(),Optional.empty(),simulation).applied());assertEquals(2,x.disasters().response(request).orElseThrow().steps(),"A restart-sized gap must perform only the current settlement step");
+        }
+    }
+    @Test void finalReceiptFailureRollsBackDisasterRecoveryAndEvolutionThenRestartRetriesOnce()throws Exception{
+        Path db=temp.resolve("disaster-atomic.db");ResponseCity city;UUID request=UUID.randomUUID();Map<String,Long> stock;long reserve;dev.starworld.evolution.EvolutionState.Profile profile;
+        try(WorldStore store=new WorldStore(db,definitions.stockLimit())){
+            ExpansionRuntime x=expansion(store);Simulation simulation=new Simulation(store,definitions);city=responseCity(store,simulation);x.disasters().request(request,city.city(),"drought_irrigation",10,city.valid(),"manager");x.settle(city.city(),10,city.valid(),Optional.empty(),simulation);stock=store.stock(city.city().cityId());reserve=store.region(city.farm().site().regionKey()).reserves().get("fertility");profile=x.evolution().profile(city.city().cityId());
+            store.execute("CREATE TRIGGER reject_disaster_receipt BEFORE INSERT ON settlement BEGIN SELECT RAISE(ABORT,'crash after disaster recovery'); END");assertThrows(SQLException.class,()->x.settle(city.city(),11,city.valid(),Optional.empty(),simulation));assertEquals(stock,store.stock(city.city().cityId()));assertEquals(reserve,store.region(city.farm().site().regionKey()).reserves().get("fertility"));assertEquals(profile,x.evolution().profile(city.city().cityId()));assertEquals(0,x.disasters().response(request).orElseThrow().steps());assertEquals(1,x.disasters().history(city.city().cityId(),20,0).size());assertFalse(store.settled(city.city().cityId(),11));store.execute("DROP TRIGGER reject_disaster_receipt");
+        }
+        try(WorldStore store=new WorldStore(db,definitions.stockLimit())){ExpansionRuntime x=expansion(store);Simulation simulation=new Simulation(store,definitions);assertTrue(x.settle(city.city(),11,city.valid(),Optional.empty(),simulation).applied());assertEquals(1,x.disasters().response(request).orElseThrow().steps());assertEquals(2,x.disasters().history(city.city().cityId(),20,0).size());assertFalse(x.settle(city.city(),11,city.valid(),Optional.empty(),simulation).applied());assertEquals(1,x.disasters().response(request).orElseThrow().steps());}
+    }
+    @Test void lostRequiredAnchorOrChangedNationPausesDisasterRecoveryAlongsideNormalSettlement()throws Exception{
+        try(WorldStore store=new WorldStore(temp.resolve("disaster-authority.db"),definitions.stockLimit())){
+            ExpansionRuntime x=expansion(store);Simulation simulation=new Simulation(store,definitions);ResponseCity city=responseCity(store,simulation);UUID request=UUID.randomUUID();x.disasters().request(request,city.city(),"drought_irrigation",10,city.valid(),"manager");
+            x.settle(city.city(),11,Set.of(city.farm().id()),Optional.empty(),simulation);assertEquals(0,x.disasters().response(request).orElseThrow().steps());assertTrue(store.query("SELECT 1 FROM disaster_recovery_ledger WHERE request_id=?",r->1,request).isEmpty());long reserve=store.region(city.farm().site().regionKey()).reserves().get("fertility");CoreCity conquered=new CoreCity(city.city().cityId(),UUID.randomUUID(),"原城","新国",1,"conquered");assertTrue(x.settle(conquered,12,city.valid(),Optional.empty(),simulation).produced().isEmpty());assertEquals(reserve,store.region(city.farm().site().regionKey()).reserves().get("fertility"));assertEquals(0,x.disasters().response(request).orElseThrow().steps());
+        }
+    }
+    @Test void responseProfileRecoveryIsAppliedAfterEvolutionOnlyOnEffectiveStepsAndRemainsCapped()throws Exception{
+        try(WorldStore store=new WorldStore(temp.resolve("disaster-profile-wiring.db"),definitions.stockLimit())){
+            ExpansionRuntime x=expansion(store);Simulation simulation=new Simulation(store,definitions);CoreCity responseCity=city(),baseline=city();Map<UUID,Set<UUID>> verified=new HashMap<>();
+            for(CoreCity city:List.of(responseCity,baseline)){store.ensureCity(city);UUID world=UUID.randomUUID();Set<UUID> ids=new HashSet<>();int site=0;for(String type:List.of("farm","market","warehouse")){Building building=new Building(UUID.randomUUID(),city.cityId(),city.nationId(),type,new Site(world,"world",site++,64,0),1);store.addBuilding(building,"plains",definitions);ids.add(building.id());}verified.put(city.cityId(),Set.copyOf(ids));for(String item:List.of("minecraft:bread","minecraft:oak_planks","minecraft:wheat"))store.stock(city.cityId(),item,100);simulation.trigger(city.cityId(),"flood",10);x.evolution().profile(city.cityId());}
+            var before=x.evolution().profile(responseCity.cityId());UUID request=UUID.randomUUID();var response=x.disasters().request(request,responseCity,"flood_relocation",10,verified.get(responseCity.cityId()),"manager");assertEquals(before,x.evolution().profile(responseCity.cityId()),"Submitting costs must not immediately alter the city profile");
+            x.settle(responseCity,10,verified.get(responseCity.cityId()),Optional.empty(),simulation);x.settle(baseline,10,verified.get(baseline.cityId()),Optional.empty(),simulation);assertEquals(x.evolution().profile(baseline.cityId()).stability(),x.evolution().profile(responseCity.cityId()).stability());assertEquals(x.evolution().profile(baseline.cityId()).prosperity(),x.evolution().profile(responseCity.cityId()).prosperity());
+            x.settle(responseCity,11,verified.get(responseCity.cityId()),Optional.empty(),simulation);x.settle(baseline,11,verified.get(baseline.cityId()),Optional.empty(),simulation);assertEquals(x.evolution().profile(baseline.cityId()).stability()+response.stabilityPerStep(),x.evolution().profile(responseCity.cityId()).stability());assertEquals(x.evolution().profile(baseline.cityId()).prosperity()+response.prosperityPerStep(),x.evolution().profile(responseCity.cityId()).prosperity());var after=x.evolution().profile(responseCity.cityId());assertFalse(x.settle(responseCity,11,verified.get(responseCity.cityId()),Optional.empty(),simulation).applied());assertEquals(after,x.evolution().profile(responseCity.cityId()));
+            store.execute("UPDATE evolution_city SET stability=100,prosperity=100 WHERE city=?",responseCity.cityId());x.settle(responseCity,12,verified.get(responseCity.cityId()),Optional.empty(),simulation);assertEquals(100,x.evolution().profile(responseCity.cityId()).stability());assertEquals(100,x.evolution().profile(responseCity.cityId()).prosperity());
+        }
+    }
+    private record WorksCity(CoreCity city,List<Building> buildings){Set<UUID> valid(){return buildings.stream().map(Building::id).collect(java.util.stream.Collectors.toUnmodifiableSet());}Building farm(){return buildings.stream().filter(b->b.type().equals("farm")).findFirst().orElseThrow();}}
+    private WorksCity worksCity(WorldStore store)throws Exception{
+        CoreCity city=city();store.ensureCity(city);UUID world=UUID.randomUUID();List<Building> buildings=new ArrayList<>();int chunk=0;for(String type:List.of("farm","well","warehouse","academy")){Building b=new Building(UUID.randomUUID(),city.cityId(),city.nationId(),type,new Site(world,"world",chunk++*16,64,0),1);store.addBuilding(b,"plains",definitions);buildings.add(b);}for(String item:List.of("minecraft:bread","minecraft:oak_planks","minecraft:stone","minecraft:paper","minecraft:wheat","minecraft:oak_log"))store.stock(city.cityId(),item,500);return new WorksCity(city,List.copyOf(buildings));
+    }
+    @Test void realWorksConstructionAndMaintenanceJoinSettlementAndOnlyBoostTheFollowingPeriod()throws Exception{
+        try(WorldStore store=new WorldStore(temp.resolve("works-chain.db"),definitions.stockLimit())){
+            ExpansionRuntime x=expansion(store);Simulation simulation=new Simulation(store,definitions);WorksCity city=worksCity(store),baseline=worksCity(store);for(long p=1;p<=2;p++){x.settle(city.city(),p,city.valid(),Optional.empty(),simulation);x.settle(baseline.city(),p,baseline.valid(),Optional.empty(),simulation);}assertEquals(2,x.evolution().profile(city.city().cityId()).knowledge());UUID request=UUID.randomUUID();var project=x.works().start(request,city.city(),"irrigation_network",2,city.valid(),"manager");assertEquals(3,project.effectivePeriod());
+            for(long p=3;p<=5;p++){long planks=store.stock(city.city().cityId()).get("minecraft:oak_planks");Settlement actual=x.settle(city.city(),p,city.valid(),Optional.empty(),simulation),reference=x.settle(baseline.city(),p,baseline.valid(),Optional.empty(),simulation);assertEquals(reference.produced(),actual.produced(),"Construction and the completion period do not receive an operating bonus");assertEquals(planks-2-project.definition().constructionCosts().get("minecraft:oak_planks"),store.stock(city.city().cityId()).get("minecraft:oak_planks"));var saved=x.works().project(request).orElseThrow();assertEquals(p-2,saved.progress());assertEquals(-1,saved.lastOperationPeriod());}
+            var completed=x.works().project(request).orElseThrow();assertTrue(completed.completed());assertEquals(5,completed.completedPeriod());long planks=store.stock(city.city().cityId()).get("minecraft:oak_planks");Settlement operating=x.settle(city.city(),6,city.valid(),Optional.empty(),simulation),reference=x.settle(baseline.city(),6,baseline.valid(),Optional.empty(),simulation);assertTrue(operating.produced().get("minecraft:wheat")>reference.produced().get("minecraft:wheat"));assertEquals(planks-2-project.definition().upkeepCosts().get("minecraft:oak_planks"),store.stock(city.city().cityId()).get("minecraft:oak_planks"),"Operating upkeep must be debited before Simulation captures stock");assertTrue(x.works().project(request).orElseThrow().lastOperationPaid());assertEquals(6,x.works().project(request).orElseThrow().lastOperationPeriod());Map<String,Long> before=Map.copyOf(store.stock(city.city().cityId()));assertFalse(x.settle(city.city(),6,city.valid(),Optional.empty(),simulation).applied());assertEquals(before,store.stock(city.city().cityId()));
+        }
+    }
+    @Test void lateFinalReceiptFailureRollsBackWorksDisasterLifeAndEvolutionEvenWhenOuterCallerHandlesIt()throws Exception{
+        try(WorldStore store=new WorldStore(temp.resolve("works-late-failure.db"),definitions.stockLimit())){
+            ExpansionRuntime x=expansion(store);Simulation simulation=new Simulation(store,definitions);WorksCity city=worksCity(store);for(long p=1;p<=2;p++)x.settle(city.city(),p,city.valid(),Optional.empty(),simulation);UUID projectId=UUID.randomUUID();x.works().start(projectId,city.city(),"irrigation_network",2,city.valid(),"manager");for(long p=3;p<=4;p++)x.settle(city.city(),p,city.valid(),Optional.empty(),simulation);simulation.trigger(city.city().cityId(),"drought",4);UUID disaster=UUID.randomUUID();x.disasters().request(disaster,city.city(),"drought_irrigation",4,city.valid(),"manager");UUID chef=UUID.randomUUID();x.life().chooseProfession(chef,"chef",4);var feast=x.life().feast(UUID.randomUUID(),city.city(),chef,"community",4,Set.of("minecraft:bread"));Map<String,Long> stock=Map.copyOf(store.stock(city.city().cityId())),reserve=store.region(city.farm().site().regionKey()).reserves();var profile=x.evolution().profile(city.city().cityId());var project=x.works().project(projectId).orElseThrow();var relief=x.disasters().response(disaster).orElseThrow();store.execute("CREATE TABLE outer_commit(id INTEGER PRIMARY KEY)");store.execute("CREATE TRIGGER fail_after_all_hooks BEFORE INSERT ON settlement BEGIN SELECT RAISE(ABORT,'late cross-module failure'); END");
+            store.tx(s->{assertThrows(SQLException.class,()->x.settle(city.city(),5,city.valid(),Optional.empty(),simulation));s.execute("INSERT INTO outer_commit(id) VALUES(1)");return null;});assertEquals(List.of(1),store.query("SELECT id FROM outer_commit",r->r.getInt(1)));assertEquals(stock,store.stock(city.city().cityId()));assertEquals(reserve,store.region(city.farm().site().regionKey()).reserves());assertEquals(profile,x.evolution().profile(city.city().cityId()));assertEquals(project,x.works().project(projectId).orElseThrow());assertEquals(relief,x.disasters().response(disaster).orElseThrow());assertEquals(0,store.query("SELECT COUNT(*) FROM life_evolution_action",r->r.getInt(1)).getFirst());assertFalse(store.settled(city.city().cityId(),5));
+            store.execute("DROP TRIGGER fail_after_all_hooks");assertTrue(x.settle(city.city(),5,city.valid(),Optional.empty(),simulation).applied());assertEquals(3,x.works().project(projectId).orElseThrow().progress());assertEquals(5,x.works().project(projectId).orElseThrow().completedPeriod());assertEquals(1,x.disasters().response(disaster).orElseThrow().steps());assertEquals(profile.culture()+1+feast.culture(),x.evolution().profile(city.city().cityId()).culture());assertEquals(1,store.query("SELECT COUNT(*) FROM life_evolution_action",r->r.getInt(1)).getFirst());
+        }
+    }
+    @Test void realCivicCompletionRewardIsRetainedByFollowingEvolutionAndQueriesCannotCompleteAgain()throws Exception{
+        try(WorldStore store=new WorldStore(temp.resolve("civic-profile-order.db"),definitions.stockLimit())){
+            ExpansionRuntime x=expansion(store);Simulation simulation=new Simulation(store,definitions);WorksCity city=worksCity(store),baseline=worksCity(store);for(long p=1;p<=2;p++){x.settle(city.city(),p,city.valid(),Optional.empty(),simulation);x.settle(baseline.city(),p,baseline.valid(),Optional.empty(),simulation);}UUID requestId=UUID.randomUUID();x.civic().request(requestId,city.city(),"community_meals",2,"manager");UUID chef=UUID.randomUUID();x.life().chooseProfession(chef,"chef",3);x.life().feast(UUID.randomUUID(),city.city(),chef,"community",3,Set.of("minecraft:bread"));var before=x.evolution().profile(city.city().cityId());var receipt=x.civic().complete(requestId,city.city(),3,"manager");assertTrue(receipt.applied());assertEquals(before.stability()+receipt.actualStability(),x.evolution().profile(city.city().cityId()).stability());assertEquals(before.prosperity()+receipt.actualProsperity(),x.evolution().profile(city.city().cityId()).prosperity());
+            for(long p=3;p<=4;p++){x.settle(city.city(),p,city.valid(),Optional.empty(),simulation);x.settle(baseline.city(),p,baseline.valid(),Optional.empty(),simulation);assertEquals(x.evolution().profile(baseline.city().cityId()).stability()+receipt.actualStability(),x.evolution().profile(city.city().cityId()).stability());assertEquals(x.evolution().profile(baseline.city().cityId()).prosperity()+receipt.actualProsperity(),x.evolution().profile(city.city().cityId()).prosperity());}
+            var saved=x.evolution().profile(city.city().cityId());Map<String,Long> stock=Map.copyOf(store.stock(city.city().cityId()));var query=x.civic().receipt(requestId).orElseThrow();assertFalse(query.applied());assertEquals(receipt.claimedActionUUIDs(),query.claimedActionUUIDs());assertEquals(receipt.paidItems(),query.paidItems());x.civic().requests(city.city().cityId(),8,0);x.civic().history(city.city().cityId(),8,0);assertEquals(saved,x.evolution().profile(city.city().cityId()));assertEquals(stock,store.stock(city.city().cityId()));
+        }
+    }
+}

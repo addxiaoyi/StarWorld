@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "version": "1.5.0",
+  "commit": "7e0d8e9a31177daf40ae17b4f49a804925b8aca6",
+  "run_id": 45602538607,
+  "run_number": 51,
+  "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45602538607",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "id": 139164859772,
+      "name": "verify",
+      "java_tests": 493,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "id": 139164859345,
+      "name": "Evidence and acceptance tool tests",
+      "python_tests": 73,
+      "node_tests": 21
+    }
+  ],
+  "logs_checked": true,
+  "scope": "CI validates source builds and tooling; local Paper evidence uses its separately hashed JAR."
+}

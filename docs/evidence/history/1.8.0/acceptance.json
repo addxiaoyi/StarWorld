@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "version": "1.8.0",
+  "status": "feature-acceptance-passed",
+  "release_status": "full-release-suite-not-run",
+  "recorded_at": "2026-11-25T12:32:11.339655+00:00",
+  "artifact_sha256": "c5f2b3f302200580625f032dcf4e1efc5ea8299c8da02cfd44184edc648b2091",
+  "sources_sha256": "ed11519d7050c009422d96903a521dff2fc67b24f0bb056712e29c3b96449704",
+  "unit_evidence_sha256": "682de4ce13a2b8d448a900c3de2e9bd8201c06e77be4eaab02ce0d88355ead31",
+  "tests": {
+    "java": 532,
+    "java_suites": 60,
+    "python": 76,
+    "node": 24
+  },
+  "runtime_stages": 19,
+  "runs": [
+    {
+      "suite": "market-refund",
+      "stages": 13,
+      "runtime": "runtime/refund18-r2/refund-acceptance/2026-11-25T12-29-11-988Z",
+      "evidence_sha256": "9a16cd2c70cc1a486042c5bc61da593c912d40a1d50e0d28f6a20efa1243784d",
+      "runner_sha256": "4387f13f7745fc4af3c43cfdc1633e88820717870b74d726b3f00dc613f0c023",
+      "finished_at": "2026-11-25T12:30:31.900Z",
+      "normal_server_stops": 3,
+      "logs": {
+        "client-run-1-a.log": "ae0f47622070a6c989dc0cf5a082bd7df569b033073b4ca80c87505e42c8d466",
+        "client-run-1-b.log": "12893e9217fd53b8c57ae3f4fda21efc17f99308153cf7e012991fce39050d01",
+        "client-run-2-a.log": "7789723195d7b398cdd0863a9fcc4d5fd3dde71b783224344a23afcb429e767e",
+        "client-run-2-b.log": "04e0aa15fb7c15096f1442c0b2422c9e1ee1d387b68ec2f91a9c079d600e14bc",
+        "client-run-3-a.log": "8cb7eb1e48d3021c8138f3abecd8fff4f73d9a5bf635cf073e1266f16cb84890",
+        "client-run-3-b.log": "2f078329db92df110f83c69a4796dcb6199cdeef6f4d7224c3f861655882f006",
+        "paper-run-1.log": "11a6aca1cb55561fa39f77facfce3d1805e4c1bfa2a751989f8416547d05fe9e",
+        "paper-run-2.log": "1d8fc1fab9020d0263be3304196d4f7b1a0eb54408f006cd9ec2286a0e657e06",
+        "paper-run-3.log": "9e30dd17aaff75ffc12f83388c1d0db1933502cabc4974e89ef89da9b7ce3aa4"
+      }
+    },
+    {
+      "suite": "market-upgrade",
+      "stages": 6,
+      "runtime": "runtime/market-upgrade18-r2/market-upgrade-acceptance/2026-11-25T12-30-41-316Z",
+      "evidence_sha256": "b52ade5d477427c3553e9c4fc35e8f693b330e9439f45edf731f5270131d546c",
+      "runner_sha256": "76e0836042c5a44034d4c693a91d3329f0a885e74c86a07a021a4730ad08f19f",
+      "finished_at": "2026-11-25T12:31:09.192Z",
+      "normal_server_stops": 2,
+      "logs": {
+        "client-run-1-a.log": "fa0017cdcc132cc0e102529b1e58cf91e7d695117db7859613399136a61c59fc",
+        "client-run-1-b.log": "9895902954b6650b3fb400235e9edc9eb8d6108f832079cb77ca73988be6fcf2",
+        "client-run-2-a.log": "b04b48f18e8372e407fe4e9f1471e87c1e285e547721954562a0389824d9e145",
+        "client-run-2-b.log": "cc0732c39296440627c9fe67ad365315a00f80b3ba695a08c3f518476cc52b0f",
+        "paper-run-1.log": "0bac6b93a570f0399222eeb54bda0a164779a96742c7504ebccf90cbadeb4847",
+        "paper-run-2.log": "b2933189b2a6d71487d671819195f6bc6c9b801e48703b5b012cfe65666bea5d"
+      }
+    }
+  ],
+  "scope": "Bilateral paid refunds, insolvent seller hold, exact money/cargo reversal, three starts and real 1.4 migration. Further roadmap work continues.",
+  "historical_release": "runtime/releases/1.4.0",
+  "tool_logs": {
+    "refund18-verify-r3.log": "ef7bd85ee453276af2e0365653641acce9df5b9118758bacc3172265012b4a0f",
+    "refund18-python-r2.log": "eb55cdf43a616aef2d84730f7fae7f79307636e0004e5396e630699e7671b536",
+    "refund18-node.log": "22ccbcc70f1712a8249b535400bda0c1228188834627cfa6711d31bed7b24250"
+  }
+}

@@ -1,0 +1,19 @@
+market-version: 1
+# Actual namespaced physical items; StarCore's abstract national resource book remains authoritative.
+items:
+  - minecraft:wheat
+  - minecraft:bread
+  - minecraft:oak_log
+  - minecraft:oak_planks
+  - minecraft:iron_ingot
+  - minecraft:arrow
+  - minecraft:shield
+  - minecraft:paper
+  - kaleidoscopecookery:baozi
+  - kaleidoscope_tavern:wine
+max-listings-per-city: 20
+max-open-purchases-per-city: 100
+listing-lifetime-periods: 48
+dispatch-batch: 10
+max-units: 2304
+maximum-unit-price: '1000000.00'

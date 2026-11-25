@@ -1,0 +1,262 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { assertDurable, assertLifeEvolution, assertMarketMigration, assertAddedTables, expectedAddedTables, stableTables, addedTables } = require('./upgrade-10-acceptance.cjs');
+const { validateRunConfigurations } = require('../senluo-fixture/lifecycle-acceptance.cjs');
+const { conserved } = require('./market-upgrade-acceptance.cjs');
+
+test('life migration permits only the exact new climate default and preserves every original configuration', () => {
+  const initial={'config.yml':'a'.repeat(64),'life.yml':'b'.repeat(64)};
+  const bundled={'climate.yml':'c'.repeat(64)};
+  const actual={...initial,...bundled};
+  assert.deepEqual(validateRunConfigurations('1.4.0',initial,actual,bundled),actual);
+  assert.throws(()=>validateRunConfigurations('1.4.0',initial,initial,bundled),/Configuration input changed/);
+  for(const tampered of [{...actual,'climate.yml':'d'.repeat(64)},
+    {...actual,'life.yml':'d'.repeat(64)},{...actual,'unexpected.yml':'d'.repeat(64)}]) {
+    assert.throws(()=>validateRunConfigurations('1.4.0',initial,tampered,bundled),/Configuration input changed/);
+  }
+  assert.throws(()=>validateRunConfigurations('1.4.0',initial,actual,{}),/must provide its climate default/);
+  assert.throws(()=>validateRunConfigurations('1.4.0',actual,actual,bundled),/must not already contain/);
+});
+
+test('historical life source and pre-climate candidate accept no new configuration files', () => {
+  const initial={'config.yml':'a'.repeat(64),'life.yml':'b'.repeat(64)};
+  for(const version of ['1.0.0','1.1.0']) {
+    assert.deepEqual(validateRunConfigurations(version,initial,{...initial},{}),initial);
+    assert.throws(()=>validateRunConfigurations(version,initial,{...initial,'climate.yml':'c'.repeat(64)},{}),/Configuration input changed/);
+  }
+});
+
+const BASE_ADDED = ['public_works_schema', 'public_works', 'public_works_history', 'civic_schema', 'civic_clock', 'civic_request', 'civic_request_cost', 'civic_action_claim', 'civic_history'].sort();
+const V11_ADDED = ['life_evolution_budget', 'life_evolution_pending', 'starworld_dispatch_cursor'].sort();
+const V13_ADDED = ['city_region'];
+const AUXILIARY_TABLES = ['city_state', 'stock', 'settlement', 'region', 'reserve', 'disaster_response', 'disaster_response_history', 'disaster_recovery_ledger', 'life_schema', 'life_city'];
+
+function snapshots() {
+  const city = { id: 'city-a', nation: 'nation-a', name: 'A', civilization: 'agrarian', last_period: 9 };
+  const actions = [
+    { id: 'complete', city: city.id, nation: city.nation, period: 7, culture: 10, eligible: 1 },
+    { id: 'partial', city: city.id, nation: city.nation, period: 8, culture: 12, eligible: 1 },
+  ];
+  const old = { world: { tables: ['life_schema', 'life_action', 'life_evolution_action', 'city_state'], rows: {
+    city_state: [city], life_schema: [{ id: 1, version: 1 }], life_action: actions,
+    life_evolution_action: [{ id: 'complete', consumed_period: 8 }],
+  } } };
+  const next = { world: { tables: [...old.world.tables, ...V11_ADDED], rows: {
+    city_state: [city], life_schema: [{ id: 1, version: 2 }], life_action: actions,
+    life_evolution_action: [
+      { id: 'complete', consumed_period: 8, credited_culture: 10 },
+      { id: 'partial', consumed_period: 9, credited_culture: 4 },
+    ],
+    life_evolution_pending: [{ id: 'partial', city: city.id, nation: city.nation, period: 8 }],
+    life_evolution_budget: [{ city: city.id, nation: city.nation, period: 9, culture: 4 }],
+    starworld_dispatch_cursor: [
+      { queue: 'starworld:market-payment', next_lane: 'FRESH' },
+      { queue: 'starworld:resource-export', next_lane: 'DUE' },
+    ],
+  } } };
+  return { old, next };
+}
+
+function durableSnapshots(version) {
+  const versionMinor = Number(version.split('.')[1]);
+  const v11 = versionMinor >= 1;
+  const v13 = versionMinor >= 3;
+  const { old: life, next: evolved } = snapshots();
+  const originalRows = Object.fromEntries(stableTables.map(table => [table, []]));
+  Object.assign(originalRows, life.world.rows, {
+    city_state: [{ id: 'city-a', nation: 'nation-a', name: 'A', civilization: 'agrarian', last_period: 9 }],
+    building: [{ id: 'building-a', city: 'city-a', nation: 'nation-a', type: 'farm', world: 'world-a',
+      world_name: 'world', x: -1, y: 64, z: -17, level: 1 }],
+    stock: [], settlement: [], region: [{ id: 'world-a:-1:-2', terrain: 'plains', last_regen: -1 }], reserve: [],
+    disaster_response: [], disaster_response_history: [], disaster_recovery_ledger: [],
+    market_schema: [{id:1,version:1,namespace:'original'}],
+  });
+  if (!v11) originalRows.life_evolution_action = [{ id: 'complete', consumed_period: 8 }];
+  const afterRows = structuredClone(originalRows);
+  for (const table of addedTables) afterRows[table] = [];
+  if (v13) afterRows.city_region = [{ city: 'city-a', nation: 'nation-a', region: 'world-a:-1:-2', world_name: 'world' }];
+  if (versionMinor >= 7) afterRows.logistics_corridor = [];
+  afterRows.public_works_schema = [{ id: 1, version: 1 }];afterRows.civic_schema = [{ id: 1, version: 2 }];
+  if (v11) Object.assign(afterRows, evolved.world.rows);
+  if (versionMinor>=5) afterRows.market_schema=[{id:1,version:versionMinor>=10?5:versionMinor>=9?4:versionMinor>=8?3:2,namespace:'original'}];
+  if (versionMinor>=8) {afterRows.market_refund=[];afterRows.starworld_dispatch_cursor.push({queue:'starworld:market-refund',next_lane:'FRESH'});}
+  if (versionMinor>=9) afterRows.market_quote=[];
+  if (versionMinor>=10) {afterRows.logistics_transit_schema=[{id:1,version:1,namespace:'01234567-0123-0123-0123-012345678901'}];for(const table of ['logistics_transit_proposal','logistics_transit_maintenance','logistics_paid_transit'])afterRows[table]=[];}
+  const baseTables = [...new Set([...stableTables, ...AUXILIARY_TABLES])];
+  const newTables = expectedAddedTables(version);
+  const coreRows = { starcore_nation_state: [], starcore_treasury_state: [], starcore_resource_state: [] };
+  const before = { pluginVersion: '0.5.0', world: { schema: 2, integrity: 'ok', foreignKeys: [], tables: baseTables, rows: originalRows }, core: { integrity: 'ok', rows: coreRows } };
+  const after = { pluginVersion: version, world: { schema: v13 ? 3 : 2, integrity: 'ok', foreignKeys: [], tables: [...baseTables, ...newTables], rows: afterRows }, core: { integrity: 'ok', rows: structuredClone(coreRows) } };
+  return { before, after };
+}
+
+test('historical 1.0 keeps legacy life schema and adds no 1.1 migration tables', () => {
+  assert.deepEqual(expectedAddedTables('1.0.0'), BASE_ADDED);
+  assert.doesNotThrow(() => assertAddedTables(['city_state'], ['city_state', ...BASE_ADDED], '1.0.0'));
+  assert.throws(() => assertAddedTables(['city_state'], ['city_state', ...BASE_ADDED, ...V11_ADDED], '1.0.0'));
+  const rows = { city_state: [], life_schema: [{ id: 1, version: 1 }], life_action: [], life_evolution_action: [] };
+  assert.doesNotThrow(() => assertLifeEvolution({ world: { tables: ['life_schema'], rows } }, { world: { tables: ['life_schema'], rows: { ...rows } } }, '1.0.0'));
+  assert.throws(() => assertLifeEvolution({ world: { tables: ['life_schema'], rows } }, { world: { tables: ['life_schema','life_evolution_pending'], rows: { ...rows, life_evolution_pending: [{ id: 'unexpected' }] } } }, '1.0.0'), /Historical 1\.0 must not/u);
+  const durable = durableSnapshots('1.0.0');assert.doesNotThrow(() => assertDurable(durable.before,durable.after,'1.0.0'));
+});
+
+test('1.1 permits only the three new tables and validates migration state by city and queue namespace', () => {
+  assert.deepEqual(expectedAddedTables('1.1.0'), [...BASE_ADDED, ...V11_ADDED].sort());
+  assert.doesNotThrow(() => assertAddedTables(['city_state'], ['city_state', ...BASE_ADDED, ...V11_ADDED], '1.1.0'));
+  assert.throws(() => assertAddedTables(['city_state'], ['city_state', ...BASE_ADDED, ...V11_ADDED, 'unexpected'], '1.1.0'));
+  const { old, next } = snapshots();
+  assert.doesNotThrow(() => assertLifeEvolution(old, next, '1.1.0'));
+  const durable = durableSnapshots('1.1.0');assert.doesNotThrow(() => assertDurable(durable.before,durable.after,'1.1.0'));
+});
+
+test('1.2 keeps the 1.1 schema migration set without introducing another database schema',()=>{
+  assert.deepEqual(expectedAddedTables('1.2.0'),[...BASE_ADDED,...V11_ADDED].sort());
+  const durable=durableSnapshots('1.2.0');assert.doesNotThrow(()=>assertDurable(durable.before,durable.after,'1.2.0'));
+});
+
+test('1.3 through 1.6 add the nation-scoped atlas schema and backfill real historic facility regions', () => {
+  for (const version of ['1.3.0', '1.4.0','1.5.0','1.6.0']) {
+    const added = [...BASE_ADDED, ...V11_ADDED, ...V13_ADDED].sort();
+    assert.deepEqual(expectedAddedTables(version), added);
+    assert.doesNotThrow(() => assertAddedTables(['building'], ['building', ...added], version));
+    assert.throws(() => assertAddedTables(['building'], ['building', ...added.filter(name => name !== 'city_region')], version));
+    const durable = durableSnapshots(version);
+    assert.deepEqual(durable.after.world.rows.city_region,
+      [{ city: 'city-a', nation: 'nation-a', region: 'world-a:-1:-2', world_name: 'world' }]);
+    assert.doesNotThrow(() => assertDurable(durable.before, durable.after, version));
+    durable.after.world.rows.city_region[0].nation = 'another-nation';
+    assert.throws(() => assertDurable(durable.before, durable.after, version), /original city and nation atlas/u);
+  }
+});
+
+test('1.7 adds only the empty corridor table and preserves all legacy tables and contracts', () => {
+  const added = [...BASE_ADDED, ...V11_ADDED, ...V13_ADDED, 'logistics_corridor'].sort();
+  assert.deepEqual(expectedAddedTables('1.7.0'), added);
+  const { before, after } = durableSnapshots('1.7.0');
+  assert.doesNotThrow(() => assertDurable(before, after, '1.7.0'));
+  for (const change of [
+    value => value.world.rows.logistics_corridor.push({route:'legacy',fingerprint:'invented'}),
+    value => value.world.tables.push('unexpected'),
+    value => value.world.tables.splice(value.world.tables.indexOf('logistics_corridor'), 1),
+    value => value.world.tables.splice(value.world.tables.indexOf('building'), 1),
+  ]) {
+    const bad = structuredClone(after); change(bad);
+    assert.throws(() => assertDurable(before, bad, '1.7.0'));
+  }
+});
+
+test('market upgrade permits only the new corridor table and retains bindings exactly on restart', () => {
+  const { after: before } = durableSnapshots('1.6.0');
+  const after = structuredClone(before); after.pluginVersion = '1.7.0';
+  after.world.tables.push('logistics_corridor'); after.world.rows.logistics_corridor = [];
+  assert.doesNotThrow(() => conserved(before, after, '1.7.0'));
+  for (const change of [
+    value => value.world.rows.logistics_corridor.push({route:'legacy',fingerprint:'invented'}),
+    value => value.world.tables.push('unexpected'),
+    value => value.world.tables.splice(value.world.tables.indexOf('market_purchase'), 1),
+    value => value.world.tables.splice(value.world.tables.indexOf('logistics_corridor'), 1),
+  ]) {
+    const bad = structuredClone(after); change(bad);
+    assert.throws(() => conserved(before, bad, '1.7.0'));
+  }
+  after.world.rows.logistics_corridor.push({route:'new',fingerprint:'real',actor:'owner',created_period:1});
+  assert.doesNotThrow(() => conserved(after, structuredClone(after), '1.7.0'));
+  for (const change of [value => value.world.rows.logistics_corridor.splice(0, 1),
+    value => value.world.rows.logistics_corridor[0].fingerprint = 'changed']) {
+    const bad = structuredClone(after); change(bad);
+    assert.throws(() => conserved(after, bad, '1.7.0'));
+  }
+});
+
+test('1.5 market migration preserves exact payment identity, original quantity and purchase-keyed history',()=>{
+  const original={market_schema:[{id:1,version:1,namespace:'original'}],
+    market_listing:[{id:'listing',units:20,state:'SHIPPED'}],
+    market_purchase:[{id:'purchase',listing:'listing',buyer_city:'buyer',state:'SHIPPED',transaction_id:'payment',shipment:'shipment',total:'25.00'}],
+    market_history:[{listing:'listing',buyer_city:'buyer',period:7}]};
+  const migrated={market_schema:[{id:1,version:2,namespace:'original'}],
+    market_listing:[{...original.market_listing[0],available_units:0,reserved_units:0,shipped_units:20,returned_units:0}],
+    market_purchase:[{...original.market_purchase[0],units:20,buy_all:1}],
+    market_history:[{...original.market_history[0],purchase:'purchase'}]};
+  const before={world:{rows:original}},after={world:{rows:migrated}};
+  assert.doesNotThrow(()=>assertMarketMigration(before,after,'1.5.0'));
+  for(const change of [r=>r.market_purchase[0].transaction_id='new-payment',r=>r.market_purchase[0].units=19,
+    r=>r.market_listing[0].returned_units=1,r=>r.market_history[0].purchase='another',r=>r.market_schema[0].namespace='new']){
+    const bad=structuredClone(after);change(bad.world.rows);assert.throws(()=>assertMarketMigration(before,bad,'1.5.0'));
+  }
+  assert.doesNotThrow(()=>assertMarketMigration(after,structuredClone(after),'1.5.0'));
+  const corrupt=structuredClone(after);corrupt.world.rows.market_purchase[0].total='26.00';assert.throws(()=>assertMarketMigration(after,corrupt,'1.5.0'));
+});
+
+test('1.10 preserves accepted tariff terms and never invents transit permissions or toll allocations during migration',()=>{
+  const {before,after}=durableSnapshots('1.10.0');assert.doesNotThrow(()=>assertDurable(before,after,'1.10.0'));
+  const {after:previous}=durableSnapshots('1.9.0');
+  const quote={id:'accepted',purchase:'purchase',goods_total:'25.00',tax_amount:'0.50'};
+  const purchase={id:'purchase',listing:'listing',buyer_city:'buyer',state:'SHIPPED',transaction_id:'payment',shipment:'shipment',total:'25.50',goods_total:'25.00',tax_amount:'0.50',tax_quote:'accepted',units:20,buy_all:1};
+  previous.world.rows.market_quote=[quote];previous.world.rows.market_purchase=[purchase];
+  after.world.rows.market_quote=[{...quote,transit_terms:''}];after.world.rows.market_purchase=[{...purchase,transit_terms:''}];
+  assert.doesNotThrow(()=>conserved(previous,after,'1.10.0'));
+  for(const mutate of [s=>s.world.rows.market_quote[0].transit_terms='fabricated',s=>s.world.rows.market_purchase[0].total='26.00',
+    s=>s.world.rows.logistics_paid_transit.push({order_id:'shipment',terms:'invented'}),s=>s.world.rows.logistics_transit_schema[0].namespace='bad',
+    s=>s.world.rows.logistics_transit_proposal.push({id:'invented'})]){const bad=structuredClone(after);mutate(bad);assert.throws(()=>conserved(previous,bad,'1.10.0'));}
+  after.world.rows.market_quote[0].transit_terms='durable-terms';after.world.rows.market_purchase[0].transit_terms='durable-terms';
+  after.world.rows.logistics_paid_transit.push({order_id:'shipment',terms:'durable-terms'});after.world.rows.logistics_transit_proposal.push({id:'approved',approved_revision:1});
+  assert.doesNotThrow(()=>conserved(after,structuredClone(after),'1.10.0'));
+  for(const mutate of [s=>s.world.rows.logistics_paid_transit=[],s=>s.world.rows.logistics_transit_schema[0].namespace='01234567-0123-0123-0123-012345678902',s=>s.world.rows.market_purchase[0].transit_terms='repriced']){const bad=structuredClone(after);mutate(bad);assert.throws(()=>conserved(after,bad,'1.10.0'));}
+});
+
+test('1.9 migrates every legacy market schema to exact zero-tax terms and preserves accepted quotes on restart',()=>{
+  const {before,after}=durableSnapshots('1.9.0');assert.doesNotThrow(()=>assertDurable(before,after,'1.9.0'));
+  for(const version of ['1.4.0','1.5.0','1.8.0']){
+    const {after:previous}=durableSnapshots(version),next=structuredClone(after);
+    const legacy={id:'purchase',listing:'listing',buyer_city:'buyer',state:'SHIPPED',transaction_id:'payment',shipment:'shipment',total:'25.00'};
+    const listing={id:'listing',units:20,state:'SHIPPED'},history={listing:'listing',buyer_city:'buyer',period:7};
+    const modern={...legacy,units:20,buy_all:1},modernListing={...listing,available_units:0,reserved_units:0,shipped_units:20,returned_units:0},modernHistory={...history,purchase:'purchase'};
+    Object.assign(previous.world.rows,{market_listing:[version==='1.4.0'?listing:modernListing],market_purchase:[version==='1.4.0'?legacy:modern],market_history:[version==='1.4.0'?history:modernHistory]});
+    Object.assign(next.world.rows,{market_listing:[modernListing],market_purchase:[{...modern,goods_total:'25.00',tax_amount:'0.00',tax_quote:null}],market_history:[modernHistory]});
+    assert.doesNotThrow(()=>conserved(previous,next,'1.9.0'));
+    for(const change of [s=>s.world.rows.market_quote.push({id:'invented'}),s=>s.world.rows.market_purchase[0].tax_amount='0.01',
+      s=>s.world.rows.market_purchase[0].goods_total='24.99',s=>s.world.rows.market_purchase[0].tax_quote='invented',
+      s=>s.world.rows.market_purchase[0].transaction_id='new-payment',s=>s.world.tables.splice(s.world.tables.indexOf('market_quote'),1)]){
+      const bad=structuredClone(next);change(bad);assert.throws(()=>conserved(previous,bad,'1.9.0'));
+    }
+    next.world.rows.market_quote.push({id:'accepted',purchase:'purchase',goods_total:'25.00',tax_amount:'0.50'});
+    Object.assign(next.world.rows.market_purchase[0],{tax_quote:'accepted',tax_amount:'0.50',total:'25.50'});
+    assert.doesNotThrow(()=>conserved(next,structuredClone(next),'1.9.0'));
+    for(const change of [s=>s.world.rows.market_quote=[],s=>s.world.rows.market_quote[0].tax_amount='1.00',s=>s.world.rows.market_purchase[0].total='25.00']){
+      const bad=structuredClone(next);change(bad);assert.throws(()=>conserved(next,bad,'1.9.0'));
+    }
+  }
+});
+
+test('1.1 rejects deleted legacy progress, lost partial work, invalid budgets, and foreign queue namespaces', () => {
+  const { old, next } = snapshots();
+  assert.throws(() => assertLifeEvolution(old, { world: { ...next.world, rows: { ...next.world.rows, life_evolution_action: next.world.rows.life_evolution_action.slice(1) } } }, '1.1.0'), /Existing life evolution receipt was deleted/u);
+  assert.throws(() => assertLifeEvolution(old, { world: { ...next.world, rows: { ...next.world.rows, life_evolution_pending: [] } } }, '1.1.0'), /Original pending action was lost/u);
+  assert.throws(() => assertLifeEvolution(old, { world: { ...next.world, rows: { ...next.world.rows, life_evolution_budget: [{ city: 'city-b', nation: 'nation-b', period: 9, culture: 4 }] } } }, '1.1.0'), /Budget references a non-original city/u);
+  assert.throws(() => assertLifeEvolution(old, { world: { ...next.world, rows: { ...next.world.rows, starworld_dispatch_cursor: [...next.world.rows.starworld_dispatch_cursor, { queue: 'foreign:queue', next_lane: 'DUE' }] } } }, '1.1.0'), /only the market and resource queue namespaces/u);
+  const durable = durableSnapshots('1.1.0');durable.after.world.rows.life_action=[];
+  assert.throws(() => assertDurable(durable.before,durable.after,'1.1.0'), /Existing durable life_action rows changed/u);
+});
+
+
+test('1.8 upgrades schemas 1 and 2 without inventing refunds or changing payment terms and rejects tampered state',()=>{
+  const {before,after}=durableSnapshots('1.8.0');
+  assert.doesNotThrow(()=>assertDurable(before,after,'1.8.0'));
+  const {after:previous}=durableSnapshots('1.7.0');
+  assert.doesNotThrow(()=>conserved(previous,after,'1.8.0'));
+  for(const change of [
+    s=>s.world.rows.market_refund.push({id:'invented',state:'COMPLETED'}),
+    s=>s.world.rows.market_schema[0].version=2,
+    s=>s.world.rows.market_schema[0].namespace='reset',
+    s=>s.world.tables.splice(s.world.tables.indexOf('market_refund'),1),
+    s=>s.world.rows.starworld_dispatch_cursor.pop(),
+    s=>s.world.rows.starworld_dispatch_cursor.push({queue:'foreign',next_lane:'FRESH'}),
+  ]){const bad=structuredClone(after);change(bad);assert.throws(()=>assertDurable(before,bad,'1.8.0'));assert.throws(()=>conserved(previous,bad,'1.8.0'));}
+  after.world.rows.market_refund.push({id:'original',purchase:'purchase',transaction_id:'refund:original',state:'COMPLETED'});
+  assert.doesNotThrow(()=>conserved(after,structuredClone(after),'1.8.0'));
+  for(const change of [s=>s.world.rows.market_refund[0].transaction_id='changed',s=>s.world.rows.market_refund=[]]){
+    const bad=structuredClone(after);change(bad);assert.throws(()=>conserved(after,bad,'1.8.0'));
+  }
+});

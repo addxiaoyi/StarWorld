@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "version": "1.2.0",
+  "status": "passed",
+  "recorded_at": "2026-11-21T16:45:26+08:00",
+  "artifact_sha256": "534d8b93cfcc4d1499cdf33681ef2e13524b5a53a04a3b94d40fef152bd62c6f",
+  "sources_sha256": "6b6a191eeb07586e6ca294ee875a69a67abf99dfff15d083ff53bdf5b2da5a96",
+  "automated_tests": {
+    "tests": 461,
+    "suites": 53,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "pluginJars": {
+    "StarWorld.jar": "534d8b93cfcc4d1499cdf33681ef2e13524b5a53a04a3b94d40fef152bd62c6f"
+  },
+  "suites": [
+    {
+      "suite": "baseline",
+      "steps": 15,
+      "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\baseline12-reg03\\client-acceptance\\2026-11-21T06-29-06-884Z",
+      "evidence_sha256": "a6eee018fdc647aaa91bb0cfc271931ffa94718b986bf1d6fbcaef001d88bd81",
+      "runner_sha256": "03ed84086c8509f367376afb011b4aaf3b89091f7714dfa4aa4f740991e6077c"
+    },
+    {
+      "suite": "progression",
+      "steps": 20,
+      "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\progression12-reg03\\progression-acceptance\\2026-11-21T06-31-27-785Z",
+      "evidence_sha256": "cc0aef2d6a3f00d35949854e4e7ee8bdcf5801d3976cb2441ffa394d3d9a35a8",
+      "runner_sha256": "22d7fd5fbb9d988699bd846b8f31a73b251317bb7f88e3b697df087817945bfa"
+    },
+    {
+      "suite": "border",
+      "steps": 11,
+      "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\border12-reg03\\border-acceptance\\2026-11-21T06-36-02-405Z",
+      "evidence_sha256": "8908d5dc50d6e27894b1aed6389bb579394990b30c1592c8fec0a25fad987d38",
+      "runner_sha256": "64bd0b7bcd88b1cfc40325f9ed87916e2270fe019b506d78438aa4cddf6f83c3"
+    },
+    {
+      "suite": "operations",
+      "steps": 29,
+      "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\operations12-reg03\\operations-acceptance\\2026-11-21T06-40-43-122Z",
+      "evidence_sha256": "1eafe1a09e01cbbd2b0f3bd400f8bcf612cb41179ff6397af8a243c629f2b76a",
+      "runner_sha256": "d50879d2df2e0e5948d163f05db07ba553da37d3b333fa6fea13dfb5024c1dae"
+    },
+    {
+      "suite": "disaster",
+      "steps": 22,
+      "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\disaster12-reg03\\disaster-acceptance\\2026-11-21T06-45-57-563Z",
+      "evidence_sha256": "8cdbb87db4b182c60fa1b10b1e3e6e2c0a6f9054f433a63fd1e43e257e1875a3",
+      "runner_sha256": "621e8c783d779cf02a06546f2fb889f803a87b33d29a00c0209b4bea1e30b52e"
+    },
+    {
+      "suite": "expansion",
+      "steps": 23,
+      "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\climate12-server21\\expansion-acceptance\\2026-11-21T08-39-38-310Z",
+      "evidence_sha256": "f1d799fdcb7a7c57cf24ec01860ab0aef4f58f42a655768610ea4b539fae74c3",
+      "runner_sha256": "013d5550de67f4c9793fa6e4155a2149a851d89c03de926257ed85a5f765acdc",
+      "node_options": "--max-old-space-size=512"
+    }
+  ],
+  "total_paper_steps": 120,
+  "supplemental_current_jar_runs": [
+    {
+      "suite": "upgrade-10",
+      "steps": 7,
+      "status": "passed",
+      "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\upgrade12-reg02\\upgrade-10-acceptance\\2026-11-21T09-30-13-196Z",
+      "evidence_sha256": "9181aab170b9538da57fb8e92814b9a4aa01712e1c0db79659434e2b0b82c584",
+      "preparation_sha256": "6d33e3ddf44edd97008e3301dba69683795722c30f681631ae461592cffcf0b8",
+      "runner_sha256": "01c0a5fc4b9099efae247fee8ce0a72c7a977d60721102b506128dcdfea936db"
+    },
+    {
+      "suite": "works",
+      "steps": 31,
+      "status": "passed",
+      "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\works12-reg01\\works-acceptance\\2026-11-21T09-33-04-031Z",
+      "evidence_sha256": "4bfe0a2fd4643b141e78eb1fdd47b515e67eb10b714b95f3b3130975bb79c2e5",
+      "runner_sha256": "06347b41ab2cb8c8672c67c49625c420d2747c662dd9e88d4322c92d8cefcf64"
+    }
+  ],
+  "no_dependency_smoke": {
+    "file": "docs/evidence/no-dependency-smoke.json",
+    "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\smoke12-reg02",
+    "paper_sha256": "5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba",
+    "normal_starts": 2,
+    "schema": 2,
+    "marker_verified_after_restart": true
+  }
+}

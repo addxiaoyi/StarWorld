@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "artifact_sha256": "3940fdf96c82bcb25be75a30d034615047d23545d48781ea290e4dfcafd654f6",
+  "startedAt": "2026-11-19T23:58:53.0841249Z",
+  "finishedAt": "2026-11-20T00:00:13.6624316Z",
+  "command": "tools/smoke-paper.ps1 -JavaPath <Java21> -ServerJar <Paper132> -PluginJar target/starworld-0.2.0.jar -RuntimeDirectory <fresh-no-dependency-runtime>",
+  "scope": "Two normal starts, console degradation/status, SQLite schema and persisted audit-marker recovery; no StarCore or CE installed",
+  "logs": {
+    "smoke-run-1.log": "2fbe3d355564b07e06d0bb1642286751ceff5f4c60743be6d7367de8869ba782",
+    "smoke-run-2.log": "f8d2924abf6216122d922c43bcc6c4d1ae0d4b8e7c9fbf38bd8bc9cb2c326576"
+  }
+}

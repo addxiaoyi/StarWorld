@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "version": "1.5.0",
+  "status": "feature-acceptance-passed",
+  "release_status": "full-release-suite-not-run",
+  "recorded_at": "2026-11-25T11:12:33.183676+00:00",
+  "artifact_sha256": "7bc7f174632de063d95f5e4fc85fdff7cf6d673d9839db306c5e93a553d22f26",
+  "sources_sha256": "11697cc26d56b9071370bb7a443f6e66f9dcf8a422cad292b9952cfedde88c7b",
+  "unit_evidence_sha256": "c6c5a45d488c9b4ac2b99c470ac20e1b95d37cddd9789030d75e1e497c5687b8",
+  "tests": {
+    "java": 493,
+    "java_suites": 54,
+    "python": 73,
+    "node": 21
+  },
+  "runtime_stages": 31,
+  "runs": [
+    {
+      "suite": "progression",
+      "stages": 25,
+      "runtime": "runtime/progression15/progression-acceptance/2026-11-25T11-05-21-095Z",
+      "evidence_sha256": "1808fb9cf2d23632233db77448a908cbf3c66be7676dca85249a7db41d3d3076",
+      "runner_sha256": "14c813c8405c8d3d9a2ccfd1e8e3ec2cb6da5c5d7f3b60aa99f2abfa0de1cf22",
+      "finished_at": "2026-11-25T11:09:56.340Z",
+      "normal_server_stops": 3
+    },
+    {
+      "suite": "market-upgrade",
+      "stages": 6,
+      "runtime": "runtime/market-upgrade15-r2/market-upgrade-acceptance/2026-11-25T11-10-25-188Z",
+      "evidence_sha256": "e6f3771cc7493d5b0e11c51cfe2bee5db159f6885d68744bc73a45b5794e8420",
+      "runner_sha256": "32998a73417ff47cd0161bb5a89f48b35e12eb6b7bf6c08bcdd1c991e8218746",
+      "finished_at": "2026-11-25T11:10:56.493Z",
+      "normal_server_stops": 2
+    }
+  ],
+  "scope": "Partial marketplace purchases and real 1.4 market migration. Other roadmap extensions remain in progress.",
+  "historical_release": "runtime/releases/1.4.0",
+  "tool_logs": {
+    "build-1.5.0.log": "83a5ada126e3687e291a41abc8bd21939ba471cd6a474504c1da37a9f36dd824",
+    "python-tests-1.5.0-r2.log": "adff6625f05befbff66b278770d89f71683b499357297714ec386372cacbb50b",
+    "node-tests-1.5.0-r2.log": "cdca81e2664a6c5a011fd7704e02830d3ba59c10f628d1621349f95841e6e76c"
+  }
+}

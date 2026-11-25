@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "cities": 1000,
+  "facilities": 2000,
+  "settlements": 3000,
+  "replayedAfterRestart": 1000,
+  "failures": 0,
+  "seedMillis": 171,
+  "settlementMillis": 14818,
+  "pagedQueryMillis": 22,
+  "databaseBytes": 5099520,
+  "scope": "real SQLite and pure production paths; not Paper tick or world load throughput",
+  "version": "1.6.0",
+  "artifact_sha256": "e2a4ecf9daaa3393ba418109ff0408f23cf32af07603f1c5522cfeb0947dcbe1",
+  "java": "OpenJDK 21.0.10+7-Ubuntu-124.04",
+  "test_heap": "160m",
+  "maven_heap": "192m",
+  "command": "./mvnw -B --no-transfer-progress clean verify"
+}

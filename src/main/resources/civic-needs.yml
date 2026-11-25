@@ -1,0 +1,43 @@
+# Local city needs. No money, StarCore resources, offline catch-up or registration-only rewards.
+civic-needs-version: 1
+limits:
+  maximum-page: 32
+  maximum-offset: 10000
+  # Display records only. Requests and spent-action tombstones are permanent.
+  history-limit: 200
+needs:
+  community_meals:
+    name: 社区聚餐
+    lifetime-periods: 12
+    cooldown-periods: 24
+    costs:
+      minecraft:wheat: 16
+      minecraft:bread: 4
+    action-kind: feast
+    action-count: 1
+    distinct-sources: false
+    stability-reward: 2
+    prosperity-reward: 1
+  public_spaces:
+    name: 公共空间
+    lifetime-periods: 24
+    cooldown-periods: 48
+    costs:
+      minecraft:oak_planks: 16
+    action-kind: decoration
+    action-count: 2
+    distinct-sources: true
+    stability-reward: 1
+    prosperity-reward: 3
+  festival:
+    name: 城市节庆
+    lifetime-periods: 18
+    cooldown-periods: 36
+    costs:
+      minecraft:paper: 8
+      minecraft:bread: 8
+    action-kind: concert
+    action-count: 1
+    distinct-sources: false
+    stability-reward: 2
+    prosperity-reward: 2

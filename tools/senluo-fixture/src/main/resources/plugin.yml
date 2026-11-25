@@ -1,0 +1,9 @@
+name: StarWorldSenLuoFixture
+version: '1.0.0-test'
+main: dev.starworld.fixture.SenLuoFixture
+api-version: '1.21.11'
+depend: [StarWorld, StarCore, CraftEngine]
+softdepend: [KaleidoscopeCookeryPlugin, KaleidoscopeTavernPlugin, KaleidoscopeDecoPlugin, KaleidoscopeMusicPlugin]
+commands:
+  swsenluo:
+    description: Console-only isolated optional integration fixture

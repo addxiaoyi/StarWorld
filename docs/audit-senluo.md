@@ -1,0 +1,253 @@
+# 森罗物语依赖技术审计
+
+实现版本补记：本文保留审计基线与最初第一阶段建议；0.2.0 已据此实现 Cookery/Tavern 实际仓库商品消费、公共 CE 家具显式登记与逐期复核，以及 StarWorld 自己的受控现场演奏。上游 MusicPlus 无公开完成 API 的结论未变，不能把独立演奏说成自动监听 `/kmusic`。当前功能、降级和验证限度见 [life-integrations.md](life-integrations.md) 与 [test-results.md](test-results.md)。
+
+审计日期：2026-11-19（Asia/Shanghai）。审计方式：读取 Git 远端当前代码、README、Gradle 定义、插件描述符、公开 API、事件触发点、状态与调度代码。本审计不把上游 README 的历史验收范围扩大为 StarWorld 的运行验收。
+
+## 1.4.0 新设备依赖重建：2026-11-25
+
+旧设备的 JAR、厨房资源和游戏存档没有迁移。本轮在 Linux 隔离工作目录从固定生产提交 `3e774d00567deb9cb65eee8da6de8a65254e5b8e` 重新执行根工程 `shadowJar` 及系列 `:tavern:shadowJar :deco:shadowJar :music:shadowJar`，所有构建成功。最新主线 HEAD 观察值为 `7aca215fca067314d1593dd287621f96fb8913e4`；本轮运行兼容性仅覆盖固定生产基线。既有契约审计和真实运行依赖继续分别标识，未将最新源码观察等同于二进制联调。
+
+| 本机运行输入 | SHA-256 |
+| --- | --- |
+| Cookery 1.3.0 | `8cf6988e57a2a983ecb37e4edf814b94327e6ff5d451616087f635705e54ba62` |
+| Tavern 0.1.0-dev | `ee22f3197dba4966f2f9882743dcaf1b23e1fca6d89328da5c0ad31bf39b9e78` |
+| Deco 0.1.0-dev | `1db18976692f5de6b284b31cfc5ef40e14d60f86925f75e87fe7dc3cf807f263` |
+| Music 0.1.0-dev | `983fb4b88b39bb5211e12ead23d3202222624e114e2ee4137f48d49d434b1078` |
+| CraftEngine 26.9.1（官方 Modrinth 分发） | `021260c87e3546730d321f4360b1744e6e33caa1d68e98ae30dcdbbdc347ae0f` |
+| 重新导出的厨房包 | `5eef1f3770547c12252c44f0c8858169e66590ac58af0752e21fefdf0394e443` |
+
+厨房源固定 `2f4e386ce23f49a385ddf003c67fc6415c55417a`，由上述生产提交的导出器生成；准备与启动前逐项比对2,399个清单文件、解压输入及CE活动资源。系列包分别固定 Deco `6ce180e…`、Doll `62303aa…`、Tavern `c4ec188…`、MusicPlus `cc84f29…` 的来源。实际9个插件、配置、5,157项其他静态输入及生产/审计提交均写入各运行目录的 `PREPARATION.json`。新版构建字节单独绑定本轮证据，不沿用旧Windows候选的运行结果。当前实服结果见[测试记录](test-results.md)。
+
+## 1.1.0 上游契约复审：2026-11-20
+
+截至 **2026-11-20 14:23:28 UTC（22:23:28 Asia/Shanghai）**，通过 GitHub 提交接口复核，森罗主线 HEAD 为 `cecc87d616a577b8bf3bccaff1d812619e87c59f`（`Freeze village smoke inputs and pin CraftEngine source provenance`，提交时间 14:17:24 UTC）。相对上次审计 `7b8ef80d19e4f6e1a2703016e3ce898bcdd23f66` 新增 5 个提交、48 个变更路径。审计只读取明确提交的源码，没有使用正在开发的上游未提交文件，没有构建、启动或停止任何 JVM，也没有替换已验收候选。
+
+本轮逐项对照已运行候选生产基线 `3e774d00567deb9cb65eee8da6de8a65254e5b8e`：完整 `series/` tree 均为 `42f706f51fabb2007f75188b4cb0710371747c76`；`src/main/java/net/kaleidoscope/cookery/api/` tree 均为 `cf00a3239fb61bdfe60131d290b0c1cdfaef007e`。因此 Cookery 公共事件及 Tavern、Deco、Music 等系列源码在这两个提交之间没有变化。以下新增类不能仅因名称含有“门”“事务”或“Folia”就视为可用于城市结算的运行合同。
+
+| 新增公开类型或既有边界 | 核实的签名与作用 | 对 StarWorld 的结论 |
+| --- | --- | --- |
+| [`CeResourceReadGate`](https://github.com/addxiaoyi/SenLuo_Plugin/blob/cecc87d616a577b8bf3bccaff1d812619e87c59f/src/main/java/net/kaleidoscope/cookery/plugin/CeResourceReadGate.java) | 构造接受 CE `ResourceOperationCoordinator` 与 `BooleanSupplier`；`publish(Object,BooleanSupplier)`、`tryEnter()`、`invalidate()` 和可关闭 `Guard` 提供同步读者共享 lease | 这是独立原语；提交源码中生产调用点仍只有类自身，没有已注册的公共 gate 实例或完整生产接入。它不排斥绕过 CE coordinator 的 disable、生成及其他 writer，不能认证整体重载或 Folia 安全 |
+| [`VillageColdStartWindow`](https://github.com/addxiaoyi/SenLuo_Plugin/blob/cecc87d616a577b8bf3bccaff1d812619e87c59f/src/main/java/net/kaleidoscope/cookery/worldgen/VillageColdStartWindow.java) | `open(String)` 仅接受 1.21.11；持有原生 registry/template manager 的窄初始启动所有权 | 类明确为 dormant，未提供生产任务注册；仅 CE lease 不构成生成或在线重载屏障。StarWorld 普通在线城市操作不具备该冷启动窗口 |
+| [`VillagePublisher`](https://github.com/addxiaoyi/SenLuo_Plugin/blob/cecc87d616a577b8bf3bccaff1d812619e87c59f/src/main/java/net/kaleidoscope/cookery/worldgen/VillagePublisher.java) | `forMinecraft(String)` 和带原生 roots、准备结果及 `ExclusionScope` 的 `stage(...)`，可附加只读验证回调 | 提供的是休眠原生发布/回滚适配，不是国家领地、设施建成或玩家生产回执；调用方仍须证明完整排他所有权，不能直接用于在线地区生成 |
+| Cookery `PotExtractDishEvent` / `MillstoneGrindCompleteEvent` | 仍是带可修改物品/位置、可取消的交付前通知；后者的 player 可为空 | 没有新增持久事务 ID 或交付后完成查询，不自动记城市产出 |
+| Tavern `DrinkCreatedEvent` | 仍仅提供 `drinkId()`、克隆后的 `result()` 和 `ingredients()` | 没有玩家、位置或业务凭据，不能安全推定城市归属与唯一产出 |
+| Music `MusicPlugin` | 播放 token、`startSong` 与 `stopSong` 仍为私有实现；自然结束也进入私有停止逻辑 | 没有新增公开完成事件/服务，不把 `/kmusic` 当作城市节庆完成证据 |
+
+新变化集中于原生镰刀消耗/取消、村庄池准备、冷启动发布/回滚诊断和候选冻结。新增 `tools/village_publication_candidate.py` 只冻结/检查诊断输入及关联回滚收据，并明确不认证整轮服务器；不能将它生成清单当作已完成的世界生成或热重载验收。官方 CE 源码身份与屏障缺口另见上游[固定研究记录](https://github.com/addxiaoyi/SenLuo_Plugin/blob/cecc87d616a577b8bf3bccaff1d812619e87c59f/docs/research/craftengine-resource-barrier-source-2026-11-20.md)。
+
+目前可确认既有 CE 精确 ID 与公共接口保持源码兼容，不能据此宣称最新 Cookery 二进制已通过 StarWorld 联调。与已运行 `3e774d0…` 相比，`CookeryFoodItems` 的原生药水效果 ambient 编码曾改变；如更换候选，仍须固定新 JAR/厨房包来源并重跑真实栈识别、`isSimilar`、存取及宴会消耗。1.1 的存档/结算修复不自动更换此运行候选，也不自动开启休眠村庄代码或解除 Folia 门禁。
+
+## 1.0.0 最新源码审计与运行基线
+
+2026-11-20 通过 GitHub 远端确认 `7b8ef80d19e4f6e1a2703016e3ce898bcdd23f66` 为当时最新 HEAD。最后一次提交只整理功能清单；与 0.4 审计的 `3e774d00567deb9cb65eee8da6de8a65254e5b8e` 完整比较，则有 10 个提交、50 个变更路径。基线仍为 Paper 1.21.11、Java 21、CraftEngine 26.9.1。根 Gradle 增加 Mojang 测试运行依赖，系列插件源码、描述符及 Cookery 公共 API 没有变化。
+
+新的 Cookery `CookeryFoodItems` 使生成食物药水效果的 ambient 标志符合原生数据；原生镰刀更新目标分类、重置、工具损耗和事件验证；村庄更新新增村庄厨屋模板来源与迁移实现。这些变化没有为 StarWorld 提供持久、可去重的食材生产回执，也没有改变现有 CE 物品识别接口或为 MusicPlus 增加公开的 `/kmusic` 完成事件。1.0 城市需求仍只认可 StarWorld 已提交的宴会、每期真实家具维护与受控演奏的完成凭据。
+
+1.0 隔离服继续固定下文 `3e774d0…` 所对应已核对的 Cookery 候选和 `kitchen-crops-3.zip`；同时记录最新源码审计提交、候选生产源码基线以及各自的匹配证据。森罗开发工作区仍有进行中的改动，未从中直接拷贝新构建覆盖已固定候选。1.0 运行验收范围见[森罗联调验证](senluo-acceptance.md)；不将镰刀、村庄、最新候选二进制或客户端视听效果列为 StarWorld 已验证项。
+
+## 0.4.0 最新代码与候选复审
+
+2026-11-20 通过 GitHub 远端提交接口复核，StarCore 仍为 `f769e62799e769a18fe51305b545869a17f80cd1`，森罗物语远端 HEAD 为 `3e774d00567deb9cb65eee8da6de8a65254e5b8e`（2026-11-20 13:20:32 +08:00，`Match exported food components to production item encoding`）。StarWorld 自己的干净审计 checkout 固定此提交；没有改动森罗开发工作区，也没有启动 Java、构建或服务器。相对下文 `c3642ae…` 新增 8 次提交、32 个文件变化；Paper `1.21.11`、Java 21 主目标、CraftEngine `26.9.1` 和两个 Gradle 工程的依赖基线不变。
+
+生产变化集中在作物资源重载就绪检查和原生村庄战利品桥接：`CraftEngineRegistryCheckListener` 等待 CE 重载结束并取得资源操作租约后检查注册表，重试有 30 秒上限；`VillageLootBridge`、`VillageLootPending` 和 `/kcvillageloot recover <pendingUUID>` 保留原生抽取与待恢复记录。它们没有新增可供城市账本幂等消费的稳定生产完成 API。`cookery/api`、全部 `series`、现有生产物品/目录类以及根和系列 `build.gradle` 均未变化；Cookery、Tavern、Deco、Music 的公开边界和原有反射签名结论保持。
+
+最后一条提交只修改导出器、测试和验收材料，未修改生产 Java。新厨房包将 `food_v1` **PDC STRING** 内 JSON 的成员顺序及数字文本与 Java 生产物品编码统一，包括 `saturation` 和效果 `probability` 的浮点表示。静态逐项比较全部 103 个 BASE 食物/茶条目，其精确字符串与 UTF-8 字节均匹配源码 golden fixture；旧顺序和整数形式仍可由上游解码。包子仍为 `kaleidoscopecookery:baozi`；油 `kaleidoscopecookery:oil` 仍存在，但它本来不是带 `food_v1` 的可食用 BASE 条目。
+
+StarWorld `CustomItems` 通过 CE 公共 `CraftEngineItems.getCustomItemId(ItemStack)` 识别自定义物品，并按 `BukkitItemManager.getBuildableItem(Key)` → 公共 `BuildableItem.buildItem(CE Player)` → `ItemStackUtils.getBukkitStack(core.item.Item)` 创建栈。它不解析 Cookery 的食物 JSON，故现有精确 ID 匹配契约不变；此次导出修正有利于原始 CE 构造食物与 Cookery 生产食物具有一致组件，但实际 `isSimilar`、背包转移和城市消费仍必须以新 JAR/内容包组合实测。
+
+| 新候选 | 大小（字节） | SHA-256 |
+| --- | ---: | --- |
+| Cookery `KaleidoscopeCookeryPlugin-1.3.0.jar` | 1,738,694 | `26a37d7187766b4990a53ca7c01622e098fd6606d1c763eb479586051f952457` |
+| 厨房资源 `kitchen-crops-3.zip` | 2,991,133 | `a3f68c026c7440153444cd306374ce043dc7825dc7ab74df98c3fb1efd1d6c45` |
+
+候选来自同机 `luoseng/SenLuo_Plugin-continue` 的既有完成产物，读取时干净 HEAD 为 `705bb9a8f065162a7c14f849f4e800c9d5f05786`（2026-11-20 13:28:53 +08:00）。该本地后续提交相对远端审计提交仅增加文档，生产目录及构建定义无差异。厨房包 ZIP CRC 完整，仍含 1,432 个物品、84 个方块、1,515 个模型；这些是导出计数。Tavern、Deco、Music 及 CE JAR 与历史候选哈希相同。
+
+既有 `village-crops-integrated-1.log` 记录 `BUILD SUCCESSFUL` 且执行 `shadowJar`；`food-canonical-java-1.log` 记录 `BUILD SUCCESSFUL`、`shadowJar UP-TO-DATE`，现有 Java XML 报告为 662 项、82 套件、零失败/错误/跳过；`food-canonical-python-1.log` 记录 252 项通过。审计未重跑这些测试。候选 JAR 未嵌入源码提交；与本地编译生产类比较为 543 类相同、零缺失、9 类不同，差异位于插件主类、`InteractGuard` 和七个 NMS 适配类，其所在构建有 Shadow 重定位，因此不能宣称全 JAR 与编译输出逐字节一致，也不能据此宣称可重复构建。最新重载/村庄桥接类、资源 `plugin.yml` 和 `village-loot.json` 已与现有编译输出核对。完整本机来源记录在 StarWorld 工具区 `upstream-senluo-04-provenance.json`。
+
+这组候选随后通过了 [0.4.0 StarWorld 隔离服 15 项联调](history/senluo-acceptance-0.4.0.md)。上游先前严格 PDC 比较曾失败；下文 0.3.0 的 15/15 记录只适用于 `fc81eaf8…` 与 `kitchen-crops-2.zip`。不同组合的运行证据分别保存，不据此扩大到画面/音频、完整作物玩法或 Folia 安全。
+
+## 0.3.0 历史代码复审
+
+2026-11-20 再次从指定远端 fetch 并固定 `c3642ae22fc5252bf6da22ae745cd39be994b054`（2026-11-20 08:24:49 +08:00，`Implement source crop gameplay and acceptance`）。只移动 StarWorld 自己的干净审计 checkout；没有修改森罗开发工作区。相对上次 `6a432fe…` 新增两次提交，32 个文件变化（3,980 行新增、41 行删除），内容为三作物实现、来源导出和验收工具。
+
+Paper `1.21.11`、Java 21 主目标、CraftEngine `26.9.1`、Gradle 构建和插件依赖不变。`cookery/api`、Tavern API、全部 Deco/Music 和系列公共 `Items` 工具均无变化。新 `SourceCropBehavior` 实现番茄、辣椒、生菜的 CE 龄状态、主副手采收、生长和来源掉落；`HarvestableCrop` 增加带 `InteractionHand` 的五参 default 重载，四参接口仍可使用。三种新种子和作物方块为 `kaleidoscopecookery:tomato_seed/chili_seed/lettuce_seed` 及对应 `*_crop`。没有新增城市可可靠消费的持久生产完成回执，原取菜事件、饮品事件和 Music 完成接口的限制仍成立。
+
+现有 StarWorld 使用的包子、油、葡萄酒、Deco 家具与手持乐器 ID 和反射签名未变。新厨房包 `kitchen-crops-2.zip` 的 `cookery_kitchen/configuration/kitchen.yml` 已逐项核对仍有精确的 `kaleidoscopecookery:baozi` 和 `kaleidoscopecookery:oil` 物品定义，包含 1,432 物品、84 方块和 1,515 已检查模型；这些是导出内容计数，不是 StarWorld 服务器实际加载计数。
+
+已找到与最新干净生产源码工作区对应的本地候选：
+
+| 候选 | SHA-256 |
+| --- | --- |
+| Cookery `KaleidoscopeCookeryPlugin-1.3.0.jar` | `fc81eaf8b3769b93f00c6781086936807fa4d5ced2a5659e27947527d010a0d5` |
+| 厨房资源 `kitchen-crops-2.zip` | `0385c35b62dd7a6869b8466ddf85ef6d7b9732e826860c61550309d5e9dd03e0` |
+
+来源为同机 `luoseng/SenLuo_Plugin-continue` 的 `build/libs` 和 `build/distribution`；其 HEAD 为上述 `c3642ae…`，仅交接文档有未提交改动，生产源码未私改。读取到已结束的 `source-crops-root-3.log` 为 `BUILD SUCCESSFUL`、`shadowJar UP-TO-DATE`，配套结果记录 605 项上游测试零失败/错误/跳过；新作物两个关键类的 JAR 字节与当前编译输出相同。本次审计没有运行 Java 或改动上游构建。JAR 未内嵌源码提交，以上是可核对的本地候选来源证据，不构成可重复构建证明。Tavern、Deco、Music 的候选字节与下表历史候选完全相同。
+
+上游三作物真实玩家/生长/保护/重载验收仍为未完成，不能从上游单测或旧服务端报告扩大为通过。StarWorld 的任务是消费已交付食材并计算城市贡献；当前 `0.3.0` JAR `15946f82…` 已于 2026-11-20 10:27:43–10:32:09 +08:00 与上述最新 Cookery/匹配资源、真实 CE 和四模块完成独立 15/15 阶段联调，包括真实背包存入/宴会扣费、家具生命周期与失地复核、68,624 毫秒受控演奏及重启不重奖，两次 Paper 正常关闭。完整证据在 [senluo-acceptance.md](senluo-acceptance.md) 和 [test-results.md](test-results.md) 单列；这不替上游声明完整作物玩法、Folia 或画面/音频已通过。
+
+## 0.2.0 历史代码复审
+
+2026-11-19 再次通过远端固定 `6a432fe54097a3ebf22ba5757e016b602c711f28`（2026-11-19 22:05:49 +08:00，`Verify connected gameplay recovery across normal restarts`）。在 StarWorld 自己的只读审计 checkout 中 fetch 此提交，并比较下文历史 `7a676978…` 基线：仅新增一条提交，21 个文件变化；Paper `1.21.11`、Java 21 主目标和 CraftEngine `26.9.1` 均未改变。Cookery 根工程仍为 Gradle，系列为独立 Gradle 多模块，没有 Maven POM。
+
+此次唯一生产代码变化为包内 `MolotovController.preRemove`：异常归档失败时保留尽可能完整的原物品字节、Paper JSON 或明确标记不完整的应急状态，并允许 CE 完成家具生命周期；不得将恢复记录自动重放成物品。新增单测、双人协议三次正常重启夹具和文档占其余变化。Cookery 公共 API/取菜提交前语义、Tavern `DrinkCreatedEvent` 缺少玩家/位置/交易 ID、Deco 没有城市贡献 API、MusicPlus 没有公开演奏完成 API 的结论全部保持。
+
+上游新报告 `docs/research/series-gameplay-connected-acceptance-2026-11-19.json` 单独记录了当前五插件候选的物品哈希、Paper 132/Folia 14 有界协议测试与失败历史。StarWorld 可依据报告核对候选二进制身份，但它们的 PASS 不替代 StarWorld 适配器验收；不据此声明 Folia 安全、GPU 画面、音频或所有家具玩法通过。StarWorld 实服联调另见 [senluo-acceptance.md](senluo-acceptance.md)。
+
+0.2.0 该报告中的四个接入候选 SHA-256（Cookery 在 0.3.0 已换用上文新候选）：
+
+| 插件 | SHA-256 |
+| --- | --- |
+| Cookery 1.3.0 | `789528ba1d585553cb31cef4a3658693f9f6bd2d52c4669471f967aeefe7ec59` |
+| Tavern 0.1.0-dev | `205b36165b519106cda696f0d48ab91e031b6b90ba6bef8ee0d2202155948033` |
+| Deco 0.1.0-dev | `1db18976692f5de6b284b31cfc5ef40e14d60f86925f75e87fe7dc3cf807f263` |
+| Music 0.1.0-dev | `983fb4b88b39bb5211e12ead23d3202222624e114e2ee4137f48d49d434b1078` |
+
+2026-11-20 StarWorld 实服联调补记：CE26.9.1 的 `ItemStackUtils` 同时公开 `getBukkitStack(Object)` 和 `getBukkitStack(core.item.Item)`。前者要求原生 Minecraft 栈，后者先解包 CE Item；反射时按 `isInstance` 遍历重载可能误选 Object。当前适配器按公共 `Item` 类型精确绑定后一重载，并在公共 `BuildableItem` 接口绑定 `buildItem(CE Player)`、在公共 `Key` 类绑定 `asString()`。新增3项直接运行反射边界的契约测试，不能用 Access mock 代替这一选择验证。
+
+Tavern `catalog.json` 区分配方 `id` 与成品 `output`：`kaleidoscope_tavern:barrel/wine` 是酿造配方ID，其成品为 `kaleidoscope_tavern:wine`。默认生活配置和示例现已使用成品ID；服务端已有自定义 `life.yml` 保留管理员定义，更新时应核对自己的宴会输入，不把配方ID当物品ID。
+
+下文为最初固定提交的详细审计，配合此复审补记阅读。
+
+## 固定代码基线
+
+- 仓库：`https://github.com/addxiaoyi/SenLuo_Plugin.git`
+- 分支：`main`
+- HEAD：`7a676978f9c4a825275a9f905c3f860ac05a6827`
+- 提交时间：`2026-11-19T17:12:22+08:00`
+- 提交标题：`Refresh gameplay checkpoint and complete kitchen setup docs`
+- 审计时 `git ls-remote origin HEAD` 与本地 `git log -1` 相同；原仓库未修改。
+
+## 架构和依赖
+
+这是 **五个独立 Bukkit 插件及各自 CraftEngine 内容包**，不是单个名为 SenLuo 的插件。根工程是 Cookery；`series/` 是独立 Gradle 多模块工程，包含 `common / doll / tavern / deco / music`。`common` 在 Shadow 阶段重定位进各模块，不能把它当作跨插件共享服务 API。
+
+| 模块 | 运行插件名（softdepend 必须使用此名） | 主类 | 工程版本 |
+| --- | --- | --- | --- |
+| Cookery | `KaleidoscopeCookeryPlugin` | `net.kaleidoscope.cookery.plugin.KaleidoscopeCookeryPlugin` | `1.3.0` |
+| Tavern | `KaleidoscopeTavernPlugin` | `net.kaleidoscope.tavern.TavernPlugin` | `0.1.0-dev` |
+| Deco | `KaleidoscopeDecoPlugin` | `net.kaleidoscope.deco.DecoPlugin` | `0.1.0-dev` |
+| MusicPlus | `KaleidoscopeMusicPlugin` | `net.kaleidoscope.music.MusicPlugin` | `0.1.0-dev` |
+| Doll | `KaleidoscopeDollPlugin` | 以本模块 `plugin.yml` 为准 | `0.1.0-dev` |
+
+真实编译基线：Paper API `1.21.11-R0.1-SNAPSHOT`、Java 21、CraftEngine `26.9.1`。根 Cookery 有九组 NMS 源集，1.21.11 对应 `v1_21_R7`；26.x NMS 编译额外要求 Java 25，但主字节码目标仍为 21。StarWorld 不应为了接入食物、家具而复制这些 NMS 适配或引入 Java 25 要求。
+
+五个运行插件都硬依赖 CraftEngine，描述符声明 `folia-supported: true`。Tavern 软依赖 Cookery 与 Dominion，Cookery 可选 Dominion / PlaceholderAPI / UltimateAdvancementAPI。系列模块的 CraftEngine 核心和 Bukkit API 为 `compileOnly`，AntiGriefLib 被私有重定位。StarWorld 应保持森罗模块可选，不打包森罗或 CraftEngine 实现。
+
+主要证据：根 `README.md`、`build.gradle`、`gradle.properties`、`src/main/resources/plugin.yml`；`series/README.md`、`series/build.gradle`、`series/gradle.properties` 和四个模块各自 `plugin.yml`。
+
+## Cookery 公开 API
+
+`net.kaleidoscope.cookery.api.KaleidoscopeCookeryAPI` 是源码明确标注的静态公开入口，不能改为反射读取控制器字段。
+
+| 方法 | 含义 |
+| --- | --- |
+| `plugin()` | 当前 Bukkit Plugin |
+| `choppingBoardKnives()` | 菜板刀具注册表 |
+| `millstoneAnimals()` | 磨盘动物配置注册表 |
+| `itemTags()` / `blockTags()` | 食材与原版方块标签 |
+| `entityProperties()` | 实体属性注册表 |
+| `recipeMenuStyle()` / `recipeMenuHooks()` | 食谱菜单样式与替换钩子 |
+| `potCookConditions()` | 烹饪条件注册表 |
+| `foodRecipes()` | `FoodRecipeRegistry`，读取、匹配或扩展真实食谱 |
+| `applianceFoods()` | `ApplianceFoodRegistry`，设备原料允许表 |
+| `soupBases()` | 炖锅汤底注册表 |
+
+`FoodRecipeRegistry` 提供 `potRecipes()`、`stockpotRecipes()`、`accurateRecipes(ApplianceType)`、`flexRecipes(ApplianceType)`、`findPotById(Key)`、`findStockpotById(Key)`、`planAccurate(...)`、`planFlex(...)`、`planPot(...)`、`planStockpot(...)` 等方法。配置发布带 `readSnapshot(Supplier<T>)`、`generation()`、`isConfigurationLoading()`、`afterConfigurationLoad(Runnable)`；多步读取应使用同一快照，不与 CE 热重载争用。StarWorld 第一阶段不需要修改其食谱注册表。
+
+### 可监听事件与真实提交语义
+
+| 事件类（包均在 `net.kaleidoscope.cookery.api.event`） | 字段/访问器 | 边界 |
+| --- | --- | --- |
+| `PotExtractDishEvent` | `getPlayer()`、`location()`、`dish()`、`setDish(ItemStack)` | `PlayerEvent`、可取消；炒锅取菜提交前 |
+| `StockpotExtractDishEvent` | 同上 | `PlayerEvent`、可取消；炖锅取菜提交前 |
+| `MillstoneGrindCompleteEvent` | `player()`（动物驱动时为 null）、`location()`、`products()`（可变 List） | 可取消；产品掉落实体前 |
+| 其他事件 | `SickleHarvestEvent`、`ShawarmaExtractEvent`、`PotStirFryEvent`、`SteamerBreakFullEvent`、`CookeryEffectChangeEvent` | 对应玩法钩子；不能推定为已提交生产回执 |
+
+**不可将以上取菜/研磨事件直接计为城市已完成生产。** `PotBehavior` 事件返回后还要校验成品数量、容器和食物状态，`serveDish` 才逐份消费并交给玩家；`MillstoneController` 事件后还要生成掉落、校验实体并在失败时回滚。`MONITOR + ignoreCancelled` 只能证明监听时未取消，不能证明后续提交成功。这些事件没有稳定、可持久化、可幂等消费的交易 ID。
+
+来源：`KaleidoscopeCookeryAPI.java:27–130`；`PotExtractDishEvent.java:15–74`；`StockpotExtractDishEvent.java:15–74`；`MillstoneGrindCompleteEvent.java:18–75`；`block/behavior/PotBehavior.java` 的 `handleExtractDish` / `serveDish`；`block/entity/MillstoneController.java` 的产品掉落和 `rollbackDropped`。
+
+## Tavern 公开事件与限制
+
+`net.kaleidoscope.tavern.api.DrinkCreatedEvent` 为不可取消通知：
+
+```java
+String drinkId();
+ItemStack result();                 // 返回 clone
+List<ItemStack> ingredients();      // 返回元素 clone
+```
+
+它在 `Drinks.cocktail(String, List<ItemStack>)` 构造成品时触发（`Drinks.java:50–59`）。**不包含 Player、Location、城市、家具 UUID、唯一交易 ID 或提交回执**。不能通过“最近玩家”“最近酒桶”猜测城市，也不能对该事件无限累加城市资源。它适合诊断或无权威性的配方观察，不适合第一阶段的自动产出账本。
+
+Tavern 的酒桶、果盆、葡萄、龙头、雪克杯与饮品效果已在其内部实现。StarWorld 不应重新实现发酵或私自读写家具 NBT。可以使用现存 CE 物品 ID 作产业配方输入、酒馆补给或节庆消耗；该动作必须由 StarWorld 自己的登记设施、权限和库存扣除流程授权。
+
+## Deco 与 MusicPlus 的公开边界
+
+### Deco
+
+当前没有 `net.kaleidoscope.deco.api`、Bukkit ServicesManager 城市服务或稳定的装饰贡献事件。`DecoPlugin` 的 `entries`、`styles`、`stateKey` 是私有或包级状态；公开嵌套 `Entry` / `Catalog` 仅为数据类型，并不意味着存在可访问的目录服务。
+
+现有真实接口是 **CraftEngine 公共家具和物品 API**，而不是“Deco API”。例如系列代码使用 `CraftEngineFurniture.getLoadedFurnitureByMetaEntity(Entity)` 解析当前加载家具，取得 `uuid()`、`id()`、`isValid()`；CE 的 `FurnitureBreakEvent` 被 Deco 监听。注册功能建筑可以要求玩家显式选定少量家具锚点，由所属区域线程做查询、核对配置允许的 ID/UUID，并记录在 StarWorld。不得持续扫描实体、加载全城所有区块或写 Deco 的 `deco_state_v1`。
+
+如果第一阶段只检查“Deco 是否安装”而尚未核实家具锚点，它只能显示集成状态或提供装饰建设指南，不能给出“家具识别/繁荣加成已完成”的结论。上游完整家具生命周期（含强制删除、独立卸载、热重载、跨区域）也不能仅凭注册一次就永久有效。
+
+### MusicPlus
+
+真实插件名是 `KaleidoscopeMusicPlugin`，不是 `MusicPlus`。当前只有 `/kmusic`、`PlayerInteractEvent` 打开键盘、玩家实体调度器 MIDI 播放；`keyboard`、`loadSong`、`startSong`、`playNote`、`stopSong` 和播放表均为私有。
+
+**没有公开的演奏开始/结束/音符/节庆贡献事件，也没有公开播放服务。** StarWorld 不能读取私有 `playing` 表，不能把执行 `/kmusic` 当作一次有效演奏。第一阶段可在节庆界面提供真实乐器 ID `musicplus:handheld_instrument` 与使用说明；自动“演奏提升城市产出”必须明确标成暂不可用，等待上游新增带玩家、位置、会话 ID、完成时长的公开事件。不要伪装已实现。
+
+## CraftEngine 物品接入
+
+当前系列自己的 `Items` 工具证实可用的 CE 调用：
+
+```java
+Key custom = CraftEngineItems.getCustomItemId(stack);
+String id = custom == null ? stack.getType().getKey().toString() : custom.asString();
+var buildable = BukkitItemManager.instance().getBuildableItem(Key.of(id));
+var item = buildable.orElseThrow().buildItem((net.momirealms.craftengine.core.entity.player.Player) null);
+ItemStack stack = ItemStackUtils.getBukkitStack(item).clone();
+```
+
+参考：`series/common/src/main/java/net/kaleidoscope/series/Items.java:18–51`。StarWorld 应在自己的可选 CE 适配器隔离版本相关调用；Minecraft 原版物品走 Bukkit Material，CE 缺失/未知 ID 时关闭对应配方并显示错误，不能静默替换为石头或免费产品。若缓存模板，应在 CE 资源重载后失效；系列有 `SeriesResourceReloadListener` 监听 `CraftEngineReloadEvent` 调用 `Items.clearCache()`。
+
+命名空间为 `kaleidoscopecookery:*`、`kaleidoscope_tavern:*`、`kaleidoscope_deco:*`（Deco 还包含分类来源命名空间，必须以实际 CE 加载目录为准）、`musicplus:handheld_instrument`。Cookery 的确切前缀见 `item/ItemKeys.java:9`，不能误写成 `kaleidoscope_cookery`。不能仅用命名空间推断物品已加载；应做存在性检查。
+
+可用于 StarWorld 自定义配置的实际 ID 样例：`kaleidoscopecookery:baozi`（包子）、`kaleidoscopecookery:oil`（油）、`kaleidoscope_tavern:wine`、`kaleidoscope_tavern:honey_wine`。后两项为 Tavern `src/main/resources/catalog.json` 中配方的 `output` 物品 ID；`kaleidoscope_tavern:barrel/wine` 等带 `barrel/` 的 ID 是配方 ID，不能用于构造物品。这些仍须安装对应 CE 内容包并完成成功加载。Cookery 和 Tavern 产物均通过 CE 自定义物品表示，不是仅凭显示名区分的原版物品。
+
+## 数据与线程规则
+
+森罗家具状态使用 `namespace/schema_version/source_commit/payload` 信封，经 CE 控制器保存。异常/未知版本拒绝操作并原样保留；强制移除时部分控制器会写 `recovery/*.nbt` 管理员核对快照，**不是自动退款凭证**。StarWorld 应使用独立存档，不修改这些信封或恢复文件。
+
+Cookery `FoliaUtil`、系列 `SeriesScheduler` 和 Music 的 `Player#getScheduler()` 展示了真实线程边界：
+
+- 玩家 GUI、背包、权限涉及玩家实体操作时在其实体调度器执行，处理退休回调；
+- 家具、方块查询在坐标所属区域调度器执行；不能从数据库线程或全局调度器访问世界；
+- 全局/异步路径只处理纯值快照、配置和文件，不能把可变 Bukkit 对象带入长期状态；
+- 事件默认同步不代表 Folia 全局单线程，必须保留触发区域语义；事件监听器只摘取不可变值，数据库事务经自己的串行入口处理；
+- 插件关闭必须让已排队任务失效；重载不应重复注册监听、重复结算或继续操作旧家具实例。
+
+## 建议的第一阶段复用与降级矩阵
+
+| 能力 | 最小真实实现 | 缺失时的行为 |
+| --- | --- | --- |
+| Cookery 食材/菜肴 | CE 物品 ID 配方输入/城市补给；物理物品扣除只经 StarWorld 自己的库存流程 | 对应 CE 配方不可用，保留原版生产链；状态页说明 Cookery/CE 缺失 |
+| Tavern 饮品 | 相同方式接受已存在饮品，用于节庆或商业维护；不接管酿造状态 | 关闭饮品配方；不监听无归属事件来发城市资源 |
+| Deco | 可配置明确家具 ID、玩家显式登记锚点，所属线程验证后记录；未实现锚点验证前只列状态 | 原版建筑登记继续可用，装饰识别/加成显示未支持 |
+| MusicPlus | 显示乐器和真实 `/kmusic` 指引；自动节庆贡献等待公开事件 | 节庆世界事件继续运行；不自动奖励演奏贡献 |
+| CraftEngine | 可选适配器解析/构造 ID；未知 ID 拒绝，不静默回退 | 原版物品生产链可独立玩 |
+
+“检测到插件”与“可用 API 能力”必须分开呈现。在无森罗模块的服务器上，StarWorld 应仍然完整执行原版第一阶段链、持久化与 GUI。上述四模块内部生产逻辑和权威数据均不由 StarWorld 复制。
+
+## 后续上游 API 请求（非第一阶段伪实现）
+
+1. Cookery：提交成功后带不可复用交易 ID、玩家/设备 UUID、位置、实际份数的通知。
+2. Tavern：成品领取提交后带玩家、位置、家具 UUID、批次 ID、实际结果数量的事件。
+3. Deco：稳定的目录只读 API 与家具放置/变更/移除提交事件，附 ID、UUID、锚点、变体。
+4. Music：演奏会话开始/完成/停止事件，附会话 UUID、玩家、地点、实际时长；公共播放服务说明调用线程。
+5. 各模块：版本化 API 工件发布和兼容声明，避免依赖开发 JAR 文件名或复制内部类。
+
+## 验证范围
+
+本文件完成源码、构建定义、API 和触发点审计；未在本子任务运行上游 912 项 Java 测试或其历史游戏测试服。上游 README 也明确当前开发版仍有真人操作、画面、声音、跨区、CE 热重载与部分家具未验收范围。StarWorld 的最终测试必须单列自己的源码单测、Paper/Folia 启动与玩家流程，不能转引上游测试数作为本工程通过数。

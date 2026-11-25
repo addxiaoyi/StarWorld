@@ -1,0 +1,24 @@
+{
+  "source_repository": "https://github.com/addxiaoyi/starcore",
+  "source_commit": "f769e62799e769a18fe51305b545869a17f80cd1",
+  "source_checkout": "runtime/deps/starcore",
+  "source_tracked_changes": false,
+  "reproduction_command": "./mvnw -B --no-transfer-progress -f runtime/deps/starcore/pom.xml -DskipTests package",
+  "build_exit_code": 0,
+  "build_log": "runtime/logs/starcore-build.log",
+  "build_log_sha256": "1191222cdfc081c881e75784b5d7f5d72fe90ce4b27dad93786d07aded83e23b",
+  "source_jar": "runtime/deps/starcore/target/starcore-1.0.0.jar",
+  "sha256": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
+  "bytes": 19507082,
+  "zip_crc_check": "all entries passed",
+  "main_class_major": 65,
+  "runtime_verification": {
+    "suite": "baseline",
+    "status": "passed",
+    "steps": 15,
+    "evidence": "runtime/baseline/client-acceptance/2026-11-25T08-44-34-302Z/evidence.json",
+    "evidence_sha256": "e5f19f96dafa95d5a6db1dfe7af4fce9ab1b6e4f256cab95ff29dce7d8e5b9b2",
+    "starworld_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f"
+  },
+  "scope": "Rebuilt from the fixed production commit on Linux; upstream tests were not rerun. StarWorld protocol acceptance validates this actual dependency. The binary matches the prior Windows provenance SHA-256."
+}

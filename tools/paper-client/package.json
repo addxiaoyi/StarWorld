@@ -1,0 +1,9 @@
+{
+  "name": "starworld-paper-client-acceptance",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Real offline protocol client acceptance against a disposable Paper/StarCore/StarWorld server",
+  "engines": { "node": ">=22" },
+  "scripts": { "test": "node --max-old-space-size=192 --max-semi-space-size=8 --test acceptance.test.cjs upgrade-10-acceptance.test.cjs", "acceptance": "node --max-old-space-size=384 acceptance.cjs", "expansion": "node --max-old-space-size=384 expansion-acceptance.cjs", "progression": "node --max-old-space-size=384 progression-acceptance.cjs", "operations": "node --max-old-space-size=384 operations-acceptance.cjs", "upgrade": "node --max-old-space-size=384 upgrade-acceptance.cjs", "upgrade04": "node --max-old-space-size=384 upgrade-04-acceptance.cjs", "border": "node --max-old-space-size=384 border-acceptance.cjs", "survey": "node --max-old-space-size=192 --max-semi-space-size=8 survey-acceptance.cjs" },
+  "dependencies": { "mineflayer": "4.39.0" }
+}

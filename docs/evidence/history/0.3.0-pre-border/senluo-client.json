@@ -1,0 +1,1488 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "startedAt": "2026-11-20T01:16:34.623Z",
+  "minecraft": "1.21.11",
+  "senluoAuditCommit": "c3642ae22fc5252bf6da22ae745cd39be994b054",
+  "paperSha256": "5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba",
+  "pluginJars": {
+    "craftengine-26.9.1.jar": "021260c87e3546730d321f4360b1744e6e33caa1d68e98ae30dcdbbdc347ae0f",
+    "KaleidoscopeCookeryPlugin-1.3.0.jar": "fc81eaf8b3769b93f00c6781086936807fa4d5ced2a5659e27947527d010a0d5",
+    "KaleidoscopeDeco-0.1.0-dev.jar": "1db18976692f5de6b284b31cfc5ef40e14d60f86925f75e87fe7dc3cf807f263",
+    "KaleidoscopeMusic-0.1.0-dev.jar": "983fb4b88b39bb5211e12ead23d3202222624e114e2ee4137f48d49d434b1078",
+    "KaleidoscopeTavern-0.1.0-dev.jar": "205b36165b519106cda696f0d48ab91e031b6b90ba6bef8ee0d2202155948033",
+    "StarCore.jar": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
+    "StarWorld.jar": "dabe9c4f4a72c1209b5603719568ba4acb85ed9b4c003635b828f2507e28d193",
+    "StarWorldFixture.jar": "1ef9fdc464722933556c08771392330fb7e176da8491fe1b333331984f7a981f",
+    "StarWorldSenLuoFixture.jar": "4d05e2d53f8a28b5f2c8e829fea66698e84846a95ea1545cae80779f96291870"
+  },
+  "assetPreparation": {
+    "fileSha256": "7366b145f618a4c53cb0c9a4fc2f9943b1d1b497bf1821afae8a6a8bb7e21d98",
+    "schema": 1,
+    "status": "prepared_not_started",
+    "createdAtUtc": "2026-11-20T01:06:47.8253915Z",
+    "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\senluo-03",
+    "copiedStaticBaseline": "C:\\Users\\Administrator\\Documents\\starworld-tools\\senluo-integration-server-06",
+    "upstreamAuditCommit": "c3642ae22fc5252bf6da22ae745cd39be994b054",
+    "copyRule": "Only static configuration, dependency caches, immutable plugin JARs and content assets copied. No world, player data, DB, nation/city/treasury state, ops or usercache imported. No Java process started.",
+    "starWorldVersion": "0.3.0",
+    "starWorldSha256": "dabe9c4f4a72c1209b5603719568ba4acb85ed9b4c003635b828f2507e28d193",
+    "installedPlugins": [
+      {
+        "file": "craftengine-26.9.1.jar",
+        "sha256": "021260c87e3546730d321f4360b1744e6e33caa1d68e98ae30dcdbbdc347ae0f",
+        "bytes": 10981948
+      },
+      {
+        "file": "KaleidoscopeCookeryPlugin-1.3.0.jar",
+        "sha256": "fc81eaf8b3769b93f00c6781086936807fa4d5ced2a5659e27947527d010a0d5",
+        "bytes": 1664312
+      },
+      {
+        "file": "KaleidoscopeDeco-0.1.0-dev.jar",
+        "sha256": "1db18976692f5de6b284b31cfc5ef40e14d60f86925f75e87fe7dc3cf807f263",
+        "bytes": 158512
+      },
+      {
+        "file": "KaleidoscopeMusic-0.1.0-dev.jar",
+        "sha256": "983fb4b88b39bb5211e12ead23d3202222624e114e2ee4137f48d49d434b1078",
+        "bytes": 134937
+      },
+      {
+        "file": "KaleidoscopeTavern-0.1.0-dev.jar",
+        "sha256": "205b36165b519106cda696f0d48ab91e031b6b90ba6bef8ee0d2202155948033",
+        "bytes": 287594
+      },
+      {
+        "file": "StarCore.jar",
+        "sha256": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
+        "bytes": 19507082
+      },
+      {
+        "file": "StarWorld.jar",
+        "sha256": "dabe9c4f4a72c1209b5603719568ba4acb85ed9b4c003635b828f2507e28d193",
+        "bytes": 14870009
+      },
+      {
+        "file": "StarWorldFixture.jar",
+        "sha256": "1ef9fdc464722933556c08771392330fb7e176da8491fe1b333331984f7a981f",
+        "bytes": 27480
+      },
+      {
+        "file": "StarWorldSenLuoFixture.jar",
+        "sha256": "4d05e2d53f8a28b5f2c8e829fea66698e84846a95ea1545cae80779f96291870",
+        "bytes": 13133
+      }
+    ],
+    "newAssetPreparation": {
+      "requiredItems": {
+        "kaleidoscopecookery:baozi": true,
+        "kaleidoscopecookery:oil": true
+      },
+      "kitchenZipSha256": "0385c35b62dd7a6869b8466ddf85ef6d7b9732e826860c61550309d5e9dd03e0",
+      "cookeryJarSource": "C:\\Users\\Administrator\\Documents\\luoseng\\SenLuo_Plugin-continue\\build\\libs\\KaleidoscopeCookeryPlugin-1.3.0.jar",
+      "items": 1432,
+      "activeCookeryResources": "C:\\Users\\Administrator\\Documents\\starworld-tools\\senluo-03\\plugins\\CraftEngine\\resources\\cookery_kitchen",
+      "kitchenZipSource": "C:\\Users\\Administrator\\Documents\\luoseng\\SenLuo_Plugin-continue\\build\\distribution\\kitchen-crops-2.zip",
+      "extractedInput": "C:\\Users\\Administrator\\Documents\\starworld-tools\\senluo-03\\asset-inputs\\kitchen-crops-2",
+      "blocks": 84,
+      "retainedOldKitchenOutsidePluginResources": "C:\\Users\\Administrator\\Documents\\starworld-tools\\senluo-03\\retained-old-assets\\cookery_kitchen",
+      "provenanceFileSha256": "fd37a51670f7623bb7e18c1463e2cce36143b3f103db4f0a6968fed84e40706d",
+      "cookeryJarSha256": "fc81eaf8b3769b93f00c6781086936807fa4d5ced2a5659e27947527d010a0d5",
+      "checkedModels": 1515,
+      "internalFiles": 55
+    },
+    "ceOverrides": {
+      "sendOnJoin": false,
+      "delayConfigurationLoad": false,
+      "cacheResourceFiles": false,
+      "serversideBlocks": 8000
+    },
+    "testTuning": {
+      "eventChance": 0,
+      "serverHost": "127.0.0.1",
+      "concertMinimumDurationMillis": 60000,
+      "serverPort": 25593,
+      "professionCooldownPeriods": 1,
+      "jvmArgs": [
+        "-Xms128m",
+        "-Xmx768m",
+        "-Xss512k",
+        "-XX:ActiveProcessorCount=1",
+        "-XX:+UseSerialGC",
+        "-XX:TieredStopAtLevel=1",
+        "-XX:ReservedCodeCacheSize=64m",
+        "-XX:MaxMetaspaceSize=384m",
+        "-Dio.netty.eventLoopThreads=2"
+      ],
+      "javaHeap": "768m C1 SerialGC one logical CPU",
+      "paperSparkEnabled": false,
+      "freshWorld": "senluo-03-world",
+      "periodSeconds": 10
+    },
+    "configSha256": {
+      "market.yml": "eae03b86019bf757853526859d9a4de529dce5fb2b828cb9cbf2a54bc63314b1",
+      "life.yml": "6f5ff5db6fbd8285d29f02ef41f6dec22227d15ddc4c9b355f021390e57dc94e",
+      "evolution.yml": "7bc5c4f35f4389caec33f967531df857c0a50f296c78cbf3457f31a860a83cea",
+      "definitions.yml": "09d3918904ff7bd87b557842572796d3e6035e2040655f7b2d5a2502db9e8fbd",
+      "config.yml": "74b9b0ca1aa4631bcb20726459d89b5ed7d69d39aef13e78e65cff3b13b843fe",
+      "logistics.yml": "a54f0f86250669c1db25eb297efddc0450c3ab7c10ab41c627c3d322c9bc112f",
+      "exports.yml": "404834ea15275b775fddae6b8bc3a51ab13ede2b4e172cc854e09acf3ce7d51f"
+    },
+    "authorityFilesCopied": 0,
+    "worldsCopied": 0,
+    "fixtureCompilation": {
+      "artifact": "C:\\Users\\Administrator\\Documents\\starworld\\tools\\senluo-fixture\\target\\starworld-senluo-fixture-0.3.0-test.jar",
+      "java": "21.0.13.1+2",
+      "mavenHeap": "192m",
+      "build": "BUILD SUCCESS",
+      "mainPluginUntouched": true,
+      "buildLog": "C:\\Users\\Administrator\\Documents\\starworld-tools\\senluo03-fixture-build.log",
+      "sha256": "4d05e2d53f8a28b5f2c8e829fea66698e84846a95ea1545cae80779f96291870",
+      "version": "0.3.0-test"
+    }
+  },
+  "scope": "Real CE player inventory deposits, feast warehouse consumption, actual furniture lifecycle, StarWorld-controlled concert with a real same-city listener, restart. No upstream kmusic completion, resource-pack visual/audio or Folia claim.",
+  "testTuning": {
+    "periodSeconds": 10,
+    "randomEventChance": 0,
+    "professionCooldownPeriods": 1,
+    "concertMinimumDurationMillis": 60000,
+    "lifeConfigSha256": "6f5ff5db6fbd8285d29f02ef41f6dec22227d15ddc4c9b355f021390e57dc94e",
+    "jvmArgs": [
+      "-Xms128m",
+      "-Xmx768m",
+      "-Xss512k",
+      "-XX:ActiveProcessorCount=1",
+      "-XX:+UseSerialGC",
+      "-XX:TieredStopAtLevel=1",
+      "-XX:ReservedCodeCacheSize=64m",
+      "-XX:MaxMetaspaceSize=384m",
+      "-Dio.netty.eventLoopThreads=2"
+    ],
+    "paperSparkEnabled": false
+  },
+  "steps": [
+    {
+      "name": "all optional plugins and actual CE definitions load",
+      "startedAt": "2026-11-20T01:16:35.019Z",
+      "result": {
+        "action": "status",
+        "plugins": {
+          "CraftEngine": {
+            "version": "26.9.1",
+            "enabled": true
+          },
+          "KaleidoscopeCookeryPlugin": {
+            "version": "1.3.0",
+            "enabled": true
+          },
+          "KaleidoscopeTavernPlugin": {
+            "version": "0.1.0-dev",
+            "enabled": true
+          },
+          "KaleidoscopeDecoPlugin": {
+            "version": "0.1.0-dev",
+            "enabled": true
+          },
+          "KaleidoscopeMusicPlugin": {
+            "version": "0.1.0-dev",
+            "enabled": true
+          }
+        },
+        "items": {
+          "kaleidoscopecookery:baozi": true,
+          "kaleidoscopecookery:oil": true,
+          "kaleidoscope_tavern:wine": true,
+          "musicplus:handheld_instrument": true
+        },
+        "integration": {
+          "StarCore": "StarCore 1.0.0 公共 API 已连接；国家/城市只读联动；Paper 主线程",
+          "KaleidoscopeDecoPlugin": "已启用：无公开城市装饰贡献 API；自动家具加成不可用",
+          "MusicPlus": "上游无公开完成 API；仅使用真实 CE 乐器；/sw concert 为 StarWorld 独立现场演奏",
+          "Deco": "CE 公共家具 API：显式登记并按周期复核已加载家具",
+          "Logistics": "节点、托管、改道确认、运力瓶颈与战争封锁已启用",
+          "KaleidoscopeMusicPlugin": "已启用：无公开演奏完成 API；自动节庆演奏加成不可用",
+          "KaleidoscopeTavernPlugin": "可用：CE 饮品 ID；构造事件无玩家/位置，不自动奖励城市",
+          "Folia": "未声明支持：当前 StarCore 城市/科技服务不保证区域线程安全，需 Paper",
+          "Market": "StarCore 原子幂等国库转账与持久回执可用；实体挂牌、国家金币成交和实际商路交货",
+          "Core combat": "StarCore army_combat 已接入：军需增伤/工业区地形防御；Paper 主线程",
+          "Core exports": "幂等国家资源事务 + 持久 outbox",
+          "Concert": "原版音符盒或已加载 CE 乐器；逐音符声音、现场听众和完成回执",
+          "CraftEngine": "可用：公共物品 API；自定义内容按实际加载定义检查",
+          "KaleidoscopeCookeryPlugin": "可用：CE 食材/菜肴 ID；不将取菜前事件当作生产回执"
+        },
+        "itemDiagnostics": {
+          "kaleidoscopecookery:baozi": {
+            "built": true,
+            "adapter": {
+              "KaleidoscopeDecoPlugin": "已启用：无公开城市装饰贡献 API；自动家具加成不可用",
+              "CraftEngine": "可用：公共物品 API；自定义内容按实际加载定义检查",
+              "KaleidoscopeCookeryPlugin": "可用：CE 食材/菜肴 ID；不将取菜前事件当作生产回执",
+              "KaleidoscopeMusicPlugin": "已启用：无公开演奏完成 API；自动节庆演奏加成不可用",
+              "KaleidoscopeTavernPlugin": "可用：CE 饮品 ID；构造事件无玩家/位置，不自动奖励城市"
+            },
+            "definition": true,
+            "material": "PAPER",
+            "identity": "kaleidoscopecookery:baozi"
+          },
+          "kaleidoscopecookery:oil": {
+            "built": true,
+            "adapter": {
+              "KaleidoscopeDecoPlugin": "已启用：无公开城市装饰贡献 API；自动家具加成不可用",
+              "CraftEngine": "可用：公共物品 API；自定义内容按实际加载定义检查",
+              "KaleidoscopeCookeryPlugin": "可用：CE 食材/菜肴 ID；不将取菜前事件当作生产回执",
+              "KaleidoscopeMusicPlugin": "已启用：无公开演奏完成 API；自动节庆演奏加成不可用",
+              "KaleidoscopeTavernPlugin": "可用：CE 饮品 ID；构造事件无玩家/位置，不自动奖励城市"
+            },
+            "definition": true,
+            "material": "PAPER",
+            "identity": "kaleidoscopecookery:oil"
+          },
+          "kaleidoscope_tavern:wine": {
+            "built": true,
+            "adapter": {
+              "KaleidoscopeDecoPlugin": "已启用：无公开城市装饰贡献 API；自动家具加成不可用",
+              "CraftEngine": "可用：公共物品 API；自定义内容按实际加载定义检查",
+              "KaleidoscopeCookeryPlugin": "可用：CE 食材/菜肴 ID；不将取菜前事件当作生产回执",
+              "KaleidoscopeMusicPlugin": "已启用：无公开演奏完成 API；自动节庆演奏加成不可用",
+              "KaleidoscopeTavernPlugin": "可用：CE 饮品 ID；构造事件无玩家/位置，不自动奖励城市"
+            },
+            "definition": true,
+            "material": "PAPER",
+            "identity": "kaleidoscope_tavern:wine"
+          },
+          "musicplus:handheld_instrument": {
+            "built": true,
+            "adapter": {
+              "KaleidoscopeDecoPlugin": "已启用：无公开城市装饰贡献 API；自动家具加成不可用",
+              "CraftEngine": "可用：公共物品 API；自定义内容按实际加载定义检查",
+              "KaleidoscopeCookeryPlugin": "可用：CE 食材/菜肴 ID；不将取菜前事件当作生产回执",
+              "KaleidoscopeMusicPlugin": "已启用：无公开演奏完成 API；自动节庆演奏加成不可用",
+              "KaleidoscopeTavernPlugin": "可用：CE 饮品 ID；构造事件无玩家/位置，不自动奖励城市"
+            },
+            "definition": true,
+            "material": "PAPER",
+            "identity": "musicplus:handheld_instrument"
+          }
+        },
+        "furnitureLoaded": true
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:17:42.142Z"
+    },
+    {
+      "name": "real country city claims and same-city listener",
+      "startedAt": "2026-11-20T01:17:42.144Z",
+      "result": {
+        "action": "audience",
+        "sameCity": true
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:17:42.749Z"
+    },
+    {
+      "name": "fixture CE stacks are moved from player inventory to warehouse",
+      "startedAt": "2026-11-20T01:17:42.752Z",
+      "result": {
+        "seeded": {
+          "action": "seed",
+          "fixtureSeededPlayerInventory": {
+            "kaleidoscopecookery:baozi": 4,
+            "kaleidoscopecookery:oil": 1,
+            "kaleidoscope_tavern:wine": 1,
+            "minecraft:bread": 64,
+            "minecraft:oak_planks": 8
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 4,
+            "kaleidoscopecookery:oil": 1,
+            "kaleidoscope_tavern:wine": 1,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 64,
+            "minecraft:oak_planks": 8
+          }
+        },
+        "after": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513745,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 0,
+            "productionMultiplier": 1,
+            "decorations": [],
+            "concerts": [],
+            "decorationPeriod": 179513745
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "none",
+            "changedPeriod": -1,
+            "cultureContributed": 0
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 1,
+            "kaleidoscopecookery:baozi": 4,
+            "kaleidoscopecookery:oil": 1,
+            "minecraft:oak_planks": 8,
+            "minecraft:bread": 64
+          },
+          "decorationValidity": {}
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:17:43.681Z"
+    },
+    {
+      "name": "Cookery feast consumes exact real custom goods once",
+      "startedAt": "2026-11-20T01:17:43.683Z",
+      "result": {
+        "before": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513745,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 0,
+            "productionMultiplier": 1,
+            "decorations": [],
+            "concerts": [],
+            "decorationPeriod": 179513745
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "chef",
+            "changedPeriod": 179513745,
+            "cultureContributed": 0
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 1,
+            "kaleidoscopecookery:baozi": 4,
+            "kaleidoscopecookery:oil": 1,
+            "minecraft:oak_planks": 8,
+            "minecraft:bread": 64
+          },
+          "decorationValidity": {}
+        },
+        "after": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513745,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 25,
+            "productionMultiplier": 1.08,
+            "decorations": [],
+            "concerts": [],
+            "decorationPeriod": 179513745
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "chef",
+            "changedPeriod": 179513745,
+            "cultureContributed": 25
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 1,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 8,
+            "minecraft:bread": 64
+          },
+          "decorationValidity": {}
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:17:44.288Z"
+    },
+    {
+      "name": "Tavern feast consumes real wine and bread",
+      "startedAt": "2026-11-20T01:17:44.290Z",
+      "result": {
+        "before": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513746,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 25,
+            "productionMultiplier": 1.08,
+            "decorations": [],
+            "concerts": [],
+            "decorationPeriod": 179513745
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "brewer",
+            "changedPeriod": 179513746,
+            "cultureContributed": 25
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 1,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 8,
+            "minecraft:bread": 64
+          },
+          "decorationValidity": {}
+        },
+        "after": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513746,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 45,
+            "productionMultiplier": 1.15,
+            "decorations": [],
+            "concerts": [],
+            "decorationPeriod": 179513745
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "brewer",
+            "changedPeriod": 179513746,
+            "cultureContributed": 45
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 8,
+            "minecraft:bread": 60
+          },
+          "decorationValidity": {}
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:17:47.091Z"
+    },
+    {
+      "name": "real CE furniture is registered through player command",
+      "startedAt": "2026-11-20T01:17:47.096Z",
+      "result": {
+        "placed": {
+          "action": "furniture",
+          "uuid": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+          "id": "kaleidoscope_deco:chair/oak",
+          "meta": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+          "valid": true
+        },
+        "aimed": {
+          "action": "aim",
+          "targetType": "INTERACTION",
+          "targetId": "d2099353-ce68-423b-be8e-7c207c2ef825",
+          "metaId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+          "metaEvidence": true,
+          "ceTargetEvidence": true
+        },
+        "after": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513747,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 45,
+            "productionMultiplier": 1.15,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513746
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "artisan",
+            "changedPeriod": 179513747,
+            "cultureContributed": 45
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 60
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": true
+          }
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:17:57.174Z"
+    },
+    {
+      "name": "maintained decoration earns culture and consumes upkeep",
+      "startedAt": "2026-11-20T01:17:57.176Z",
+      "result": {
+        "before": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513747,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 45,
+            "productionMultiplier": 1.15,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513746
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "artisan",
+            "changedPeriod": 179513747,
+            "cultureContributed": 45
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 60
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": true
+          }
+        },
+        "after": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513747,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 46,
+            "productionMultiplier": 1.155,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513747
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "artisan",
+            "changedPeriod": 179513747,
+            "cultureContributed": 46
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 59
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": true
+          }
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:17:57.779Z"
+    },
+    {
+      "name": "national territory loss pauses valid furniture contribution",
+      "startedAt": "2026-11-20T01:17:57.782Z",
+      "result": {
+        "unclaimed": {
+          "action": "unclaim",
+          "chunkX": 0,
+          "chunkZ": 0,
+          "changed": true,
+          "furnitureStillValid": true,
+          "decorationEvidence": false,
+          "world": "senluo-03-world",
+          "claimed": false
+        },
+        "first": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513747,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 46,
+            "productionMultiplier": 1.155,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513747
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "artisan",
+            "changedPeriod": 179513747,
+            "cultureContributed": 46
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 59
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": false
+          }
+        },
+        "after": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513749,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 46,
+            "productionMultiplier": 1.07,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513749
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "artisan",
+            "changedPeriod": 179513747,
+            "cultureContributed": 46
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 59
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": false
+          }
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:18:17.899Z"
+    },
+    {
+      "name": "restored territory resumes maintained decoration once",
+      "startedAt": "2026-11-20T01:18:17.902Z",
+      "result": {
+        "reclaimed": {
+          "action": "reclaim",
+          "chunkX": 0,
+          "chunkZ": 0,
+          "changed": true,
+          "furnitureStillValid": true,
+          "decorationEvidence": true,
+          "world": "senluo-03-world",
+          "claimed": true
+        },
+        "before": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513749,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 46,
+            "productionMultiplier": 1.07,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513749
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "artisan",
+            "changedPeriod": 179513747,
+            "cultureContributed": 46
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 59
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": true
+          }
+        },
+        "after": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513750,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 47,
+            "productionMultiplier": 1.005,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513750
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "artisan",
+            "changedPeriod": 179513747,
+            "cultureContributed": 47
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 58
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": true
+          }
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:18:27.875Z"
+    },
+    {
+      "name": "actual CE furniture removal stops culture and upkeep",
+      "startedAt": "2026-11-20T01:18:27.877Z",
+      "result": {
+        "first": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513750,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 47,
+            "productionMultiplier": 1.005,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513750
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "artisan",
+            "changedPeriod": 179513747,
+            "cultureContributed": 47
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 58
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": false
+          }
+        },
+        "after": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513752,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 47,
+            "productionMultiplier": 1,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513752
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "artisan",
+            "changedPeriod": 179513747,
+            "cultureContributed": 47
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 0,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 58
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": false
+          }
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:18:47.885Z"
+    },
+    {
+      "name": "real CE instrument and actual listener support sixty-second concert",
+      "startedAt": "2026-11-20T01:18:47.888Z",
+      "result": {
+        "concertId": "cf1cf1c2-312d-4e65-9643-a9141b844da0",
+        "notes": [
+          "有效音符 1 · 音高种类 1 · 听众 1",
+          "有效音符 2 · 音高种类 2 · 听众 1",
+          "有效音符 3 · 音高种类 3 · 听众 1",
+          "有效音符 4 · 音高种类 4 · 听众 1",
+          "有效音符 5 · 音高种类 5 · 听众 1",
+          "有效音符 6 · 音高种类 5 · 听众 1",
+          "有效音符 7 · 音高种类 5 · 听众 1",
+          "有效音符 8 · 音高种类 5 · 听众 1",
+          "有效音符 9 · 音高种类 5 · 听众 1",
+          "有效音符 10 · 音高种类 5 · 听众 1",
+          "有效音符 11 · 音高种类 5 · 听众 1",
+          "有效音符 12 · 音高种类 5 · 听众 1",
+          "有效音符 13 · 音高种类 5 · 听众 1",
+          "有效音符 14 · 音高种类 5 · 听众 1"
+        ],
+        "before": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513752,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 47,
+            "productionMultiplier": 1,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513752
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "musician",
+            "changedPeriod": 179513752,
+            "cultureContributed": 47
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 1,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 58
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": false
+          }
+        },
+        "after": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513759,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 67,
+            "productionMultiplier": 1.06,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513758
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "musician",
+            "changedPeriod": 179513752,
+            "cultureContributed": 67
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 1,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 50
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": false
+          }
+        },
+        "elapsedMillis": 67514
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:19:56.545Z"
+    },
+    {
+      "name": "completed concert replay gives no duplicate culture",
+      "startedAt": "2026-11-20T01:19:56.547Z",
+      "result": {
+        "before": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513759,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 67,
+            "productionMultiplier": 1.06,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513758
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "musician",
+            "changedPeriod": 179513752,
+            "cultureContributed": 67
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 1,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 50
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": false
+          }
+        },
+        "after": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513759,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 67,
+            "productionMultiplier": 1.06,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513758
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "musician",
+            "changedPeriod": 179513752,
+            "cultureContributed": 67
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 1,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 50
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": false
+          }
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:19:56.849Z"
+    },
+    {
+      "name": "clean shutdown persists committed extension and player state",
+      "startedAt": "2026-11-20T01:19:56.853Z",
+      "result": {
+        "clean": true
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:19:59.321Z"
+    },
+    {
+      "name": "restart restores city culture and cannot replay concert reward",
+      "startedAt": "2026-11-20T01:19:59.325Z",
+      "result": {
+        "restored": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513763,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 67,
+            "productionMultiplier": 1,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513758
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "musician",
+            "changedPeriod": 179513752,
+            "cultureContributed": 67
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 1,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 50
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": false
+          }
+        },
+        "after": {
+          "action": "snapshot",
+          "cityId": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+          "nationId": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+          "period": 179513763,
+          "life": {
+            "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+            "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+            "culture": 67,
+            "productionMultiplier": 1,
+            "decorations": [
+              {
+                "furnitureId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "metaEntityId": "9a8f4682-4515-4c24-8fff-c59f0371d9a9",
+                "city": "8b4d085f-2612-41e5-a3e9-7b0e16350a66",
+                "nation": "d1b0a15a-2422-4a16-bc0b-6614c625eaac",
+                "artisan": "363cb761-f442-3a44-b511-0ffbf8720f97",
+                "itemId": "kaleidoscope_deco:chair/oak",
+                "site": {
+                  "worldId": "d7580cb3-f0b1-46b4-a19c-9251e2354d1d",
+                  "worldName": "senluo-03-world",
+                  "x": 10,
+                  "y": 80,
+                  "z": 8
+                },
+                "registeredPeriod": 179513747
+              }
+            ],
+            "concerts": [],
+            "decorationPeriod": 179513758
+          },
+          "profession": {
+            "player": "363cb761-f442-3a44-b511-0ffbf8720f97",
+            "profession": "musician",
+            "changedPeriod": 179513752,
+            "cultureContributed": 67
+          },
+          "inventory": {
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "kaleidoscope_tavern:wine": 0,
+            "musicplus:handheld_instrument": 1,
+            "minecraft:bread": 0,
+            "minecraft:oak_planks": 0
+          },
+          "stock": {
+            "kaleidoscope_tavern:wine": 0,
+            "kaleidoscopecookery:baozi": 0,
+            "kaleidoscopecookery:oil": 0,
+            "minecraft:oak_planks": 4,
+            "minecraft:bread": 50
+          },
+          "decorationValidity": {
+            "9a8f4682-4515-4c24-8fff-c59f0371d9a9": false
+          }
+        }
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:20:45.058Z"
+    },
+    {
+      "name": "second server stops normally",
+      "startedAt": "2026-11-20T01:20:45.061Z",
+      "result": {
+        "clean": true
+      },
+      "status": "passed",
+      "finishedAt": "2026-11-20T01:20:49.924Z"
+    }
+  ],
+  "finishedAt": "2026-11-20T01:20:49.925Z"
+}

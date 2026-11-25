@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "version": "1.2.0",
+  "status": "passed",
+  "artifact_sha256": "da942bffa5771f5cf1c231f51347e5bf247fe6f27ac14a9c8eabc445562534d9",
+  "startedAt": "2026-11-20T22:00:44Z",
+  "finishedAt": "2026-11-20T22:01:08Z",
+  "java": "21.0.13.1+2",
+  "paper": "1.21.11 build 132",
+  "paper_sha256": "5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba",
+  "command": "tools/smoke-paper.ps1 -PluginJar target/starworld-1.2.0.jar -Port 25585",
+  "scope": "Two clean no-dependency starts, generated configuration, ready/status, SQLite schema 2, normal shutdown and durable restart audit marker",
+  "logs": {
+    "smoke-run-1.log": "524477734b492aa4099c012d5a32a2e25d9fe7d8414e54696ca75b46642d7e79",
+    "smoke-run-2.log": "cec42a3ea3a8ff11dda2d7d4e914d7a8641cf6706e1d0dc4c354c7274487c908"
+  }
+}

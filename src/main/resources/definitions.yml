@@ -1,0 +1,121 @@
+# IDs are persistence keys. Keep IDs after worlds have been played.
+definition-version: 1
+terrains:
+  mountains:
+    name: 山脉
+    agriculture: 0.5
+    transport: 1.5
+    military: 1.6
+    reserves: {fertility: 100, ore: 1200, timber: 80}
+    regeneration: {fertility: 4, timber: 1}
+  river:
+    name: 河流
+    agriculture: 1.5
+    transport: 0.7
+    military: 0.8
+    reserves: {fertility: 600, ore: 80, timber: 200}
+    regeneration: {fertility: 20, timber: 3}
+  plains:
+    name: 平原
+    agriculture: 1.3
+    transport: 0.8
+    military: 0.9
+    reserves: {fertility: 700, ore: 100, timber: 160}
+    regeneration: {fertility: 18, timber: 2}
+  forest:
+    name: 森林
+    agriculture: 0.9
+    transport: 1.2
+    military: 1.3
+    reserves: {fertility: 300, ore: 140, timber: 1000}
+    regeneration: {fertility: 10, timber: 20}
+  desert:
+    name: 沙漠
+    agriculture: 0.3
+    transport: 1.4
+    military: 1.1
+    reserves: {fertility: 60, ore: 500, timber: 30}
+    regeneration: {fertility: 1}
+  snow:
+    name: 雪原
+    agriculture: 0.4
+    transport: 1.6
+    military: 1.4
+    reserves: {fertility: 100, ore: 600, timber: 400}
+    regeneration: {fertility: 2, timber: 5}
+civilizations:
+  agrarian:
+    name: 农耕传统
+    multipliers: {farm: 1.25, workshop: 0.9, sawmill: 1.0}
+  industrial:
+    name: 工业传统
+    multipliers: {farm: 0.85, workshop: 1.3, sawmill: 1.15}
+buildings:
+  farm:
+    name: 农场与食品作坊
+    anchor: COMPOSTER
+    upkeep: {}
+  sawmill:
+    name: 林场与锯木厂
+    anchor: STONECUTTER
+    upkeep: {minecraft:bread: 1}
+  workshop:
+    name: 矿场与军工作坊
+    anchor: BLAST_FURNACE
+    upkeep: {minecraft:bread: 2}
+# Recipes run in order, once per valid registered building per period.
+# Every extraction consumes a regional reserve; maintenance is paid first.
+recipes:
+  harvest:
+    building: farm
+    inputs: {}
+    outputs: {minecraft:wheat: 12}
+    reserve: fertility
+    reserve-cost: 12
+  bake:
+    building: farm
+    inputs: {minecraft:wheat: 6}
+    outputs: {minecraft:bread: 2}
+  fell:
+    building: sawmill
+    inputs: {}
+    outputs: {minecraft:oak_log: 4}
+    reserve: timber
+    reserve-cost: 8
+  saw:
+    building: sawmill
+    inputs: {minecraft:oak_log: 2}
+    outputs: {minecraft:oak_planks: 8}
+  mine:
+    building: workshop
+    inputs: {}
+    outputs: {minecraft:raw_iron: 3}
+    reserve: ore
+    reserve-cost: 6
+  smelt:
+    building: workshop
+    inputs: {minecraft:raw_iron: 2, minecraft:oak_log: 1}
+    outputs: {minecraft:iron_ingot: 2}
+  forge:
+    building: workshop
+    inputs: {minecraft:iron_ingot: 2, minecraft:oak_planks: 2}
+    outputs: {minecraft:arrow: 12}
+events:
+  drought:
+    name: 干旱
+    duration: 3
+    aftermath: 2
+    multipliers: {farm: 0.4, sawmill: 0.8, workshop: 1.0}
+    aftermath-multiplier: 0.9
+  blizzard:
+    name: 暴雪
+    duration: 2
+    aftermath: 2
+    multipliers: {farm: 0.5, sawmill: 0.6, workshop: 0.7}
+    aftermath-multiplier: 0.85
+  harvest:
+    name: 丰收
+    duration: 3
+    aftermath: 1
+    multipliers: {farm: 1.6, sawmill: 1.0, workshop: 1.0}
+    aftermath-multiplier: 1.1

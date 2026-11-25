@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "version": "0.4.0",
+  "status": "passed",
+  "artifact_sha256": "68cc01bc395a018fb443f1350a4bd7426c87b660aad0c54dd948b5d87597bbba",
+  "startedAt": "2026-11-20T06:57:06.2205471Z",
+  "finishedAt": "2026-11-20T06:58:15.6344400Z",
+  "javaOptionsEnvironment": "-Xms128m -Xmx512m -Xss512k -XX:MaxMetaspaceSize=192m -XX:MaxDirectMemorySize=64m -XX:ReservedCodeCacheSize=64m -XX:TieredStopAtLevel=1 -XX:ActiveProcessorCount=1 -XX:+UseSerialGC -Dio.netty.eventLoopThreads=2",
+  "command": "tools/smoke-paper.ps1 -PluginJar target/starworld-0.4.0.jar -Port 25618",
+  "scope": "Two clean no-dependency starts and persisted SQLite audit marker; marker is isolated test data",
+  "logs": {
+    "smoke-run-1.log": "6659d05e4059f2606ab4449d0e82ac37346762fc615a0039d42eae05f579e88f",
+    "smoke-run-2.log": "85605b30f92162132dd1c8e017084c82d69838737164479f3722fcf8b12891db"
+  }
+}

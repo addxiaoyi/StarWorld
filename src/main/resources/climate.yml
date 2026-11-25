@@ -1,0 +1,21 @@
+# StarCore weather values are direct multipliers (1.2 means +20%).
+# Only agricultural -> farm and mineral -> workshop mine rules are built in.
+# Typed technology mappings remain empty until the individual effect contract is verified.
+schema-version: 1
+input:
+  multiplier-minimum: 0.0
+  multiplier-maximum: 10.0
+weather:
+  agriculture:
+    minimum: 0.5
+    maximum: 1.5
+  mineral:
+    minimum: 0.5
+    maximum: 1.5
+technology:
+  adjustment-minimum: -0.5
+  adjustment-maximum: 0.5
+resilience:
+  # A completed, currently maintained irrigation_network halves only adverse farm weather penalties.
+  adverse-agriculture-mitigation: 0.5
+technology-mappings: {}

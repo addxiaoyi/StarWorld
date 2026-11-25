@@ -109,7 +109,13 @@ class FreshPaperInputTests(unittest.TestCase):
         self.assertFalse(self.runtime.exists())
 
     def test_refund_core_candidate_is_bound_to_its_verified_commit_and_hash(self):
-        self.args.suite = 'refund'
+        self.check_core_candidate('refund')
+
+    def test_tax_refund_acceptance_binds_the_exact_core_candidate_without_changing_template(self):
+        self.check_core_candidate('tax')
+
+    def check_core_candidate(self, suite):
+        self.args.suite = suite
         self.write('plugins/StarWorld/logistics.yml', 'blocks-per-period: 128\n')
         self.args.starcore = self.base / 'patched-core.jar'
         self.args.starcore.write_bytes(b'new audited core')

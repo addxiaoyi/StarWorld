@@ -80,8 +80,9 @@ function durableSnapshots(version) {
   if (versionMinor >= 7) afterRows.logistics_corridor = [];
   afterRows.public_works_schema = [{ id: 1, version: 1 }];afterRows.civic_schema = [{ id: 1, version: 2 }];
   if (v11) Object.assign(afterRows, evolved.world.rows);
-  if (versionMinor>=5) afterRows.market_schema=[{id:1,version:versionMinor>=8?3:2,namespace:'original'}];
+  if (versionMinor>=5) afterRows.market_schema=[{id:1,version:versionMinor>=9?4:versionMinor>=8?3:2,namespace:'original'}];
   if (versionMinor>=8) {afterRows.market_refund=[];afterRows.starworld_dispatch_cursor.push({queue:'starworld:market-refund',next_lane:'FRESH'});}
+  if (versionMinor>=9) afterRows.market_quote=[];
   const baseTables = [...new Set([...stableTables, ...AUXILIARY_TABLES])];
   const newTables = expectedAddedTables(version);
   const coreRows = { starcore_nation_state: [], starcore_treasury_state: [], starcore_resource_state: [] };
@@ -185,6 +186,30 @@ test('1.5 market migration preserves exact payment identity, original quantity a
   }
   assert.doesNotThrow(()=>assertMarketMigration(after,structuredClone(after),'1.5.0'));
   const corrupt=structuredClone(after);corrupt.world.rows.market_purchase[0].total='26.00';assert.throws(()=>assertMarketMigration(after,corrupt,'1.5.0'));
+});
+
+test('1.9 migrates every legacy market schema to exact zero-tax terms and preserves accepted quotes on restart',()=>{
+  const {before,after}=durableSnapshots('1.9.0');assert.doesNotThrow(()=>assertDurable(before,after,'1.9.0'));
+  for(const version of ['1.4.0','1.5.0','1.8.0']){
+    const {after:previous}=durableSnapshots(version),next=structuredClone(after);
+    const legacy={id:'purchase',listing:'listing',buyer_city:'buyer',state:'SHIPPED',transaction_id:'payment',shipment:'shipment',total:'25.00'};
+    const listing={id:'listing',units:20,state:'SHIPPED'},history={listing:'listing',buyer_city:'buyer',period:7};
+    const modern={...legacy,units:20,buy_all:1},modernListing={...listing,available_units:0,reserved_units:0,shipped_units:20,returned_units:0},modernHistory={...history,purchase:'purchase'};
+    Object.assign(previous.world.rows,{market_listing:[version==='1.4.0'?listing:modernListing],market_purchase:[version==='1.4.0'?legacy:modern],market_history:[version==='1.4.0'?history:modernHistory]});
+    Object.assign(next.world.rows,{market_listing:[modernListing],market_purchase:[{...modern,goods_total:'25.00',tax_amount:'0.00',tax_quote:null}],market_history:[modernHistory]});
+    assert.doesNotThrow(()=>conserved(previous,next,'1.9.0'));
+    for(const change of [s=>s.world.rows.market_quote.push({id:'invented'}),s=>s.world.rows.market_purchase[0].tax_amount='0.01',
+      s=>s.world.rows.market_purchase[0].goods_total='24.99',s=>s.world.rows.market_purchase[0].tax_quote='invented',
+      s=>s.world.rows.market_purchase[0].transaction_id='new-payment',s=>s.world.tables.splice(s.world.tables.indexOf('market_quote'),1)]){
+      const bad=structuredClone(next);change(bad);assert.throws(()=>conserved(previous,bad,'1.9.0'));
+    }
+    next.world.rows.market_quote.push({id:'accepted',purchase:'purchase',goods_total:'25.00',tax_amount:'0.50'});
+    Object.assign(next.world.rows.market_purchase[0],{tax_quote:'accepted',tax_amount:'0.50',total:'25.50'});
+    assert.doesNotThrow(()=>conserved(next,structuredClone(next),'1.9.0'));
+    for(const change of [s=>s.world.rows.market_quote=[],s=>s.world.rows.market_quote[0].tax_amount='1.00',s=>s.world.rows.market_purchase[0].total='25.00']){
+      const bad=structuredClone(next);change(bad);assert.throws(()=>conserved(next,bad,'1.9.0'));
+    }
+  }
 });
 
 test('1.1 rejects deleted legacy progress, lost partial work, invalid budgets, and foreign queue namespaces', () => {

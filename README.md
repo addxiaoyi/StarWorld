@@ -1,6 +1,6 @@
 # StarWorld
 
-持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.8.0**，双方确认退款已通过增量验收；1.7有限道路和水路通道已通过增量验收；1.6地区地图已通过验证；1.5分批市场的证据已归档；后续扩展按[开发计划](docs/development-plan.md)持续实施。
+持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.9.0**，出口关税报价、明确确认和含税退款已通过增量验收；1.8双方确认退款、1.7有限道路和水路通道、1.6地区地图、1.5分批市场的对应证据已归档。后续扩展按[开发计划](docs/development-plan.md)持续实施。
 
 **开发分支：** [`codex/complete-development-stages`](https://github.com/addxiaoyi/StarWorld/tree/codex/complete-development-stages)，对应[草稿PR #2](https://github.com/addxiaoyi/StarWorld/pull/2)。当前状态见[开发计划](docs/development-plan.md)和[测试记录](docs/test-results.md)，已完成的历史发行见[1.4交接说明](docs/handoff-1.4.0.md)。
 
@@ -23,7 +23,7 @@ python -m unittest discover -s tools -p "test_*.py" -v
 npm --prefix tools/paper-client test
 ```
 
-产物为 `target/starworld-1.8.0.jar` 和 `target/starworld-1.8.0-sources.jar`。完整验证证据包和发行 ZIP 只在全部运行套件绑定同一JAR后生成；只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
+产物为 `target/starworld-1.9.0.jar` 和 `target/starworld-1.9.0-sources.jar`。完整验证证据包和发行 ZIP 只在全部运行套件绑定同一JAR后生成；只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
 
 1. 正常关服，备份整个 `plugins/StarWorld/`。升级时保留数据库和持久配置 ID。
 2. 放置插件 JAR，使用 Paper 1.21.11 和审计兼容的 StarCore 启动。
@@ -91,6 +91,7 @@ npm --prefix tools/paper-client test
 /sw concert <start|list|note UUID 音高|finish UUID|cancel UUID>
 /sw export <契约ID> <批数>
 /sw outbox
+/sw market quote <挂牌UUID> <正向商路UUID> [数量] · buy-quote <报价UUID>
 /sw market refund <购买UUID> · refunds [页码]
 /sw market refund-accept|refund-cancel|refund-retry <退款申请UUID>
 ```

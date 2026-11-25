@@ -42,6 +42,17 @@ final class MarketSchema {
             store.execute("DROP INDEX IF EXISTS market_purchase_open_seller");
             store.execute("UPDATE market_schema SET version=3 WHERE id=1");
         }
+        store.execute("CREATE TABLE IF NOT EXISTS market_quote(id TEXT PRIMARY KEY,listing TEXT NOT NULL REFERENCES market_listing(id),route TEXT NOT NULL,buyer_city TEXT NOT NULL REFERENCES city_state(id),buyer_nation TEXT NOT NULL,seller_nation TEXT NOT NULL,actor TEXT NOT NULL,units INTEGER NOT NULL CHECK(units>0),goods_total TEXT NOT NULL,tax_amount TEXT NOT NULL,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,purchase TEXT UNIQUE REFERENCES market_purchase(id))");
+        store.execute("CREATE INDEX IF NOT EXISTS market_quote_open ON market_quote(buyer_city,expires_at) WHERE purchase IS NULL");
+        store.execute("CREATE INDEX IF NOT EXISTS market_quote_expiry ON market_quote(expires_at) WHERE purchase IS NULL");
+        if(version<4){
+            store.execute("ALTER TABLE market_purchase ADD COLUMN goods_total TEXT NOT NULL DEFAULT '0.00'");
+            store.execute("ALTER TABLE market_purchase ADD COLUMN tax_amount TEXT NOT NULL DEFAULT '0.00'");
+            store.execute("ALTER TABLE market_purchase ADD COLUMN tax_quote TEXT REFERENCES market_quote(id)");
+            store.execute("UPDATE market_purchase SET goods_total=total");
+            store.execute("UPDATE market_schema SET version=4 WHERE id=1");
+        }
+        store.execute("CREATE UNIQUE INDEX IF NOT EXISTS market_purchase_tax_quote ON market_purchase(tax_quote) WHERE tax_quote IS NOT NULL");
         store.execute("CREATE INDEX IF NOT EXISTS market_listing_purchase ON market_purchase(listing,state)");
         store.execute("CREATE INDEX IF NOT EXISTS market_purchase_open_buyer ON market_purchase(buyer_city) WHERE state NOT IN ('SHIPPED','REFUNDED','CANCELLED')");
         store.execute("CREATE INDEX IF NOT EXISTS market_purchase_open_seller ON market_purchase(seller_city) WHERE state NOT IN ('SHIPPED','REFUNDED','CANCELLED')");

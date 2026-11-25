@@ -50,11 +50,13 @@ class MarketMigrationTest {
             List<String> before=store.query("SELECT id||'|'||transaction_id||'|'||shipment||'|'||total||'|'||state||'|'||lease||'|'||attempts||'|'||next_attempt FROM market_purchase ORDER BY id",r->r.getString(1));
             MarketService market=open(store);
             assertEquals(before,store.query("SELECT id||'|'||transaction_id||'|'||shipment||'|'||total||'|'||state||'|'||lease||'|'||attempts||'|'||next_attempt FROM market_purchase ORDER BY id",r->r.getString(1)));
-            assertEquals(3,store.query("SELECT version FROM market_schema",r->r.getInt(1)).getFirst());
+            assertEquals(4,store.query("SELECT version FROM market_schema",r->r.getInt(1)).getFirst());
             assertEquals("original-market-namespace",store.query("SELECT namespace FROM market_schema",r->r.getString(1)).getFirst());
             assertEquals(20,market.listing(available).orElseThrow().availableUnits());assertEquals(20,market.listing(locked).orElseThrow().reservedUnits());
             assertEquals(20,market.listing(shipped).orElseThrow().shippedUnits());assertEquals(20,market.listing(cancelled).orElseThrow().returnedUnits());assertEquals(20,market.listing(expired).orElseThrow().returnedUnits());
             assertEquals(20,market.purchase(pending).orElseThrow().units());assertEquals(20,market.purchase(abandoned).orElseThrow().units());
+            for(UUID id:List.of(pending,paid,abandoned)){Purchase migrated=market.purchase(id).orElseThrow();assertEquals(migrated.total(),migrated.goodsTotal());assertEquals(new BigDecimal("0.00"),migrated.taxAmount());assertNull(migrated.taxQuote());}
+            assertEquals(0,store.query("SELECT COUNT(*) FROM market_quote",r->r.getInt(1)).getFirst());
             PriceHistory history=market.history(null,10,0).getFirst();assertEquals(paid,history.purchaseId());assertEquals(shipped,history.listingId());assertEquals(20,history.units());assertEquals(new BigDecimal("1.25"),history.unitPrice());
             assertTrue(store.query("PRAGMA foreign_key_check",r->r.getString(1)).isEmpty());
         }

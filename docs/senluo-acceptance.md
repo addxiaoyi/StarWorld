@@ -1,10 +1,10 @@
 # StarWorld 1.4.0 森罗联调验证
 
-> 本文记录历史1.4 JAR的联服验收；1.5当前验证范围见[测试记录](test-results.md)，未把这些阶段重复计入新构建。
+> 本文记录历史1.4 JAR的联服验收；当前1.9验证范围见[测试记录](test-results.md)，未把这些阶段重复计入新构建。
 
 **当前冻结 JAR 的30/30阶段通过。** 运行时间为2026-11-25 09:22:43–09:28:48 UTC，两个Paper进程均正常保存并退出，三份真实协议客户端日志完整。原始结果位于 `runtime/civic/civic-senluo-acceptance/2026-11-25T09-22-43-436Z/`；汇总与发行证据索引见[测试记录](test-results.md)。
 
-环境为Linux、Java21、Paper1.21.11 build132、CraftEngine26.9.1。StarWorld JAR SHA-256为 `8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f`，绑定同一产物的[475项自动化测试](evidence/unit-tests.json)。启动前校验9个插件JAR、11份StarWorld配置、2,399个厨房清单文件及5,157项其他静态输入；世界、玩家和两插件数据库均从空状态通过真实玩法建立。重新构建的固定生产依赖、资源来源及最新源码观察分别记录在[森罗审计](audit-senluo.md)。
+环境为Linux、Java21、Paper1.21.11 build132、CraftEngine26.9.1。StarWorld JAR SHA-256为 `8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f`，绑定同一产物的[475项自动化测试](evidence/history/1.4.0/unit-tests.json)。启动前校验9个插件JAR、11份StarWorld配置、2,399个厨房清单文件及5,157项其他静态输入；世界、玩家和两插件数据库均从空状态通过真实玩法建立。重新构建的固定生产依赖、资源来源及最新源码观察分别记录在[森罗审计](audit-senluo.md)。
 
 | 城市需求 | 一次实付 | 实际凭据与对照用例 |
 | --- | --- | --- |

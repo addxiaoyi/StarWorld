@@ -58,6 +58,72 @@ class MarketControllerTest {
         Purchase purchase(UUID id,long units){return new Purchase(id,listing,buyer.cityId(),buyer.nationId(),seller.cityId(),seller.nationId(),route,UUID.randomUUID(),"market:"+id,new BigDecimal("1.25").multiply(BigDecimal.valueOf(units)),PurchaseStatus.PENDING,0,0,"",4,units);}
         void buy(String quantity){controller.execute(player,quantity==null?new String[]{"market","buy",listing.toString(),route.toString()}:new String[]{"market","buy",listing.toString(),route.toString(),quantity});}
     }
+    final class QuoteRig {
+        final CommandRig r=new CommandRig();
+        final MarketQuoteService quotes=mock(MarketQuoteService.class);
+        final MarketTaxPort taxes=mock(MarketTaxPort.class);
+        final MarketController controller;
+        MarketQuoteService.Quote quoted;
+        QuoteRig(String amount)throws Exception{
+            when(taxes.quote(any(),eq(r.seller.nationId()),eq(r.actor),any())).thenAnswer(c->new MarketTaxPort.Quote(c.getArgument(0),r.seller.nationId(),r.actor,c.getArgument(3),new BigDecimal(amount)));
+            when(quotes.prepare(eq(r.listing),eq(r.route),eq(r.buyer.cityId()),eq(r.buyer.nationId()),anyLong(),any(),any(),anyLong())).thenAnswer(c->{
+                MarketTaxPort.Quote t=c.getArgument(5);long now=c.getArgument(7);
+                return quoted=new MarketQuoteService.Quote(t.id(),r.listing,r.route,r.buyer.cityId(),r.buyer.nationId(),r.seller.nationId(),r.actor,c.getArgument(4),t.goodsTotal(),t.taxAmount(),now,now+60_000,null);
+            });
+            when(quotes.quote(any())).thenAnswer(c->Optional.of(quoted));
+            when(quotes.accept(any(),eq(r.buyer.cityId()),eq(r.buyer.nationId()),any(),anyLong())).thenAnswer(c->purchase());
+            controller=new MarketController(r.plugin,r.runtime,r.core,r.extensions,r.logistics,r.market,r.treasury,null,TreasuryRefundPort.unavailable(),quotes,taxes);
+        }
+        Purchase purchase(){return new Purchase(quoted.id(),r.listing,r.buyer.cityId(),r.buyer.nationId(),r.seller.cityId(),r.seller.nationId(),r.route,UUID.randomUUID(),"market:"+quoted.id(),quoted.total(),PurchaseStatus.PENDING,0,0,"",4,quoted.units(),quoted.goodsTotal(),quoted.taxAmount(),quoted.id());}
+        void buy(String op,String quantity){controller.execute(r.player,new String[]{"market",op,r.listing.toString(),r.route.toString(),quantity});}
+        void accept(){controller.execute(r.player,new String[]{"market","buy-quote",quoted.id().toString()});}
+    }
+    @Test void positiveTariffRequiresExplicitConsentAndAcceptanceNeverRequotes()throws Exception{
+        QuoteRig f=new QuoteRig("0.22");f.buy("buy","6");
+        verify(f.r.player).sendMessage(contains("货款 7.50 · 出口国关税 0.22 · 应付 7.72"));
+        verify(f.quotes,never()).accept(any(),any(),any(),any(),anyLong());verifyNoInteractions(f.r.treasury);
+        when(f.taxes.quote(any(),any(),any(),any())).thenThrow(new IllegalArgumentException("rate changed or API unavailable"));
+        f.accept();verify(f.quotes).accept(eq(f.quoted.id()),eq(f.r.buyer.cityId()),eq(f.r.buyer.nationId()),argThat(a->a.managedCities().contains(f.r.buyer.cityId())),anyLong());
+        verify(f.taxes,times(1)).quote(any(),any(),any(),any());verify(f.r.player).sendMessage(contains("原子支付 7.72"));verifyNoInteractions(f.r.treasury);
+    }
+    @Test void zeroTariffBuyReservesImmediatelyButExplicitPreviewNeverReserves()throws Exception{
+        QuoteRig f=new QuoteRig("0.00");f.buy("buy","6");verify(f.quotes).accept(eq(f.quoted.id()),any(),any(),any(),anyLong());verify(f.r.player).sendMessage(contains("原子支付 7.50"));
+        QuoteRig preview=new QuoteRig("0.00");preview.buy("quote","6");verify(preview.quotes,never()).accept(any(),any(),any(),any(),anyLong());verify(preview.r.player).sendMessage(contains("报价未预留商品"));
+    }
+    @Test void tariffQuoteFailureDoesNotPrepareReserveOrPay()throws Exception{
+        QuoteRig f=new QuoteRig("0.22");when(f.taxes.quote(any(),any(),any(),any())).thenThrow(new IllegalArgumentException("核心关税报价暂不可用"));f.buy("buy","6");
+        verifyNoInteractions(f.quotes,f.r.treasury);verify(f.r.market,never()).buy(any(),any(),any(),any(),any(),anyLong(),any());verify(f.r.player).sendMessage(contains("核心关税报价暂不可用"));
+    }
+    @Test void quoteCaptureRechecksRevokedFounderAndUsePermissionBeforeStorageWrites()throws Exception{
+        for(String revoked:List.of("founder","permission")){
+            QuoteRig f=new QuoteRig("0.22");
+            when(f.taxes.quote(any(),any(),any(),any())).thenAnswer(c->{
+                if(revoked.equals("founder"))when(f.r.core.canGovern(f.r.actor,f.r.buyer.cityId())).thenReturn(false);
+                else when(f.r.player.hasPermission("starworld.use")).thenReturn(false);
+                return new MarketTaxPort.Quote(c.getArgument(0),f.r.seller.nationId(),f.r.actor,c.getArgument(3),new BigDecimal("0.22"));
+            });
+            f.buy("buy","6");verifyNoInteractions(f.quotes,f.r.treasury);verify(f.r.player).sendMessage(contains(revoked.equals("founder")?"国家金币付款需要":"市场使用权限已失效"));
+        }
+    }
+    @Test void quoteAcceptanceRechecksCityNationAndFounderAfterLookupAndCapture()throws Exception{
+        for(String revoked:List.of("city","nation","founder","permission","capture")){
+            QuoteRig f=new QuoteRig("0.22");f.buy("quote","6");
+            if(revoked.equals("founder"))when(f.r.core.canGovern(f.r.actor,f.r.buyer.cityId())).thenReturn(true,false);
+            else if(revoked.equals("capture"))when(f.r.core.canGovern(f.r.actor,f.r.buyer.cityId())).thenReturn(true,true,false);
+            else when(f.quotes.quote(any())).thenAnswer(c->{
+                if(revoked.equals("permission"))when(f.r.player.hasPermission("starworld.use")).thenReturn(false);
+                else{CoreCity changed=new CoreCity(revoked.equals("city")?UUID.randomUUID():f.r.buyer.cityId(),UUID.randomUUID(),"changed","changed",1,"test");when(f.r.runtime.playerCity(f.r.player)).thenReturn(Optional.of(changed));when(f.r.runtime.manage(f.r.player,changed.cityId())).thenReturn(true);when(f.r.core.canGovern(f.r.actor,changed.cityId())).thenReturn(true);}
+                return Optional.of(f.quoted);
+            });
+            f.accept();verify(f.quotes,never()).accept(any(),any(),any(),any(),anyLong());verifyNoInteractions(f.r.treasury);
+        }
+    }
+    @Test void paymentDispatchUsesFrozenGoodsPlusTaxEvenWhenAssessmentIsUnavailable()throws Exception{
+        QuoteRig f=new QuoteRig("0.22");f.buy("quote","6");Purchase p=f.purchase();Dispatch d=new Dispatch(p,"lease");
+        when(f.r.market.definitions()).thenReturn(MarketDefinitions.defaults());when(f.r.market.leaseDue(anyInt(),anyLong())).thenReturn(List.of(d));when(f.r.market.leasePaid(anyInt(),anyLong())).thenReturn(List.of());when(f.r.market.expiring(anyLong(),anyInt())).thenReturn(List.of());
+        when(f.r.treasury.transfer(p.request())).thenReturn(new TreasuryTransferPort.Delivery(p.transactionId(),TreasuryTransferPort.Status.RETRY,null,"unavailable"));clearInvocations(f.taxes);
+        f.controller.tickFuture().join();f.controller.tickFuture().join();verify(f.r.treasury,times(2)).transfer(argThat(request->request.amount().compareTo(new BigDecimal("7.72"))==0&&request.transactionId().equals(p.transactionId())));verifyNoInteractions(f.taxes);
+    }
     @Test void explicitQuantityAndOmittedQuantityUseTheirOwnAuthorizedReservationMode()throws Exception{
         CommandRig r=new CommandRig();r.buy("6");
         verify(r.market).buy(any(),eq(r.listing),eq(r.route),eq(r.buyer.cityId()),eq(r.buyer.nationId()),eq(6L),argThat(a->a.period()==4&&a.managedCities().contains(r.buyer.cityId())&&a.permittedTrades().contains(TradePair.of(r.seller.cityId(),r.buyer.cityId()))));

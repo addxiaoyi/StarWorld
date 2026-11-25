@@ -48,6 +48,8 @@ final class ExpansionFixture {
             case "exp-progress-seed"->progressSeed(p);
             case "exp-alt-node"->alternateNode(p,slot(args));
             case "exp-fund"->fund(p,new java.math.BigDecimal(args[2]));
+            case "exp-tariff"->tariff(p,new java.math.BigDecimal(args[2]));
+            case "exp-market-quote"->marketQuote(p,UUID.fromString(args[2]));
             case "exp-refund-drain"->refundDrain(p);
             case "exp-refund-receipt","exp-refund-replay"->refundReceipt(p,UUID.fromString(args[2]),action.equals("exp-refund-replay"));
             case "exp-policy"->policy(p,args[2]);
@@ -306,6 +308,19 @@ final class ExpansionFixture {
     private void fund(Player p,java.math.BigDecimal amount)throws Exception {
         if(amount.signum()<=0||amount.compareTo(new java.math.BigDecimal("10000"))>0)throw new IllegalArgumentException("Bounded fixture treasury seed required");Object treasury=coreService("module.treasury.TreasuryService"),id=call(nation(p),"id");Object before=invoke(treasury,"balance",new Class<?>[]{id.getClass()},id);invoke(treasury,"deposit",new Class<?>[]{id.getClass(),java.math.BigDecimal.class},id,amount);
         emit("exp-fund",p,Map.of("source","explicit-public-TreasuryService-test-seed","productionEvidence",false,"nation",call(id,"value"),"before",before,"seed",amount,"after",invoke(treasury,"balance",new Class<?>[]{id.getClass()},id)));
+    }
+    private void tariff(Player p,java.math.BigDecimal rate)throws Exception {
+        if(rate.signum()<0||rate.compareTo(new java.math.BigDecimal("100"))>0)throw new IllegalArgumentException("Fixture tariff rate must be 0..100 percent");
+        Object taxes=coreService("module.treasury.TaxationService"),id=call(nation(p),"id");Class<?> taxType=type("StarCore",CORE+"module.treasury.TaxationService$TaxType"),configType=type("StarCore",CORE+"module.treasury.TaxationService$TaxConfig");
+        Object kind=taxType.getField("TARIFF").get(null),before=invoke(taxes,"getTaxConfig",new Class<?>[]{id.getClass(),taxType},id,kind);
+        Object config=configType.getConstructor(taxType,boolean.class,java.math.BigDecimal.class,java.math.BigDecimal.class,java.math.BigDecimal.class,int.class,boolean.class).newInstance(kind,true,java.math.BigDecimal.ZERO,rate,java.math.BigDecimal.ZERO,1440,false);
+        invoke(taxes,"setTaxConfig",new Class<?>[]{id.getClass(),taxType,configType},id,kind,config);
+        emit("exp-tariff",p,Map.of("source","explicit-public-TaxationService-configuration","before",before,"after",invoke(taxes,"getTaxConfig",new Class<?>[]{id.getClass(),taxType},id,kind),"nation",call(id,"value"),"fundedTax",false));
+    }
+    private void marketQuote(Player p,UUID quoteId)throws Exception {
+        Object runtime=world(),expansion=unwrap(call(runtime,"expansion"));
+        async(runtime,()->{Map<String,Object> value=new LinkedHashMap<>();value.put("quote",unwrap(invoke(call(expansion,"marketQuotes"),"quote",new Class<?>[]{UUID.class},quoteId)));value.put("entryPoint","MarketQuoteService.quote");return value;})
+                .whenComplete((value,error)->Bukkit.getScheduler().runTask(owner,()->{if(error!=null)failed(error);else emit("exp-market-quote",p,value);}));
     }
     private void refundDrain(Player p)throws Exception {
         Object treasury=coreService("module.treasury.TreasuryService"),id=call(nation(p),"id");java.math.BigDecimal before=(java.math.BigDecimal)invoke(treasury,"balance",new Class<?>[]{id.getClass()},id);

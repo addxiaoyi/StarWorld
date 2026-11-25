@@ -24,6 +24,7 @@ const V11_TABLES = ['life_evolution_pending', 'life_evolution_budget', 'starworl
 const V13_TABLES = ['city_region'];
 const V17_TABLES = ['logistics_corridor'];
 const V18_TABLES = ['market_refund'];
+const V19_TABLES = ['market_quote'];
 const DISPATCH_QUEUES = ['starworld:market-payment', 'starworld:resource-export'];
 const CONFIGS = ['config.yml', 'definitions.yml', 'disaster-response.yml', 'evolution.yml', 'exports.yml', 'life.yml', 'logistics.yml', 'market.yml'];
 let NEW_CONFIGS = ['civic-needs.yml', 'public-works.yml'];
@@ -77,7 +78,7 @@ function parseArgs(argv) {
   return result;
 }
 function sqliteSnapshot(python, runtime) {
-  const chosen = [...STABLE, ...ADDED, ...V13_TABLES, ...V17_TABLES, ...V18_TABLES, 'life_schema', 'life_city', 'city_state', 'stock', 'settlement', 'region', 'reserve', 'disaster_response', 'disaster_response_history', 'disaster_recovery_ledger'];
+  const chosen = [...STABLE, ...ADDED, ...V13_TABLES, ...V17_TABLES, ...V18_TABLES, ...V19_TABLES, 'life_schema', 'life_city', 'city_state', 'stock', 'settlement', 'region', 'reserve', 'disaster_response', 'disaster_response_history', 'disaster_recovery_ledger'];
   const result = spawnSync(python, ['-c', PROBE, runtime, chosen.join(',')], { encoding: 'utf8', windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
   assert.equal(result.status, 0, `Read-only stopped SQLite probe failed: ${result.error || result.stderr}`);
   return JSON.parse(result.stdout);
@@ -114,14 +115,17 @@ function is13(version) { return minorVersion(version) >= 3; }
 const MARKET_TABLES = ['market_schema','market_listing','market_purchase','market_history'];
 function assertMarketMigration(before, after, version) {
   const old=before.world.rows,next=after.world.rows;
-  const target=minorVersion(version)>=8?3:minorVersion(version)>=5?2:old.market_schema[0]?.version;
+  const target=minorVersion(version)>=9?4:minorVersion(version)>=8?3:minorVersion(version)>=5?2:old.market_schema[0]?.version;
   assert.equal(old.market_schema.length,1);
-  assert([1,2,3].includes(old.market_schema[0].version)&&old.market_schema[0].version<=target,'Unknown or newer market schema');
+  assert([1,2,3,4].includes(old.market_schema[0].version)&&old.market_schema[0].version<=target,'Unknown or newer market schema');
   assert.deepEqual(next.market_schema,old.market_schema.map(row=>({...row,version:target})),'Market namespace or schema changed unexpectedly');
   if(minorVersion(version)>=8)assert.deepEqual(next.market_refund,old.market_refund||[],'Upgrade invented or changed refunds');
   else assert(!Object.hasOwn(next,'market_refund'),'Historical market must not create refunds');
+  if(minorVersion(version)>=9)assert.deepEqual(next.market_quote,old.market_quote||[],'Upgrade invented or changed tax quotes');
+  else assert(!Object.hasOwn(next,'market_quote'),'Historical market must not create tax quotes');
+  const taxTerms=row=>target>=4&&old.market_schema[0].version<4?{...row,goods_total:row.total,tax_amount:'0.00',tax_quote:null}:row;
   if(minorVersion(version)<5||old.market_schema[0].version>=2){
-    for(const table of MARKET_TABLES.filter(t=>t!=='market_schema'))assert.deepEqual(next[table],old[table],`Existing durable ${table} rows changed`);
+    for(const table of MARKET_TABLES.filter(t=>t!=='market_schema'))assert.deepEqual(next[table],table==='market_purchase'?old[table].map(taxTerms):old[table],`Existing durable ${table} rows changed`);
     return;
   }
   const listings=indexBy(old.market_listing,'id','old market listings');
@@ -129,7 +133,7 @@ function assertMarketMigration(before, after, version) {
     available_units:row.state==='AVAILABLE'?row.units:0,reserved_units:row.state==='LOCKED'?row.units:0,
     shipped_units:row.state==='SHIPPED'?row.units:0,returned_units:['CANCELLED','EXPIRED'].includes(row.state)?row.units:0})),
     'Legacy listing quantities or original fields changed');
-  assert.deepEqual(next.market_purchase,old.market_purchase.map(row=>({...row,units:listings.get(row.listing).units,buy_all:1})),
+  assert.deepEqual(next.market_purchase,old.market_purchase.map(row=>({...taxTerms(row),units:listings.get(row.listing).units,buy_all:1})),
     'Legacy purchase quantity or payment/shipment identity changed');
   const histories=old.market_history.map(row=>{
     const matches=old.market_purchase.filter(p=>p.listing===row.listing&&p.buyer_city===row.buyer_city&&p.state==='SHIPPED');
@@ -140,7 +144,7 @@ function assertMarketMigration(before, after, version) {
 }
 function expectedAddedTables(version) {
   return [...ADDED.filter(table => is11(version) || !V11_TABLES.includes(table)),
-    ...(is13(version) ? V13_TABLES : []), ...(minorVersion(version) >= 7 ? V17_TABLES : []), ...(minorVersion(version) >= 8 ? V18_TABLES : [])].sort();
+    ...(is13(version) ? V13_TABLES : []), ...(minorVersion(version) >= 7 ? V17_TABLES : []), ...(minorVersion(version) >= 8 ? V18_TABLES : []), ...(minorVersion(version) >= 9 ? V19_TABLES : [])].sort();
 }
 function assertAddedTables(before, after, version) {
   assert.deepEqual(after.filter(name => !before.includes(name)).sort(), expectedAddedTables(version));

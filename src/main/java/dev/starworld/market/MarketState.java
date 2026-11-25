@@ -1,6 +1,7 @@
 package dev.starworld.market;
 
 import dev.starworld.integration.TreasuryTransferPort;
+import dev.starworld.integration.MarketTaxPort;
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -31,8 +32,9 @@ public final class MarketState {
         public BigDecimal availableTotal(){return unitPrice.multiply(BigDecimal.valueOf(availableUnits));}
         public Map<String,Long> cargo(){return Map.of(item,units);}
     }
-    public record Purchase(UUID id,UUID listingId,UUID buyerCity,UUID buyerNation,UUID sellerCity,UUID sellerNation,UUID routeId,UUID shipmentId,String transactionId,BigDecimal total,PurchaseStatus status,int attempts,long nextAttempt,String detail,long createdPeriod,long units){
-        public Purchase {if(units<1)throw new IllegalArgumentException("Purchase quantity must be positive");}
+    public record Purchase(UUID id,UUID listingId,UUID buyerCity,UUID buyerNation,UUID sellerCity,UUID sellerNation,UUID routeId,UUID shipmentId,String transactionId,BigDecimal total,PurchaseStatus status,int attempts,long nextAttempt,String detail,long createdPeriod,long units,BigDecimal goodsTotal,BigDecimal taxAmount,UUID taxQuote){
+        public Purchase {if(units<1)throw new IllegalArgumentException("Purchase quantity must be positive");total=TreasuryTransferPort.money(total);goodsTotal=TreasuryTransferPort.money(goodsTotal);taxAmount=MarketTaxPort.tax(taxAmount);if(total.compareTo(goodsTotal.add(taxAmount))!=0||taxAmount.compareTo(goodsTotal)>0||taxAmount.signum()>0&&taxQuote==null)throw new IllegalArgumentException("购买税费与总额不符");}
+        public Purchase(UUID id,UUID listingId,UUID buyerCity,UUID buyerNation,UUID sellerCity,UUID sellerNation,UUID routeId,UUID shipmentId,String transactionId,BigDecimal total,PurchaseStatus status,int attempts,long nextAttempt,String detail,long createdPeriod,long units){this(id,listingId,buyerCity,buyerNation,sellerCity,sellerNation,routeId,shipmentId,transactionId,total,status,attempts,nextAttempt,detail,createdPeriod,units,total,new BigDecimal("0.00"),null);}
         public TreasuryTransferPort.Request request(){return new TreasuryTransferPort.Request(transactionId,buyerNation,sellerNation,total,"StarWorld实体贸易 "+id);}
     }
     public record Dispatch(Purchase purchase,String leaseToken){}

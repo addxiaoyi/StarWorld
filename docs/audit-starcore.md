@@ -4,6 +4,12 @@
 
 审计日期：2026-11-19（Asia/Shanghai）。仓库：<https://github.com/addxiaoyi/starcore>。本地检出 `main`，`git log -1` 和 `git ls-remote origin HEAD` 均为 `f769e62799e769a18fe51305b545869a17f80cd1`，提交时间 `2026-11-18T23:34:47Z`，消息 `docs: record final shared budget Paper acceptance`。本次只读审计未修改 StarCore。审计范围包含 README（中文/英文）、ARCHITECTURE、Maven、plugin.yml、公共入口及实际注册、国家/城市/领土/资源/科技/政策/繁荣/天气/纪元实现。
 
+## 1.9.0 出口关税评估
+
+2026-11-25在固定Core基线及本项目结算候选中核对`TaxationService.quoteTax(UUID,NationId,TaxType,UUID,BigDecimal)`。公开`TaxQuote`包含事务、收税国家、税种、玩家、计税货款与税额；`TARIFF`评估使用Core税率/固定额、免税及向下取整到分规则。StarWorld在Paper主线程调用只读评估并验证全部身份，保存报价后由当前买方创始人确认含税总额。
+
+本集成把货款和出口关税一起通过原子`NationTransferService`付给卖国，使用原交易回执及`NationSettlementService`全额逆转。没有另行调用`fundTax`或`reverseFundedTax`；这些API会独立存入或取出国库，不能在已合并付款后再调用。Core税务收入统计由这些税收API自身维护，因此此版的外部实物贸易关税以StarWorld报价明细与国家转账回执核对，不宣称已写入Core独立税务收入账。新增第三国受益方将使用候选的多方原子结算契约。
+
 ## 1.1.0 主线契约刷新
 
 2026-11-20 **14:23:28 UTC（22:23:28 Asia/Shanghai）** 再次通过 GitHub 提交接口核对，默认主线 HEAD 仍为 `f769e62799e769a18fe51305b545869a17f80cd1`，与已运行基线完全一致。本轮不读取未提交改动，不修改上游或运行任何 JVM。`StarCoreApi.service(Class<T>)` 仍返回原服务；`NationService.nationById/nationOf` 和 `CityService.getCity/getPlayerCity` 仍返回可变国家/城市模型，没有新增带版本的不可变权限/领土快照，也没有新增可核验的第三国商路通行授权。现有 metrics/health 的 `Snapshot` 类型不等于这些权威快照。`FoliaCompatScheduler` 的区域调度封装及其简化主线程判断，也没有改变全部服务的访问合同；`plugin.yml` 仍未声明 `folia-supported`。因此 1.1 保留当前 Paper 主线程捕获、稳定回执写入边界和 Folia 启用门禁，不因类名、同步集合或全局调度器而放宽兼容声明。

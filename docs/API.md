@@ -105,6 +105,8 @@ public void onIndustry(IndustrySettledEvent event) {
 
 1.5中 `Listing.units` 保留原始数量，`availableUnits/reservedUnits/shippedUnits/returnedUnits` 的和始终等于原始数量。`Purchase.units` 为该次不可变份额，`PriceHistory.purchaseId` 唯一标识该次成交；同一挂牌允许多份历史。记录构造签名已扩展，直接构造或反射解析这些记录的扩展需适配新字段。
 
+1.9 `Purchase`增加`goodsTotal/taxAmount/taxQuote`，`total`为两项金额之和，`taxQuote`在旧版或内部零税购买中可以为空。旧构造签名仍按零税解释。价格历史与`DeliveryStats.gross`只含货款。`MarketTaxPort`是公开核心税费评估的只读端口，生产实现`StarCoreMarketTaxes`只能在Paper主线程调用；`MarketQuoteService`在串行IO内保存及接受60秒报价，`ExpansionRuntime.marketQuotes()`供受控集成读取。它不是免权限的玩家写接口，接受前须捕获当前国家创始人、城市管理、领土及贸易权限。
+
 `Purchase.SHIPPED` 只代表该份额转入物流，`PriceHistory` 记录该时点成交价格；真实到货由原物流单 `COMPLETED` 证明。挂牌关闭不撤销其他已预留份额。消费 API 查询不得再次发物品或支付。恢复、撤单与配置合同见 [市场文档](market.md)。
 
 `CultureDynamics` 为已提交城市结算提供持久地区衰减时钟及公开核心政策对新影响的有限修正，最多处理 64 个地区，不离线多步追赶。`LedgerMaintenance.sweep` 在同库事务有限压缩旧审计、裁剪过期报告；`archives/readArchive` 分页与校验读取原审计，保留所有业务幂等凭据。以上为内部仓储服务，须使用现有串行 IO；详见 [存档维护](storage-maintenance.md) 与 [规模基线](scale.md)。

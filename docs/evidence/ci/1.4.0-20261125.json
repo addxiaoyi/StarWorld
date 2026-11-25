@@ -3,12 +3,12 @@
   "kind": "remote-ci-verification",
   "version": "1.4.0",
   "repository": "addxiaoyi/StarWorld",
-  "sourceCommit": "0a4898622cb96cf6bd6f5b5f4b99189c2463d4a3",
+  "sourceCommit": "1ed45f359c5a55751ed35d2ec3cd5ae28655503b",
   "branch": "codex/complete-development-stages",
   "pullRequest": "https://github.com/addxiaoyi/StarWorld/pull/2",
   "workflow": {
-    "id": 45571366911,
-    "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45571366911",
+    "id": 45595260611,
+    "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45595260611",
     "name": "Java 21 build",
     "status": "completed",
     "conclusion": "success",
@@ -16,18 +16,16 @@
   },
   "jobs": [
     {
-      "id": 139058544288,
+      "id": 139139522999,
       "name": "verify",
       "status": "completed",
-      "conclusion": "success",
-      "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45571366911/job/139058544288"
+      "conclusion": "success"
     },
     {
-      "id": 139058544431,
+      "id": 139139523509,
       "name": "Evidence and acceptance tool tests",
       "status": "completed",
-      "conclusion": "success",
-      "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45571366911/job/139058544431"
+      "conclusion": "success"
     }
   ],
   "tests": {
@@ -36,44 +34,67 @@
       "failures": 0,
       "errors": 0,
       "skipped": 0,
-      "logSummary": "2026-11-25T07:51:47.3351138Z [INFO] Tests run: 475, Failures: 0, Errors: 0, Skipped: 0"
+      "logSummary": "2026-11-25T10:28:52.4379739Z [INFO] Tests run: 475, Failures: 0, Errors: 0, Skipped: 0"
     },
     "python": {
-      "tests": 71,
+      "tests": 73,
       "failures": 0,
       "errors": 0,
       "skipped": 0,
-      "logSummary": "2026-11-25T07:51:15.2001771Z Ran 71 tests in 2.284s"
+      "logSummary": "2026-11-25T10:28:18.2503077Z Ran 73 tests in 4.833s"
     },
     "node": {
-      "tests": 18,
-      "passed": 18,
+      "tests": 20,
+      "passed": 20,
       "failed": 0,
       "skipped": 0
     }
   },
   "artifacts": [
     {
-      "id": 15002745412,
-      "name": "starworld-plugin",
-      "bytes": 15280601,
-      "digest": "sha256:6b4b611c7f38d40fbe4c73fe54c685323580207c30722c98df9f116bae495553",
-      "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45571366911/artifacts/15002745412",
-      "expiresAt": "2027-02-23T07:51:05Z"
+      "id": 15012329058,
+      "name": "starworld-test-reports",
+      "bytes": 1082466,
+      "digest": "sha256:45a6103011f4e829fef822b346cc20636a884212fa617ddb173976bea802c1a1",
+      "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45595260611/artifacts/15012329058",
+      "expiresAt": "2027-02-23T10:28:06Z"
     },
     {
-      "id": 15002421256,
-      "name": "starworld-test-reports",
-      "bytes": 1082448,
-      "digest": "sha256:b64f0b3cf36cd4bd79bda837acf9fbbbe66a82d43a39cc81574654ddefb7514b",
-      "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45571366911/artifacts/15002421256",
-      "expiresAt": "2027-02-23T07:51:05Z"
+      "id": 15012214085,
+      "name": "starworld-plugin",
+      "bytes": 15280601,
+      "digest": "sha256:63c9f9b2a2038df1fb331d291fba3ecc42161438935c6f01eb22f9e59f4f58f0",
+      "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45595260611/artifacts/15012214085",
+      "expiresAt": "2027-02-23T10:28:06Z"
     }
   ],
-  "localFrozenPluginSha256": "9d1207953c4883a407a2f284332d0e19e12c71b8b72dee3547931319fdd70dfd",
+  "localFrozenPluginSha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f",
   "ciPluginHashComparedToLocalFrozenBuild": false,
-  "realPaperAcceptanceForLocalFrozenBuild": "not-started",
-  "releaseEvidenceZipCreated": false,
-  "releaseZipCreated": false,
-  "scope": "CI builds the source and checks unit/tool tests. It does not run Paper, migrate real saved worlds, or certify a final release. Artifact digests describe GitHub ZIPs, not the inner plugin JAR."
+  "scope": "This record verifies the named code/tool commit. Subsequent report commits are checked separately on GitHub. CI builds source and runs unit/tool tests; local Paper, real migration and release packaging are documented in acceptance.json and test-results.md. Artifact digests are outer ZIP hashes, not plugin JAR hashes.",
+  "previousVerifications": [
+    {
+      "sourceCommit": "0a4898622cb96cf6bd6f5b5f4b99189c2463d4a3",
+      "runId": 45571366911,
+      "java": 475,
+      "python": 71,
+      "node": 18,
+      "scope": "Historical Windows handoff; full record retained in Git history."
+    },
+    {
+      "sourceCommit": "d6885bef0800eecf94e889df46682d1cd3fc85d3",
+      "runId": 45588813637,
+      "java": 475,
+      "python": 73,
+      "node": 20,
+      "scope": "Earlier Linux acceptance tool commit; superseded by the climate-fingerprint fix."
+    },
+    {
+      "sourceCommit": "77dd9d7aa05a2fe5ba671a37ed734a911b62ffd4",
+      "runId": 45593243014,
+      "java": 475,
+      "python": 73,
+      "node": 20,
+      "scope": "Earlier climate-fingerprint fix; superseded by the real-well roof acceptance fix."
+    }
+  ]
 }

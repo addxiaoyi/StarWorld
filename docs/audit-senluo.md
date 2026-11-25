@@ -4,6 +4,21 @@
 
 审计日期：2026-11-19（Asia/Shanghai）。审计方式：读取 Git 远端当前代码、README、Gradle 定义、插件描述符、公开 API、事件触发点、状态与调度代码。本审计不把上游 README 的历史验收范围扩大为 StarWorld 的运行验收。
 
+## 1.4.0 新设备依赖重建：2026-11-25
+
+旧设备的 JAR、厨房资源和游戏存档没有迁移。本轮在 Linux 隔离工作目录从固定生产提交 `3e774d00567deb9cb65eee8da6de8a65254e5b8e` 重新执行根工程 `shadowJar` 及系列 `:tavern:shadowJar :deco:shadowJar :music:shadowJar`，所有构建成功。最新主线 HEAD 观察值为 `7aca215fca067314d1593dd287621f96fb8913e4`；本轮运行兼容性仅覆盖固定生产基线。既有契约审计和真实运行依赖继续分别标识，未将最新源码观察等同于二进制联调。
+
+| 本机运行输入 | SHA-256 |
+| --- | --- |
+| Cookery 1.3.0 | `8cf6988e57a2a983ecb37e4edf814b94327e6ff5d451616087f635705e54ba62` |
+| Tavern 0.1.0-dev | `ee22f3197dba4966f2f9882743dcaf1b23e1fca6d89328da5c0ad31bf39b9e78` |
+| Deco 0.1.0-dev | `1db18976692f5de6b284b31cfc5ef40e14d60f86925f75e87fe7dc3cf807f263` |
+| Music 0.1.0-dev | `983fb4b88b39bb5211e12ead23d3202222624e114e2ee4137f48d49d434b1078` |
+| CraftEngine 26.9.1（官方 Modrinth 分发） | `021260c87e3546730d321f4360b1744e6e33caa1d68e98ae30dcdbbdc347ae0f` |
+| 重新导出的厨房包 | `5eef1f3770547c12252c44f0c8858169e66590ac58af0752e21fefdf0394e443` |
+
+厨房源固定 `2f4e386ce23f49a385ddf003c67fc6415c55417a`，由上述生产提交的导出器生成；准备与启动前逐项比对2,399个清单文件、解压输入及CE活动资源。系列包分别固定 Deco `6ce180e…`、Doll `62303aa…`、Tavern `c4ec188…`、MusicPlus `cc84f29…` 的来源。实际9个插件、配置、5,157项其他静态输入及生产/审计提交均写入各运行目录的 `PREPARATION.json`。新版构建字节单独绑定本轮证据，不沿用旧Windows候选的运行结果。当前实服结果见[测试记录](test-results.md)。
+
 ## 1.1.0 上游契约复审：2026-11-20
 
 截至 **2026-11-20 14:23:28 UTC（22:23:28 Asia/Shanghai）**，通过 GitHub 提交接口复核，森罗主线 HEAD 为 `cecc87d616a577b8bf3bccaff1d812619e87c59f`（`Freeze village smoke inputs and pin CraftEngine source provenance`，提交时间 14:17:24 UTC）。相对上次审计 `7b8ef80d19e4f6e1a2703016e3ce898bcdd23f66` 新增 5 个提交、48 个变更路径。审计只读取明确提交的源码，没有使用正在开发的上游未提交文件，没有构建、启动或停止任何 JVM，也没有替换已验收候选。

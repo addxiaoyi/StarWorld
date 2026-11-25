@@ -111,12 +111,12 @@
 
 | 增量 | 实现与验证 |
 | --- | --- |
-| 旧生活贡献分期结转 | `LifeEvolutionCarryTest` 验证降低上限后的分期额度、持久预算与重启去重；真实1.0源和当前候选分别运行4/7阶段。当前候选实服结果仍待完成 |
-| 商路配置收紧与恢复 | `LogisticsConfigurationRecoveryTest` 验证受限路线、托管货物及恢复；真实四次启停14阶段须绑定当前JAR，不复用旧版本结果 |
+| 旧生活贡献分期结转 | `LifeEvolutionCarryTest` 验证降低上限后的分期额度、持久预算与重启去重；真实1.0源和当前候选分别运行4/7阶段。当前候选7阶段、三次正常启停通过 |
+| 商路配置收紧与恢复 | `LogisticsConfigurationRecoveryTest` 验证受限路线、托管货物及恢复；当前JAR真实四次启停14阶段已通过 |
 | 逐世界气候与灌溉韧性 | `ClimateRulesTest`、`StarCoreBridgeTest` 和生产结算接线覆盖国家/世界归属、倍率边界与精确配方映射；扩展实服套件验证真实核心天气对产量的影响 |
-| 有限地区勘探 | `RegionAtlasTest`、`WorldRuntimeTest`、`WorldStoreTest` 覆盖纸张成本、128地区上限、归属复核、幂等发现和schema3回填；当前JAR的勘探/存储套件待实服运行 |
-| 存储过载和批次边界 | `StorageWorkerTest` 覆盖256项队列、拒绝与顺序、关闭终态；城市生产批次最多64个。当前JAR还需60秒真实Paper压力及恢复验证 |
-| 完整发行交付 | 当前JAR的单测、规模、源码包、全部功能、独立安装、旧存档和生活迁移证据共同通过收集器后，才由 `package-release.ps1` 生成发行ZIP。准备目录、静态预检和历史通过记录不证明本次发行完成 |
+| 有限地区勘探 | `RegionAtlasTest`、`WorldRuntimeTest`、`WorldStoreTest` 覆盖纸张成本、128地区上限、归属复核、幂等发现和schema3回填；当前JAR的勘探/存储套件8阶段通过 |
+| 存储过载和批次边界 | `StorageWorkerTest` 覆盖256项队列、拒绝与顺序、关闭终态；城市生产批次最多64个。当前JAR的60秒真实Paper压力及恢复验证通过 |
+| 完整发行交付 | 当前JAR的475项Java测试、千城SQLite、217阶段真实Paper玩法/迁移及独立安装双启动共同通过收集器；`package-release.ps1` 已生成发行ZIP。源码、证据清单、CRC和全部载荷SHA-256独立核验通过，准确范围见[测试记录](test-results.md) |
 
 ## 玩家决策如何落实
 

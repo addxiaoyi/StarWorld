@@ -1,8 +1,8 @@
 # 1.1 商路配置收紧与恢复：真实 Paper 专项验收
 
-本专项对应 tools/paper-client/lifecycle-logistics-acceptance.cjs，覆盖 1.1 引入的商路限制与货物恢复行为。2026-11-22 的 1.4.0 冻结 JAR 已在真实 Paper 1.21.11、StarCore 和两个 Mineflayer 玩家环境完成 14/14 阶段验收，证据位于 `starworld-tools/lifecycle14-server04/lifecycle-logistics-acceptance/2026-11-22T18-16-19-099Z`。运行包含四次正常启动与关闭，绑定的 StarWorld JAR SHA-256 为 `d575832ff0f78d1f7f3ed77dfa3516a0d5762845b82835b846fe6c641daa0fa7`，fixture SHA-256 为 `2f9d9deee654fb0a5a9704022230ca6d47cabdb1706baac7c0b6a875c7c79bae`。先前失败运行保留为失败证据，不计入通过结果。
+本专项对应 `tools/paper-client/lifecycle-logistics-acceptance.cjs`，覆盖 1.1 引入的商路限制与货物恢复行为。2026-11-25 的当前 1.4.0 JAR 在 Linux、真实 Paper 1.21.11、StarCore 和两个 Mineflayer 玩家环境完成 **14/14** 阶段、四次正常启停。证据位于 `runtime/lifecycle-logistics-r2/lifecycle-logistics-acceptance/2026-11-25T09-49-18-535Z`，主 JAR SHA-256 为 `8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f`，fixture SHA-256 为 `a7c3c2f811406c97e682319e23fee335f4894a8d9b75ebf9461edbfd3a54e543`。五笔运输完成凭据、两笔付款交接、双方金币及实物守恒均通过，隔离物流配置按原字节恢复。
 
-2026-11-25 新冻结 JAR 的指纹为 `9d120795…`，尚未重跑本专项；上述 14/14 不能作为新构建的发行证据，当前状态见[测试结果](test-results.md)。
+2026-11-22 的 `d575832f…` 和旧设备 `9d120795…` 构建记录仅作历史索引，不参与本次发行通过数。完整当前状态见[测试结果](test-results.md)。
 
 专项运行器现使用 512 MiB Paper 堆，并将无响应子进程的停止等待限制为 15 秒。超时只会终止本脚本启动的 Paper 子进程，关闭资源采样日志并恢复隔离目录的原配置；被强制终止的服务器仍判定为失败。
 
@@ -74,7 +74,7 @@ node --max-old-space-size=256 --max-semi-space-size=8 tools/paper-client/lifecyc
   --client-deps C:/mineflayer-deps
 ```
 
-脚本使用限定的 512 MiB Java 堆、单处理器和 Serial GC；Node.js 使用最多 256 MiB 老生代。它只管理自己创建的四个子服务器。不要同时在相同运行目录启动其他 Java 进程。主机资源紧张时应串行运行专项；预计约 5–8 分钟，实际启动时间取决于已准备缓存与主机负载。每次启动前，Python 通过 Windows `GlobalMemoryStatusEx` 读取物理内存与提交额度，Paper 启动门禁按 JVM/Node 堆、非堆储备及 768 MiB 运行余量计算内存最低要求，并要求至少 **1 GiB 可用磁盘空间**。检查结果保存为 `memory-before-run-N.json` 并写入 `evidence.startPreflight`。运行中内存余量低于 768 MiB 会停止本次服务；停止命令 15 秒未完成时只强制结束本专项创建的 Paper 子进程，并保留失败证据。资源不足会在启动 Java 前失败，不等待、停止或调整任何外部 Java 进程。非 Windows 平台明确记录内存门禁不适用，不伪造 Windows 数值。
+脚本使用限定的 512 MiB Java 堆、单处理器和 Serial GC；Node.js 使用最多 256 MiB 老生代。它只管理自己创建的四个子服务器。不要同时在相同运行目录启动其他 Java 进程。主机资源紧张时应串行运行专项；预计约 5–8 分钟，实际启动时间取决于已准备缓存与主机负载。每次启动前，Python 通过 Windows `GlobalMemoryStatusEx` 读取物理内存与提交额度，Paper 启动门禁按 JVM/Node 堆、非堆储备及 768 MiB 运行余量计算内存最低要求，并要求至少 **1 GiB 可用磁盘空间**。检查结果保存为 `memory-before-run-N.json` 并写入 `evidence.startPreflight`。运行中内存余量低于 768 MiB 会停止本次服务；停止命令 15 秒未完成时只强制结束本专项创建的 Paper 子进程，并保留失败证据。资源不足会在启动 Java 前失败，不等待、停止或调整任何外部 Java 进程。非Windows平台的这份辅助预检不伪造Windows数值；共享启动器仍检查真实物理可用内存，提交余量字段为不可用哨兵，不能当作实际Linux commit测量。
 
 两个协议玩家固定为 `StarWorldLA`、`StarWorldLB`。每次连接后由控制台执行 `deop`，并查询真实 `starworld.use` 与 `starworld.admin` 权限。重启后还会明确核对原城市 ID 与国家 ID。实际交易、付款、撤单和改道均由普通国家创始人/城市管理者的 `/sw` 命令完成，不通过 fixture 注入运输授权。
 

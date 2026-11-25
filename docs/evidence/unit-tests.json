@@ -1,10 +1,10 @@
 {
   "schema": 2,
   "version": "1.4.0",
-  "recorded_at": "2026-11-25T05:02:00.942327+00:00",
-  "command": "MAVEN_OPTS=-Xmx192m -XX:+UseSerialGC -XX:ActiveProcessorCount=1 -XX:TieredStopAtLevel=1 -XX:ReservedCodeCacheSize=32m -XX:MaxMetaspaceSize=160m -XX:-CreateCoredumpOnCrash -Dfile.encoding=UTF-8; test phase adds JaCoCo 0.8.14 and Mockito 5.20.0 javaagents. ./mvnw.cmd -B --no-transfer-progress -DforkCount=0 -Dstarworld.testHeap=192m clean test; ./mvnw.cmd -B --no-transfer-progress -DskipTests verify",
-  "java": "C:/Users/Administrator/Documents/starworld-tools/jdk-21.0.13.1+2/bin/java.exe",
-  "artifact_sha256": "9d1207953c4883a407a2f284332d0e19e12c71b8b72dee3547931319fdd70dfd",
+  "recorded_at": "2026-11-25T08:37:22.718371+00:00",
+  "command": "./mvnw -B --no-transfer-progress clean verify",
+  "java": "OpenJDK 21.0.10+7-Ubuntu-124.04",
+  "artifact_sha256": "8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f",
   "totals": {
     "tests": 475,
     "failures": 0,
@@ -410,6 +410,6 @@
       "missed": 13
     }
   },
-  "build_log_sha256": "eb6faf6fa9eb4a67bff644f4b3999095d520abeb41fd9bac97b19f9bc1394066",
-  "sources_sha256": "7ecd28437433c1c9a8d22e27ad22f831b2f69cbd7f944e36cd110cd76ae5d394"
+  "build_log_sha256": "d40f2313c500c2da136e28a50f57a92d09c6e3151ed386f15d2aa0ca58ccedaa",
+  "sources_sha256": "045c5d9e8d08101502ea060b3fb6e8aa161ca0024ee8e4b3e034eafe08548e33"
 }

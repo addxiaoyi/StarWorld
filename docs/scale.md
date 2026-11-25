@@ -20,30 +20,30 @@
 
 ## 已测结果
 
-当前证据为 [evidence/scale.json](evidence/scale.json)，由同一候选的全量测试与后续打包验证产生；分阶段命令见[测试记录](test-results.md)：
+当前证据为 [evidence/scale.json](evidence/scale.json)，由本机全量 `clean verify` 产生并绑定当前构建，命令见[测试记录](test-results.md)：
 
 | 指标 | 实测 |
 | --- | ---: |
-| 建库与初始投入 | 848 ms |
-| 3,000 次实际结算 | 20,011 ms |
-| 分页与抽样地图册查询 | 88 ms |
-| 最终数据库文件 | 5,103,616 bytes |
+| 建库与初始投入 | 164 ms |
+| 3,000 次实际结算 | 13,810 ms |
+| 分页与抽样地图册查询 | 12 ms |
+| 最终数据库文件 | 5,095,424 bytes |
 | 重启去重失败 | 0 / 1,000 |
 
-版本为 `1.4.0`，绑定 JAR SHA-256 `9d1207953c4883a407a2f284332d0e19e12c71b8b72dee3547931319fdd70dfd`。环境为 Java `21.0.13.1+2`，测试与 Maven 运行于同一个最大堆 192 MiB 的 JVM，使用 Serial GC、单活动处理器及 `TieredStopAtLevel=1`。见[机器报告](evidence/scale.json)。结果受 JVM 参数、磁盘、缓存和同时运行的进程影响，不能直接与不同参数的历史用时比较。
+版本为 `1.4.0`，绑定 JAR SHA-256 `8e7da9179ae5b8b4d3d524df6989611cafdf9881000798b36d09a279480e936f`。环境为 Linux、OpenJDK `21.0.10+7-Ubuntu-124.04`，Maven 最大堆 192 MiB、独立测试 JVM 最大堆 160 MiB，均使用 Serial GC 与两个活动处理器。见[机器报告](evidence/scale.json)。结果受 JVM 参数、磁盘、缓存和同时运行的进程影响，不能直接与不同参数的历史用时比较。
 
 ## 复现
 
 使用 Java 21，在仓库根目录运行：
 
-```powershell
-.\mvnw.cmd -B --no-transfer-progress -Dstarworld.testHeap=256m -Dtest=WorldScaleTest test
+```sh
+./mvnw -B --no-transfer-progress -Dtest=WorldScaleTest test
 ```
 
 完整发布校验使用：
 
-```powershell
-.\mvnw.cmd -B --no-transfer-progress -Dstarworld.testHeap=256m clean verify
+```sh
+./mvnw -B --no-transfer-progress clean verify
 ```
 
 测试将本次机器结果写入 `target/scale-results.json`，包含工作量、准备/结算/查询毫秒、数据库字节和重启重放数量。当前 Maven 完整测试包含此用例，未提供单独的 `scale` profile。只有整个用例所有守恒、数量和分页断言成功才产生最终报告；失败和不同版本的结果应单独保留。

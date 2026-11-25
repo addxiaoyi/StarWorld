@@ -5,7 +5,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {createRequire}=require('node:module');
 const {Paper,connect,properties,hash,requireFile,waitUntil}=require('./acceptance.cjs');
-const {sqliteSnapshot,assertMarketMigration}=require('./upgrade-10-acceptance.cjs');
+const {sqliteSnapshot,assertMarketMigration,assertCorridorMigration}=require('./upgrade-10-acceptance.cjs');
 const MARKER='StarWorld isolated Paper smoke runtime v1';
 const read=file=>JSON.parse(fs.readFileSync(file,'utf8').replace(/^\uFEFF/,''));
 const omit=new Set(['logs','crash-reports','.paper-remapped','session.lock','PREPARATION.json','UNIT-EVIDENCE.json']);
@@ -28,7 +28,10 @@ function inputs(directory){
 function unchanged(root,files){for(const file of files)assert.equal(hash(path.join(root,file.relative)),file.sha256,`Source changed: ${file.relative}`);}
 function conserved(before,after,version){
   assert.equal(after.pluginVersion,version);assert.equal(after.world.integrity,'ok');assert.equal(after.core.integrity,'ok');assert.deepEqual(after.world.foreignKeys,[]);
-  assert.deepEqual(after.world.tables,before.world.tables);assertMarketMigration(before,after,version);
+  const expectedTables=new Set(before.world.tables);
+  if(Number(version.split('.')[1])>=7)expectedTables.add('logistics_corridor');
+  assert.deepEqual([...after.world.tables].sort(),[...expectedTables].sort());
+  assertMarketMigration(before,after,version);assertCorridorMigration(before,after,version);
   for(const table of ['market_delivery_receipt','market_delivery_stat','market_delivery_clock','logistics_paid_shipment','logistics_order','logistics_receipt'])
     assert.deepEqual(after.world.rows[table],before.world.rows[table],`Migrated market changed ${table}`);
   const treasury=rows=>rows.filter(r=>r.property_key!=='__starcore_revision__');
@@ -109,3 +112,4 @@ async function main(){
   finally{try{await close();}catch(error){evidence.status='failed';evidence.cleanupError=error.stack;process.exitCode=1;}evidence.finishedAt=new Date().toISOString();save();fs.writeFileSync(path.join(runtime,'market-upgrade-acceptance','latest.json'),JSON.stringify({directory,status:evidence.status},null,2)+'\n');}
 }
 if(require.main===module)main().catch(error=>{console.error(error.stack);process.exitCode=1;});
+module.exports={conserved};

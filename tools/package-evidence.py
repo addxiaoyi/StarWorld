@@ -221,6 +221,7 @@ def main() -> int:
     parser.add_argument("--operations-dir", type=Path, help="Required for 0.4: route planning, delivery statistics and online backup acceptance")
     parser.add_argument("--disaster-dir", type=Path, help="Required from 0.5: disaster costs, response restart, and finite recovery")
     parser.add_argument("--storage-dir", type=Path, help="Required from 1.4: bounded storage pressure and heap recovery acceptance")
+    parser.add_argument("--corridor-dir", type=Path, help="Required from 1.7: physical road/water blockage and restart acceptance")
     parser.add_argument("--works-dir", type=Path, help="Required for 1.0: public works under three consecutive starts")
     parser.add_argument("--civic-dir", type=Path, help="Required for 1.0: real SenLuo integrations and civic needs, including the original fifteen stages")
     parser.add_argument("--lifecycle-source-dir", type=Path, help="Required from 1.1 onward: real 1.0 source action before migration")
@@ -336,6 +337,9 @@ def main() -> int:
     if release_version >= (1, 5, 0):
         require(args.market_upgrade_dir is not None, "1.5 delivery requires --market-upgrade-dir")
         run_inputs.append(("market-upgrade", args.market_upgrade_dir, "tools/paper-client/market-upgrade-acceptance.cjs"))
+    if release_version >= (1, 7, 0):
+        require(args.corridor_dir is not None, "1.7 delivery requires --corridor-dir")
+        run_inputs.append(("corridor", args.corridor_dir, "tools/paper-client/corridor-acceptance.cjs"))
     if release_version >= (1, 0, 0):
         for label, directory, script in (
                 ("works", args.works_dir, "tools/paper-client/works-acceptance.cjs"),
@@ -362,6 +366,7 @@ def main() -> int:
         "operations": {f"client-run-{run}-{player}.log" for run in (1, 2, 3) for player in ("a", "b")},
         "disaster": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
         "storage": {f"client-run-{run}.log" for run in ((1, 2) if release_version >= (1, 6, 0) else (1,))},
+        "corridor": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
         "works": {f"client-run-{run}-{slot}.log" for run in (1, 2, 3) for slot in range(3)},
         "civic": {"client-run-1.log", "client-run-listener-1.log", "client-run-2.log"},
     }
@@ -390,7 +395,7 @@ def main() -> int:
             preparation_hash = sha256(preparation_data)
             add(f"runtime/{label}/{preparation_name}", preparation_data)
         else:
-            require(label not in {"upgrade", "market-upgrade", "senluo", "disaster", "civic", "works"}, f"{label} run lacks its source/preparation provenance")
+            require(label not in {"upgrade", "market-upgrade", "senluo", "disaster", "civic", "works", "corridor"}, f"{label} run lacks its source/preparation provenance")
         if release_version >= (1, 0, 0):
             require(evidence.get("version", version) == version and evidence.get("targetVersion", version) == version,
                     f"{label} run declares another product version")
@@ -441,6 +446,14 @@ def main() -> int:
                         not any(key in source_run for key in ("error", "cleanupError", "playerCleanupError")),
                         "Market migration lacks its passed original 1.4 gameplay evidence")
                 add("runtime/market-upgrade/source-evidence.json", source_evidence)
+            if label == "corridor":
+                require(evidence.get("suite") == "real-paper-physical-corridors" and
+                        evidence.get("runnerSha256") == sha256(script) and
+                        evidence.get("acceptanceHelperSha256") == shared_launcher_hash and
+                        preparation_proof.get("productVersion") == version and
+                        preparation_proof.get("targetPluginSha256") == plugin_hash and
+                        preparation_proof.get("fixtureSha256") == plugin_jars.get("StarWorldFixture.jar"),
+                        "Corridor preparation, runner or artifact fingerprint differs")
             if label in {"civic", "senluo"}:
                 asset_proof = dict(evidence.get("assetPreparation", {}))
                 require(preparation_proof is not None and preparation_proof.get("starWorldVersion") == version and preparation_proof.get("starWorldSha256") == plugin_hash and

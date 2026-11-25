@@ -1,6 +1,6 @@
 # StarWorld
 
-持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.6.0**，地区分组和方位地图已通过本轮验证；1.5分批市场的证据已归档；后续扩展按[开发计划](docs/development-plan.md)持续实施。
+持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.7.0**，有限道路和水路通道已通过增量验收；1.6地区地图已通过验证；1.5分批市场的证据已归档；后续扩展按[开发计划](docs/development-plan.md)持续实施。
 
 **开发分支：** [`codex/complete-development-stages`](https://github.com/addxiaoyi/StarWorld/tree/codex/complete-development-stages)，对应[草稿PR #2](https://github.com/addxiaoyi/StarWorld/pull/2)。当前状态见[开发计划](docs/development-plan.md)和[测试记录](docs/test-results.md)，已完成的历史发行见[1.4交接说明](docs/handoff-1.4.0.md)。
 
@@ -23,7 +23,7 @@ python -m unittest discover -s tools -p "test_*.py" -v
 npm --prefix tools/paper-client test
 ```
 
-产物为 `target/starworld-1.6.0.jar` 和 `target/starworld-1.6.0-sources.jar`。完整验证证据包和发行 ZIP 只在全部运行套件绑定同一JAR后生成；只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
+产物为 `target/starworld-1.7.0.jar` 和 `target/starworld-1.7.0-sources.jar`。完整验证证据包和发行 ZIP 只在全部运行套件绑定同一JAR后生成；只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
 
 1. 正常关服，备份整个 `plugins/StarWorld/`。升级时保留数据库和持久配置 ID。
 2. 放置插件 JAR，使用 Paper 1.21.11 和审计兼容的 StarCore 启动。
@@ -61,7 +61,7 @@ npm --prefix tools/paper-client test
 | 灾害治理 | 六种有真实成本的旱灾/洪灾/饥荒方案，次期缓解与有总预算的稳定/繁荣/可再生资源恢复；毁损或失地暂停，不追赶离线周期 |
 | 城市生活需求 | 宴会、家具公共空间和节庆只认可需求发起后的真实已提交凭据；事务扣料、奖励和全局唯一凭据认领可跨重启恢复 |
 
-运输路径是管理者声明的有限节点路线，不证明沿途铺满道路。兵营实际消耗箭形成军需；当前或前一周期的有效供给通过核心公开扩展点提供最多30%军需增伤、20%额外地形减伤，只限有效设施区块。核心取贡献者最高伤害，其他插件可覆盖减伤；不修改真人PVP或核心军队补给。见[战斗联动](docs/combat.md)。城市繁荣为本地属性，不重复写无幂等回执的国家繁荣。
+运输路径可在首笔交易前绑定有限物理通道，逐格复核道路/水路和沿途双层领土；未绑定路线只证明声明节点。兵营实际消耗箭形成军需；当前或前一周期的有效供给通过核心公开扩展点提供最多30%军需增伤、20%额外地形减伤，只限有效设施区块。核心取贡献者最高伤害，其他插件可覆盖减伤；不修改真人PVP或核心军队补给。见[战斗联动](docs/combat.md)。城市繁荣为本地属性，不重复写无幂等回执的国家繁荣。
 
 默认五分钟一周期，停服和未加载区块不补发。产业需要维护和投入，注销登记不刷新矿藏。设施损坏、区块卸载、城市/国家丢领或转国会停产。水井默认要求空炼药锅；露天淋雨变为装水炼药锅后不再匹配锚点，可建遮雨顶保持方块类型。失去资源地会切断原料；战争可暂停商路，军工城市需要粮食与材料补给。
 

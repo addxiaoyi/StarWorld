@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { assertDurable, assertLifeEvolution, assertMarketMigration, assertAddedTables, expectedAddedTables, stableTables, addedTables } = require('./upgrade-10-acceptance.cjs');
 const { validateRunConfigurations } = require('../senluo-fixture/lifecycle-acceptance.cjs');
+const { conserved } = require('./market-upgrade-acceptance.cjs');
 
 test('life migration permits only the exact new climate default and preserves every original configuration', () => {
   const initial={'config.yml':'a'.repeat(64),'life.yml':'b'.repeat(64)};
@@ -76,6 +77,7 @@ function durableSnapshots(version) {
   const afterRows = structuredClone(originalRows);
   for (const table of addedTables) afterRows[table] = [];
   if (v13) afterRows.city_region = [{ city: 'city-a', nation: 'nation-a', region: 'world-a:-1:-2', world_name: 'world' }];
+  if (versionMinor >= 7) afterRows.logistics_corridor = [];
   afterRows.public_works_schema = [{ id: 1, version: 1 }];afterRows.civic_schema = [{ id: 1, version: 2 }];
   if (v11) Object.assign(afterRows, evolved.world.rows);
   if (versionMinor>=5) afterRows.market_schema=[{id:1,version:2,namespace:'original'}];
@@ -111,8 +113,8 @@ test('1.2 keeps the 1.1 schema migration set without introducing another databas
   const durable=durableSnapshots('1.2.0');assert.doesNotThrow(()=>assertDurable(durable.before,durable.after,'1.2.0'));
 });
 
-test('1.3 through 1.5 add the nation-scoped atlas schema and backfill real historic facility regions', () => {
-  for (const version of ['1.3.0', '1.4.0','1.5.0']) {
+test('1.3 through 1.6 add the nation-scoped atlas schema and backfill real historic facility regions', () => {
+  for (const version of ['1.3.0', '1.4.0','1.5.0','1.6.0']) {
     const added = [...BASE_ADDED, ...V11_ADDED, ...V13_ADDED].sort();
     assert.deepEqual(expectedAddedTables(version), added);
     assert.doesNotThrow(() => assertAddedTables(['building'], ['building', ...added], version));
@@ -123,6 +125,45 @@ test('1.3 through 1.5 add the nation-scoped atlas schema and backfill real histo
     assert.doesNotThrow(() => assertDurable(durable.before, durable.after, version));
     durable.after.world.rows.city_region[0].nation = 'another-nation';
     assert.throws(() => assertDurable(durable.before, durable.after, version), /original city and nation atlas/u);
+  }
+});
+
+test('1.7 adds only the empty corridor table and preserves all legacy tables and contracts', () => {
+  const added = [...BASE_ADDED, ...V11_ADDED, ...V13_ADDED, 'logistics_corridor'].sort();
+  assert.deepEqual(expectedAddedTables('1.7.0'), added);
+  const { before, after } = durableSnapshots('1.7.0');
+  assert.doesNotThrow(() => assertDurable(before, after, '1.7.0'));
+  for (const change of [
+    value => value.world.rows.logistics_corridor.push({route:'legacy',fingerprint:'invented'}),
+    value => value.world.tables.push('unexpected'),
+    value => value.world.tables.splice(value.world.tables.indexOf('logistics_corridor'), 1),
+    value => value.world.tables.splice(value.world.tables.indexOf('building'), 1),
+  ]) {
+    const bad = structuredClone(after); change(bad);
+    assert.throws(() => assertDurable(before, bad, '1.7.0'));
+  }
+});
+
+test('market upgrade permits only the new corridor table and retains bindings exactly on restart', () => {
+  const { after: before } = durableSnapshots('1.6.0');
+  const after = structuredClone(before); after.pluginVersion = '1.7.0';
+  after.world.tables.push('logistics_corridor'); after.world.rows.logistics_corridor = [];
+  assert.doesNotThrow(() => conserved(before, after, '1.7.0'));
+  for (const change of [
+    value => value.world.rows.logistics_corridor.push({route:'legacy',fingerprint:'invented'}),
+    value => value.world.tables.push('unexpected'),
+    value => value.world.tables.splice(value.world.tables.indexOf('market_purchase'), 1),
+    value => value.world.tables.splice(value.world.tables.indexOf('logistics_corridor'), 1),
+  ]) {
+    const bad = structuredClone(after); change(bad);
+    assert.throws(() => conserved(before, bad, '1.7.0'));
+  }
+  after.world.rows.logistics_corridor.push({route:'new',fingerprint:'real',actor:'owner',created_period:1});
+  assert.doesNotThrow(() => conserved(after, structuredClone(after), '1.7.0'));
+  for (const change of [value => value.world.rows.logistics_corridor.splice(0, 1),
+    value => value.world.rows.logistics_corridor[0].fingerprint = 'changed']) {
+    const bad = structuredClone(after); change(bad);
+    assert.throws(() => conserved(after, bad, '1.7.0'));
   }
 });
 

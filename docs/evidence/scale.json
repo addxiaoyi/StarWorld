@@ -5,15 +5,15 @@
   "settlements": 3000,
   "replayedAfterRestart": 1000,
   "failures": 0,
-  "seedMillis": 171,
-  "settlementMillis": 14818,
-  "pagedQueryMillis": 22,
-  "databaseBytes": 5099520,
+  "seedMillis": 164,
+  "settlementMillis": 15306,
+  "pagedQueryMillis": 11,
+  "databaseBytes": 5091328,
   "scope": "real SQLite and pure production paths; not Paper tick or world load throughput",
-  "version": "1.6.0",
-  "artifact_sha256": "e2a4ecf9daaa3393ba418109ff0408f23cf32af07603f1c5522cfeb0947dcbe1",
+  "version": "1.7.0",
+  "artifact_sha256": "dba8fdb3da8d06feae42001ad74dad1585f33087767f4b4864a67ea4bdda7659",
   "java": "OpenJDK 21.0.10+7-Ubuntu-124.04",
   "test_heap": "160m",
   "maven_heap": "192m",
-  "command": "./mvnw -B --no-transfer-progress clean verify"
+  "command": "./mvnw -B --no-transfer-progress -Dstarworld.testHeap=160m clean verify"
 }

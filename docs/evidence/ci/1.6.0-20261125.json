@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "version": "1.6.0",
+  "commit": "ddc5f5dc48be071ea8ce1672464ba6acea403709",
+  "repository": "addxiaoyi/StarWorld",
+  "run_id": 45605158315,
+  "run_number": 53,
+  "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45605158315",
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "id": 139174022821,
+      "name": "verify",
+      "conclusion": "success",
+      "tests": 502
+    },
+    {
+      "id": 139174023339,
+      "name": "Evidence and acceptance tool tests",
+      "conclusion": "success",
+      "python_tests": 73,
+      "node_tests": 21
+    }
+  ],
+  "logs_checked": true,
+  "recorded_at": "2026-11-25T11:40:21.368635+00:00"
+}

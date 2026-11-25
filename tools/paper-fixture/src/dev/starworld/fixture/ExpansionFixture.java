@@ -55,11 +55,56 @@ final class ExpansionFixture {
             case "exp-border-register"->borderRegister(p,slot(args));
             case "exp-border-state"->borderState(p);
             case "exp-border-claim","exp-border-unclaim"->borderClaim(p,Objects.requireNonNull(Bukkit.getPlayerExact(args[2]),"Connected resource-city player required"),action.equals("exp-border-claim"));
+            case "exp-corridor-setup"->corridorSetup(p,slot(args));
+            case "exp-corridor-build","exp-corridor-gap","exp-corridor-repair","exp-corridor-shallow","exp-corridor-water-repair"->corridorWorld(p,action);
+            case "exp-corridor-node"->corridorNode(p,Integer.parseInt(args[2]),args[3]);
+            case "exp-corridor-unclaim","exp-corridor-reclaim"->corridorClaim(p,action.equals("exp-corridor-reclaim"));
             default->throw new IllegalArgumentException("Unknown expansion fixture action");
         }return true;
     }
     private static int slot(String[] args){if(args.length!=3)throw new IllegalArgumentException("A slot 0 or 1 is required");int n=Integer.parseInt(args[2]);if(n<0||n>1)throw new IllegalArgumentException("Slot must be 0 or 1");return n;}
     private static int base(int slot){return 20+slot*32;}
+    private void corridorSetup(Player p,int slot)throws Exception{
+        Object nations=coreService("module.nation.NationService"),cities=coreService("module.city.CityService");
+        Object nation=unwrap(invoke(nations,"nationOf",new Class<?>[]{UUID.class},p.getUniqueId()));
+        if(nation==null)nation=invoke(nations,"createNation",new Class<?>[]{UUID.class,String.class,String.class},p.getUniqueId(),p.getName(),"SWPath"+p.getName());
+        Object nationId=call(nation,"id"),city=unwrap(invoke(cities,"getPlayerCity",new Class<?>[]{UUID.class},p.getUniqueId()));int start=20+slot*2;
+        if(city==null){Object made=invoke(cities,"createCity",new Class<?>[]{nationId.getClass(),String.class,UUID.class,Location.class},nationId,"Path"+p.getName(),p.getUniqueId(),new Location(p.getWorld(),start*16+8,81,8));if(!Boolean.TRUE.equals(call(made,"success")))throw new IllegalStateException(String.valueOf(call(made,"message")));city=call(made,"city");}
+        UUID cityId=(UUID)call(city,"id");for(int chunk=start;chunk<start+2;chunk++){claim(nations,p,nationId,chunk);invoke(cities,"addClaim",new Class<?>[]{UUID.class,String.class,int.class,int.class},cityId,p.getWorld().getName(),chunk,0);platform(p.getWorld(),chunk*16+8,false);}
+        if(!p.teleport(new Location(p.getWorld(),start*16+8.5,81,5.5)))throw new IllegalStateException("Corridor setup teleport failed");
+        emit("exp-corridor-setup",p,Map.of("cityId",cityId,"nationId",call(nationId,"value"),"chunks",List.of(start,start+1),"forceLoadedChunks",List.of()));
+    }
+    /** All terrain is a fixed disposable fixture; actual route verification runs in the product. */
+    private void corridorWorld(Player p,String action){
+        World world=p.getWorld();for(int chunk=20;chunk<=22;chunk++)if(!world.isChunkLoaded(chunk,0))throw new IllegalStateException("Corridor fixture requires already loaded chunks");
+        switch(action){
+            case "exp-corridor-build"->{
+                for(int x=327;x<=361;x++)for(int z=4;z<=14;z++){
+                    world.getBlockAt(x,78,z).setType(Material.STONE,false);world.getBlockAt(x,79,z).setType(Material.STONE,false);world.getBlockAt(x,80,z).setType(Material.STONE,false);
+                    for(int y=81;y<=84;y++)world.getBlockAt(x,y,z).setType(Material.AIR,false);
+                }
+                for(int x=328;x<=360;x++)for(int z=11;z<=13;z++)for(int y=79;y<=80;y++)world.getBlockAt(x,y,z).setType(Material.WATER,false);
+            }
+            case "exp-corridor-gap"->world.getBlockAt(344,80,8).setType(Material.AIR,false);
+            case "exp-corridor-repair"->world.getBlockAt(344,80,8).setType(Material.STONE,false);
+            case "exp-corridor-shallow"->world.getBlockAt(344,79,12).setType(Material.STONE,false);
+            case "exp-corridor-water-repair"->world.getBlockAt(344,79,12).setType(Material.WATER,false);
+            default->throw new IllegalArgumentException("Unknown corridor world action");
+        }
+        emit(action,p,Map.of("fixedBounds",List.of(327,78,4,361,84,14),"source","explicit-test-terrain","forceLoadedChunks",List.of()));
+    }
+    private void corridorNode(Player p,int slot,String mode){
+        if(slot<0||slot>1||!Set.of("land","sea").contains(mode))throw new IllegalArgumentException("corridor slot/mode");int x=(20+slot*2)*16+8,z=mode.equals("land")?8:12;Material material=mode.equals("land")?Material.LODESTONE:Material.BARREL;
+        p.getWorld().getBlockAt(x,80,z).setType(material,false);Location start=new Location(p.getWorld(),x+.5,81,z-2.5);start.setDirection(new Vector(x+.5,80.99,z+.5).subtract(start.toVector().add(new Vector(0,p.getEyeHeight(),0))));
+        if(!p.teleport(start))throw new IllegalStateException("Corridor node teleport failed");Bukkit.getScheduler().runTaskLater(owner,()->{
+            try{if(p.getTargetBlockExact(6)==null||p.getTargetBlockExact(6).getType()!=material)throw new IllegalStateException("Corridor node raycast missed");p.performCommand("sw node register "+(mode.equals("land")?"road":"port"));emit("exp-corridor-node",p,Map.of("mode",mode,"x",x,"z",z));}catch(Exception failure){failed(failure);}
+        },3);
+    }
+    private void corridorClaim(Player p,boolean restore)throws Exception{
+        Object nations=coreService("module.nation.NationService"),nationId=call(nation(p),"id");
+        if(restore)claim(nations,p,nationId,21);else invoke(nations,"unclaimCurrentChunk",new Class<?>[]{UUID.class,String.class,int.class,int.class},p.getUniqueId(),p.getWorld().getName(),21,0);
+        Object actual=unwrap(invoke(nations,"claimAt",new Class<?>[]{String.class,int.class,int.class},p.getWorld().getName(),21,0));if((actual!=null)!=restore)throw new IllegalStateException("Corridor claim did not change");emit(restore?"exp-corridor-reclaim":"exp-corridor-unclaim",p,Map.of("chunk",21,"nationalClaimPresent",actual!=null,"endpointClaimsPreserved",true));
+    }
     private void setup(Player p,int slot)throws Exception {
         Object nations=coreService("module.nation.NationService"),cities=coreService("module.city.CityService");
         Object nation=unwrap(invoke(nations,"nationOf",new Class<?>[]{UUID.class},p.getUniqueId()));

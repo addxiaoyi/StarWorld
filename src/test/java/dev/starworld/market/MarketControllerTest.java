@@ -76,6 +76,22 @@ class MarketControllerTest {
         verify(r.runtime,never()).async(any());verifyNoInteractions(r.market,r.treasury);
         assertEquals(1,MarketController.parseQuantity("1"));assertEquals(1_000_000,MarketController.parseQuantity("1000000"));
     }
+    @Test void physicalRoadGapDefersNewMoneyButStillReconcilesReceiptsAndRepairAllowsPayment()throws Exception{
+        CommandRig r=new CommandRig();Server server=r.plugin.getServer();World world=mock(World.class);UUID worldId=UUID.randomUUID();
+        var left=new Node(UUID.randomUUID(),r.seller.cityId(),r.seller.nationId(),NodeType.ROAD,new Site(worldId,"world",0,64,0),"plains",1,true);
+        var right=new Node(UUID.randomUUID(),r.buyer.cityId(),r.buyer.nationId(),NodeType.ROAD,new Site(worldId,"world",32,64,0),"plains",1,true);
+        when(r.logistics.definitions()).thenReturn(LogisticsDefinitions.defaults());when(r.logistics.node(left.id())).thenReturn(Optional.of(left));when(r.logistics.node(right.id())).thenReturn(Optional.of(right));
+        when(r.logistics.route(r.route)).thenReturn(Optional.of(new Route(r.route,r.seller.cityId(),r.buyer.cityId(),List.of(left.id(),right.id()),Mode.LAND,true,32,1,256,true)));
+        when(server.getWorld(worldId)).thenReturn(world);when(world.getName()).thenReturn("world");when(world.getMinHeight()).thenReturn(-64);when(world.getMaxHeight()).thenReturn(320);when(world.isChunkLoaded(anyInt(),anyInt())).thenReturn(true);when(r.core.ownsSite(any(),any())).thenReturn(true);
+        Block air=mock(Block.class),road=mock(Block.class),anchor=mock(Block.class);when(air.getType()).thenReturn(Material.AIR);when(road.getType()).thenReturn(Material.STONE);when(anchor.getType()).thenReturn(Material.LODESTONE);
+        java.util.concurrent.atomic.AtomicBoolean gap=new java.util.concurrent.atomic.AtomicBoolean(true);
+        when(world.getBlockAt(anyInt(),anyInt(),anyInt())).thenAnswer(call->{int x=call.getArgument(0),y=call.getArgument(1);return y!=64?air:(x==0||x==32)?anchor:x==16&&gap.get()?air:road;});
+        Purchase purchase=r.purchase(UUID.randomUUID(),7);Dispatch dispatch=new Dispatch(purchase,"lease");when(r.market.definitions()).thenReturn(MarketDefinitions.defaults());when(r.market.leaseDue(anyInt(),anyLong())).thenReturn(List.of(dispatch));when(r.market.leasePaid(anyInt(),anyLong())).thenReturn(List.of());when(r.market.expiring(anyLong(),anyInt())).thenReturn(List.of());
+        when(r.treasury.receipt(purchase.transactionId())).thenReturn(Optional.empty());r.controller.tickFuture().join();verify(r.treasury,never()).transfer(any());verify(r.treasury).receipt(purchase.transactionId());
+        verify(r.market).finish(eq(dispatch),argThat(d->d.status()==TreasuryTransferPort.Status.RETRY),anyLong());
+        gap.set(false);when(r.treasury.transfer(purchase.request())).thenReturn(new TreasuryTransferPort.Delivery(purchase.transactionId(),TreasuryTransferPort.Status.RETRY,null,"test"));r.controller.tickFuture().join();verify(r.treasury).transfer(purchase.request());
+        verify(world,never()).getChunkAt(anyInt(),anyInt());
+    }
     @SuppressWarnings("unchecked")
     void immediate(WorldRuntime runtime){when(runtime.async(any())).thenAnswer(c->{try{return CompletableFuture.completedFuture(((WorldRuntime.Work<?>)c.getArgument(0)).run());}catch(Exception error){return CompletableFuture.failedFuture(error);}});when(runtime.globalFuture(any())).thenAnswer(c->{try{return CompletableFuture.completedFuture(((Callable<?>)c.getArgument(0)).call());}catch(Exception error){return CompletableFuture.failedFuture(error);}});doAnswer(c->{CompletableFuture<?> result=c.getArgument(1);((Consumer<Object>)c.getArgument(2)).accept(result.join());return null;}).when(runtime).reply(any(),any(),any());}
     @Test void retiredGlobalDispatchTerminatesTickAndReleasesNextPassWithoutPayment()throws Exception{

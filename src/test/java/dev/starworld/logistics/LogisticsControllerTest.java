@@ -23,6 +23,25 @@ import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
 
 class LogisticsControllerTest {
+    @Test void aFullFiftyRouteBatchPausesExcessCorridorsAndRotatesThemIntoTheNextCapture() {
+        JavaPlugin plugin=mock(JavaPlugin.class);Server server=mock(Server.class);CoreBridge core=mock(CoreBridge.class);
+        WorldRuntime runtime=mock(WorldRuntime.class);LogisticsService service=mock(LogisticsService.class);
+        when(plugin.getServer()).thenReturn(server);when(server.isPrimaryThread()).thenReturn(true);
+        UUID origin=UUID.randomUUID(),target=UUID.randomUUID();List<Route> routes=new ArrayList<>();
+        for(int i=0;i<50;i++)routes.add(new Route(new UUID(0,i),origin,target,
+                List.of(UUID.randomUUID(),UUID.randomUUID()),Mode.LAND,true,10,1,128,true));
+        LogisticsController controller=new LogisticsController(plugin,runtime,core,mock(CoreExtensionPort.class),service);
+        when(runtime.currentPeriod()).thenReturn(0L);
+        var first=controller.capture(UUID.randomUUID(),List.of(),routes,Set.of(),null).authority();
+        assertEquals(32,first.corridors().size());assertTrue(first.corridors().containsKey(routes.getFirst().id()));
+        assertFalse(first.corridors().containsKey(routes.getLast().id()));
+        assertTrue(Corridor.limitation(routes.getLast(),first.corridors().get(routes.getLast().id())).isPresent());
+        when(runtime.currentPeriod()).thenReturn(32L);
+        var later=controller.capture(UUID.randomUUID(),List.of(),routes,Set.of(),null).authority();
+        assertEquals(32,later.corridors().size());assertTrue(later.corridors().containsKey(routes.getLast().id()));
+        Set<UUID> visited=new HashSet<>(first.corridors().keySet());visited.addAll(later.corridors().keySet());
+        assertEquals(50,visited.size());assertTrue(later.corridors().values().stream().noneMatch(Corridor.Proof::pass));
+    }
     @Test void cancelledAuthorityDispatchTerminatesTickAndReleasesNextPass()throws Exception{
         JavaPlugin plugin=mock(JavaPlugin.class);WorldRuntime runtime=mock(WorldRuntime.class);CoreBridge core=mock(CoreBridge.class);LogisticsService service=mock(LogisticsService.class);
         when(service.definitions()).thenReturn(LogisticsDefinitions.defaults());when(service.dueOrders(anyLong(),anyInt())).thenReturn(List.of());

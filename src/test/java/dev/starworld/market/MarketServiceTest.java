@@ -19,6 +19,24 @@ import static org.junit.jupiter.api.Assertions.*;
 class MarketServiceTest {
     @TempDir Path temp;
     static final String BREAD="minecraft:bread",PLANKS="minecraft:oak_planks";
+    private AuthoritySnapshot corridor(Rig r,long period,UUID...managed)throws Exception{
+        var auth=r.auth(period,managed);Map<UUID,Node> nodes=new HashMap<>();for(Node n:r.logistics.nodes(100,0))nodes.put(n.id(),n);var route=r.logistics.route(r.route).orElseThrow();var plan=Corridor.plan(route,nodes);
+        return new AuthoritySnapshot(auth.actor(),period,auth.cityNations(),auth.managedCities(),auth.controlledAnchors(),auth.validNodes(),auth.permittedTrades(),Map.of(route.id(),new Corridor.Proof(route.id(),plan.fingerprint(),true,plan.columns().size(),1284,"captured")));
+    }
+    @Test void boundMarketRouteRequiresEvidenceAtReservationAndPaidShipmentAndPreservesCargoOnFailure()throws Exception{
+        try(Rig r=new Rig()){
+            r.logistics.bindCorridor(r.route,corridor(r,0,r.seller.cityId()));Listing listing=r.list();
+            assertThrows(SQLException.class,()->r.buy(listing));assertEquals(20,r.market.listing(listing.id()).orElseThrow().availableUnits());
+            Purchase purchase=r.market.buy(UUID.randomUUID(),listing.id(),r.route,r.buyer.cityId(),r.buyer.nationId(),7L,corridor(r,1,r.buyer.cityId()));
+            Dispatch dispatch=r.market.leaseDue(10,0).getFirst();r.market.finish(dispatch,r.paid(dispatch),0);
+            assertThrows(SQLException.class,()->r.market.ship(purchase.id(),r.auth(2)));assertEquals(PurchaseStatus.PAID,r.market.purchase(purchase.id()).orElseThrow().status());assertEquals(7,r.market.listing(listing.id()).orElseThrow().reservedUnits());
+            assertEquals(7,r.market.ship(purchase.id(),corridor(r,2)).offered().get(BREAD));assertEquals(PurchaseStatus.SHIPPED,r.market.purchase(purchase.id()).orElseThrow().status());
+            r.restart();assertTrue(r.logistics.route(r.route).orElseThrow().corridorRequired());assertEquals(1,r.logistics.settle(r.auth(3),10).paused());
+        }
+    }
+    @Test void preparedPaymentPreventsChangingTheDeclaredRouteContract()throws Exception{
+        try(Rig r=new Rig()){r.buy(r.list());assertThrows(SQLException.class,()->r.logistics.bindCorridor(r.route,corridor(r,2,r.seller.cityId())));assertFalse(r.logistics.route(r.route).orElseThrow().corridorRequired());}
+    }
     @Test void literalDottedAndSlashedItemIDsLoadFromMarketSequenceWithoutPathTraversal()throws Exception{
         Path file=temp.resolve("market-literal-items.yml");String dotted="server.food:grains/wheat.flour",slashed="server.kitchen:grain/baozi";
         Files.writeString(file,"market-version: 1\nitems: [\""+dotted+"\", \""+slashed+"\"]\nmax-listings-per-city: 4\nlisting-lifetime-periods: 10\ndispatch-batch: 2\nmax-units: 32\nmaximum-unit-price: \"100.00\"\n");

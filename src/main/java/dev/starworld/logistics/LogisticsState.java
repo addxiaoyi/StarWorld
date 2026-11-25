@@ -19,14 +19,17 @@ public final class LogisticsState {
      */
     public record AuthoritySnapshot(UUID actor, long period, Map<UUID, UUID> cityNations,
                                     Set<UUID> managedCities, Set<String> controlledAnchors, Set<UUID> validNodes,
-                                    Set<TradePair> permittedTrades) {
+                                    Set<TradePair> permittedTrades, Map<UUID,Corridor.Proof> corridors) {
         public AuthoritySnapshot {
             Objects.requireNonNull(actor);
             if (period < 0) throw new IllegalArgumentException("Negative period");
             cityNations = Map.copyOf(cityNations); managedCities = Set.copyOf(managedCities);
             controlledAnchors = Set.copyOf(controlledAnchors); validNodes = Set.copyOf(validNodes);
             permittedTrades = Set.copyOf(permittedTrades);
+            corridors = Map.copyOf(corridors);
         }
+        /** Legacy captures carry no physical corridor evidence. Bound routes fail closed. */
+        public AuthoritySnapshot(UUID actor,long period,Map<UUID,UUID> nations,Set<UUID> managed,Set<String> anchors,Set<UUID> nodes,Set<TradePair> trades){this(actor,period,nations,managed,anchors,nodes,trades,Map.of());}
     }
     public record TradePair(UUID first, UUID second) {
         public TradePair {
@@ -46,8 +49,9 @@ public final class LogisticsState {
     }
 
     public record Route(UUID id, UUID originCity, UUID targetCity, List<UUID> nodes, Mode mode,
-                        boolean enabled, double distanceBlocks, int travelPeriods, long capacity) {
+                        boolean enabled, double distanceBlocks, int travelPeriods, long capacity,boolean corridorRequired) {
         public Route { nodes = List.copyOf(nodes); }
+        public Route(UUID id,UUID origin,UUID target,List<UUID> nodes,Mode mode,boolean enabled,double distance,int periods,long capacity){this(id,origin,target,nodes,mode,enabled,distance,periods,capacity,false);}
     }
 
     /** Read-only planning projection; it never grants route or transit authority. */

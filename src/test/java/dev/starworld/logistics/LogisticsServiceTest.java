@@ -44,6 +44,36 @@ class LogisticsServiceTest {
     }
     private Rig rig() throws Exception { return new Rig(temp.resolve(UUID.randomUUID() + ".db"), LogisticsDefinitions.defaults(), 10000); }
 
+    private AuthoritySnapshot corridor(Rig r,long period,UUID...managed)throws Exception{
+        var auth=r.auth(period,managed);Map<UUID,Node> nodes=new HashMap<>();for(Node n:r.service.nodes(1000,0))nodes.put(n.id(),n);
+        Route route=r.service.route(r.route).orElseThrow();var plan=Corridor.plan(route,nodes);
+        return new AuthoritySnapshot(auth.actor(),period,auth.cityNations(),auth.managedCities(),auth.controlledAnchors(),auth.validNodes(),auth.permittedTrades(),Map.of(route.id(),new Corridor.Proof(route.id(),plan.fingerprint(),true,plan.columns().size(),plan.columns().size()*4,"test captured road")));
+    }
+    @Test void boundCorridorIsPermanentAcrossRestartAndMissingEvidencePausesEscrowWithoutMaintenance()throws Exception{
+        Path db;UUID routeId;
+        try(Rig r=rig()){
+            r.route(320);db=r.db;routeId=r.route;assertThrows(SQLException.class,()->r.service.bindCorridor(r.route,r.auth(0,r.a.cityId())));
+            assertTrue(r.service.bindCorridor(r.route,corridor(r,0,r.a.cityId())).corridorRequired());
+            assertThrows(SQLException.class,()->r.offer(0,16,4));
+            Order offered=r.service.createOffer(UUID.randomUUID(),r.route,Map.of(BREAD,16L),Map.of(IRON,4L),corridor(r,0,r.a.cityId()));
+            Order accepted=r.service.accept(offered.id(),corridor(r,0,r.b.cityId()));long upkeep=r.stock(r.a,PLANKS);
+            assertEquals(1,r.service.settle(r.auth(1),10).paused());assertEquals(0,r.service.order(accepted.id()).orElseThrow().progressedPeriods());assertEquals(upkeep,r.stock(r.a,PLANKS));
+            assertEquals(984,r.stock(r.a,BREAD));assertEquals(996,r.stock(r.b,IRON));
+            for(int p=2;p<=6;p++)r.service.settle(corridor(r,p),10);
+            assertEquals(OrderStatus.COMPLETED,r.service.order(accepted.id()).orElseThrow().status());assertEquals(1016,r.stock(r.b,BREAD));assertEquals(1004,r.stock(r.a,IRON));
+            assertTrue(r.service.bindCorridor(r.route,corridor(r,7,r.a.cityId())).corridorRequired());
+        }
+        try(WorldStore store=new WorldStore(db,10000)){assertTrue(new LogisticsService(store,LogisticsDefinitions.defaults()).route(routeId).orElseThrow().corridorRequired());}
+    }
+    @Test void bindingCannotAlterAnExistingCargoContractOrUseAnotherRoutesProof()throws Exception{
+        try(Rig r=rig()){
+            r.route(32);var auth=corridor(r,0,r.a.cityId());var proof=auth.corridors().get(r.route);
+            var wrong=new AuthoritySnapshot(auth.actor(),0,auth.cityNations(),auth.managedCities(),auth.controlledAnchors(),auth.validNodes(),auth.permittedTrades(),Map.of(r.route,new Corridor.Proof(UUID.randomUUID(),proof.fingerprint(),true,33,132,"other route")));
+            assertThrows(SQLException.class,()->r.service.bindCorridor(r.route,wrong));assertFalse(r.service.route(r.route).orElseThrow().corridorRequired());
+            r.offer(0,8,2);assertThrows(SQLException.class,()->r.service.bindCorridor(r.route,auth));assertFalse(r.service.route(r.route).orElseThrow().corridorRequired());
+        }
+    }
+
     @Test void allFourNodesHaveRealConstructionAndUpgradesAndStableRegistrationIds() throws Exception {
         try (Rig r = rig()) {
             int x = 0;

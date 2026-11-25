@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "version": "1.6.0",
-  "recorded_at": "2026-11-25T11:27:22.752631+00:00",
-  "command": "./mvnw -B --no-transfer-progress clean verify",
+  "version": "1.7.0",
+  "recorded_at": "2026-11-25T11:53:15.312553+00:00",
+  "command": "./mvnw -B --no-transfer-progress -Dstarworld.testHeap=160m clean verify",
   "java": "OpenJDK 21.0.10+7-Ubuntu-124.04",
-  "artifact_sha256": "e2a4ecf9daaa3393ba418109ff0408f23cf32af07603f1c5522cfeb0947dcbe1",
+  "artifact_sha256": "dba8fdb3da8d06feae42001ad74dad1585f33087767f4b4864a67ea4bdda7659",
   "totals": {
-    "tests": 502,
+    "tests": 515,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -216,6 +216,20 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.logistics.CorridorCaptureTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.logistics.CorridorTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.logistics.LogisticsConfigTest",
       "tests": 3,
       "failures": 0,
@@ -231,14 +245,14 @@
     },
     {
       "suite": "dev.starworld.logistics.LogisticsControllerTest",
-      "tests": 4,
+      "tests": 5,
       "failures": 0,
       "errors": 0,
       "skipped": 0
     },
     {
       "suite": "dev.starworld.logistics.LogisticsServiceTest",
-      "tests": 18,
+      "tests": 20,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -252,7 +266,7 @@
     },
     {
       "suite": "dev.starworld.market.MarketControllerTest",
-      "tests": 9,
+      "tests": 10,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -266,7 +280,7 @@
     },
     {
       "suite": "dev.starworld.market.MarketServiceTest",
-      "tests": 32,
+      "tests": 34,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -407,30 +421,30 @@
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 56763,
-      "missed": 16177
+      "covered": 58122,
+      "missed": 16381
     },
     "BRANCH": {
-      "covered": 4099,
-      "missed": 2728
+      "covered": 4244,
+      "missed": 2778
     },
     "LINE": {
-      "covered": 3875,
-      "missed": 748
+      "covered": 3971,
+      "missed": 758
     },
     "COMPLEXITY": {
-      "covered": 2797,
-      "missed": 2794
+      "covered": 2884,
+      "missed": 2837
     },
     "METHOD": {
-      "covered": 1536,
-      "missed": 568
+      "covered": 1563,
+      "missed": 573
     },
     "CLASS": {
-      "covered": 224,
+      "covered": 229,
       "missed": 13
     }
   },
-  "build_log_sha256": "9171894e0d7a55c6ae6ddc150ba5d7e2fb8a9d737c7177ae0c3db39446536f3e",
-  "sources_sha256": "710da49ea08639525d65108f56461c7064bfc5c75bef8bc87f5475cea00603fb"
+  "build_log_sha256": "772c959210f6f14bf2ebd4951caceebff1f500fcb379dc69c12d071462843408",
+  "sources_sha256": "2f5c366130c9ea4a8a2dd77fb87bdf8ae1811d921f191caef2c19b3e124507f9"
 }

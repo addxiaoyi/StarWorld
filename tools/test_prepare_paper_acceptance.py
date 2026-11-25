@@ -89,6 +89,25 @@ class FreshPaperInputTests(unittest.TestCase):
         self.assertFalse(self.runtime.exists())
         self.assertIn('--max-old-space-size=192', proof['command'])
 
+    def test_corridor_override_is_only_applied_to_the_new_test_runtime(self):
+        original = 'schema-version: 1\nblocks-per-period: 128\n# preserve custom upkeep\n'
+        file = self.write('plugins/StarWorld/logistics.yml', original)
+        self.args.suite = 'corridor'
+        proof = prepare.prepare(self.args)
+        self.assertEqual(file.read_text(), original)
+        self.assertEqual((self.runtime / 'plugins/StarWorld/logistics.yml').read_text(),
+                         original.replace('blocks-per-period: 128', 'blocks-per-period: 8'))
+        self.assertTrue(any('corridor-acceptance.cjs' in str(arg) for arg in proof['command']))
+        self.assertEqual(proof['configurationSha256']['plugins/StarWorld/logistics.yml'],
+                         prepare.sha(self.runtime / 'plugins/StarWorld/logistics.yml'))
+
+    def test_ambiguous_corridor_speed_override_does_not_create_a_runtime(self):
+        self.write('plugins/StarWorld/logistics.yml', 'blocks-per-period: 128\nblocks-per-period: 256\n')
+        self.args.suite = 'corridor'
+        with self.assertRaisesRegex(ValueError, 'one blocks-per-period'):
+            prepare.prepare(self.args)
+        self.assertFalse(self.runtime.exists())
+
     def test_rebuilds_real_05_disaster_source_without_adding_candidate_configuration(self):
         with zipfile.ZipFile(self.jar, 'w') as archive:
             archive.writestr('plugin.yml', "name: StarWorld\nversion: '0.5.0'\n")

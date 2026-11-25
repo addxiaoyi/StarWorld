@@ -22,6 +22,7 @@ const PLAYER = 'StarWorldDA';
 const ADDED = ['public_works_schema', 'public_works', 'public_works_history', 'civic_schema', 'civic_clock', 'civic_request', 'civic_request_cost', 'civic_action_claim', 'civic_history', 'life_evolution_pending', 'life_evolution_budget', 'starworld_dispatch_cursor'];
 const V11_TABLES = ['life_evolution_pending', 'life_evolution_budget', 'starworld_dispatch_cursor'];
 const V13_TABLES = ['city_region'];
+const V17_TABLES = ['logistics_corridor'];
 const DISPATCH_QUEUES = ['starworld:market-payment', 'starworld:resource-export'];
 const CONFIGS = ['config.yml', 'definitions.yml', 'disaster-response.yml', 'evolution.yml', 'exports.yml', 'life.yml', 'logistics.yml', 'market.yml'];
 let NEW_CONFIGS = ['civic-needs.yml', 'public-works.yml'];
@@ -75,7 +76,7 @@ function parseArgs(argv) {
   return result;
 }
 function sqliteSnapshot(python, runtime) {
-  const chosen = [...STABLE, ...ADDED, ...V13_TABLES, 'life_schema', 'life_city', 'city_state', 'stock', 'settlement', 'region', 'reserve', 'disaster_response', 'disaster_response_history', 'disaster_recovery_ledger'];
+  const chosen = [...STABLE, ...ADDED, ...V13_TABLES, ...V17_TABLES, 'life_schema', 'life_city', 'city_state', 'stock', 'settlement', 'region', 'reserve', 'disaster_response', 'disaster_response_history', 'disaster_recovery_ledger'];
   const result = spawnSync(python, ['-c', PROBE, runtime, chosen.join(',')], { encoding: 'utf8', windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
   assert.equal(result.status, 0, `Read-only stopped SQLite probe failed: ${result.error || result.stderr}`);
   return JSON.parse(result.stdout);
@@ -134,10 +135,20 @@ function assertMarketMigration(before, after, version) {
 }
 function expectedAddedTables(version) {
   return [...ADDED.filter(table => is11(version) || !V11_TABLES.includes(table)),
-    ...(is13(version) ? V13_TABLES : [])].sort();
+    ...(is13(version) ? V13_TABLES : []), ...(minorVersion(version) >= 7 ? V17_TABLES : [])].sort();
 }
 function assertAddedTables(before, after, version) {
   assert.deepEqual(after.filter(name => !before.includes(name)).sort(), expectedAddedTables(version));
+  for (const table of before) assert(after.includes(table), `Dropped table ${table}`);
+}
+function assertCorridorMigration(before, after, version) {
+  if (minorVersion(version) < 7) {
+    assert(!after.world.tables.includes('logistics_corridor'), 'Historical versions must not create corridor bindings');
+    return;
+  }
+  assert(after.world.tables.includes('logistics_corridor'), '1.7 must create the corridor binding table');
+  assert.deepEqual(after.world.rows.logistics_corridor, before.world.rows.logistics_corridor || [],
+    'Upgrade invented or changed corridor bindings');
 }
 function indexBy(rows, key, label) {
   const indexed = new Map(rows.map(row => [row[key], row]));
@@ -337,6 +348,7 @@ function assertDurable(before, after, version = VERSION) {
     assert.deepEqual(rows, old[table], `Existing durable ${table} rows changed`);
   }
   assertMarketMigration(before,after,version);
+  assertCorridorMigration(before,after,version);
   for (const table of ADDED) {
     if (V11_TABLES.includes(table)) continue;
     if (table.endsWith('_schema')) assert.deepEqual(next[table], [{ id: 1, version: table === 'civic_schema' ? 2 : 1 }]);
@@ -552,4 +564,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch(error => { console.error(error.stack); process.exitCode = 1; });
-module.exports = { sqliteSnapshot, assertDurable, assertLifeEvolution, assertMarketMigration, assertAddedTables, expectedAddedTables, stableTables: STABLE, addedTables: ADDED };
+module.exports = { sqliteSnapshot, assertDurable, assertLifeEvolution, assertMarketMigration, assertCorridorMigration, assertAddedTables, expectedAddedTables, stableTables: STABLE, addedTables: ADDED };

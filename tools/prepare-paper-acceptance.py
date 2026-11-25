@@ -28,6 +28,7 @@ RUNNERS = {
     'disaster': 'paper-client/disaster-acceptance.cjs',
     'works': 'paper-client/works-acceptance.cjs',
     'storage': 'paper-client/survey-acceptance.cjs',
+    'corridor': 'paper-client/corridor-acceptance.cjs',
     'lifecycle-logistics': 'paper-client/lifecycle-logistics-acceptance.cjs',
     'civic': 'senluo-fixture/civic-acceptance.cjs',
     'smoke': 'smoke-paper.ps1',
@@ -178,6 +179,12 @@ def prepare(args):
                 generated[relative] = data
 
     civic = None
+    if args.suite == 'corridor':
+        relative = 'plugins/StarWorld/logistics.yml'
+        original = files.pop(relative).read_text(encoding='utf-8') if relative in files else generated[relative].decode()
+        adjusted, count = re.subn(r'^blocks-per-period:.*$', 'blocks-per-period: 8', original, flags=re.M)
+        checked(count == 1, 'Corridor fixture requires one blocks-per-period setting')
+        generated[relative] = adjusted.encode()
     if args.suite == 'civic':
         civic = read_json(template / 'PREPARATION.json')
         checked(args.senluo_fixture is not None, 'Civic preparation needs --senluo-fixture')

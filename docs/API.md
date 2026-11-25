@@ -93,6 +93,8 @@ public void onIndustry(IndustrySettledEvent event) {
 
 `LogisticsService` 与WorldStore共用连接，节点/路线、托管、运输、改道提议与完成收据均为不可变值，世界和权限操作由 `LogisticsController` 主线程摘取证据。`alternativeRoutes(order,auth,limit)` 只返回已登记的同方向有限候选；`proposeReroute/acceptReroute/cancelReroute` 要求双方城市管理者确认新路径与维护，接受后完整新行程从下一周期重新开始，不退已耗运力。`transportStatus(route,period)` 是持久计数查询，不能用于免复核运输授权。详见[交通贸易](logistics.md)。
 
+1.7 `Route.corridorRequired` 表示该路线已持久绑定物理通道约定，不表示当前畅通。旧构造重载默认为false。`AuthoritySnapshot.corridors` 保存仅本次捕获的不可变 `Corridor.Proof`；旧构造重载没有通道证据，因此不能授权绑定路线。`Corridor.plan` 只计算最多1024个显式中心点，`CorridorCapture` 在Paper主线程验证已加载路面/水体和沿途双层claim。`LogisticsService.bindCorridor` 与其他mutation同属可信内部存储入口，公开可见性不授予玩家写权限。生产绑定入口为 `/sw route bind`。
+
 ## 国家金币市场与维护接口
 
 `TreasuryTransferPort` 是国家金币适配边界，调用属于 Paper 主线程。`Request(transactionId,payer,receiver,BigDecimal,description)` 与 `Receipt` 是不可变值；金额精确到两位小数，双方国家不同。`Receipt.matches` 核对国家、金额、ID 和 `OTHER` 分类。`StarCoreTreasuryTransfers` 仅使用公开 `NationTransferService.transfer/transferReceipt`，缺服务时明确降级；不组合两次独立的支出/收入操作，不访问核心账表。

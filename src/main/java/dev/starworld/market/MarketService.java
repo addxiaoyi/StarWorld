@@ -33,6 +33,7 @@ public final class MarketService {
             s.execute("CREATE INDEX IF NOT EXISTS market_purchase_fair_due ON market_purchase(next_attempt,created_period,id)");
             s.execute("CREATE INDEX IF NOT EXISTS market_purchase_buyer ON market_purchase(buyer_city,created_period)");
             s.execute("CREATE INDEX IF NOT EXISTS market_purchase_seller ON market_purchase(seller_city,created_period)");
+            s.execute("CREATE INDEX IF NOT EXISTS market_purchase_route ON market_purchase(route)");
             s.execute("CREATE INDEX IF NOT EXISTS market_listing_public ON market_listing(state,created_period,id)");
             s.execute("CREATE TABLE IF NOT EXISTS market_expiry_check(listing TEXT PRIMARY KEY REFERENCES market_listing(id),period INTEGER NOT NULL)");
             s.execute("CREATE TABLE IF NOT EXISTS market_history(listing TEXT PRIMARY KEY REFERENCES market_listing(id),buyer_city TEXT NOT NULL,period INTEGER NOT NULL)");
@@ -154,7 +155,7 @@ public final class MarketService {
             owner(p.sellerCity(),p.sellerNation(),auth);owner(p.buyerCity(),p.buyerNation(),auth);route(l,p.buyerCity(),p.routeId(),auth);
             // The original buyer consent was durably authorized; dispatch captures current owners only.
             Set<UUID> managed=new HashSet<>(auth.managedCities());managed.add(p.buyerCity());
-            AuthoritySnapshot shipmentAuthority=new AuthoritySnapshot(auth.actor(),auth.period(),auth.cityNations(),managed,auth.controlledAnchors(),auth.validNodes(),auth.permittedTrades());
+            AuthoritySnapshot shipmentAuthority=new AuthoritySnapshot(auth.actor(),auth.period(),auth.cityNations(),managed,auth.controlledAnchors(),auth.validNodes(),auth.permittedTrades(),auth.corridors());
             return logistics.createPaidShipment(p.shipmentId(),p.routeId(),p.transactionId(),cargo(l,p),shipmentAuthority,()->{
                 Purchase current=purchase(p.id()).orElseThrow();Listing reserved=listing(l.id()).orElseThrow();
                 if(current.status()!=PurchaseStatus.PAID||reserved.reservedUnits()<p.units())
@@ -223,7 +224,7 @@ public final class MarketService {
         new Listing(original.id(),original.sellerCity(),original.sellerNation(),original.item(),original.units(),original.unitPrice(),status,original.createdPeriod(),original.expiresPeriod(),available,reserved,shipped,returned);
         store.execute("UPDATE market_listing SET available_units=?,reserved_units=?,shipped_units=?,returned_units=?,state=? WHERE id=?",available,reserved,shipped,returned,status.name(),original.id());
     }
-    private Route route(Listing l,UUID target,UUID routeId,AuthoritySnapshot auth)throws SQLException{Route r=logistics.route(routeId).orElseThrow(()->new IllegalArgumentException("未知商路"));if(!r.originCity().equals(l.sellerCity())||!r.targetCity().equals(target)||!r.enabled())throw new IllegalArgumentException("商路必须从卖方城市正向通往买方");logistics.routeLimitation(r).ifPresent(reason->{throw new IllegalArgumentException(reason);});if(!auth.permittedTrades().contains(TradePair.of(r.originCity(),r.targetCity())))throw new IllegalArgumentException("战争或外交阻断市场商路");for(UUID nodeId:r.nodes()){Node node=logistics.node(nodeId).orElseThrow(()->new IllegalArgumentException("商路节点缺失"));if(!node.enabled()||!auth.validNodes().contains(nodeId))throw new IllegalArgumentException("商路节点已停用、未加载或领土/锚点失效");owner(node.cityId(),node.nationId(),auth);}return r;}
+    private Route route(Listing l,UUID target,UUID routeId,AuthoritySnapshot auth)throws SQLException{Route r=logistics.route(routeId).orElseThrow(()->new IllegalArgumentException("未知商路"));if(!r.originCity().equals(l.sellerCity())||!r.targetCity().equals(target)||!r.enabled())throw new IllegalArgumentException("商路必须从卖方城市正向通往买方");logistics.routeLimitation(r).ifPresent(reason->{throw new IllegalArgumentException(reason);});if(!auth.permittedTrades().contains(TradePair.of(r.originCity(),r.targetCity())))throw new IllegalArgumentException("战争或外交阻断市场商路");for(UUID nodeId:r.nodes()){Node node=logistics.node(nodeId).orElseThrow(()->new IllegalArgumentException("商路节点缺失"));if(!node.enabled()||!auth.validNodes().contains(nodeId))throw new IllegalArgumentException("商路节点已停用、未加载或领土/锚点失效");owner(node.cityId(),node.nationId(),auth);}logistics.requireCorridor(r,auth);return r;}
     private void refund(Listing l,long units)throws SQLException{Map<String,Long> stock=store.stock(l.sellerCity());long next=Math.addExact(stock.getOrDefault(l.item(),0L),units);if(next>store.cityCapacity(l.sellerCity()))throw new IllegalArgumentException("原仓已满，挂牌实物继续托管");store.stock(l.sellerCity(),l.item(),next);}
     private UUID owner(UUID city,AuthoritySnapshot auth)throws SQLException{UUID nation=auth.cityNations().get(city);if(nation==null||store.view(city).filter(c->c.nationId().equals(nation)).isEmpty())throw new IllegalArgumentException("当前城市归属未核实");return nation;}
     private void owner(UUID city,UUID expected,AuthoritySnapshot auth)throws SQLException{if(!expected.equals(owner(city,auth)))throw new IllegalArgumentException("国家归属变化，原付款和货物保留待核对");}

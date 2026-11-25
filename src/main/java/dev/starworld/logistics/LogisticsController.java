@@ -40,6 +40,13 @@ public final class LogisticsController {
 
     /** Main thread only. Every route pair is checked against both current nations' war and relation data. */
     public Captured capture(UUID actor, Collection<Node> nodes, Collection<Route> routes, Set<UUID> extraCities, Player manager) {
+        return capture(actor,nodes,routes,extraCities,manager,new CorridorCapture(plugin.getServer(),core));
+    }
+    /** One shared physical-read budget for an entire payment/shipment batch. */
+    public Captured capture(UUID actor, Collection<Node> nodes, Collection<Route> routes, Set<UUID> extraCities, Player manager,CorridorCapture budget) {
+        return capture(actor,nodes,routes,extraCities,manager,false,budget);
+    }
+    private Captured capture(UUID actor, Collection<Node> nodes, Collection<Route> routes, Set<UUID> extraCities, Player manager,boolean inspectUnbound,CorridorCapture budget) {
         if (!plugin.getServer().isPrimaryThread()) throw new IllegalStateException("交通授权必须在 Paper 主线程捕获");
         Set<UUID> cityIds = new HashSet<>(extraCities);
         for (Node n : nodes) cityIds.add(n.cityId());
@@ -70,7 +77,11 @@ public final class LogisticsController {
             UUID a = nations.get(r.originCity()), b = nations.get(r.targetCity());
             if (a != null && b != null && (a.equals(b) || permitsTrade(snapshots.get(a), snapshots.get(b)))) permitted.add(TradePair.of(r.originCity(), r.targetCity()));
         }
-        return new Captured(new AuthoritySnapshot(actor, runtime.currentPeriod(), nations, managed, anchors, valid, permitted), new ArrayList<>(cities.values()));
+        List<Route> physical=new ArrayList<>(routes.stream().filter(r->inspectUnbound||r.corridorRequired()).sorted(Comparator.comparing(Route::id)).toList());
+        // A full batch can exceed its physical-read budget. Rotate priority so later routes recover too.
+        if(!physical.isEmpty())Collections.rotate(physical,-(int)(runtime.currentPeriod()%physical.size()));
+        Map<UUID,Corridor.Proof> corridors=budget.capture(physical.stream().limit(Corridor.MAX_ROUTES).toList(),nodes,valid);
+        return new Captured(new AuthoritySnapshot(actor, runtime.currentPeriod(), nations, managed, anchors, valid, permitted,corridors), new ArrayList<>(cities.values()));
     }
 
     /** Pure permission predicate; a missing war/diplomacy capability never means peace. */
@@ -132,6 +143,16 @@ public final class LogisticsController {
     private void routeCommand(Player p, String[] args) {
         String op = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "help";
         switch (op) {
+            case "inspect", "bind" -> {
+                require(args.length==3,"/sw route "+op+" <商路UUID>");UUID id=UUID.fromString(args[2]);CoreCity expected=current(p);
+                load(p,()->contextForRoute(id),context->{
+                    if(!p.isOnline()||!p.hasPermission("starworld.use")||runtime.playerCity(p).filter(c->c.cityId().equals(expected.cityId())&&c.nationId().equals(expected.nationId())).isEmpty())return;
+                    Route route=context.routes().getFirst();require(expected.cityId().equals(route.originCity())||expected.cityId().equals(route.targetCity()),"仅商路双方城市可核验通道");
+                    Captured captured=capture(p.getUniqueId(),context.nodes(),context.routes(),Set.of(),p,true,new CorridorCapture(plugin.getServer(),core));Corridor.Proof proof=captured.authority().corridors().get(id);
+                    if(op.equals("inspect")){p.sendMessage((proof.pass()?"§a":"§c")+proof.detail()+" · 中心点 "+proof.checkedColumns()+" · 方块读取 "+proof.blockReads());p.sendMessage("§7"+(route.corridorRequired()?"该商路已绑定通道，每期重新核验":"该商路仅有节点声明；起点管理者可用 /sw route bind 永久要求通道核验"));}
+                    else run(p,captured,a->service.bindCorridor(id,a),r->p.sendMessage("§a商路已绑定物理通道；报价、付款和运输均须现场通过，道路中断将暂停"));
+                });
+            }
             case "create" -> {
                 require(args.length == 5, "/sw route create <目标城市UUID> <land|sea> <起点节点UUID,终点节点UUID[,途经节点...]>");
                 CoreCity city = current(p); UUID target = UUID.fromString(args[2]); Mode mode = Mode.valueOf(args[3].toUpperCase(Locale.ROOT));
@@ -143,7 +164,7 @@ public final class LogisticsController {
             }
             case "list" -> {
                 require(args.length <= 3, "/sw route list [页码]"); CoreCity city = current(p); int offset = offset(args, 2);
-                runtime.reply(p, runtime.async(() -> service.cityRoutes(city.cityId(), 10, offset)), routes -> routes.forEach(r -> p.sendMessage("§e" + r.id() + " " + r.originCity() + " → " + r.targetCity() + " " + r.mode() + " " + r.travelPeriods() + "周期/容量" + r.capacity() + " " + (r.enabled() ? "启用" : "停用") + service.routeLimitation(r).map(reason -> " · 暂停：" + reason).orElse(""))));
+                runtime.reply(p, runtime.async(() -> service.cityRoutes(city.cityId(), 10, offset)), routes -> routes.forEach(r -> p.sendMessage("§e" + r.id() + " " + r.originCity() + " → " + r.targetCity() + " " + r.mode() + " " + r.travelPeriods() + "周期/容量" + r.capacity() + " " + (r.enabled() ? "启用" : "停用") + (r.corridorRequired()?" · 已绑定通道":" · 仅节点声明") + service.routeLimitation(r).map(reason -> " · 暂停：" + reason).orElse(""))));
             }
             case "compare" -> {
                 require(args.length >= 3 && args.length <= 5, "/sw route compare <目标城市UUID> [land|sea] [页码]");
@@ -170,7 +191,7 @@ public final class LogisticsController {
                     status.pausedReasons().forEach((reason,count)->p.sendMessage("§c"+count+"单 · "+reason));
                 });
             }
-            default -> { p.sendMessage("§e/sw route create <目标城市UUID> <land|sea> <起点UUID,途经UUID,终点UUID>"); p.sendMessage("§e/sw route list [页码] · compare <目标城市UUID> [land|sea] [页码] · enable|disable|status <商路UUID>"); }
+            default -> { p.sendMessage("§e/sw route create <目标城市UUID> <land|sea> <起点UUID,途经UUID,终点UUID>"); p.sendMessage("§e/sw route list [页码] · compare <目标城市UUID> [land|sea] [页码] · enable|disable|status|inspect|bind <商路UUID>"); }
         }
     }
 

@@ -9,6 +9,26 @@ permissions:
   contents: read
 
 jobs:
+  verification-tools:
+    name: Evidence and acceptance tool tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify evidence collectors
+        run: python -m unittest discover -s tools -p 'test_*.py' -v
+      - name: Verify acceptance tools
+        working-directory: tools/paper-client
+        run: npm test
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15

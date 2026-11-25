@@ -244,6 +244,7 @@ try {
     $requiredSuites = @('expansion', 'baseline', 'progression', 'upgrade', 'border')
     if ($releaseVersion -ge [version]'0.4.0') { $requiredSuites += 'operations' }
     if ($releaseVersion -ge [version]'0.5.0') { $requiredSuites += 'disaster' }
+    if ($releaseVersion -ge [version]'1.4.0') { $requiredSuites += 'storage' }
     if ($isFinalRelease) { $requiredSuites += @('works', 'civic') } else { $requiredSuites += 'senluo' }
     if ($requiresLifecycleEvidence) { $requiredSuites += @('life-source', 'life-carry', 'lifecycle-logistics') }
     if ($isFinalRelease) {
@@ -269,13 +270,35 @@ try {
             @($run.steps).Count -eq 0 -or @($run.steps | Where-Object status -ne 'passed').Count -ne 0) {
             throw "Evidence archive contains an incomplete or mismatched $suite run."
         }
-        $starts = if ($suite -in @('operations', 'works')) { 3 } else { 2 }
+        if ($suite -eq 'storage') {
+            $pressureStep = @($run.steps | Where-Object name -ceq 'real Paper sustains bounded queue saturation and recovers for 60 seconds')
+            $pressure = if ($pressureStep.Count -eq 1) { $pressureStep[0].observed } else { $null }
+            $nodeLimit = [long]$run.nodeHeapLimitBytes
+            $paperLimit = @($run.testTuning.jvmArgs | Where-Object { $_ -match '^-Xmx(?:[1-4][0-9]{2}|512)[mM]$' })
+            if ($run.suite -cne 'real-paper-survey-and-storage-backpressure' -or
+                $run.runnerSha256 -cne (Get-FileHash -LiteralPath (Join-Path $RepositoryRoot 'tools/paper-client/survey-acceptance.cjs') -Algorithm SHA256).Hash.ToLowerInvariant() -or
+                $nodeLimit -le 0 -or $nodeLimit -gt 256MB -or !$paperLimit.Count -or
+                $run.testTuning.minimumFreeSystemMemoryBytes -lt 1GB -or
+                $run.testTuning.startupFreeSystemMemoryBytes -lt $run.testTuning.minimumFreeSystemMemoryBytes -or
+                $run.testTuning.storageQueueCapacity -ne 256 -or $run.testTuning.paperHeapSafetyLimitPercent -ne 95 -or
+                !$pressure -or $pressure.elapsedMillis -lt 60000 -or $pressure.rounds -lt 1 -or
+                $pressure.requests -ne ($pressure.accepted + $pressure.rejected) -or $pressure.rejected -lt 1 -or
+                $pressure.maxHeapBytes -gt 512MB -or $pressure.peakHeapBytes -gt ($pressure.maxHeapBytes * 0.95)) {
+                throw 'Storage acceptance does not prove the bounded 60-second pressure and memory limits.'
+            }
+            $paperLog = [Text.Encoding]::UTF8.GetString((Read-ZipEntryBytes (Get-LifecycleEntry $evidenceArchive 'runtime/storage/paper-run-1.log')))
+            if ($paperLog -match 'OutOfMemoryError|Could not flush StarWorld storage') {
+                throw 'Storage acceptance log contains an OOM or storage flush error.'
+            }
+        }
+        $starts = if ($suite -in @('operations', 'works')) { 3 } elseif ($suite -eq 'storage') { 1 } else { 2 }
         for ($runNumber = 1; $runNumber -le $starts; $runNumber++) {
             if (!$evidenceArchive.GetEntry("runtime/$suite/paper-run-$runNumber.log")) { throw "$suite acceptance lacks a Paper start transcript." }
         }
         if ($isFinalRelease) {
             $clientNames = switch ($suite) {
                 'civic' { 'client-run-1.log'; 'client-run-listener-1.log'; 'client-run-2.log' }
+                'storage' { 'client-run-1.log' }
                 'works' { foreach ($number in 1..3) { foreach ($slot in 0..2) { "client-run-$number-$slot.log" } } }
                 { $_ -in @('expansion','progression','operations','border','disaster') } {
                     foreach ($number in 1..$starts) { foreach ($player in @('a','b')) { "client-run-$number-$player.log" } }
@@ -294,7 +317,7 @@ try {
                 expansion='tools/paper-client/expansion-acceptance.cjs'; baseline='tools/paper-client/acceptance.cjs';
                 progression='tools/paper-client/progression-acceptance.cjs'; upgrade='tools/paper-client/upgrade-10-acceptance.cjs';
                 border='tools/paper-client/border-acceptance.cjs'; operations='tools/paper-client/operations-acceptance.cjs';
-                disaster='tools/paper-client/disaster-acceptance.cjs'; works='tools/paper-client/works-acceptance.cjs';
+                disaster='tools/paper-client/disaster-acceptance.cjs'; storage='tools/paper-client/survey-acceptance.cjs'; works='tools/paper-client/works-acceptance.cjs';
                 civic='tools/senluo-fixture/civic-acceptance.cjs'
             }
             if ($script -cne $allowedScripts[$suite] -or $records[0].fixture_script_sha256 -ne (Get-FileHash -LiteralPath (Join-Path $RepositoryRoot $script) -Algorithm SHA256).Hash.ToLowerInvariant()) {
@@ -408,9 +431,9 @@ try {
         'tools/package-release.ps1', 'tools/package-evidence.py', 'tools/smoke-paper.ps1',
         'tools/paper-fixture/pom.xml', 'tools/paper-fixture/plugin.yml',
         'tools/paper-fixture/README.md', 'tools/paper-fixture/starcore-build-provenance.json',
-        'tools/paper-client/package.json', 'tools/paper-client/acceptance.cjs',
+        'tools/paper-client/package.json', 'tools/paper-client/acceptance.cjs', 'tools/paper-client/acceptance.test.cjs',
         'tools/paper-client/expansion-acceptance.cjs', 'tools/paper-client/progression-acceptance.cjs', 'tools/paper-client/upgrade-acceptance.cjs', 'tools/paper-client/border-acceptance.cjs', 'tools/paper-client/README.md',
-        'tools/paper-client/operations-acceptance.cjs', 'tools/paper-client/upgrade-04-acceptance.cjs',
+        'tools/paper-client/operations-acceptance.cjs', 'tools/paper-client/survey-acceptance.cjs', 'tools/paper-client/upgrade-04-acceptance.cjs',
         'tools/senluo-fixture/pom.xml', 'tools/senluo-fixture/README.md',
         'tools/senluo-fixture/acceptance.cjs'
     )
@@ -420,7 +443,7 @@ try {
             'tools/paper-client/upgrade-10-acceptance.cjs','tools/senluo-fixture/civic-acceptance.cjs')
     }
     if ($requiresLifecycleEvidence) {
-        $toolFiles += @('tools/lifecycle_evidence.py', 'tools/test_lifecycle_evidence.py',
+        $toolFiles += @('tools/lifecycle_evidence.py', 'tools/test_lifecycle_evidence.py', 'tools/test_package_evidence.py', 'tools/test_storage_evidence.py',
             'tools/paper-client/lifecycle-logistics-acceptance.cjs', 'tools/senluo-fixture/lifecycle-acceptance.cjs')
     }
     foreach ($file in $toolFiles) { Copy-AllowedFile $file $sourceRoot }

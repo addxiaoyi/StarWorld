@@ -1,4 +1,4 @@
-"""Strict, read-only collection of the independent StarWorld 1.1 lifecycle suites.
+"""Strict, read-only collection of the independent StarWorld 1.x lifecycle suites.
 
 Only allowlisted JSON, text logs, fixture sources and StarWorld YAML enter the ZIP.
 Installed JARs are hashed/inspected, never added. Database files are never opened.
@@ -17,6 +17,7 @@ import zipfile
 _SHA = re.compile(r"[a-f0-9]{64}")
 _UUID = re.compile(r"[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}", re.I)
 _MIN_COMMIT = 1610612736
+_MIN_FREE_DISK = 1024 * 1024 * 1024
 _LIFE_SCRIPT = "tools/senluo-fixture/lifecycle-acceptance.cjs"
 _LOGISTICS_SCRIPT = "tools/paper-client/lifecycle-logistics-acceptance.cjs"
 _MARKER = b"StarWorld isolated Paper smoke runtime v1"
@@ -32,11 +33,18 @@ def _absolute(value):
     return Path(os.path.abspath(value))
 
 
+def _minor_version(version):
+    match = re.fullmatch(r"1\.(\d+)\.\d+(?:-[A-Za-z0-9.-]+)?", str(version))
+    return int(match[1]) if match else None
+
+
 class _Collector:
-    def __init__(self, root, version, plugin_hash, add, regular_file, read_json, require, stage_names):
+    def __init__(self, root, version, plugin_hash, add, regular_file, read_json, require, stage_names,
+                 validate_resource_log=None, shared_helper_hash=None):
         self.root, self.version, self.plugin_hash = _absolute(root), version, plugin_hash
         self.add, self.regular_file, self.read_json = add, regular_file, read_json
         self.require, self.stage_names = require, stage_names
+        self.validate_resource_log, self.shared_helper_hash = validate_resource_log, shared_helper_hash
 
     def check(self, condition, message):
         self.require(bool(condition), message)
@@ -154,6 +162,9 @@ class _Collector:
         rows = run["e"].get("startPreflight")
         self.check(isinstance(rows, list) and [row.get("run") for row in rows] == list(range(1, starts + 1)),
                    run["label"] + " lacks every start's free-commit preflight")
+        if run["label"] == "lifecycle-logistics":
+            self.check(run["e"].get("testTuning", {}).get("minimumFreeDiskBytes") == _MIN_FREE_DISK,
+                       "Logistics run lacks its 1 GiB free-disk policy")
         for row in rows:
             self.check(run["start"] <= self.timestamp(row.get("at"), "memory.at") <= run["finish"], "Memory preflight escapes the run")
             self.check(isinstance(row.get("windows"), bool) and row.get("minimumFreeCommitBytes") == _MIN_COMMIT,
@@ -161,6 +172,10 @@ class _Collector:
             if row["windows"]:
                 self.check(type(row.get("freeCommitBytes")) is int and row["freeCommitBytes"] >= _MIN_COMMIT,
                            "A server was started below the minimum free commit")
+            if run["label"] == "lifecycle-logistics":
+                self.check(row.get("minimumFreeDiskBytes") == _MIN_FREE_DISK and
+                           type(row.get("freeDiskBytes")) is int and row["freeDiskBytes"] >= _MIN_FREE_DISK,
+                           "A logistics server was started below the 1 GiB free-disk reserve")
             if separate_files:
                 name = "memory-before-run-" + str(row["run"]) + ".json"
                 data = self.read(run["directory"] / name, run["runtime"])
@@ -184,6 +199,8 @@ class _Collector:
                 self.check(b"StarWorld ready:" in data and b"All dimensions are saved" in data
                            and (b"Stopping server" in data or b"Stopping the server" in data)
                            and not _BAD_LOG.search(data) and not _BUSINESS_LOG.search(running), label + " has an incomplete or failed Paper log: " + name)
+                if self.validate_resource_log:
+                    self.validate_resource_log(data, label, run["script_sha256"], self.shared_helper_hash)
             else:
                 self.check(not re.search(rb"(?:^|\n)ERROR |Client kicked", data), label + " has a failed actual client")
                 stamps = re.findall(rb"(?m)^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z)", data)
@@ -243,6 +260,32 @@ def _credit(state, action_id, original, credited, period, pending, identity, che
     check(state.get("credits", {}).get(action_id) == expected, "Public exact-ID evolution credit mismatch: " + action_id)
 
 
+def _validate_life_candidate_configs(c, source_configs, candidate_configs, candidate_runtime):
+    source_names, candidate_names = set(source_configs), set(candidate_configs)
+    c.check("climate.yml" not in source_names, "Life source version 1.0 unexpectedly contains climate.yml")
+    expected_candidate_names = source_names
+    minor = _minor_version(c.version)
+    if minor is not None and minor >= 2:
+        expected_candidate_names = source_names | {"climate.yml"}
+    c.check(candidate_names == expected_candidate_names, "Life candidate configuration set changed")
+    for name in source_names:
+        expected = c.replace(c.replace(source_configs[name], "player-culture-per-period", 20),
+                             "city-culture-per-period", 20) if name == "life.yml" else source_configs[name]
+        c.check(candidate_configs[name] == expected,
+                "Candidate has configuration changes beyond the two declared caps: " + name)
+    if "climate.yml" not in candidate_names - source_names:
+        return
+    candidate_jar = c.read(candidate_runtime / "plugins" / "StarWorld.jar", candidate_runtime)
+    try:
+        with zipfile.ZipFile(io.BytesIO(candidate_jar)) as jar:
+            climate_default = jar.read("climate.yml")
+    except (KeyError, zipfile.BadZipFile) as error:
+        c.check(False, "Candidate StarWorld JAR lacks a readable climate.yml default: " + str(error))
+        return
+    c.check(candidate_configs["climate.yml"] == climate_default,
+            "Candidate climate.yml differs from the final StarWorld JAR default")
+
+
 def _coherent(state, identity, check):
     check(all(state.get(key) == value for key, value in identity.items()), "Live city/nation/actor identity changed")
     check(state.get("gameplayWrites") is False and state.get("creditApiAvailable") is True, "Diagnostics are not the actual read-only API")
@@ -274,10 +317,7 @@ def _collect_life(c, source_dir, candidate_dir):
     c.plugins(source, sp.get("pluginJars"), "1.0.0", final=False)
     c.plugins(candidate, cp.get("pluginJars"), c.version)
     sc, cc = c.configs(source, sp.get("configSha256")), c.configs(candidate, cp.get("configSha256"))
-    c.check(set(sc) == set(cc), "Life candidate configuration set changed")
-    for name in sc:
-        expected = c.replace(c.replace(sc[name], "player-culture-per-period", 20), "city-culture-per-period", 20) if name == "life.yml" else sc[name]
-        c.check(cc[name] == expected, "Candidate has configuration changes beyond the two declared caps: " + name)
+    _validate_life_candidate_configs(c, sc, cc, candidate["runtime"])
     for config in (sc, cc):
         c.check(c.numeric(config["config.yml"], "period-seconds") == 60 and c.numeric(config["config.yml"], "event-chance") == 0,
                 "Life run observation timing/events differ from its declared inputs")
@@ -521,16 +561,18 @@ def _collect_logistics(c, directory):
 
 
 def collect_lifecycle(root, version, plugin_hash, source_dir, candidate_dir, logistics_dir,
-                      add, regular_file, read_json, require, stage_names) -> list[dict]:
+                      add, regular_file, read_json, require, stage_names,
+                      validate_resource_log=None, shared_helper_hash=None) -> list[dict]:
     """Validate the three independent lifecycle results and add only safe proof files.
 
     Directories are completed run directories (the directories containing evidence.json),
     not server roots. No JVM/process/network/SQLite API is called. Returns runtime_runs
     records for life-source, life-carry and lifecycle-logistics in that order.
     """
-    c = _Collector(root, version, plugin_hash, add, regular_file, read_json, require, stage_names)
-    c.check(_SHA.fullmatch(str(plugin_hash)) and re.fullmatch(r"1\.1\.\d+(?:-[A-Za-z0-9.-]+)?", version),
-            "Lifecycle collection requires a bound1.1 product")
+    c = _Collector(root, version, plugin_hash, add, regular_file, read_json, require, stage_names,
+                   validate_resource_log, shared_helper_hash)
+    c.check(_SHA.fullmatch(str(plugin_hash)) and re.fullmatch(r"1\.(?:1|[2-9]\d*)\.\d+(?:-[A-Za-z0-9.-]+)?", version),
+            "Lifecycle collection requires a bound1.1-or-later product")
     c.check(all(value is not None for value in (source_dir, candidate_dir, logistics_dir)), "All three lifecycle evidence directories are required")
     records = _collect_life(c, source_dir, candidate_dir)
     records.append(_collect_logistics(c, logistics_dir))

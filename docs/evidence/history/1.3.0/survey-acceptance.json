@@ -1,0 +1,347 @@
+{
+  "schema": 1,
+  "version": "1.3.0",
+  "status": "development_acceptance_passed",
+  "recorded_at": "2026-11-21T18:42:23.3640505+08:00",
+  "artifact_sha256": "1e36a0ea2f57096d3dc46a44938b970c7c5950d2b23acee15591394b304c3b21",
+  "sources_sha256": "17ca54c73255078c8eb5c94428478e15e219317ffbce1f39f8c124d0e299efeb",
+  "automated_tests": {
+    "command": "./mvnw.cmd -B --no-transfer-progress -Dstarworld.testHeap=256m clean verify",
+    "java": "../starworld-tools/jdk-21.0.13.1+2/bin/java.exe",
+    "maven_heap": "192m",
+    "test_heap": "256m",
+    "totals": {
+      "tests": 464,
+      "suites": 53,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "reports": [
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.api.ClimateReportTest.xml",
+        "sha256": "89dc514e0b3536fbb406683d016d179bd82f45f34a3c1398491408c8d9d434b0"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.civic.CivicCooldownMigrationTest.xml",
+        "sha256": "da43df5ee9241a505890387fc3c661661e9690194dfee2fe8cea5d91fc23190a"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.civic.CivicNeedsDefinitionsTest.xml",
+        "sha256": "aca411f15702e0662bdd76e2493c36ad6a651d7dc1775f46303ba262196a198e"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.civic.CivicNeedsServiceTest.xml",
+        "sha256": "ced95d52a7a2b0fa3c64b2d073aefa752da94ed2ebf73829dcfa60bef4e05047"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.climate.ClimateRulesTest.xml",
+        "sha256": "59a4282c9e6b9ee793501e6275dbeef3ed04ffac4f72a3ea8305c4744dcba65d"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.config.ConfigLoaderTest.xml",
+        "sha256": "c7b9509a8981a436b5f1332307bc94616eb7d05fbc0225345759b75c0b68388d"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.disaster.DisasterResponseDefinitionsTest.xml",
+        "sha256": "add43bb89712353a41214ed7de762797fef5386dc5be22d7acdc649789c6333d"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.disaster.DisasterResponseServiceTest.xml",
+        "sha256": "0e04d9bb4a0cf1217816d0a2653bdc17dcc0bdf65109c3f5072d1a7849abc548"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.domain.SimulationTest.xml",
+        "sha256": "73b4e1df829c678e723c09011e59e5a42c8c58be0fa38df25d9113db77502c9a"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.evolution.BorderResourceEventTest.xml",
+        "sha256": "9c03afa967566991554bb464f5efb98a29d41b6b43b51ac5109fbd4bd1465df2"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.evolution.CultureDynamicsTest.xml",
+        "sha256": "17e75bf3f53ff3ccee38b1d3069a20ded58350018888c7f563646c219e93ba7c"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.evolution.EvolutionServiceTest.xml",
+        "sha256": "c9210122fdf346ac25c29b152ddff5868299d074a32d604f59c6b00e25803cad"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.evolution.ExportDefinitionsTest.xml",
+        "sha256": "3610e3ef6944596a21290b080cf006276e375ae0d15876e6a8b6c6bf5c5db188"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.evolution.NationalEvolutionTest.xml",
+        "sha256": "de1d77b7b8914fa620229b48cf41c7ecddbcf54e1292f499a563fce65978d742"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.evolution.RegionAtlasTest.xml",
+        "sha256": "79e12411d5ebcb91bf5b22b7f8c59ad62b09fe9ce7629d766bdaece90636c0fe"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.integration.BorderConflictCaptureTest.xml",
+        "sha256": "4d35c2868304e8c5e29b38a71cb196d8295dc745e06e0ce477778a02b23f5dfa"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.integration.CustomItemsReflectionTest.xml",
+        "sha256": "e1ad56e35cc2496c71dc913c7e538d0e847387cd21d96103f91458b25bec244e"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.integration.CustomItemsTest.xml",
+        "sha256": "4c567b343b11bace3072a76123b36935d39e29ffc580299618ab95784e8e6ac2"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.integration.ResourceOutboxTest.xml",
+        "sha256": "e86084140d8a1554e089349a743b1f448c027809dfd757325d1d5e8a3b4df687"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.integration.StarCoreBridgeTest.xml",
+        "sha256": "68f51f58f97242c9ff5978e9d9e645f960fa1850255afde7b9c61b6b10727915"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.integration.StarCoreCombatContributorTest.xml",
+        "sha256": "8891464b970929a656263f91fa833830d42df70ed54a765f87f13a46b0fd4f74"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.integration.StarCoreExtensionsTest.xml",
+        "sha256": "43e36e9ea091e4f7171789c658cf13a3989817c5f21f79fe7b629edd9128b4a4"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.integration.StarCoreTreasuryTransfersTest.xml",
+        "sha256": "ebb23ce8d1990e4616c8f21d710e6fd7f6c691f69f489417397d9c805f0effc6"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.integration.TreasuryMoneyTest.xml",
+        "sha256": "5611641eba4a36682a15cb38a3c6aba5c4b6fa3507168adb43d31daf62a969f5"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.life.LifeDefinitionsTest.xml",
+        "sha256": "0569d6315bb9d094951ef571a3b84f349a35c58ed7eb62c458859e605bafdcd9"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.life.LifeEvolutionCarryTest.xml",
+        "sha256": "664f149648be59351f437a1dd668fa0fcdf0e82ead606a026e55282b30a4a001"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.life.LifePlatformTest.xml",
+        "sha256": "061bacffc63785636c0838ba99691bb44239c5a6e0abc6644072cad29f455198"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.life.LifeServiceTest.xml",
+        "sha256": "e725127f3fef948dff580509f49eb2e9ce0d573c95cb4532e80b35322d96c9c4"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.logistics.LogisticsConfigTest.xml",
+        "sha256": "76a2fca375d6d58456a31cffec9d7fec7d244bf80bcffbb87d883c1b8d395f8c"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.logistics.LogisticsConfigurationRecoveryTest.xml",
+        "sha256": "361ef0cfeb71ba77998b37453908c9db216aa0916d405fcb262a605227a8c873"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.logistics.LogisticsControllerTest.xml",
+        "sha256": "ec7efdd373cc7a2c9534ae31ce9c9150a0e533c00a3c19d7c850f75719d5d311"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.logistics.LogisticsServiceTest.xml",
+        "sha256": "73891e72269e162221b35a542b7bb7ba17902707fa1a3f0011f57459dedfae41"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.logistics.TransportPlanningTest.xml",
+        "sha256": "395d0c9f03948d9c2a3ce8f6bb393bf8c3abf8584fbe6e9c0a30138fd102ea07"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.market.MarketControllerTest.xml",
+        "sha256": "1daf2421c79cf078cdbf77298685a4f1502a12aec287c23308431cd6d05328b5"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.market.MarketServiceTest.xml",
+        "sha256": "1d50508df5133403947c0083c8098495da13342220f246621ca43a103a62de5b"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.persistence.FairDispatchQueueTest.xml",
+        "sha256": "54e7ac6a3e76449b1cd8aa6571ced1b4ce0862fa1dc378f87fed0d6f175e2ba0"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.persistence.LedgerMaintenanceTest.xml",
+        "sha256": "9d0b0e3eca2e7a73ec279fa1e70c2bcd1a865c4930f24cb964c2aadc9f5eaf9c"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.persistence.WorldScaleTest.xml",
+        "sha256": "48b41f9dd45fedaa9d62a68169d3fe5c16031e8a062ac7cee9afdca8dce7cc04"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.persistence.WorldStoreTest.xml",
+        "sha256": "ce37f816a5889d82aadbf623060e17a9efb228e0adc64634e8457bb0e41a4afc"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.runtime.CivicCapabilityTest.xml",
+        "sha256": "0a14c67652418649d66223a3c721089b46d76f9dc54cc3a865e5c2c9e5fc0397"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.runtime.CivicNeedsControllerTest.xml",
+        "sha256": "bc4cc6e9b1ee2efcef1b6699211ef49589e8996d67a3c8d4367337d0c6a99d0f"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.runtime.DisasterControllerTest.xml",
+        "sha256": "588fd8cee09cd55d0d1aa384f77b54c998b36ac46051242eacb7eca964b568a0"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.runtime.ExpansionRuntimeSchedulingTest.xml",
+        "sha256": "4951514b03b6df960b8c14629e730d720fd94fe96bcb96a881f4ecbae7889f78"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.runtime.ExpansionRuntimeTest.xml",
+        "sha256": "2e8420d48e29cd36b97cd9a1c0aa8d99980c56c33d1a553a29b9e2b5125e650d"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.runtime.PublicWorksControllerTest.xml",
+        "sha256": "74323f6a369bad6a358b2ae3aa5220685d7cc188ee483bdb3d297c26ff71a63c"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.runtime.SchedulerGateTest.xml",
+        "sha256": "869781768f0dfb0a3e3ead4948f4b81a5646ad8eae207fc8786b7cf219c03b85"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.runtime.StorageWorkerTest.xml",
+        "sha256": "7fd67e297d35fc1c8733650892a3357c1349d54a56450eafd3fe0dedf2b0484f"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.runtime.WorldRuntimeTest.xml",
+        "sha256": "2728c3cf357b0dfdddcc455999ab2f285cd792dee73ed7e7fb891fbd62caaf40"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.ui.CityMenuTest.xml",
+        "sha256": "1818b22c307d47718efd28df0a9a6f181d7f14b554aa8ee39b4bc0b874ceaedb"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.ui.DisasterMenuTest.xml",
+        "sha256": "83ae583b609a2735cdbdce64f7795ce3d686328497f39bc4c3964c3e558c2856"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.ui.GovernanceMenuTest.xml",
+        "sha256": "be47f5c0289f87866c88c89328deb83b61adc07eb217699c50a3dad3246f4097"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.works.PublicWorksDefinitionsTest.xml",
+        "sha256": "6d4438ec7b39e15621aabf90a087822dd9e21b0f9bf648a252fda7cc49a4f8d2"
+      },
+      {
+        "file": "target/surefire-reports/TEST-dev.starworld.works.PublicWorksServiceTest.xml",
+        "sha256": "0f212057813246f105639972323f158eac54a7b62865cdf2d1cd9f8423a000b0"
+      }
+    ]
+  },
+  "scale": {
+    "schema": 1,
+    "cities": 1000,
+    "facilities": 2000,
+    "settlements": 3000,
+    "replayedAfterRestart": 1000,
+    "failures": 0,
+    "seedMillis": 748,
+    "settlementMillis": 19415,
+    "pagedQueryMillis": 82,
+    "databaseBytes": 5107712,
+    "scope": "real SQLite and pure production paths; not Paper tick or world load throughput"
+  },
+  "paper": {
+    "suite": "real-paper-finite-region-survey",
+    "status": "passed",
+    "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\survey13-server03\\survey-acceptance\\2026-11-21T10-37-38-130Z",
+    "evidence_sha256": "06d7cfc86c60281aa716070df1d95472ad837da4dfe2675d0a452376de8deef4",
+    "started_at": "2026-11-21T10:37:38.132Z",
+    "finished_at": "2026-11-21T10:38:36.111Z",
+    "paper_sha256": "5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba",
+    "runner_sha256": "df611385b0ba8f0ecb7774d26b85c1bf81a63225c585a73378d2171b9d323c33",
+    "plugin_jars": {
+      "StarCore.jar": "953f926f12384e0cfafae6f55d266a10c7156468e7e28be75518c3f7b413884b",
+      "StarWorld.jar": "1e36a0ea2f57096d3dc46a44938b970c7c5950d2b23acee15591394b304c3b21",
+      "StarWorldFixture.jar": "b06f273531ce75d43c19f3bfdc22c3a878a8fff6d257fecd6032c694ef1a43f2"
+    },
+    "test_tuning": {
+      "jvmArgs": [
+        "-Xms128m",
+        "-Xmx512m",
+        "-XX:ActiveProcessorCount=2",
+        "-XX:+UseSerialGC"
+      ],
+      "nodeExecArgv": [],
+      "nodeOptionsEnvironment": "--max-old-space-size=384",
+      "chunkAccess": "player current chunk only; no scans or forced loads",
+      "maximumRegionsPerCity": 128,
+      "paperCost": 8
+    },
+    "steps": [
+      {
+        "name": "real Paper, StarCore and StarWorld startup",
+        "status": "passed"
+      },
+      {
+        "name": "real player and public dual-claim city setup",
+        "status": "passed"
+      },
+      {
+        "name": "city warehouse receives real paper through player deposit",
+        "status": "passed"
+      },
+      {
+        "name": "owned loaded chunk survey records terrain and spends eight paper",
+        "status": "passed"
+      },
+      {
+        "name": "duplicate survey preserves the original charge and region count",
+        "status": "passed"
+      },
+      {
+        "name": "missing national claim rejects survey without charging",
+        "status": "passed"
+      },
+      {
+        "name": "owned Paper process stops cleanly",
+        "status": "passed"
+      }
+    ],
+    "logs": [
+      {
+        "file": "client-run-1.log",
+        "sha256": "9b6083bc8fffc4282bd044b038db7b9a9f448029f430ed7bd1b42b238082cc81"
+      },
+      {
+        "file": "paper-run-1.log",
+        "sha256": "4e6b298d87d7a5cbcf5cd9d3fee7d58f0626e0b898f7bd424e2fdff239840aa2"
+      }
+    ]
+  },
+  "implementation": {
+    "maximum_regions_per_city": 128,
+    "warehouse_paper_cost": 8,
+    "duplicate_survey_cost": 0,
+    "schema": 3,
+    "chunk_access": "player current loaded chunk",
+    "ownership": "current city and nation",
+    "atomic_write": "survey record, warehouse deduction and audit in one SQLite transaction",
+    "migration": "backfill region index from existing facilities",
+    "atlas": "bounded cursor pagination, including surveyed regions without facilities"
+  },
+  "memory_validation": {
+    "maven_heap": "192m",
+    "test_heap": "256m",
+    "paper_heap": "512m",
+    "node_options": "--max-old-space-size=384",
+    "paper_execution": "serial",
+    "out_of_memory_observed": false
+  },
+  "retained_attempts": [
+    {
+      "directory": "C:\\Users\\Administrator\\Documents\\starworld-tools\\survey13-server01",
+      "status": "failed",
+      "reason": "Runner did not read the isolated runtime server port. The corrected runner reads server.properties."
+    }
+  ],
+  "release": {
+    "evidence_zip_generated": false,
+    "scope": "1.3 survey development acceptance",
+    "remaining": "Complete 1.3 release-wide acceptance and release evidence packaging"
+  }
+}

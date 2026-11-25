@@ -1,6 +1,6 @@
 # 原始需求与实现、验证映射
 
-此表按开发任务逐项对应 1.0.0 源码。自动化组名指 `src/test/java/dev/starworld/` 下测试；通过数、真实服务端流程、JAR 哈希及未验证项以 [test-results.md](test-results.md) 为准。
+此表按开发任务逐项对应当前 1.4.0 源码，保留各增量版本的实现边界。自动化组名指 `src/test/java/dev/starworld/` 下测试；通过数、真实服务端流程、JAR 哈希及未验证项以 [test-results.md](test-results.md) 为准。
 
 ## 项目、环境和复用
 
@@ -82,7 +82,7 @@
 | 不直接修改核心权威表 | WorldStore只保存插件目录starworld.db；资源出口走公开TransactionService | 源码审计、outbox端口/回执测试 |
 | 独立持久化、重启恢复 | WAL+FULL、事务、last_period、settlement、logistics/life/evolution/outbox表 | 真SQLite、并发、独立进程中断、重开与迁移测试；有界无损审计归档保留关键业务去重凭据 |
 | 公开JavaAPI和事件 | StarWorldApi查询、IndustrySettled/WorldEvolution/CityDevelopment事件 | Future值不可变，提交后通知；事件非可靠支付队列 |
-| 可配置数据和GUI | 十份配置；设施、文明、规划、地区、市场、灾害、公共工程及生活需求界面与命令入口 | `ConfigLoaderTest`、Life/Logistics 配置测试、`CityMenuTest`、`GovernanceMenuTest` |
+| 可配置数据和GUI | 十一份配置（含逐世界气候）；设施、文明、规划、地区、市场、灾害、公共工程及生活需求界面与命令入口 | `ConfigLoaderTest`、Life/Logistics 配置测试、`CityMenuTest`、`GovernanceMenuTest` |
 | 防重复产出 | 城市/地区周期账本；货单、文化、生活、国家事务、工程与城市需求均有稳定 ID | 同周期、同请求、并发、崩溃、失去 ACK；城市需求同时全局去重已认领动作 |
 | 不持续扫区块/大量实体 | 城市分页、有限登记锚点/节点/家具、空间听众查询 | 不加载区块、有限批量和不重叠任务；已有千城/两千设施真实SQLite基线，Paper世界负载/TPS仍需实际测量 |
 | Folia区域调度正确 | SchedulerGate预留Global/Entity/Region边界，当前检测停用 | 上游不满足前不虚报兼容，正式Folia真服未验收 |
@@ -106,6 +106,17 @@
 | 公共工程和分工 | [公共工程](public-works.md)：3 类投资依赖有效设施、文明和城市发展；每期单独付费，失地或缺料暂停，完成后持续维护才加成 |
 | 生活需求 | [城市生活需求](civic-needs.md)：事务同时扣库存、认领请求后真实宴会/家具维护/演奏凭据并记录奖励；重放返还同回执 |
 | 连续世界与升级 | 独立隔离服覆盖三城、三次启停、战时暂停、和平交付和进口救灾；真实 0.5 备份用于验证加法式迁移。通过状态见[测试结果](test-results.md) |
+
+## 1.1 至 1.4 深化与最终验收
+
+| 增量 | 实现与验证 |
+| --- | --- |
+| 旧生活贡献分期结转 | `LifeEvolutionCarryTest` 验证降低上限后的分期额度、持久预算与重启去重；真实1.0源和当前候选分别运行4/7阶段。当前候选实服结果仍待完成 |
+| 商路配置收紧与恢复 | `LogisticsConfigurationRecoveryTest` 验证受限路线、托管货物及恢复；真实四次启停14阶段须绑定当前JAR，不复用旧版本结果 |
+| 逐世界气候与灌溉韧性 | `ClimateRulesTest`、`StarCoreBridgeTest` 和生产结算接线覆盖国家/世界归属、倍率边界与精确配方映射；扩展实服套件验证真实核心天气对产量的影响 |
+| 有限地区勘探 | `RegionAtlasTest`、`WorldRuntimeTest`、`WorldStoreTest` 覆盖纸张成本、128地区上限、归属复核、幂等发现和schema3回填；当前JAR的勘探/存储套件待实服运行 |
+| 存储过载和批次边界 | `StorageWorkerTest` 覆盖256项队列、拒绝与顺序、关闭终态；城市生产批次最多64个。当前JAR还需60秒真实Paper压力及恢复验证 |
+| 完整发行交付 | 当前JAR的单测、规模、源码包、全部功能、独立安装、旧存档和生活迁移证据共同通过收集器后，才由 `package-release.ps1` 生成发行ZIP。准备目录、静态预检和历史通过记录不证明本次发行完成 |
 
 ## 玩家决策如何落实
 

@@ -1,6 +1,6 @@
 # StarWorld
 
-持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.2.0**。
+持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.4.0**。
 
 代码仓库：[addxiaoyi/StarWorld](https://github.com/addxiaoyi/StarWorld)。技术基线：Java 21、Paper **1.21.11**，CraftEngine **26.9.1** 为可选内容依赖。2026-11-20 审计固定 StarCore `f769e62799e769a18fe51305b545869a17f80cd1` 和 SenLuo 源码 `cecc87d616a577b8bf3bccaff1d812619e87c59f`；森罗隔离服使用固定生产候选 `3e774d00567deb9cb65eee8da6de8a65254e5b8e`。见 [StarCore 审计](docs/audit-starcore.md) 和 [森罗审计](docs/audit-senluo.md)。
 
@@ -14,7 +14,14 @@
 
 Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME` 指向 JDK 21。Maven Wrapper 使用 Maven 3.9.11；插件包含 SQLite JDBC，不打包外部核心或森罗实现。
 
-产物为 `target/starworld-1.2.0.jar` 和 `target/starworld-1.2.0-sources.jar`。完整验证证据包和发行 ZIP 只在全部运行套件绑定同一JAR后生成；只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
+CI 还会执行证据收集器与验收工具的回归测试，本地可运行：
+
+```sh
+python -m unittest discover -s tools -p "test_*.py" -v
+npm --prefix tools/paper-client test
+```
+
+产物为 `target/starworld-1.4.0.jar` 和 `target/starworld-1.4.0-sources.jar`。完整验证证据包和发行 ZIP 只在全部运行套件绑定同一JAR后生成；只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
 
 1. 正常关服，备份整个 `plugins/StarWorld/`。升级时保留数据库和持久配置 ID。
 2. 放置插件 JAR，使用 Paper 1.21.11 和审计兼容的 StarCore 启动。
@@ -41,10 +48,11 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 | 国家资源出口 | 配置实物成本兑换已有国家抽象资源分类；outbox、稳定事务 ID、核心持久回执、退避重试 |
 | 核心军队战斗 | 已提交真实军需与地形通过公开army_combat贡献点影响有效设施区块的军队伤害 |
 | GUI/API | 城市仓储/设施与发展GUI，生活/贸易命令入口；不可变 Future 查询及提交后事件 |
-| 地区地图册 | 有界分页地形、资源余量/初始容量/恢复、文化与设施；全国政策影响新增文化，活跃地区按周期有限衰减 |
+| 地区地图册 | 有界分页地形、资源余量/初始容量/恢复、文化与设施；城市管理者可用 `/sw survey` 勘探脚下已加载且本国、本城拥有的区块，每城最多128个地区 |
 | 商路调度 | 同端点替代商路、双方确认改道、共享运力瓶颈；改道重计完整运时，原当期占用不退款 |
 | 国库实物市场 | 整批限价挂牌，实体货物先托管；国家创始人通过核心原子幂等转账付款，确认回执后实际商路交货 |
 | 长期存档 | 有界无损审计压缩归档、旧报表清理；付款/货物/生活活动的关键去重凭据永久保留 |
+| 存储过载 | 单线程 IO 待处理队列上限 256；饱和时 Future 显式失败并沿现有错误路径处理 |
 | 经营反馈 | 已声明路线的时间、容量和双方维护物资比较；仅物流完成后有界归集到货数量、精确总额和均价 |
 | 在线备份 | 管理员创建经过完整性/schema/SHA-256校验的SQLite一致快照，原子发布到备份目录，保护主库/WAL/SHM和路径别名 |
 | 公共工程 | 三种城市专属公共工程，受真实设施、地形、规划、文明、知识和文化约束，真实支付起建/施工/维护材料，完工后下一期才产生专业倍率 |
@@ -55,13 +63,13 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 
 默认五分钟一周期，停服和未加载区块不补发。产业需要维护和投入，注销登记不刷新矿藏。设施损坏、区块卸载、城市/国家丢领或转国会停产。失去资源地会切断原料；战争可暂停商路，军工城市需要粮食与材料补给。
 
-1.0 将公共工程、真实生活需求、贸易战争与灾害进口接成持续世界循环；各系统保留独立状态并在真实城市结算事务内联动。1.1 增加降低上限后的文化分期结转、交易积压公平派发、受限商路恢复操作及停服任务终态。1.2 增加逐世界天气对农田/矿井的产业倍率和付费灌溉韧性。详见[长期世界与恢复治理](docs/lifecycle.md)和[逐世界气候](docs/climate.md)。
+1.0 将公共工程、真实生活需求、贸易战争与灾害进口接成持续世界循环；各系统保留独立状态并在真实城市结算事务内联动。1.1 增加降低上限后的文化分期结转、交易积压公平派发、受限商路恢复操作及停服任务终态。1.2 增加逐世界天气对农田/矿井的产业倍率和付费灌溉韧性。1.3 增加有界地区勘探，纸张成本、城市/国家领土核验和128地区上限共同约束发现范围。1.4 将存储任务和生产批次控制在固定上界内，并按当前城市归属隔离设施与地区视图。详见[地区地图册](docs/geography.md)、[长期世界与恢复治理](docs/lifecycle.md)和[逐世界气候](docs/climate.md)。
 
 ## 常用命令
 
 ```text
 /sw menu|develop|status|stock|buildings|development|history|culture|nation
-/sw atlas|regions|climate|market-menu|disaster-menu|governance
+/sw atlas|regions|survey|climate|market-menu|disaster-menu|governance
 /sw disaster options|respond <策略ID> <requestUUID>|status [页]|history [页]
 /sw works options|start <工程ID> <requestUUID>|status [页]|history [页]
 /sw civic options|request <需求ID> <requestUUID>|complete <requestUUID>|status [页]|history [页]
@@ -117,12 +125,20 @@ Windows 使用 `.\mvnw.cmd -B --no-transfer-progress clean verify`，`JAVA_HOME`
 
 [需求映射](docs/requirements.md) · [架构](docs/architecture.md) · [Java API](docs/API.md) · [玩法验收](docs/gameplay.md) · [地区地图册](docs/geography.md) · [逐世界气候](docs/climate.md) · [交通贸易](docs/logistics.md) · [国库实物市场](docs/market.md) · [国家服务](docs/core-extension.md) · [战斗联动](docs/combat.md) · [生活联动](docs/life-integrations.md) · [森罗实服验收](docs/senluo-acceptance.md) · [存档维护](docs/storage-maintenance.md) · [千城基线](docs/scale.md) · [测试结果](docs/test-results.md) · [1.2验收状态](docs/evidence/1.2-acceptance-status.md) · [后续边界](docs/roadmap.md)
 
-1.0.0和1.1.0的历史运行结果保存在版本归档中。1.2.0 JAR通过 **455项自动化测试、0失败**、1,000城规模测试和Paper 1.21.11同JAR无依赖双启动及重启恢复。真实StarCore天气下的产业端到端和原1.0业务套件同JAR重绑仍待完成；见[1.2验收状态](docs/evidence/1.2-acceptance-status.md)。
+1.2.0 气候修订通过 **461 项自动化测试、0 失败**和 120 项 Paper 实服阶段；这些历史记录不计入当前 1.4 版本验收。该 JAR 的实测 StarCore 天气会改变小麦和原铁的实际产量。具体范围见[1.2 验收状态](docs/evidence/1.2-acceptance-status.md)。
+
+2026-11-25 的 1.4.0 新构建通过 **475 项 Java 测试、53 个套件，0 失败、错误或跳过**，并生成主 JAR、源码 JAR 和覆盖率报告。受限环境采用单 JVM 全量 `clean test`，再执行 `-DskipTests verify` 打包，实际命令已记录在[单测证据](docs/evidence/unit-tests.json)。主 JAR SHA-256 为 `9d1207953c4883a407a2f284332d0e19e12c71b8b72dee3547931319fdd70dfd`。Python 证据工具 **44/44**、Node 验收工具 **18/18** 通过。
+
+**发行尚未完成。** 2026-11-22 冻结构建的 473 项及 Paper 记录保留为历史证据，不能代替新 JAR 的实服验收。当前须以新 JAR 重跑全部功能、独立安装及迁移套件，再校验证据并生成发行 ZIP。Paper 预检仍按 JVM/Node 堆、1 GiB 非堆储备及 768 MiB 运行余量动态计算要求，最低保留 1.5 GiB 可用物理内存和 2 GiB 可用提交内存；本次实测余量不足，未启动服务端。详见[当前与历史测试结果](docs/test-results.md)。
+
+同日后续已重建 Paper/森罗夹具并准备13个隔离续跑目录，森罗资源、0.5升级存档及真实1.0生活源只读预检通过；新增准备工具后 Python 回归 **60/60**。准备工具和用法见[客户端验收说明](tools/paper-client/README.md)，指纹与未启动状态见[准备证据](docs/evidence/preparation/1.4.0-20261125.json)。完整实服及发行包仍待资源条件满足后完成。
+
+生活候选迁移准备工具也已补齐，Python工具全量回归进一步通过 **71/71**；它只接受当前运行器验证的已停服生活源，保留数据库和玩家存档，按声明调整候选JAR与贡献上限。使用与验证范围见[最新测试记录](docs/test-results.md)。
 
 生成完整交付包前，先运行以下命令；各参数必须指向同一最终 JAR 的实际完整通过目录：
 
 ```sh
-python tools/package-evidence.py --expansion-dir <扩展目录> --civic-dir <森罗及城市需求目录> --baseline-dir <基础目录> --progression-dir <进阶目录> --upgrade-dir <0.5到1.0升级目录> --border-dir <边境目录> --operations-dir <经营目录> --disaster-dir <救灾目录> --works-dir <连续世界目录> --smoke-dir <独立安装目录> --lifecycle-source-dir <1.0生活源运行目录> --lifecycle-dir <1.1生活结转运行目录> --lifecycle-logistics-dir <1.1商路恢复运行目录>
+python tools/package-evidence.py --expansion-dir <扩展目录> --civic-dir <森罗及城市需求目录> --baseline-dir <基础目录> --progression-dir <进阶目录> --upgrade-dir <0.5到1.0升级目录> --border-dir <边境目录> --operations-dir <经营目录> --disaster-dir <救灾目录> --works-dir <连续世界目录> --smoke-dir <独立安装目录> --lifecycle-source-dir <1.0生活源运行目录> --lifecycle-dir <1.1生活结转运行目录> --lifecycle-logistics-dir <1.1商路恢复运行目录> --storage-dir <1.4存储压力运行目录>
 ```
 
-1.1 还需额外传入 --lifecycle-source-dir、--lifecycle-dir 和 --lifecycle-logistics-dir；参数值是各通过运行中直接包含 evidence.json 的目录，而非服务端根目录。1.0 参数保持不变。再运行 tools/package-release.ps1。脚本会核对单测、规模报告、版本对应的实服流程、1.1 生命周期三套证据、无依赖启动、JAR、源码与证据清单的 SHA-256，拒绝缺失、失败或其他构建的证据。
+1.1 还需传入 --lifecycle-source-dir、--lifecycle-dir 和 --lifecycle-logistics-dir。1.4 还需传入 --storage-dir，指向包含 60 秒压力验收 `evidence.json` 的目录。所有目录参数均指向运行目录中的证据文件夹，而非服务端根目录。再运行 tools/package-release.ps1。脚本会核对单测、规模报告、版本对应的实服流程、生命周期和存储压力证据、无依赖启动、JAR、源码与证据清单的 SHA-256，拒绝缺失、失败或其他构建的证据。

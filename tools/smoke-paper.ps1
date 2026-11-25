@@ -48,6 +48,8 @@ try {
     $pluginVersion = $versionMatch.Groups[1].Value.Trim().Trim([char[]]@([char]39,[char]34))
     if ($pluginVersion -notmatch '^\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?$') { throw 'Plugin JAR has an unsupported version.' }
 } finally { $pluginArchive.Dispose() }
+$releaseVersion = [version]($pluginVersion -split '-')[0]
+$expectedSchemaVersion = if ($releaseVersion -ge [version]'1.3.0') { 3 } else { 2 }
 $RuntimeDirectory = [IO.Path]::GetFullPath($RuntimeDirectory)
 if ($RuntimeDirectory -eq [IO.Path]::GetPathRoot($RuntimeDirectory)) { throw 'A filesystem root cannot be a smoke runtime.' }
 if (Test-Path -LiteralPath $RuntimeDirectory -PathType Leaf) { throw 'RuntimeDirectory is a file.' }
@@ -138,6 +140,12 @@ motd=StarWorld isolated smoke test
     }
 
     function Invoke-Paper([int] $Run, [bool] $ExpectEulaGate) {
+        $systemMemory = Get-CimInstance Win32_OperatingSystem
+        $freePhysicalMemoryMiB = [math]::Floor($systemMemory.FreePhysicalMemory / 1024)
+        $freeCommitMemoryMiB = [math]::Floor($systemMemory.FreeVirtualMemory / 1024)
+        if ($freePhysicalMemoryMiB -lt 1536 -or $freeCommitMemoryMiB -lt 2048) {
+            throw "Paper smoke requires at least 1536 MiB free physical and 2048 MiB free commit memory before startup; found $freePhysicalMemoryMiB MiB physical and $freeCommitMemoryMiB MiB commit."
+        }
         $startInfo = [Diagnostics.ProcessStartInfo]::new()
         $startInfo.FileName = $JavaPath
         $startInfo.WorkingDirectory = $RuntimeDirectory
@@ -146,7 +154,7 @@ motd=StarWorld isolated smoke test
         $startInfo.RedirectStandardInput = $true
         $startInfo.RedirectStandardOutput = $true
         $startInfo.RedirectStandardError = $true
-        foreach ($argument in @('-Xms256M', '-Xmx1024M', '-XX:ActiveProcessorCount=2', '-XX:+UseSerialGC', '-Dfile.encoding=UTF-8', '-jar', $serverDestination, '--nogui')) {
+        foreach ($argument in @('-Xms128M', '-Xmx512M', '-XX:ActiveProcessorCount=2', '-XX:+UseSerialGC', '-Dfile.encoding=UTF-8', '-jar', $serverDestination, '--nogui')) {
             $startInfo.ArgumentList.Add($argument)
         }
         $latest = Join-Path $RuntimeDirectory 'logs/latest.log'
@@ -163,8 +171,18 @@ motd=StarWorld isolated smoke test
             $stdout = $process.StandardOutput.ReadToEndAsync()
             $stderr = $process.StandardError.ReadToEndAsync()
             $deadline = [DateTime]::UtcNow.AddSeconds($StartupTimeoutSeconds)
+            $nextMemoryCheck = [DateTime]::UtcNow.AddSeconds(2)
             $ready = $false
             while (!$process.HasExited -and [DateTime]::UtcNow -lt $deadline) {
+                if (!$ExpectEulaGate -and [DateTime]::UtcNow -ge $nextMemoryCheck) {
+                    $memory = Get-CimInstance Win32_OperatingSystem
+                    $freePhysicalMemoryMiB = [math]::Floor($memory.FreePhysicalMemory / 1024)
+                    $freeCommitMemoryMiB = [math]::Floor($memory.FreeVirtualMemory / 1024)
+                    if ($freePhysicalMemoryMiB -lt 768 -or $freeCommitMemoryMiB -lt 768) {
+                        throw "Paper smoke stopped because free memory fell below 768 MiB; found $freePhysicalMemoryMiB MiB physical and $freeCommitMemoryMiB MiB commit."
+                    }
+                    $nextMemoryCheck = [DateTime]::UtcNow.AddSeconds(2)
+                }
                 if (Test-Path -LiteralPath $latest) {
                     $text = Read-SharedLog $latest
                     if ($text -match 'Done \(' -and $text -match 'StarWorld ready:') { $ready = $true; break }
@@ -192,7 +210,7 @@ motd=StarWorld isolated smoke test
             }
             # Paper may decorate console output with ANSI reset codes immediately after a value.
             # Match a version boundary rather than requiring whitespace after the version.
-            if ($combined -notmatch 'StarWorld ready:.*transactional schema 2' -or $combined -notmatch ('StarWorld '+[regex]::Escape($pluginVersion)+'(?![A-Za-z0-9.-])')) {
+            if ($combined -notmatch ('StarWorld ready:.*transactional schema '+$expectedSchemaVersion+'(?:\D|$)') -or $combined -notmatch ('StarWorld '+[regex]::Escape($pluginVersion)+'(?![A-Za-z0-9.-])')) {
                 throw "Missing plugin schema/status output in smoke-run-$Run.log."
             }
             Write-Output "Paper startup, console status and clean shutdown passed (run $Run)."
@@ -222,9 +240,9 @@ public class StarWorldSmokeProbe {
         Class.forName("org.sqlite.JDBC");
         try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + args[0])) {
             try (Statement s = c.createStatement(); ResultSet r = s.executeQuery("PRAGMA user_version")) {
-                if (!r.next() || r.getInt(1) != 2) throw new IllegalStateException("Unexpected schema");
+                if (!r.next() || r.getInt(1) != Integer.parseInt(args[3])) throw new IllegalStateException("Unexpected schema");
             }
-            for (String table : new String[]{"city_state", "nation_state", "stock", "region", "reserve", "building", "settlement", "transfer", "audit"}) {
+            for (String table : new String[]{"city_state", "nation_state", "stock", "region", "reserve", "building", "city_region", "settlement", "transfer", "audit"}) {
                 try (Statement s = c.createStatement()) { s.executeQuery("SELECT COUNT(*) FROM " + table).close(); }
             }
             if (args[1].equals("seed")) {
@@ -243,10 +261,10 @@ public class StarWorldSmokeProbe {
 }
 '@ + "`n", $utf8)
     $marker = 'restart-' + [Guid]::NewGuid().ToString('N')
-    & $JavaPath --class-path $pluginDestination $probeSource $database seed $marker
+    & $JavaPath --class-path $pluginDestination $probeSource $database seed $marker $expectedSchemaVersion
     if ($LASTEXITCODE -ne 0) { throw 'Initial SQLite schema probe failed.' }
     Invoke-Paper 2 $false
-    & $JavaPath --class-path $pluginDestination $probeSource $database verify $marker
+    & $JavaPath --class-path $pluginDestination $probeSource $database verify $marker $expectedSchemaVersion
     if ($LASTEXITCODE -ne 0) { throw 'Restart persistence probe failed.' }
-    Write-Output "PASS: two clean Paper starts, console status, SQLite schema 2 and durable restart marker. Logs: $RuntimeDirectory"
+    Write-Output "PASS: two clean Paper starts, console status, SQLite schema $expectedSchemaVersion and durable restart marker. Logs: $RuntimeDirectory"
 } finally { $lock.Dispose() }

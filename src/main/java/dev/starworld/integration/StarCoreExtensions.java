@@ -24,8 +24,12 @@ public final class StarCoreExtensions implements CoreExtensionPort {
             Map<String,Long> stock=optionalPart(capabilities,"resources",Map.of(),()->longs(call(access.required("module.resource.ResourceService"),"stockpile",new Class<?>[]{access.idType},id)));
             Set<String> technologies=optionalPart(capabilities,"technology",Set.of(),()->strings(call(access.required("module.technology.TechnologyService"),"unlockedTechnologies",new Class<?>[]{access.idType},id)));
             Map<String,Double> modifiers=optionalPart(capabilities,"technology-effects",Map.of(),()->{
-                Object service=access.required("module.technology.TechnologyService");Map<String,Double> values=new TreeMap<>();
-                for(String key:TECH_KEYS)values.put(key,finite(call(service,"getTotalModifier",new Class<?>[]{access.idType,String.class},id,key)));
+                Object service=access.required("module.technology.TechnologyService");
+                Map<String,Double> values=new HashMap<>();
+                for(String key:TECH_KEYS) {
+                    Object value=call(service,"getTotalModifier",new Class<?>[]{access.idType,String.class},id,key);
+                    putFiniteModifier(values,key,value);
+                }
                 return Map.copyOf(values);
             });
             String policy=optionalPart(capabilities,"policy", "",()->Objects.toString(optional(call(access.required("module.policy.PolicyService"),"activePolicy",new Class<?>[]{access.idType},id)),""));
@@ -40,7 +44,7 @@ public final class StarCoreExtensions implements CoreExtensionPort {
             double prosperity=optionalPart(capabilities,"prosperity",0.0,()->finite(call(access.required("module.prosperity.ProsperityService"),"getProsperityValue",new Class<?>[]{access.idType},id)));
             Weather weather=optionalPart(capabilities,"weather",new Weather("unknown",Map.of()),()->{
                 Object service=access.required("module.weather.WeatherControlService");Object type=call(service,"getNationWeather",new Class<?>[]{access.idType},id);
-                return new Weather(String.valueOf(call(type,"getId")),doubles(call(service,"getResourceModifiers",new Class<?>[]{access.type("module.weather.model.WeatherType")},type)));
+                return new Weather(String.valueOf(call(type,"getId")),weatherModifiers(call(service,"getResourceModifiers",new Class<?>[]{access.type("module.weather.model.WeatherType")},type)));
             });
             Epoch epoch=optionalPart(capabilities,"epoch",null,()->{
                 Object value=call(access.required("foundation.epoch.EpochService"),"snapshot");
@@ -78,7 +82,7 @@ public final class StarCoreExtensions implements CoreExtensionPort {
             Object current=call(state,"getCurrentWeather");if(current==null)return Optional.empty();
             String weather=Objects.toString(call(current,"getId"),"");if(weather.isBlank())return Optional.empty();
             Object controller=call(state,"getControlledByNation");UUID controllerId=controller==null?null:(UUID)call(controller,"value");
-            Map<String,Double> modifiers=doubles(call(service,"getResourceModifiers",new Class<?>[]{access.type("module.weather.model.WeatherType")},current));
+            Map<String,Double> modifiers=weatherModifiers(call(service,"getResourceModifiers",new Class<?>[]{access.type("module.weather.model.WeatherType")},current));
             return Optional.of(new WorldWeatherSnapshot(worldName,weather,controllerId,modifiers));
         }catch(ReflectiveOperationException|RuntimeException|LinkageError unavailable){return Optional.empty();}
     }
@@ -134,6 +138,19 @@ public final class StarCoreExtensions implements CoreExtensionPort {
     private static Collection<?> collection(Object value){if(!(value instanceof Collection<?> c))throw new IllegalStateException("Expected collection");return c;}
     private static Set<String> strings(Object value){Set<String> copy=new HashSet<>();for(Object item:collection(value))copy.add((String)item);return Set.copyOf(copy);}
     private static double finite(Object value){if(!(value instanceof Number n)||!Double.isFinite(n.doubleValue()))throw new IllegalStateException("Invalid core number");return n.doubleValue();}
-    private static Map<String,Double> doubles(Object value){if(!(value instanceof Map<?,?> map))throw new IllegalStateException("Expected map");Map<String,Double> copy=new TreeMap<>();map.forEach((k,v)->copy.put((String)k,finite(v)));return Map.copyOf(copy);}
+    private static Map<String,Double> weatherModifiers(Object value) {
+        if(!(value instanceof Map<?,?> map))throw new IllegalStateException("Expected weather modifier map");
+        Map<String,Double> copy=new HashMap<>();
+        for(var entry:map.entrySet()) {
+            if(entry.getKey() instanceof String key)putFiniteModifier(copy,key,entry.getValue());
+        }
+        return Map.copyOf(copy);
+    }
+    private static void putFiniteModifier(Map<String,Double> modifiers,String key,Object value) {
+        if(value instanceof Number number) {
+            double modifier=number.doubleValue();
+            if(Double.isFinite(modifier))modifiers.put(key,modifier);
+        }
+    }
     private static Map<String,Long> longs(Object value){if(!(value instanceof Map<?,?> map))throw new IllegalStateException("Expected map");Map<String,Long> copy=new TreeMap<>();map.forEach((k,v)->{if(!(v instanceof Number n)||n.longValue()<0||n.doubleValue()!=n.longValue())throw new IllegalStateException("Invalid core amount");copy.put((String)k,n.longValue());});return Map.copyOf(copy);}
 }

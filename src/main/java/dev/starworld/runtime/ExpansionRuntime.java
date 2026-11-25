@@ -133,24 +133,61 @@ public final class ExpansionRuntime {
     }
     /** Captures only weather for already verified facility worlds, on the Paper main thread. */
     public Map<String,ClimateRules.WeatherSnapshot> captureClimate(CoreCity current,CityView registered,Set<UUID> verified){
-        if(!plugin.getServer().isPrimaryThread())throw new IllegalStateException("天气证据必须在Paper主线程读取");
-        if(current==null||registered==null||!current.cityId().equals(registered.id())||!current.nationId().equals(registered.nationId()))return Map.of();
-        Set<UUID> allowed=new HashSet<>(runtime.verifiedBuildings(registered));allowed.retainAll(verified);allowed=Set.copyOf(allowed);if(allowed.size()>64)throw new IllegalArgumentException("Too many climate facility witnesses");
-        Set<String> worlds=new TreeSet<>();for(Building building:registered.buildings())if(allowed.contains(building.id())&&building.cityId().equals(current.cityId())&&building.nationId().equals(current.nationId()))worlds.add(building.site().worldName());
-        if(worlds.size()>64)throw new IllegalArgumentException("Too many climate worlds");
-        Map<String,ClimateRules.WeatherSnapshot> result=new TreeMap<>();for(String world:worlds)extensions.worldWeather(world).filter(c->c.worldName().equals(world)).ifPresent(c->result.put(world,new ClimateRules.WeatherSnapshot(world,c.controlledByNation(),c.weatherId(),c.resourceMultipliers())));
+        requireClimateThread();
+        if (!matchesClimateCity(current, registered)) return Map.of();
+        Set<UUID> allowed = new HashSet<>(runtime.verifiedBuildings(registered));
+        allowed.retainAll(verified);
+        return captureVerifiedClimate(current, registered, allowed);
+    }
+
+    /** Reuses the anchors WorldRuntime checked in the same Paper task. */
+    Map<String, ClimateRules.WeatherSnapshot> captureVerifiedClimate(CoreCity current, CityView registered, Set<UUID> verified) {
+        requireClimateThread();
+        if (!matchesClimateCity(current, registered)) return Map.of();
+        if (verified.size() > 64) throw new IllegalArgumentException("Too many climate facility witnesses");
+        Set<String> worlds = new TreeSet<>();
+        for (Building building : registered.buildings()) {
+            if (verified.contains(building.id()) && building.cityId().equals(current.cityId())
+                    && building.nationId().equals(current.nationId())) worlds.add(building.site().worldName());
+        }
+        Map<String, ClimateRules.WeatherSnapshot> result = new HashMap<>();
+        for (String world : worlds) {
+            extensions.worldWeather(world).filter(capture -> world.equals(capture.worldName()))
+                    .ifPresent(capture -> result.put(world, new ClimateRules.WeatherSnapshot(world,
+                            capture.controlledByNation(), capture.weatherId(), capture.resourceMultipliers())));
+        }
         return Map.copyOf(result);
     }
+
+    private void requireClimateThread() {
+        if (!plugin.getServer().isPrimaryThread()) throw new IllegalStateException("天气证据必须在Paper主线程读取");
+    }
+
+    private static boolean matchesClimateCity(CoreCity current, CityView registered) {
+        return current != null && registered != null && current.cityId().equals(registered.id())
+                && current.nationId().equals(registered.nationId());
+    }
+
+    private static final ClimateRules.WeatherSnapshot NO_WEATHER =
+            new ClimateRules.WeatherSnapshot(null, null, "unknown", Map.of());
+
     /** Immutable weather projection for API consumers; querying never advances a period or changes storage. */
     public List<dev.starworld.api.StarWorldApi.ClimateExposure> climateExposure(CoreCity current,CityView registered,Set<UUID> verified,boolean irrigationOperating){
-        if(!plugin.getServer().isPrimaryThread())throw new IllegalStateException("气候API必须在Paper主线程捕获StarCore状态");
-        Set<UUID> allowed=new HashSet<>(runtime.verifiedBuildings(registered));allowed.retainAll(verified);if(allowed.size()>64)throw new IllegalArgumentException("Too many climate facility witnesses");
-        Map<String,ClimateRules.WeatherSnapshot> weather=captureClimate(current,registered,allowed);Map<String,Double> typed=extensions.snapshot(current.nationId(),Set.of()).filter(n->n.nationId().equals(current.nationId())).map(NationSnapshot::technologyModifiers).orElse(Map.of());
+        requireClimateThread();
+        if (!matchesClimateCity(current, registered)) return List.of();
+        Set<UUID> allowed = new HashSet<>(runtime.verifiedBuildings(registered));
+        allowed.retainAll(verified);
+        return verifiedClimateExposure(current, registered, allowed, irrigationOperating);
+    }
+
+    List<dev.starworld.api.StarWorldApi.ClimateExposure> verifiedClimateExposure(CoreCity current, CityView registered,
+                                                                               Set<UUID> allowed, boolean irrigationOperating) {
+        Map<String,ClimateRules.WeatherSnapshot> weather=captureVerifiedClimate(current,registered,allowed);Map<String,Double> typed=extensions.snapshot(current.nationId(),Set.of()).filter(n->n.nationId().equals(current.nationId())).map(NationSnapshot::technologyModifiers).orElse(Map.of());
         List<dev.starworld.api.StarWorldApi.ClimateExposure> result=new ArrayList<>();for(Building building:registered.buildings())if(allowed.contains(building.id())&&building.cityId().equals(current.cityId())&&building.nationId().equals(current.nationId())){
-            ClimateRules.WeatherSnapshot snapshot=weather.get(building.site().worldName());String weatherId=snapshot==null?"unknown":snapshot.weatherId();boolean controlled=snapshot!=null&&current.nationId().equals(snapshot.controllerNation());Map<String,Double> factors=new TreeMap<>();
-            ClimateRules.WeatherSnapshot effective=snapshot==null?new ClimateRules.WeatherSnapshot(building.site().worldName(),null,"unknown",Map.of()):snapshot;
-            for(Definitions.Recipe recipe:definitions.recipes())if(recipe.building().equals(building.type()))factors.put(recipe.id(),climate.factor(building,recipe,effective,typed,irrigationOperating));
-            result.add(new dev.starworld.api.StarWorldApi.ClimateExposure(building.id(),building.type(),building.site().worldName(),weatherId,controlled,irrigationOperating,factors));
+            ClimateRules.WeatherSnapshot snapshot = weather.getOrDefault(building.site().worldName(), NO_WEATHER);
+            boolean controlled=current.nationId().equals(snapshot.controllerNation());Map<String,Double> factors=new TreeMap<>();
+            for(Definitions.Recipe recipe:definitions.recipes())if(recipe.building().equals(building.type()))factors.put(recipe.id(),climate.factor(building,recipe,snapshot,typed,irrigationOperating));
+            result.add(new dev.starworld.api.StarWorldApi.ClimateExposure(building.id(),building.type(),building.site().worldName(),snapshot.weatherId(),controlled,irrigationOperating,factors));
         }return List.copyOf(result);
     }
     public Settlement settle(CoreCity core,long period,Set<UUID> valid,Optional<NationSnapshot> nation,Simulation simulation)throws SQLException {
@@ -184,9 +221,13 @@ public final class ExpansionRuntime {
         Context context=new Context(nation.map(NationSnapshot::weather).orElse("unknown"),nation.map(n->n.epoch()==null?"unknown":Long.toString(n.epoch().number())).orElse("unknown"),nation.map(n->!n.warOpponents().isEmpty()).orElse(false),!borders.isEmpty(),trades,life.drainEvolutionCulture(city.id(),period),life.productionMultiplier(city.id(),period),borders);
         Simulation.Hooks cityHooks=evolution.cycle(core,city,period,valid,context,nation.map(NationSnapshot::policy).orElse(""));Map<String,Double> nationalMultipliers=national.multipliers(core.nationId());DisasterResponseService.Cycle responseCycle=disasters.cycle(core,city,period,valid);
         boolean irrigationOperating=worksCycle.operating()&&worksCycle.project().map(project->project.definition().id().equals("irrigation_network")).orElse(false);
+        Map<String, Double> typed = nation.map(NationSnapshot::technologyModifiers).orElse(Map.of());
         return new Simulation.Hooks(){
             @Override public double multiplier(Building b)throws SQLException{return Math.min(10,cityHooks.multiplier(b)*nationalMultipliers.getOrDefault(b.type(),1.0)*worksCycle.multiplier(b));}
-            @Override public double recipeMultiplier(Building b,Definitions.Recipe recipe)throws SQLException{return Math.min(10,climate.factor(b,recipe,capturedWeather.getOrDefault(b.site().worldName(),new ClimateRules.WeatherSnapshot(b.site().worldName(),null,"unknown",Map.of())),nation.map(NationSnapshot::technologyModifiers).orElse(Map.of()),irrigationOperating));}
+            @Override public double recipeMultiplier(Building b, Definitions.Recipe recipe) {
+                return climate.factor(b, recipe, capturedWeather.getOrDefault(b.site().worldName(), NO_WEATHER),
+                        typed, irrigationOperating);
+            }
             @Override public long capacity(String item){return cityHooks.capacity(item);}
             @Override public boolean filterEvents(){return cityHooks.filterEvents();}
             @Override public Map<String,Double> eventWeights(CityView c,long p)throws SQLException{return cityHooks.eventWeights(c,p);}

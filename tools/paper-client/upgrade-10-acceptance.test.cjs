@@ -6,6 +6,7 @@ const { assertDurable, assertLifeEvolution, assertAddedTables, expectedAddedTabl
 
 const BASE_ADDED = ['public_works_schema', 'public_works', 'public_works_history', 'civic_schema', 'civic_clock', 'civic_request', 'civic_request_cost', 'civic_action_claim', 'civic_history'].sort();
 const V11_ADDED = ['life_evolution_budget', 'life_evolution_pending', 'starworld_dispatch_cursor'].sort();
+const V13_ADDED = ['city_region'];
 const AUXILIARY_TABLES = ['city_state', 'stock', 'settlement', 'region', 'reserve', 'disaster_response', 'disaster_response_history', 'disaster_recovery_ledger', 'life_schema', 'life_city'];
 
 function snapshots() {
@@ -35,23 +36,29 @@ function snapshots() {
 }
 
 function durableSnapshots(version) {
-  const v11 = version.startsWith('1.1.') || version.startsWith('1.2.');
+  const versionMinor = Number(version.split('.')[1]);
+  const v11 = versionMinor >= 1;
+  const v13 = versionMinor >= 3;
   const { old: life, next: evolved } = snapshots();
   const originalRows = Object.fromEntries(stableTables.map(table => [table, []]));
   Object.assign(originalRows, life.world.rows, {
     city_state: [{ id: 'city-a', nation: 'nation-a', name: 'A', civilization: 'agrarian', last_period: 9 }],
-    stock: [], settlement: [], region: [], reserve: [], disaster_response: [], disaster_response_history: [], disaster_recovery_ledger: [],
+    building: [{ id: 'building-a', city: 'city-a', nation: 'nation-a', type: 'farm', world: 'world-a',
+      world_name: 'world', x: -1, y: 64, z: -17, level: 1 }],
+    stock: [], settlement: [], region: [{ id: 'world-a:-1:-2', terrain: 'plains', last_regen: -1 }], reserve: [],
+    disaster_response: [], disaster_response_history: [], disaster_recovery_ledger: [],
   });
   if (!v11) originalRows.life_evolution_action = [{ id: 'complete', consumed_period: 8 }];
   const afterRows = structuredClone(originalRows);
   for (const table of addedTables) afterRows[table] = [];
+  if (v13) afterRows.city_region = [{ city: 'city-a', nation: 'nation-a', region: 'world-a:-1:-2', world_name: 'world' }];
   afterRows.public_works_schema = [{ id: 1, version: 1 }];afterRows.civic_schema = [{ id: 1, version: 2 }];
   if (v11) Object.assign(afterRows, evolved.world.rows);
   const baseTables = [...new Set([...stableTables, ...AUXILIARY_TABLES])];
   const newTables = expectedAddedTables(version);
   const coreRows = { starcore_nation_state: [], starcore_treasury_state: [], starcore_resource_state: [] };
   const before = { pluginVersion: '0.5.0', world: { schema: 2, integrity: 'ok', foreignKeys: [], tables: baseTables, rows: originalRows }, core: { integrity: 'ok', rows: coreRows } };
-  const after = { pluginVersion: version, world: { schema: 2, integrity: 'ok', foreignKeys: [], tables: [...baseTables, ...newTables], rows: afterRows }, core: { integrity: 'ok', rows: structuredClone(coreRows) } };
+  const after = { pluginVersion: version, world: { schema: v13 ? 3 : 2, integrity: 'ok', foreignKeys: [], tables: [...baseTables, ...newTables], rows: afterRows }, core: { integrity: 'ok', rows: structuredClone(coreRows) } };
   return { before, after };
 }
 
@@ -77,6 +84,21 @@ test('1.1 permits only the three new tables and validates migration state by cit
 test('1.2 keeps the 1.1 schema migration set without introducing another database schema',()=>{
   assert.deepEqual(expectedAddedTables('1.2.0'),[...BASE_ADDED,...V11_ADDED].sort());
   const durable=durableSnapshots('1.2.0');assert.doesNotThrow(()=>assertDurable(durable.before,durable.after,'1.2.0'));
+});
+
+test('1.3 and 1.4 add the nation-scoped atlas schema and backfill real historic facility regions', () => {
+  for (const version of ['1.3.0', '1.4.0']) {
+    const added = [...BASE_ADDED, ...V11_ADDED, ...V13_ADDED].sort();
+    assert.deepEqual(expectedAddedTables(version), added);
+    assert.doesNotThrow(() => assertAddedTables(['building'], ['building', ...added], version));
+    assert.throws(() => assertAddedTables(['building'], ['building', ...added.filter(name => name !== 'city_region')], version));
+    const durable = durableSnapshots(version);
+    assert.deepEqual(durable.after.world.rows.city_region,
+      [{ city: 'city-a', nation: 'nation-a', region: 'world-a:-1:-2', world_name: 'world' }]);
+    assert.doesNotThrow(() => assertDurable(durable.before, durable.after, version));
+    durable.after.world.rows.city_region[0].nation = 'another-nation';
+    assert.throws(() => assertDurable(durable.before, durable.after, version), /original city and nation atlas/u);
+  }
 });
 
 test('1.1 rejects deleted legacy progress, lost partial work, invalid budgets, and foreign queue namespaces', () => {

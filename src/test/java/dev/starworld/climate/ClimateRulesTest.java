@@ -80,11 +80,12 @@ class ClimateRulesTest {
         assertEquals(1.3,rules.factor(WORKSHOP,MINE,weather(NATION,"rain",Map.of("mineral",1.3)),Map.of(),true));
     }
 
-    @Test void rejectsNonFiniteAndOutOfRangeCapturedWeatherValues() {
+    @Test void invalidCapturedWeatherValuesDegradeToNeutralWithoutAbortingCitySettlement() {
         ClimateRules rules = new ClimateRules(ClimateDefinitions.defaults());
-        for (double value : List.of(Double.NaN, Double.POSITIVE_INFINITY, -0.01, 10.01)) {
+        for (double value : List.of(Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, -0.01, 10.01)) {
             var snapshot = weather(NATION, "storm", Map.of("agricultural", value));
-            assertThrows(IllegalArgumentException.class, () -> rules.factor(FARM, HARVEST, snapshot));
+            assertEquals(1.0, rules.factor(FARM, HARVEST, snapshot));
+            assertEquals(1.0, rules.factor(FARM, HARVEST, snapshot, Map.of(), true));
         }
     }
 
@@ -99,10 +100,35 @@ class ClimateRulesTest {
                 "A technology applies only to its exact configured recipe");
         assertEquals(1.0, new ClimateRules(ClimateDefinitions.defaults()).factor(WORKSHOP, MINE, clear,
                 Map.of("resource_yield", 0.2)), "Shipped technology mappings default to empty");
-        assertThrows(IllegalArgumentException.class, () -> rules.factor(WORKSHOP, MINE, clear,
-                Map.of("resource_yield", 0.51)));
+        assertEquals(1.5, rules.factor(WORKSHOP, MINE, clear, Map.of("resource_yield", 0.51)));
+        assertEquals(0.5, rules.factor(WORKSHOP, MINE, clear, Map.of("resource_yield", -0.6)));
+        assertEquals(1.0, rules.factor(WORKSHOP, MINE, clear, Map.of("resource_yield", Double.NaN)));
+        assertEquals(1.0, rules.factor(WORKSHOP, MINE, clear, Map.of("resource_yield", Double.POSITIVE_INFINITY)));
         assertThrows(IllegalArgumentException.class, () -> new ClimateDefinitions.TechnologyMapping("production", "farm", "harvest"));
         assertThrows(IllegalArgumentException.class, () -> new ClimateDefinitions.TechnologyMapping("crop_growth", "farm", "harvest"));
+    }
+
+    @Test void configuredWeatherAndTechnologyCannotExceedTheSettlementClimateFactorCap() {
+        var mapping = new ClimateDefinitions.TechnologyMapping("resource_yield", "workshop", "mine");
+        ClimateRules rules = new ClimateRules(new ClimateDefinitions(0, 10, 0.5, 10, 0.5, 10,
+                -1, 2, Map.of("resource_yield", mapping)));
+        assertEquals(10, rules.factor(WORKSHOP, MINE, weather(NATION, "rain", Map.of("mineral", 10.0)),
+                Map.of("resource_yield", 2.0)));
+    }
+
+    @Test void irrigationMitigationStillHonorsConfiguredAgricultureMaximum() {
+        ClimateRules rules = new ClimateRules(new ClimateDefinitions(0, 10, 0.5, 0.6, 0.5, 1.5,
+                -0.5, 0.5, 1.0, Map.of()));
+        assertEquals(0.6, rules.factor(FARM, HARVEST, weather(NATION, "snow", Map.of("agricultural", 0.2)),
+                Map.of(), true));
+    }
+
+    @Test void irrigationDoesNotMitigateNegativeTechnologyWhenWeatherIsUncontrolled() {
+        var mapping = new ClimateDefinitions.TechnologyMapping("resource_yield", "farm", "harvest");
+        ClimateRules rules = new ClimateRules(new ClimateDefinitions(0, 10, 0.5, 1.5, 0.5, 1.5,
+                -0.5, 0.5, Map.of("resource_yield", mapping)));
+        assertEquals(0.5, rules.factor(FARM, HARVEST, weather(null, "snow", Map.of("agricultural", 0.2)),
+                Map.of("resource_yield", -0.5), true));
     }
 
     @Test void definitionsRejectUnsafeRangesAndWrongTechnologyTargets() {

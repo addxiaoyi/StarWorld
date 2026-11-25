@@ -15,7 +15,7 @@ const HELP = `Usage: node expansion-acceptance.cjs --java <java.exe> --runtime <
 
 Requires the separately prepared disposable localhost runtime marker/EULA/offline settings
 used by acceptance.cjs, the latest real StarCore + StarWorld + test fixture JARs, a fresh
-StarWorldEA/StarWorldEB pair, period-seconds=10, random event-chance=0, and the default
+world and plugin databases, period-seconds=10, random event-chance=0, and the default
 expansion contracts/life rules. Set isolated StarCore playability.new-nation-protection-days=0
 and diplomacy.war.declaration-cost=0 (or fund through a public treasury API).
 The test creates two real countries and cities in test chunks 20..24 and 52..56, places
@@ -23,7 +23,7 @@ bounded platforms/plains anchor biomes, and explicitly seeds each player's inven
 Seeded goods are recorded separately from real production. It verifies actual commands,
 warehouse upkeep, knowledge, military supply, life contribution/production, actual national
 development/specialization, two-sided escrow, terrain travel, culture, national resource
-  receipt replay, blockade, restart, world-weather production and authoritative city deletion across twenty-one stages.
+  receipt replay, blockade, restart, world-weather production and authoritative city deletion across twenty-three stages.
 Ten fixture chunks stay loaded.
 Evidence is written to runtime/expansion-acceptance/<timestamp>; no download or config edit.
 `;
@@ -39,6 +39,11 @@ function durableReceipt(receipt) {
 function wheatOutput(snapshot) {
   const match = snapshot.city.lastReport.match(/minecraft:wheat=(\d+)/);
   assert(match, `No actual wheat production in settlement: ${snapshot.city.lastReport}`);
+  return Number(match[1]);
+}
+function minedOutput(snapshot) {
+  const match = snapshot.city.lastReport.match(/minecraft:raw_iron=(\d+)/);
+  assert(match, `No actual raw mineral production in settlement: ${snapshot.city.lastReport}`);
   return Number(match[1]);
 }
 async function fixture(server, action, bot, suffix = '', timeout = 20000) {
@@ -103,17 +108,31 @@ async function main() {
   const propertiesFile = path.join(options.runtime, 'server.properties'), props = properties(propertiesFile);
   assert.equal(props['server-ip'], '127.0.0.1'); assert.equal(props['online-mode'], 'false');
   options.port = Number(props['server-port']); assert(Number.isInteger(options.port) && options.port >= 1024 && options.port <= 65535);
+  const levelName = props['level-name'] || 'world';
+  assert(!/[/\\:]/.test(levelName) && levelName !== '.' && levelName !== '..', 'Use a local world name inside the disposable runtime');
+  for (const suffix of ['', '_nether', '_the_end']) {
+    assert(!fs.existsSync(path.join(options.runtime, levelName + suffix)), 'Expansion acceptance requires a fresh world and player data');
+  }
   const configDir = path.join(options.runtime, 'plugins', 'StarWorld');
+  const coreDir = path.join(options.runtime, 'plugins', 'StarCore');
+  for (const database of [path.join(configDir, 'starworld.db'), path.join(coreDir, 'starcore.db')]) {
+    for (const suffix of ['', '-wal', '-shm', '-journal']) {
+      assert(!fs.existsSync(database + suffix), `Expansion acceptance requires fresh plugin databases: ${database + suffix}`);
+    }
+  }
+  const paperSha256 = hash(options.paper);
+  const preparedPaper = path.join(options.runtime, 'paper.jar');
+  if (fs.existsSync(preparedPaper)) assert.equal(hash(preparedPaper), paperSha256, 'The supplied Paper JAR differs from the prepared runtime copy');
   options.periodSeconds = configuredNumber(path.join(configDir, 'config.yml'), 'period-seconds');
   assert.equal(options.periodSeconds, 10); assert.equal(configuredNumber(path.join(configDir, 'config.yml'), 'event-chance'), 0);
-  const coreConfig = fs.readFileSync(path.join(options.runtime, 'plugins', 'StarCore', 'config.yml'), 'utf8');
+  const coreConfig = fs.readFileSync(path.join(coreDir, 'config.yml'), 'utf8');
   assert.match(coreConfig, /^\s*new-nation-protection-days:\s*0\s*(?:#.*)?$/m, 'Disable new-country protection only in this disposable runtime');
   const localRequire = args['client-deps'] ? createRequire(path.resolve(args['client-deps'], 'package.json')) : require;
   const mineflayer = localRequire('mineflayer');
   const directory = path.join(options.runtime, 'expansion-acceptance', new Date().toISOString().replace(/[:.]/g, '-')); fs.mkdirSync(directory, { recursive: true });
   const evidence = { schema: 2, suite: 'real-paper-expansion', status: 'running', startedAt: new Date().toISOString(), node: process.version,
     minecraft: '1.21.11', mineflayer: localRequire('mineflayer/package.json').version, runtime: options.runtime,
-    paperSha256: hash(options.paper), pluginJars: {}, configSha256: {}, steps: [], seeds: [],
+    paperSha256, pluginJars: {}, configSha256: {}, steps: [], seeds: [],
     testTuning: { periodSeconds: 10, eventChance: 0, newNationProtectionDays: 0, anchorBiome: 'plains', slots: [20, 52],
       fixtureForceLoadedChunks: [20, 21, 22, 23, 24, 52, 53, 54, 55, 56], explicitPlayerInventorySeeds: true,
       jvmArgs: options.jvmArgs, nodeVersion: process.version, nodeExecArgv: process.execArgv,
@@ -225,10 +244,17 @@ async function main() {
       assert(wheatOutput(after) <= 12 * 3 * 10, 'National specialization escaped the final production multiplier cap');
       return { base, selected, after, baselineWheat: wheatOutput(base), specializedWheat: wheatOutput(after) };
     });
-    await stage('real StarCore world weather changes only the controlling nation crop chain', async () => {
-      let clear = await snapshot(server, a);
-      clear = await poll(server, a, value => value.city.lastPeriod > clear.city.lastPeriod, 20000, 'baseline production before world weather');
+    await stage('real StarCore world weather changes farm and mine output only for the controlling nation', async () => {
+      const initial = await snapshot(server, a);
+      const workshop = initial.city.buildings.find(value => value.type === 'workshop');
+      assert(workshop, 'Weather comparison requires a registered workshop');
+      // The level-one recipe can round to the same whole amount before and after rain.
+      const mineUpgrade = await botMessage(a, `/sw upgrade ${workshop.id}`, /设施已升级/);
+      const upgraded = await snapshot(server, a);
+      assert.equal(upgraded.city.buildings.find(value => value.id === workshop.id).level, 2);
+      const clear = await poll(server, a, value => value.city.lastPeriod > upgraded.city.lastPeriod, 20000, 'baseline production before world weather');
       const baseline = wheatOutput(clear);
+      const baselineMine = minedOutput(clear);
       const clearFarm=clear.climate.exposures.find(value=>value.buildingType==='farm');
       assert(clearFarm&&!clearFarm.controlledByNation);assert.equal(clearFarm.recipeFactors.harvest,1.0,'Uncontrolled natural weather must remain neutral');
       const change = await fixture(server, 'exp-weather', a, 'rain', 75000);
@@ -245,7 +271,23 @@ async function main() {
       assert.equal(mine.recipeFactors.smelt,1.0,'Rain mineral modifier must not affect smelting');
       const actual = await poll(server, a, value => value.city.lastPeriod > first.city.lastPeriod, 20000, 'actual rain-settlement production');
       assert(wheatOutput(actual) > baseline, `Controlled rain did not raise actual farm output: ${baseline} -> ${wheatOutput(actual)}`);
-      return { change, baselineWheat: baseline, actualWheat: wheatOutput(actual), farm, peerFarm, mine };
+      const actualMine = minedOutput(actual);
+      assert(actualMine < baselineMine, `Rain mineral modifier did not reduce real raw-iron production: ${baselineMine} -> ${actualMine}`);
+      return { mineUpgrade, change, baselineWheat: baseline, actualWheat: wheatOutput(actual), baselineMine, actualMine, farm, peerFarm, mine };
+    });
+    await stage('retire climate workshop before road placement and explicitly fund the longer maintenance run', async () => {
+      const before = await snapshot(server, a), workshop = before.city.buildings.find(value => value.type === 'workshop');
+      assert(workshop, 'Climate workshop must exist before its manager removes the registration');
+      const removal = await botMessage(a, `/sw remove ${workshop.id}`, /设施已注销/);
+      const after = await snapshot(server, a);
+      assert.equal(after.city.buildings.length, 4); assert(!after.city.buildings.some(value => value.id === workshop.id));
+      const supplements = [];
+      for (const bot of [a, b]) {
+        const seed = await fixture(server, 'exp-maintenance-seed', bot); evidence.seeds.push({ player: bot.username, ...seed });
+        for (const [item, count] of Object.entries(seed.items)) await botMessage(bot, `/sw deposit ${item} ${count}`, new RegExp(`已存入 ${count} ${item}`));
+        supplements.push({ player: bot.username, seed, after: await snapshot(server, bot) });
+      }
+      return { before, removal, after, supplements };
     });
     await stage('real persisted armies use the public city readiness combat extension', async () => {
       const funded = await fixture(server, 'exp-armies', a, `${b.username} 0 1`); evidence.seeds.push(funded);

@@ -5,6 +5,7 @@ import dev.starcore.starcore.module.nation.NationService;
 import dev.starcore.starcore.module.nation.model.*;
 import dev.starcore.starcore.module.resource.*;
 import dev.starcore.starcore.module.resource.NationResourceTransactionService.*;
+import dev.starcore.starcore.module.technology.TechnologyService;
 import dev.starcore.starcore.module.weather.WeatherControlService;
 import dev.starcore.starcore.module.weather.model.WeatherType;
 import dev.starcore.starcore.module.weather.model.WorldWeatherState;
@@ -58,11 +59,47 @@ class StarCoreExtensionsTest {
         assertEquals(9,snapshot.resourceStock().get("strategic"));assertEquals("rain",snapshot.weather());assertEquals(1.2,snapshot.weatherResourceMultipliers().get("agricultural"));assertEquals(3,snapshot.epoch().number());assertEquals(Set.of(other),snapshot.warOpponents());assertEquals("HOSTILE",snapshot.diplomacy().get(other));assertEquals("smelt",snapshot.processingRecipes().getFirst().id());assertEquals(1,snapshot.factoryCount());assertThrows(UnsupportedOperationException.class,()->snapshot.resourceStock().put("strategic",1L));assertTrue(snapshot.capabilities().get("technology").startsWith("unavailable"));
     }
     @Test void missingOptionalServicesAreExplicitAndDeletedNationReturnsEmpty(){NationSnapshot snapshot=adapter.snapshot(nationUUID,Set.of()).orElseThrow();assertEquals("unknown",snapshot.weather());assertEquals("unavailable: NullPointerException",snapshot.capabilities().get("weather"));assertNull(snapshot.epoch());assertTrue(snapshot.capabilities().get("prosperity-submit").contains("无幂等回执"));when(nations.nationById(id)).thenReturn(Optional.empty());assertTrue(adapter.snapshot(nationUUID,Set.of()).isEmpty());}
+
+    @Test void nonFiniteTechnologyEffectsLeaveValidEffectsAvailable(){
+        TechnologyService technology=mock(TechnologyService.class);
+        services.put(TechnologyService.class,technology);
+        when(technology.getTotalModifier(id,"resource_yield")).thenReturn(0.25);
+        when(technology.getTotalModifier(id,"production_speed")).thenReturn(Double.NaN);
+        when(technology.getTotalModifier(id,"crop_growth")).thenReturn(Double.POSITIVE_INFINITY);
+
+        NationSnapshot snapshot=adapter.snapshot(nationUUID,Set.of()).orElseThrow();
+        assertEquals(0.25,snapshot.technologyModifiers().get("resource_yield"));
+        assertFalse(snapshot.technologyModifiers().containsKey("production_speed"));
+        assertFalse(snapshot.technologyModifiers().containsKey("crop_growth"));
+        assertEquals("available",snapshot.capabilities().get("technology-effects"));
+    }
+
     @Test void worldWeatherUsesThePublicPerWorldStateAndExactControllerNation(){
         WeatherControlService weather=mock(WeatherControlService.class);WorldWeatherState state=mock(WorldWeatherState.class);services.put(WeatherControlService.class,weather);
         when(weather.getWorldWeatherState("world")).thenReturn(state);when(state.getCurrentWeather()).thenReturn(WeatherType.RAIN);when(state.getControlledByNation()).thenReturn(id);when(weather.getResourceModifiers(WeatherType.RAIN)).thenReturn(Map.of("agricultural",1.5,"mineral",0.8));
         var snapshot=adapter.worldWeather("world").orElseThrow();assertEquals("world",snapshot.worldName());assertEquals(nationUUID,snapshot.controlledByNation());assertEquals("rain",snapshot.weatherId());assertEquals(1.5,snapshot.resourceMultipliers().get("agricultural"));
         when(weather.getWorldWeatherState("uncontrolled")).thenReturn(state);when(state.getControlledByNation()).thenReturn(null);assertNull(adapter.worldWeather("uncontrolled").orElseThrow().controlledByNation());
         when(weather.getWorldWeatherState("unregistered")).thenReturn(null);assertTrue(adapter.worldWeather("unregistered").isEmpty());
+    }
+
+    @Test void nonFiniteWeatherModifiersLeaveWeatherStateAndOtherResourcesAvailable(){
+        WeatherControlService weather=mock(WeatherControlService.class);
+        WorldWeatherState state=mock(WorldWeatherState.class);
+        services.put(WeatherControlService.class,weather);
+        when(weather.getWorldWeatherState("world")).thenReturn(state);
+        when(state.getCurrentWeather()).thenReturn(WeatherType.RAIN);
+        when(state.getControlledByNation()).thenReturn(id);
+        when(weather.getNationWeather(id)).thenReturn(WeatherType.RAIN);
+        when(weather.getResourceModifiers(WeatherType.RAIN)).thenReturn(Map.of(
+                "agricultural",1.5,"mineral",Double.NaN,"strategic",Double.NEGATIVE_INFINITY));
+
+        WorldWeatherSnapshot world=adapter.worldWeather("world").orElseThrow();
+        assertEquals("rain",world.weatherId());
+        assertEquals(nationUUID,world.controlledByNation());
+        assertEquals(Map.of("agricultural",1.5),world.resourceMultipliers());
+
+        NationSnapshot nationWeather=adapter.snapshot(nationUUID,Set.of()).orElseThrow();
+        assertEquals("rain",nationWeather.weather());
+        assertEquals(world.resourceMultipliers(),nationWeather.weatherResourceMultipliers());
     }
 }

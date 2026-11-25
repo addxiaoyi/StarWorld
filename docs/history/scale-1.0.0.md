@@ -20,7 +20,7 @@
 
 ## 已测结果
 
-当前证据为 [evidence/scale.json](evidence/scale.json)，由同一候选的完整 `verify` 产生：
+当前证据为 [evidence/scale.json](../evidence/history/1.0.0/scale.json)，由同一候选的完整 `verify` 产生：
 
 | 指标 | 实测 |
 | --- | ---: |
@@ -30,7 +30,7 @@
 | 最终数据库文件 | 4,272,128 bytes |
 | 重启去重失败 | 0 / 1,000 |
 
-版本为 `1.0.0`，绑定 JAR SHA-256 `da87d1af73067a87a3fea04acb2a198ce6a1a4e1f32463f15a375ed824fe9ac6`。环境为 Java `21.0.13.1+2`，测试 JVM 最大堆 256 MiB、Maven 最大堆 192 MiB。见[机器报告](evidence/scale.json)。结果受磁盘、缓存和同时运行的进程影响。
+版本为 `1.0.0`，绑定 JAR SHA-256 `da87d1af73067a87a3fea04acb2a198ce6a1a4e1f32463f15a375ed824fe9ac6`。环境为 Java `21.0.13.1+2`，测试 JVM 最大堆 256 MiB、Maven 最大堆 192 MiB。见[机器报告](../evidence/history/1.0.0/scale.json)。结果受磁盘、缓存和同时运行的进程影响。
 
 ## 复现
 

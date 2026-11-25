@@ -35,7 +35,7 @@ public final class StarCoreBridge implements CoreBridge {
             if (city == null || !Boolean.TRUE.equals(call(city, "isResident", new Class<?>[]{UUID.class}, player)))
                 return Optional.empty();
             Object nation = nation(access, city);
-            if (nation == null || !Boolean.TRUE.equals(call(nation, "hasMember", new Class<?>[]{UUID.class}, player)))
+            if (nation == null || !belongsToCityNation(access, city, player))
                 return Optional.empty();
             return Optional.of(snapshot(access, city, nation));
         } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
@@ -67,7 +67,7 @@ public final class StarCoreBridge implements CoreBridge {
             Object city = city(access, cityId);
             if (city == null) return false;
             Object nation = nation(access, city);
-            if (nation == null || !Boolean.TRUE.equals(call(nation, "hasMember", new Class<?>[]{UUID.class}, player)))
+            if (nation == null || !belongsToCityNation(access, city, player))
                 return false;
             return Boolean.TRUE.equals(call(city, "canManageCity", new Class<?>[]{UUID.class}, player))
                     || Boolean.TRUE.equals(call(nation, "isFounder", new Class<?>[]{UUID.class}, player));
@@ -86,7 +86,7 @@ public final class StarCoreBridge implements CoreBridge {
             if (city == null) return false;
             Object nation = nation(access, city);
             return nation != null
-                    && Boolean.TRUE.equals(call(nation, "hasMember", new Class<?>[]{UUID.class}, player))
+                    && belongsToCityNation(access, city, player)
                     && Boolean.TRUE.equals(call(nation, "isFounder", new Class<?>[]{UUID.class}, player));
         } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
             failed(failure);
@@ -172,6 +172,11 @@ public final class StarCoreBridge implements CoreBridge {
         Object id = call(city, "nationId");
         Object nation = optional(call(access.nations(), "nationById", new Class<?>[]{access.idType()}, id));
         return nation != null && id.equals(call(nation, "id")) ? nation : null;
+    }
+
+    private boolean belongsToCityNation(Access access, Object city, UUID player) throws ReflectiveOperationException {
+        Object playerNation = optional(call(access.nations(), "nationOf", new Class<?>[]{UUID.class}, player));
+        return playerNation != null && Objects.equals(call(city, "nationId"), call(playerNation, "id"));
     }
 
     private CoreCity snapshot(Access access, Object city, Object nation) throws ReflectiveOperationException {

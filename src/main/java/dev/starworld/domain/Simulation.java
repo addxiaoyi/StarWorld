@@ -7,6 +7,7 @@ import java.util.*;
 
 /** Deterministic, bounded settlement. Inventory, reserve debits and period receipt commit together. */
 public final class Simulation {
+    public static final double MAX_RECIPE_MULTIPLIER = 10.0;
     private final WorldStore store;
     private final Definitions definitions;
     private final Set<String> availableItems;
@@ -71,7 +72,7 @@ public final class Simulation {
                     if(availableItems!=null && (!availableItems.containsAll(recipe.inputs().keySet()) || !availableItems.containsAll(recipe.outputs().keySet()))){report.add(recipe.id()+": 物品依赖不可用，配方暂停");continue;}
                     long reserveCost=recipe.reserveCost()*b.level();
                     if(recipe.reserve()!=null && reserves.getOrDefault(recipe.reserve(),0L)<reserveCost)continue;
-                    double recipeModifier=hooks.recipeMultiplier(b,recipe);if(!Double.isFinite(recipeModifier)||recipeModifier<0||recipeModifier>10)throw new IllegalArgumentException("Invalid recipe extension multiplier");
+                    double recipeModifier=hooks.recipeMultiplier(b,recipe);if(!Double.isFinite(recipeModifier)||recipeModifier<0||recipeModifier>MAX_RECIPE_MULTIPLIER)throw new IllegalArgumentException("Invalid recipe extension multiplier");
                     double recipeFactor=Math.min(10,effectiveFactor*recipeModifier);
                     Map<String,Long> output=new HashMap<>();
                     recipe.outputs().forEach((item,amount)->output.put(item,(long)Math.floor(amount*b.level()*recipeFactor)));

@@ -25,3 +25,15 @@ The optional suite records its constrained JVM arguments (768 MiB heap, C1, Seri
 For 1.0, use `civic-acceptance.cjs` with the same arguments. Its optional `--preflight` verifies all inputs and exits without launching Java or changing the isolated state. Use both rebuilt 1.0 fixtures with the exact product JAR named by the clean `UNIT-EVIDENCE.json`. The preparation records all ten StarWorld YAML files, both upstream audit/source commits, all nine plugin JARs, Java/Paper, the kitchen archive and every installed resource fingerprint. `starworld-tools/prepare-senluo10.py` builds the machine-specific isolated input; `launch-senluo10.ps1` starts only that runtime after the free-commit, port and other owned Paper checks. It never stops unrelated Java processes.
 
 The 30-stage civic suite includes the 15 original gameplay assertions, three player-requested and paid needs, a rejection using two maintenance periods of the same chair, rejections using pre-request feasts and unfinished/old concerts, two different maintained chairs, GUI read-only behavior and four distinct action claims preserved across restart. It writes `<runtime>/civic-senluo-acceptance/<timestamp>/` with two Paper logs and three real client logs. Latest upstream source review and the previously pinned runtime dependency set are identified separately in [the audit](../../docs/audit-senluo.md).
+
+After the current lifecycle source run passes and stops normally, prepare its candidate copy with the repository tool:
+
+```powershell
+python tools/prepare-life-candidate.py `
+  --source-evidence C:/tests/life-source/lifecycle-acceptance/source-TIMESTAMP/evidence.json `
+  --runtime C:/tests/life-candidate --jar target/starworld-1.4.0.jar `
+  --java C:/jdk21/bin/java.exe --paper C:/tests/paper-1.21.11-132.jar `
+  --client-deps C:/tests/mc-client --port 25853 --link-bootstrap --check-only
+```
+
+Remove `--check-only` to create the new candidate. The tool requires all four source stages, the matching current runner and resource launcher fingerprints, a clean shutdown, unchanged plugin/configuration hashes, checkpointed database hashes, and the original unconsumed Cookery25 action. It copies the stopped databases and world/player bytes, installs the unit-verified candidate JAR, and changes only the isolated port and the player/city culture caps to 20. The candidate plugin generates its default `climate.yml` during startup. Existing attempts are preserved. `LIFECYCLE-PREPARATION.json` contains the candidate command; append `--preflight` to that command for the runner's independent read-only validation before a real run. Preparation and preflight do not count as gameplay acceptance.

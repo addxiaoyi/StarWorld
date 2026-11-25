@@ -19,6 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class WorldRuntime implements StarWorldApi,AutoCloseable {
+    private static final int MAX_SETTLEMENTS_IN_FLIGHT = StorageWorker.DEFAULT_QUEUE_CAPACITY / 4;
     private final JavaPlugin plugin;
     private final Definitions definitions;
     private final CoreBridge core;
@@ -91,7 +92,7 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
                     if(expansion==null)return Optional.empty();CityView registered=read.city().get();Optional<CoreCity> current=core.city(id);
                     if(current.isEmpty()||!current.get().nationId().equals(registered.nationId()))return Optional.empty();Set<UUID> valid=verifiedBuildings(registered);
                     boolean irrigation=read.works().filter(project->project.definition().id().equals("irrigation_network")&&project.completed()&&project.lastOperationPaid()&&project.lastOperationPeriod()==registered.lastPeriod()).isPresent();
-                    return Optional.of(new dev.starworld.api.StarWorldApi.ClimateReport(id,current.get().nationId(),expansion.climateExposure(current.get(),registered,valid,irrigation)));
+                    return Optional.of(new dev.starworld.api.StarWorldApi.ClimateReport(id,current.get().nationId(),expansion.verifiedClimateExposure(current.get(),registered,valid,irrigation)));
                 }));
     }
     @Override public Map<String,String> integrationStatus(){Map<String,String> s=new LinkedHashMap<>(items.status());s.put("StarCore",core.status());if(expansion!=null)s.putAll(expansion.status());s.put("Folia","未声明支持：当前 StarCore 城市/科技服务不保证区域线程安全，需 Paper");return Map.copyOf(s);}
@@ -101,11 +102,50 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
         Definitions.BuildingType d=Optional.ofNullable(definitions.buildings().get(type)).orElseThrow(()->new IllegalArgumentException("未知设施类型"));
         Block block=p.getTargetBlockExact(6);if(block==null)throw new IllegalArgumentException("请看向六格内的设施锚点");
         if(block.getType()!=Material.matchMaterial(d.anchor()))throw new IllegalArgumentException("设施锚点必须为 "+d.anchor());
-        Site site=new Site(block.getWorld().getUID(),block.getWorld().getName(),block.getX(),block.getY(),block.getZ());
+        World world=block.getWorld();
+        Site site=new Site(world.getUID(),world.getName(),block.getX(),block.getY(),block.getZ());
         if(!core.ownsSite(city.cityId(),site))throw new IllegalArgumentException("锚点必须同时位于本城市领地和本国领土");
-        String terrain=TerrainClassifier.classify(block.getBiome().getKey().getKey());
-        Building b=new Building(UUID.randomUUID(),city.cityId(),city.nationId(),type,site,1);
-        reply(p,async(()->{store.ensureCity(city);store.addBuilding(b,terrain,definitions);return b;}),created->p.sendMessage("§a已登记 "+d.name()+" · "+terrain+" · "+created.id()));
+        // Do not persist the initial Core snapshot before the player/territory recheck below.
+        // Ownership can change while the storage worker is queued.
+        reply(p,CompletableFuture.completedFuture(city),registered->{
+            CoreCity member=playerCity(p).filter(current->current.cityId().equals(registered.cityId())
+                    &&current.nationId().equals(registered.nationId()))
+                    .orElseThrow(()->new IllegalArgumentException("城市归属已变化"));
+            if(!manage(p,member.cityId()))throw new IllegalArgumentException("城市管理权限已变化");
+            World currentWorld=Bukkit.getWorld(site.worldId());
+            if(currentWorld==null||!currentWorld.isChunkLoaded(site.x()>>4,site.z()>>4))
+                throw new IllegalArgumentException("设施所在区块已卸载，请重新登记");
+            Block currentBlock=currentWorld.getBlockAt(site.x(),site.y(),site.z());
+            if(currentBlock.getType()!=Material.matchMaterial(d.anchor()))
+                throw new IllegalArgumentException("设施锚点已变化，请重新登记");
+            if(!core.ownsSite(member.cityId(),site))throw new IllegalArgumentException("锚点领土归属已变化");
+            String terrain=TerrainClassifier.classify(currentBlock.getBiome().getKey().getKey());
+            Building building=new Building(UUID.randomUUID(),member.cityId(),member.nationId(),type,site,1);
+            reply(p,async(()->{store.ensureCity(member);store.addBuilding(building,terrain,definitions);return building;}),created->
+                    p.sendMessage("§a已登记 "+d.name()+" · "+terrain+" · "+created.id()));
+        });
+    }
+    public void survey(Player p){
+        CoreCity city=playerCity(p).orElseThrow(()->new IllegalArgumentException("请先在 StarCore 加入城市"));
+        if(!manage(p,city.cityId()))throw new IllegalArgumentException("需要市长或城市管理权限");
+        org.bukkit.Location location=p.getLocation();org.bukkit.World world=location.getWorld();
+        if(world==null)throw new IllegalArgumentException("当前世界不可用");
+        int x=location.getBlockX(),y=location.getBlockY(),z=location.getBlockZ();
+        if(!world.isChunkLoaded(x>>4,z>>4))throw new IllegalArgumentException("当前区块尚未加载，无法勘探");
+        Site site=new Site(world.getUID(),world.getName(),x,y,z);
+        if(!core.ownsSite(city.cityId(),site))throw new IllegalArgumentException("只能勘探本城市和本国都拥有的区块");
+        String actor=p.getUniqueId().toString();
+        // Revalidate the live Core city first; only then initialize/update its local row.
+        reply(p,CompletableFuture.completedFuture(true),ignored->{
+            CoreCity member=playerCity(p).filter(current->current.cityId().equals(city.cityId())&&current.nationId().equals(city.nationId())).orElseThrow(()->new IllegalArgumentException("城市归属已变化"));
+            if(!manage(p,member.cityId()))throw new IllegalArgumentException("城市管理权限已变化");
+            org.bukkit.World currentWorld=Bukkit.getWorld(site.worldId());
+            org.bukkit.Location currentLocation=p.getLocation();
+            if(currentWorld==null||!p.getWorld().getUID().equals(site.worldId())||(currentLocation.getBlockX()>>4)!=(x>>4)||(currentLocation.getBlockZ()>>4)!=(z>>4)||!currentWorld.isChunkLoaded(x>>4,z>>4))throw new IllegalArgumentException("玩家位置或区块状态已变化，请重新勘探");
+            if(!core.ownsSite(member.cityId(),site))throw new IllegalArgumentException("区块领土归属已变化");
+            String terrain=TerrainClassifier.classify(currentWorld.getBlockAt(x,y,z).getBiome().getKey().getKey());
+            reply(p,async(()->{store.ensureCity(member);return store.surveyRegion(member,site,terrain,definitions,actor);}),created->p.sendMessage(created?"§a已勘探 "+terrain+" 区块 "+(x>>4)+","+(z>>4)+"；城市仓库消耗8张纸":"§e该区块已在地图册中，无需重复勘探或消耗纸张"));
+        });
     }
     public void remove(Player p,UUID id){CoreCity c=requireManager(p);reply(p,async(()->{store.removeBuilding(c.cityId(),id);store.audit(p.getUniqueId().toString(),"REMOVE "+id);return id;}),v->p.sendMessage("§a设施已注销，地区储量保留"));}
     public void upgrade(Player p,UUID id){CoreCity c=requireManager(p);reply(p,async(()->{store.upgrade(c.cityId(),id);return id;}),v->p.sendMessage("§a设施已升级"));}
@@ -172,29 +212,61 @@ public final class WorldRuntime implements StarWorldApi,AutoCloseable {
         async(()->{List<UUID> ids=store.cities(definitions.maxCitiesPerPass(),cursor);if(ids.isEmpty()){cursor=0;ids=store.cities(definitions.maxCitiesPerPass(),0);}cursor+=ids.size();List<CityView> views=new ArrayList<>();for(UUID id:ids)store.view(id).ifPresent(views::add);return views;}).whenComplete((views,error)->{
             if(error!=null){failure(error);return;}
             scheduler.global(()->{
-                List<CompletableFuture<?>> jobs=new ArrayList<>();long period=currentPeriod();
+                long period=currentPeriod();
                 try{Map<UUID,CoreCity> currentCities=new HashMap<>();for(CityView view:views)core.city(view.id()).ifPresent(city->currentCities.put(view.id(),city));
                     // Reconcile the entire captured batch before any city can use national contributions.
-                    CompletableFuture<Void> authority=async(()->store.tx(s->{for(CityView view:views){CoreCity city=currentCities.get(view.id());if(city==null)s.invalidateCity(view.id());else s.ensureCity(city);}return null;}));jobs.add(authority);
-                    for(CityView view:views){CoreCity current=currentCities.get(view.id());if(current==null)continue;
-                    Set<UUID> valid=verifiedBuildings(view);
-                    Set<UUID> observedBuildings=Simulation.buildingIds(view);
-                    dev.starworld.integration.BorderConflictCapture.Captured captured=expansion==null?new dev.starworld.integration.BorderConflictCapture.Captured(Optional.empty(),List.of()):expansion.captureBorderEvidence(current,view,valid);
-                    Map<String,dev.starworld.climate.ClimateRules.WeatherSnapshot> weather=expansion==null?Map.of():expansion.captureClimate(current,view,valid);
-                    CompletableFuture<Settlement> job=authority.thenCompose(ignored->async(()->expansion==null?simulation.settle(current,period,valid,observedBuildings):expansion.settle(current,period,valid,captured.nation(),captured.witnesses(),weather,observedBuildings,simulation)));jobs.add(job);
-                    job.thenAccept(settlement->{if(settlement.applied()){scheduler.global(()->Bukkit.getPluginManager().callEvent(new IndustrySettledEvent(settlement)));if(expansion!=null)expansion.afterSettlement(view.id());}});
-                    jobs.add(job.thenCompose(result->city(view.id())).thenAccept(updated->updated.ifPresent(next->{if(!Objects.equals(view.event(),next.event()))scheduler.global(()->Bukkit.getPluginManager().callEvent(new WorldEvolutionEvent(view.id(),view.event(),next.event())));})));
-                }}catch(Exception e){failure(e);return;}
-                CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new)).whenComplete((nothing,err)->{settling.set(false);if(err!=null)plugin.getLogger().severe("Settlement failed (transaction rolled back): "+root(err));});
+                    async(()->store.tx(s->{for(CityView view:views){CoreCity city=currentCities.get(view.id());if(city==null)s.invalidateCity(view.id());else s.ensureCity(city);}return null;}))
+                            .thenCompose(ignored->scheduler.globalFuture(()->scheduleSettlementBatch(
+                                    views,currentCities,period,0,new java.util.concurrent.atomic.AtomicReference<>()))
+                                    .thenCompose(next->next))
+                            .whenComplete((nothing,err)->{settling.set(false);if(err!=null&&!closed)plugin.getLogger().severe("Settlement failed (transaction rolled back): "+root(err));});
+                }catch(Exception e){failure(e);return;}
             });
         });
+    }
+    private CompletableFuture<Void> scheduleSettlementBatch(List<CityView> views,Map<UUID,CoreCity> currentCities,
+                                                               long period,int offset,
+                                                               java.util.concurrent.atomic.AtomicReference<Throwable> firstFailure){
+        if(offset>=views.size()){
+            Throwable error=firstFailure.get();return error==null?CompletableFuture.completedFuture(null):CompletableFuture.failedFuture(error);
+        }
+        int end=Math.min(offset+MAX_SETTLEMENTS_IN_FLIGHT,views.size());
+        List<CompletableFuture<?>> jobs=new ArrayList<>(end-offset);
+        for(int index=offset;index<end;index++){
+            CityView view=views.get(index);CoreCity current=currentCities.get(view.id());if(current==null)continue;
+            try{
+                Set<UUID> valid=verifiedBuildings(view),observed=Simulation.buildingIds(view);
+                dev.starworld.integration.BorderConflictCapture.Captured captured=expansion==null
+                        ?new dev.starworld.integration.BorderConflictCapture.Captured(Optional.empty(),List.of())
+                        :expansion.captureBorderEvidence(current,view,valid);
+                Map<String,dev.starworld.climate.ClimateRules.WeatherSnapshot> weather=expansion==null
+                        ?Map.of():expansion.captureVerifiedClimate(current,view,valid);
+                CompletableFuture<Settlement> settlement=async(()->expansion==null
+                        ?simulation.settle(current,period,valid,observed)
+                        :expansion.settle(current,period,valid,captured.nation(),captured.witnesses(),weather,observed,simulation));
+                jobs.add(settlement.thenCompose(result->{
+                    if(result.applied()){
+                        scheduler.global(()->Bukkit.getPluginManager().callEvent(new IndustrySettledEvent(result)));
+                        if(expansion!=null)expansion.afterSettlement(view.id());
+                    }
+                    return city(view.id());
+                }).thenAccept(updated->updated.ifPresent(next->{
+                    if(!Objects.equals(view.event(),next.event()))
+                        scheduler.global(()->Bukkit.getPluginManager().callEvent(new WorldEvolutionEvent(view.id(),view.event(),next.event())));
+                })));
+            }catch(RuntimeException error){firstFailure.compareAndSet(null,error);}
+        }
+        return CompletableFuture.allOf(jobs.toArray(CompletableFuture[]::new)).handle((ignored,error)->{
+            if(error!=null)firstFailure.compareAndSet(null,root(error));return null;
+        }).thenCompose(ignored->scheduler.globalFuture(()->scheduleSettlementBatch(views,currentCities,period,end,firstFailure))
+                .thenCompose(next->next));
     }
     private boolean valid(Building b){
         if(!core.ownsSite(b.cityId(),b.site()))return false;Definitions.BuildingType type=definitions.buildings().get(b.type());if(type==null)return false;
         World world=Bukkit.getWorld(b.site().worldId());if(world==null || !world.isChunkLoaded(b.site().x()>>4,b.site().z()>>4))return false;
         return world.getBlockAt(b.site().x(),b.site().y(),b.site().z()).getType()==Material.matchMaterial(type.anchor());
     }
-    private void failure(Throwable e){settling.set(false);plugin.getLogger().severe("StarWorld tick failed: "+root(e));}
+    private void failure(Throwable e){settling.set(false);if(!closed)plugin.getLogger().severe("StarWorld tick failed: "+root(e));}
     @Override public synchronized void close()throws Exception{
         if(terminated)return;
         closed=true;

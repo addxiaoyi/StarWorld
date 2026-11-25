@@ -32,6 +32,7 @@ final class ExpansionFixture {
             case "exp-disasters"->disasters(p);
             case "exp-node"->register(p,slot(args),true);
             case "exp-seed"->seed(p);
+            case "exp-maintenance-seed"->maintenanceSeed(p);
             case "exp-snapshot"->snapshot(p);
             case "exp-climate"->climate(p);
             case "exp-delete-city"->deleteCity(p);
@@ -171,6 +172,15 @@ final class ExpansionFixture {
         Map<String,Integer> provided=new LinkedHashMap<>();for(var entry:quantities.entrySet()){for(int remaining=entry.getValue();remaining>0;){int batch=Math.min(64,remaining);if(!p.getInventory().addItem(new ItemStack(entry.getKey(),batch)).isEmpty())throw new IllegalStateException("Seed inventory overflow");remaining-=batch;}provided.put(entry.getKey().getKey().toString(),entry.getValue());}p.saveData();
         emit("exp-seed",p,Map.of("source","explicit-fixture-player-inventory","items",provided,"productionEvidence",false));
     }
+    private void maintenanceSeed(Player p){
+        Map<Material,Integer> quantities=Map.of(Material.OAK_PLANKS,512,Material.PAPER,256,Material.ARROW,256);
+        Map<String,Integer> provided=new LinkedHashMap<>();
+        for(var entry:quantities.entrySet()){
+            for(int remaining=entry.getValue();remaining>0;){int batch=Math.min(64,remaining);if(!p.getInventory().addItem(new ItemStack(entry.getKey(),batch)).isEmpty())throw new IllegalStateException("Maintenance seed inventory overflow");remaining-=batch;}
+            provided.put(entry.getKey().getKey().toString(),entry.getValue());
+        }
+        p.saveData();emit("exp-maintenance-seed",p,Map.of("source","explicit-maintenance-player-inventory","items",provided,"productionEvidence",false));
+    }
     private void disasterSeed(Player p){
         Map<Material,Integer> quantities=new LinkedHashMap<>();quantities.put(Material.BREAD,256);quantities.put(Material.OAK_PLANKS,512);quantities.put(Material.WHEAT,512);quantities.put(Material.OAK_LOG,256);Map<String,Integer> provided=new LinkedHashMap<>();
         for(var entry:quantities.entrySet()){for(int left=entry.getValue();left>0;){int batch=Math.min(64,left);if(!p.getInventory().addItem(new ItemStack(entry.getKey(),batch)).isEmpty())throw new IllegalStateException("Disaster seed inventory overflow");left-=batch;}provided.put(entry.getKey().getKey().toString(),entry.getValue());}p.saveData();emit("exp-disaster-seed",p,Map.of("source","explicit-disaster-fixture-player-inventory","items",provided,"productionEvidence",false));
@@ -220,9 +230,30 @@ final class ExpansionFixture {
         }catch(Exception failure){failed(failure);}}));
     }
     private void alternateNode(Player p,int slot){
-        int x=(base(slot)+4)*16+11,z=12;for(int dx=-1;dx<=1;dx++)for(int dz=-4;dz<=1;dz++){p.getWorld().getBlockAt(x+dx,79,z+dz).setType(Material.STONE);for(int y=80;y<=83;y++)p.getWorld().getBlockAt(x+dx,y,z+dz).setType(Material.AIR);}
-        p.getWorld().getBlockAt(x,80,z).setType(Material.LODESTONE);p.getWorld().setBiome(x,80,z,org.bukkit.block.Biome.PLAINS);Location start=new Location(p.getWorld(),x+.5,80,z-2.5);start.setDirection(new Vector(x+.5,80.5,z+.5).subtract(start.toVector().add(new Vector(0,p.getEyeHeight(),0))));p.teleport(start);
-        Bukkit.getScheduler().runTaskLater(owner,()->{try{if(p.getTargetBlockExact(6)==null||p.getTargetBlockExact(6).getX()!=x||p.getTargetBlockExact(6).getZ()!=z)throw new IllegalStateException("Alternate-node raycast missed");p.performCommand("sw node register road");emit("exp-alt-node",p,Map.of("dispatched",1,"x",x,"z",z,"chunk",base(slot)+4));}catch(Exception failure){failed(failure);}},4);
+        if(!registering.add(p.getUniqueId()))throw new IllegalStateException("Fixture registration already running");
+        try{
+            int x=(base(slot)+4)*16+11,z=12;
+            for(int dx=-1;dx<=1;dx++)for(int dz=-4;dz<=1;dz++){
+                p.getWorld().getBlockAt(x+dx,79,z+dz).setType(Material.STONE);
+                for(int y=80;y<=83;y++)p.getWorld().getBlockAt(x+dx,y,z+dz).setType(Material.AIR);
+            }
+            p.getWorld().getBlockAt(x,80,z).setType(Material.LODESTONE);
+            p.getWorld().setBiome(x,80,z,org.bukkit.block.Biome.PLAINS);
+            Location start=new Location(p.getWorld(),x+.5,80,z-2.5);
+            start.setDirection(new Vector(x+.5,80.5,z+.5).subtract(start.toVector().add(new Vector(0,p.getEyeHeight(),0))));
+            if(!p.teleport(start))throw new IllegalStateException("Alternate-node teleport was cancelled");
+            emit("exp-alt-node-ready",p,Map.of("x",x,"z",z,"chunk",base(slot)+4));
+            Bukkit.getScheduler().runTaskLater(owner,()->{
+                try{
+                    if(!p.isOnline())throw new IllegalStateException("Alternate-node player disconnected before registration");
+                    var target=p.getTargetBlockExact(6);
+                    if(target==null||target.getX()!=x||target.getZ()!=z)throw new IllegalStateException("Alternate-node raycast missed");
+                    if(!p.performCommand("sw node register road"))throw new IllegalStateException("Road registration command was not handled");
+                    emit("exp-alt-node",p,Map.of("dispatched",1,"x",x,"z",z,"chunk",base(slot)+4));
+                }catch(Exception failure){failed(failure);}
+                finally{registering.remove(p.getUniqueId());}
+            },4);
+        }catch(Exception failure){registering.remove(p.getUniqueId());failed(failure);}
     }
     private void fund(Player p,java.math.BigDecimal amount)throws Exception {
         if(amount.signum()<=0||amount.compareTo(new java.math.BigDecimal("10000"))>0)throw new IllegalArgumentException("Bounded fixture treasury seed required");Object treasury=coreService("module.treasury.TreasuryService"),id=call(nation(p),"id");Object before=invoke(treasury,"balance",new Class<?>[]{id.getClass()},id);invoke(treasury,"deposit",new Class<?>[]{id.getClass(),java.math.BigDecimal.class},id,amount);

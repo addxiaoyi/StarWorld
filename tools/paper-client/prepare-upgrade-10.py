@@ -60,7 +60,7 @@ def main():
     checked(evidence['pluginJars']['StarWorld.jar'] == source_sha, 'Source JAR changed after acceptance')
     checked(re.search(r'^version:\s*[\'\"]?0\.5\.0[\'\"]?\s*$', descriptor(source_jar)[0], re.M), 'Expected 0.5.0 source')
     target_descriptor, target_files = descriptor(jar)
-    target_match = re.search(r'^version:\s*[\'\"]?(1\.(?:0|1|2)\.\d+)[\'\"]?\s*$', target_descriptor, re.M)
+    target_match = re.search(r'^version:\s*[\'\"]?(1\.\d+\.\d+)[\'\"]?\s*$', target_descriptor, re.M)
     checked(target_match, 'Expected a released 1.x StarWorld JAR')
     target_version = target_match.group(1)
     new_configs=BASE_NEW_CONFIGS+(('climate.yml',) if tuple(map(int,target_version.split('.'))) >= (1,2,0) else ())

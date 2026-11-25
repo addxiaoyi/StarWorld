@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// Independent 1.1 recovery acceptance. Actual connected founders use production commands.
+// Real logistics-recovery acceptance against the current release candidate.
 // Only logistics.yml in an explicitly owned disposable runtime is edited, while stopped.
 // Python opens only the stopped StarWorld extension database in mode=ro; no SQL writes.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
@@ -9,13 +9,14 @@ const {spawnSync}=require('node:child_process'),{createRequire}=require('node:mo
 const {setTimeout:delay}=require('node:timers/promises');
 const {Paper,connect,botMessage,properties,configuredNumber,hash,requireFile,waitUntil}=require('./acceptance.cjs');
 let maintenanceLedger=[];
+const MINIMUM_FREE_DISK_BYTES=1024*1024*1024;
 
 const HELP=`Usage: node lifecycle-logistics-acceptance.cjs --java <Java21> --paper <Paper.jar>
   --runtime <fresh-owned-directory> --python <Python3> [--client-deps <Mineflayer directory>]
 
 Requires a separately prepared disposable localhost/offline Paper 1.21.11 runtime,
 its .starworld-smoke-runtime marker, existing eula=true, matching PREPARATION.json,
-real StarCore, StarWorld 1.1 and the existing current Paper fixture. No new Java fixture.
+real StarCore, the current StarWorld 1.4 candidate and matching current Paper fixture. No new Java fixture.
 Fresh world/player/plugin databases, period-seconds=10, event-chance=0, normal
 logistics.yml (travel-periods=1000, waypoints=16, blocks-per-period=128), and
 zero/affordable public StarCore creation/claim costs are required.
@@ -28,6 +29,7 @@ Explicit inventory/treasury seeds are recorded as test inputs, never earned inco
 Players remain deopped; real founder, claim, raycast and bilateral consent checks apply.
 Historical paid cargo cannot refund as barter. Long-only checkpoint maintenance and
 completion receipts are independently read only after each normal server shutdown.
+Each Paper start requires 1 GiB free disk space in addition to the dynamic memory gate.
 No core table is accessed through SQL; core mutations and observations use public services.
 Evidence and complete four-server/eight-client transcripts are retained under
 runtime/lifecycle-logistics-acceptance/<UTC timestamp>. Failed attempts stay failed.
@@ -48,6 +50,8 @@ else:
  if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(memory)):raise ctypes.WinError()
  print(json.dumps({'windows':True,'minimumFreeCommitBytes':minimum,'freeCommitBytes':memory.availablePageFile,'commitLimitBytes':memory.totalPageFile,'availablePhysicalBytes':memory.availablePhysical}))
 `;
+function freeDiskBytes(directory){const stats=fs.statfsSync(directory,{bigint:true});const bytes=Number(stats.bavail*stats.bsize);assert(Number.isSafeInteger(bytes)&&bytes>=0,'Cannot read a valid free-disk-space value');return bytes;}
+function assertDiskHeadroom(bytes,minimum=MINIMUM_FREE_DISK_BYTES){assert(Number.isSafeInteger(bytes)&&bytes>=0,'Invalid free-disk-space value');assert(bytes>=minimum,`Paper acceptance requires at least ${Math.ceil(minimum/1024/1024)} MiB free disk space before Java startup; got ${Math.floor(bytes/1024/1024)} MiB`);return bytes;}
 const PROBE=String.raw`
 import hashlib,json,sqlite3,sys
 from pathlib import Path
@@ -67,11 +71,12 @@ con.close();print(json.dumps(result,ensure_ascii=False))
 `;
 async function fixture(server,action,bot,suffix=''){
   const from=server.lines.length;server.command(`swfixture ${action} ${bot.username}${suffix?' '+suffix:''}`);
-  return waitUntil(()=>{const lines=server.lines.slice(from);if(lines.some(line=>line.includes('SW_FIXTURE_FAILED')))throw new Error(lines.slice(-30).join('\n'));
-    for(const line of lines){const at=line.indexOf('SW_FIXTURE_EXPANSION ');if(at<0)continue;const value=JSON.parse(line.slice(at+'SW_FIXTURE_EXPANSION '.length));if(value.action===action&&value.player===bot.username)return value.observed;}return false;
-  },25000,`${action} ${bot.username}`,()=>{server.check();if(bot.failure)throw bot.failure;});
+  try{return await waitUntil(()=>{const lines=server.lines.slice(from);if(lines.some(line=>line.includes('SW_FIXTURE_FAILED')))throw new Error(lines.slice(-30).join('\n'));
+      for(const line of lines){const at=line.indexOf('SW_FIXTURE_EXPANSION ');if(at<0)continue;const value=JSON.parse(line.slice(at+'SW_FIXTURE_EXPANSION '.length));if(value.action===action&&value.player===bot.username)return value.observed;}return false;
+    },25000,`${action} ${bot.username}`,()=>{server.check();if(bot.failure)throw bot.failure;});
+  }catch(error){error.message+=`\nRecent server output:\n${server.lines.slice(-40).join('\n')}`;throw error;}
 }
-async function state(server,bot){const value=await fixture(server,'exp-progress',bot);assert.match(value.version,/^1\.1\.\d+(?:[-+][0-9A-Za-z.-]+)?$/);assert(value.city&&Array.isArray(value.nodes)&&Array.isArray(value.routes)&&Array.isArray(value.orders)&&Array.isArray(value.purchases)&&Array.isArray(value.traffic));assert.equal(value.city.buildings.length,0,'No production facility may hide cargo or maintenance changes');for(const amount of Object.values(value.city.stock))assert(Number.isSafeInteger(amount)&&amount>=0);const seen=new Set(maintenanceLedger.map(row=>`${row.node}|${row.period}`));for(const traffic of value.traffic)for(const node of traffic.nodes||[])if(node.maintenancePaid){const key=`${node.nodeId}|${node.maintenancePeriod}`;if(!seen.has(key)){seen.add(key);maintenanceLedger.push({node:node.nodeId,city:node.cityId,period:node.maintenancePeriod,route:traffic.routeId,observedAt:new Date().toISOString()});}}return value;}
+async function state(server,bot){const value=await fixture(server,'exp-progress',bot);assert.match(value.version,/^1\.(?:1|[2-9]\d*)\.\d+(?:[-+][0-9A-Za-z.-]+)?$/);assert(value.city&&Array.isArray(value.nodes)&&Array.isArray(value.routes)&&Array.isArray(value.orders)&&Array.isArray(value.purchases)&&Array.isArray(value.traffic));assert.equal(value.city.buildings.length,0,'No production facility may hide cargo or maintenance changes');for(const amount of Object.values(value.city.stock))assert(Number.isSafeInteger(amount)&&amount>=0);const seen=new Set(maintenanceLedger.map(row=>`${row.node}|${row.period}`));for(const traffic of value.traffic)for(const node of traffic.nodes||[])if(node.maintenancePaid){const key=`${node.nodeId}|${node.maintenancePeriod}`;if(!seen.has(key)){seen.add(key);maintenanceLedger.push({node:node.nodeId,city:node.cityId,period:node.maintenancePeriod,route:traffic.routeId,observedAt:new Date().toISOString()});}}return value;}
 async function poll(server,bot,test,timeout=45000,description='logistics state'){let last;return waitUntil(async()=>{last=await state(server,bot);return test(last)?last:false;},timeout,description,()=>{server.check();if(bot.failure)throw bot.failure;});}
 function order(snapshot,id){return snapshot.orders.find(row=>row.id===id);}
 function route(snapshot,id){return snapshot.routes.find(row=>row.id===id);}
@@ -114,7 +119,12 @@ function conserved(snapshot,seeds,baseline,maintenance){
   }
 }
 function assertLongOnlyMaintenance(snapshot,baseline,nodes){for(const id of nodes){const current=snapshot.rows.logistics_node.find(row=>row.id===id),old=baseline.rows.logistics_node.find(row=>row.id===id);assert(current&&old);assert.equal(current.last_maintenance,old.last_maintenance,'Restricted route charged a long-only node');assert.equal(current.maintained,old.maintained);}}
-async function registerNode(server,bot,action,slot){const from=bot.messages.length,proof=await fixture(server,action,bot,String(slot));await waitUntil(()=>bot.messages.slice(from).some(line=>line.includes('已登记 ')),15000,'actual raycast road registration');return proof;}
+async function registerNode(server,bot,action,slot){
+  const from=bot.messages.length,proof=await fixture(server,action,bot,String(slot));
+  try{await waitUntil(()=>bot.messages.slice(from).some(line=>line.includes('已登记 ')),15000,'actual raycast road registration');}
+  catch(error){error.message+=`\nRecent server output:\n${server.lines.slice(-40).join('\n')}\nRecent client output:\n${bot.messages.slice(-30).join('\n')}`;throw error;}
+  return proof;
+}
 async function createRoute(bot,target,nodes){const text=await botMessage(bot,`/sw route create ${target} land ${nodes.join(',')}`,/商路 [0-9a-f-]{36} ·/);return text.match(/商路 ([0-9a-f-]{36})/)[1];}
 async function offer(bot,routeId,give,take){const text=await botMessage(bot,`/sw trade offer ${routeId} ${give} ${take}`,/已托管报价 [0-9a-f-]{36}/);return text.match(/已托管报价 ([0-9a-f-]{36})/)[1];}
 async function accept(bot,id){return botMessage(bot,`/sw trade accept ${id}`,/货单 .* IN_TRANSIT/);}
@@ -125,17 +135,17 @@ function receiptPayload(value){assert(value);assert(Number.isFinite(Date.parse(v
 async function main(){
   const args=argumentsOf(process.argv.slice(2));if(args.help){process.stdout.write(HELP);return;}
   for(const key of ['java','paper','runtime','python'])assert(args[key],`Required --${key}`);
-  const options={java:requireFile(args.java),paper:requireFile(args.paper),python:requireFile(args.python),runtime:path.resolve(args.runtime),jvmArgs:['-Xms48m','-Xmx320m','-Xss512k','-XX:MaxMetaspaceSize=192m','-XX:MaxDirectMemorySize=48m','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-XX:TieredStopAtLevel=1','-XX:ReservedCodeCacheSize=48m','-Dio.netty.eventLoopThreads=2']};
+  const options={java:requireFile(args.java),paper:requireFile(args.paper),python:requireFile(args.python),runtime:path.resolve(args.runtime),stopTimeoutMs:15000,jvmArgs:['-Xms48m','-Xmx512m','-Xss512k','-XX:MaxMetaspaceSize=192m','-XX:MaxDirectMemorySize=48m','-XX:ActiveProcessorCount=1','-XX:+UseSerialGC','-XX:TieredStopAtLevel=1','-XX:ReservedCodeCacheSize=48m','-Dio.netty.eventLoopThreads=2']};
   assert.equal(fs.readFileSync(path.join(options.runtime,'.starworld-smoke-runtime'),'utf8').trim(),'StarWorld isolated Paper smoke runtime v1');
   const props=properties(path.join(options.runtime,'server.properties'));assert.equal(props['server-ip'],'127.0.0.1');assert.equal(props['online-mode'],'false');assert.equal(properties(path.join(options.runtime,'eula.txt')).eula,'true');options.port=Number(props['server-port']);assert(Number.isInteger(options.port)&&options.port>=1024&&options.port<=65535);
   const configDir=path.join(options.runtime,'plugins/StarWorld'),logisticsFile=path.join(configDir,'logistics.yml'),originalLogistics=fs.readFileSync(logisticsFile,'utf8');
   assert.equal(hash(logisticsFile),hash(path.resolve(__dirname,'../../src/main/resources/logistics.yml')),'Copy the repository default logistics.yml template byte for byte into this fresh runtime');
   assert.equal(configuredNumber(path.join(configDir,'config.yml'),'period-seconds'),10);assert.equal(configuredNumber(path.join(configDir,'config.yml'),'event-chance'),0);assert.equal(configuredNumber(logisticsFile,'travel-periods'),1000);assert.equal(configuredNumber(logisticsFile,'waypoints'),16);assert.equal(configuredNumber(logisticsFile,'blocks-per-period'),128);
-  const preparationFile=path.join(options.runtime,'PREPARATION.json'),prepared=JSON.parse(fs.readFileSync(preparationFile,'utf8').replace(/^\uFEFF/,''));assert.equal(prepared.schema,1);assert.match(prepared.productVersion,/^1\.1\.\d+(?:[-+][0-9A-Za-z.-]+)?$/);assert.equal(prepared.artifactsBound,true);assert.equal(prepared.targetPluginSha256,hash(path.join(options.runtime,'plugins/StarWorld.jar')));assert.equal(prepared.fixtureSha256,hash(path.join(options.runtime,'plugins/StarWorldFixture.jar')));assert.equal(prepared.serverPort,options.port);for(const key of ['worldsCopied','databasesCopied','playersCopied'])assert.equal(prepared[key],0);
+  const preparationFile=path.join(options.runtime,'PREPARATION.json'),prepared=JSON.parse(fs.readFileSync(preparationFile,'utf8').replace(/^\uFEFF/,''));assert.equal(prepared.schema,1);assert.match(prepared.productVersion,/^1\.(?:1|[2-9]\d*)\.\d+(?:[-+][0-9A-Za-z.-]+)?$/);assert.equal(prepared.artifactsBound,true);assert.equal(prepared.targetPluginSha256,hash(path.join(options.runtime,'plugins/StarWorld.jar')));assert.equal(prepared.fixtureSha256,hash(path.join(options.runtime,'plugins/StarWorldFixture.jar')));assert.equal(prepared.serverPort,options.port);for(const key of ['worldsCopied','databasesCopied','playersCopied'])assert.equal(prepared[key],0);
   assert(!fs.existsSync(path.join(configDir,'starworld.db')),'Lifecycle acceptance requires a fresh extension database');assert(!fs.existsSync(path.join(options.runtime,props['level-name']||'world')),'Lifecycle acceptance requires a fresh world');
   const localRequire=args['client-deps']?createRequire(path.resolve(args['client-deps'],'package.json')):require,mineflayer=localRequire('mineflayer');
   const directory=path.join(options.runtime,'lifecycle-logistics-acceptance',new Date().toISOString().replace(/[:.]/g,'-'));fs.mkdirSync(directory,{recursive:true});fs.writeFileSync(path.join(directory,'logistics-original.yml'),originalLogistics);
-  maintenanceLedger=[];const evidence={schema:1,suite:'real-paper-lifecycle-logistics',status:'running',startedAt:new Date().toISOString(),minecraft:'1.21.11',node:process.version,runnerSha256:hash(__filename),mineflayer:localRequire('mineflayer/package.json').version,paperSha256:hash(options.paper),preparation:{sha256:hash(preparationFile),...prepared},pluginJars:{},configSha256:{},seeds:[],steps:[],configurationChanges:[],maintenanceObservations:maintenanceLedger,testTuning:{periodSeconds:10,eventChance:0,jvmArgs:options.jvmArgs,physicalSeedsAreProductionEvidence:false,nationalTreasurySeedsAreEarnedIncome:false,registeredBuildings:0,forceLoadedFixtureChunks:[20,21,22,23,24,52,53,54,55,56],routeModel:'public declared ordered nodes; four-node long route deliberately revisits the endpoint cities',databaseAccess:'StarWorld extension only; mode=ro after clean stop',coreDatabaseAccess:'none'}};
+  maintenanceLedger=[];const evidence={schema:1,suite:'real-paper-lifecycle-logistics',status:'running',startedAt:new Date().toISOString(),minecraft:'1.21.11',node:process.version,runnerSha256:hash(__filename),mineflayer:localRequire('mineflayer/package.json').version,paperSha256:hash(options.paper),preparation:{sha256:hash(preparationFile),...prepared},pluginJars:{},configSha256:{},seeds:[],steps:[],configurationChanges:[],maintenanceObservations:maintenanceLedger,testTuning:{periodSeconds:10,eventChance:0,jvmArgs:options.jvmArgs,stopTimeoutMs:options.stopTimeoutMs,minimumFreeDiskBytes:MINIMUM_FREE_DISK_BYTES,physicalSeedsAreProductionEvidence:false,nationalTreasurySeedsAreEarnedIncome:false,registeredBuildings:0,forceLoadedFixtureChunks:[20,21,22,23,24,52,53,54,55,56],routeModel:'public declared ordered nodes; four-node long route deliberately revisits the endpoint cities',databaseAccess:'StarWorld extension only; mode=ro after clean stop',coreDatabaseAccess:'none'}};
   for(const file of fs.readdirSync(path.join(options.runtime,'plugins')))if(file.endsWith('.jar'))evidence.pluginJars[file]=hash(path.join(options.runtime,'plugins',file));for(const file of fs.readdirSync(configDir))if(file.endsWith('.yml'))evidence.configSha256[file]=hash(path.join(configDir,file));evidence.configSha256['StarCore/config.yml']=hash(path.join(options.runtime,'plugins/StarCore/config.yml'));
   const save=()=>fs.writeFileSync(path.join(directory,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');
   const stage=async(name,work)=>{const step={name,status:'running',startedAt:new Date().toISOString()};evidence.steps.push(step);save();console.log('RUN '+name);try{step.observed=await work();step.status='passed';console.log('PASS '+name);return step.observed;}catch(error){step.status='failed';step.error=error.stack;throw error;}finally{step.finishedAt=new Date().toISOString();save();}};
@@ -147,9 +157,10 @@ async function main(){
   async function startOwned(run){
     assert.equal(server.child,null,'Do not overlap owned Java children');
     const checked=spawnSync(options.python,['-c',MEMORY_PROBE],{encoding:'utf8',windowsHide:true,timeout:15000,maxBuffer:1024*1024});assert.equal(checked.status,0,'Free-commit preflight failed: '+(checked.error||checked.stderr));
-    const memory={run,at:new Date().toISOString(),...JSON.parse(checked.stdout)};(evidence.startPreflight??=[]).push(memory);fs.writeFileSync(path.join(directory,`memory-before-run-${run}.json`),JSON.stringify(memory,null,2)+'\n');save();
+    const memory={run,at:new Date().toISOString(),...JSON.parse(checked.stdout),freeDiskBytes:freeDiskBytes(options.runtime),minimumFreeDiskBytes:MINIMUM_FREE_DISK_BYTES};(evidence.startPreflight??=[]).push(memory);fs.writeFileSync(path.join(directory,`memory-before-run-${run}.json`),JSON.stringify(memory,null,2)+'\n');save();
     if(process.platform==='win32')assert.equal(memory.windows,true,'Windows commit check was not available');
     if(memory.windows)assert(memory.freeCommitBytes>=1610612736,'Less than 1.5 GiB free commit: failed before starting Java; no unrelated process is stopped or awaited');
+    assertDiskHeadroom(memory.freeDiskBytes);
     await server.start();
   }
   async function stopOwned(){
@@ -230,4 +241,5 @@ async function main(){
     save();fs.writeFileSync(path.join(options.runtime,'lifecycle-logistics-acceptance','latest.json'),JSON.stringify({directory,status:evidence.status},null,2)+'\n');
   }
 }
+module.exports={assertDiskHeadroom,MINIMUM_FREE_DISK_BYTES};
 if(require.main===module)main().catch(error=>{console.error(error.stack);process.exitCode=1;});

@@ -43,4 +43,14 @@ class RegionAtlasTest {
         }
         try(WorldStore s=new WorldStore(db,100000)){cultureSchema(s,d);RegionAtlas atlas=new RegionAtlas(s,d);assertFalse(atlas.summary(c.cityId()).authorityActive());assertTrue(atlas.page(c.cityId(),"",10).regions().isEmpty());assertEquals(1,s.buildings(c.cityId()).size());assertEquals(50,s.region(old.site().regionKey()).reserves().get("ore"));}
     }
+
+    @Test void maximumSurveyedAtlasStaysPagedAndDoesNotInventFacilities()throws Exception {
+        Definitions d=definitions();CoreCity c=city();try(WorldStore s=new WorldStore(temp.resolve("surveyed-atlas.db"),100000)){cultureSchema(s,d);
+            s.ensureCity(c);s.stock(c.cityId(),"minecraft:paper",RegionAtlas.MAX_REGIONS_PER_CITY*8L);
+            for(int i=0;i<RegionAtlas.MAX_REGIONS_PER_CITY;i++)s.surveyRegion(c,new Site(world,"atlas-world",i*16,64,-16),"plains",d,"manager");
+            RegionAtlas atlas=new RegionAtlas(s,d);Set<String> ids=new HashSet<>();String cursor="";int pages=0;
+            do{var page=atlas.page(c.cityId(),cursor,RegionAtlas.MAX_PAGE_SIZE);assertTrue(page.regions().size()<=RegionAtlas.MAX_PAGE_SIZE);for(var region:page.regions()){assertTrue(ids.add(region.id()));assertTrue(region.facilities().isEmpty());assertEquals(-1,region.chunkZ());}cursor=page.nextCursor();pages++;assertTrue(pages<=2);}while(!cursor.isEmpty());
+            assertEquals(RegionAtlas.MAX_REGIONS_PER_CITY,ids.size());assertEquals(RegionAtlas.MAX_REGIONS_PER_CITY,atlas.summary(c.cityId()).regions());assertEquals(0,atlas.summary(c.cityId()).facilities());
+        }
+    }
 }

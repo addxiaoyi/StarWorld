@@ -5,7 +5,7 @@ param(
     [Parameter(Mandatory)][string] $StarCoreJar,
     [Parameter(Mandatory)][string] $StarWorldJar,
     [Parameter(Mandatory)][string] $FixtureJar,
-    [Parameter(Mandatory)][string] $BootstrapDirectory,
+    [string] $BootstrapDirectory,
     [Parameter(Mandatory)][string] $StarCoreConfig,
     [Parameter(Mandatory)][string] $StarWorldConfigDirectory,
     [Parameter(Mandatory)][string] $RuntimeDirectory,
@@ -25,7 +25,7 @@ $StarCoreJar = Resolve-File $StarCoreJar
 $StarWorldJar = Resolve-File $StarWorldJar
 $FixtureJar = Resolve-File $FixtureJar
 $StarCoreConfig = Resolve-File $StarCoreConfig
-$BootstrapDirectory = (Resolve-Path -LiteralPath $BootstrapDirectory).Path
+if ($BootstrapDirectory) { $BootstrapDirectory = (Resolve-Path -LiteralPath $BootstrapDirectory).Path }
 $StarWorldConfigDirectory = (Resolve-Path -LiteralPath $StarWorldConfigDirectory).Path
 $RuntimeDirectory = [IO.Path]::GetFullPath($RuntimeDirectory)
 if ($RuntimeDirectory -eq [IO.Path]::GetPathRoot($RuntimeDirectory)) { throw 'A filesystem root cannot be a test runtime.' }
@@ -36,9 +36,14 @@ try { $listener.Start() } finally { $listener.Stop() }
 
 New-Item -ItemType Directory -Path $RuntimeDirectory | Out-Null
 foreach ($folder in @('cache', 'libraries', 'versions')) {
-    $source = Join-Path $BootstrapDirectory $folder
-    if (!(Test-Path -LiteralPath $source -PathType Container)) { throw "Missing verified Paper bootstrap folder: $source" }
-    Copy-Item -LiteralPath $source -Destination $RuntimeDirectory -Recurse
+    $destination = Join-Path $RuntimeDirectory $folder
+    if ($BootstrapDirectory) {
+        $source = Join-Path $BootstrapDirectory $folder
+        if (!(Test-Path -LiteralPath $source -PathType Container)) { throw "Missing Paper bootstrap folder: $source" }
+        Copy-Item -LiteralPath $source -Destination $RuntimeDirectory -Recurse
+    } else {
+        New-Item -ItemType Directory -Path $destination | Out-Null
+    }
 }
 
 $plugins = Join-Path $RuntimeDirectory 'plugins'
@@ -58,7 +63,7 @@ Copy-Item -LiteralPath $definitions.FullName -Destination $world
 
 $utf8 = [Text.UTF8Encoding]::new($false)
 [IO.File]::WriteAllText((Join-Path $RuntimeDirectory '.starworld-smoke-runtime'), "StarWorld isolated Paper smoke runtime v1`n", $utf8)
-[IO.File]::WriteAllText((Join-Path $RuntimeDirectory 'eula.txt'), "eula=true`n", $utf8)
+[IO.File]::WriteAllText((Join-Path $RuntimeDirectory 'eula.txt'), "eula=false`n", $utf8)
 $properties = @"
 server-ip=127.0.0.1
 server-port=$Port

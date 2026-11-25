@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "version": "1.4.0",
+  "artifact_sha256": "9d1207953c4883a407a2f284332d0e19e12c71b8b72dee3547931319fdd70dfd",
+  "recordedAt": "2026-11-25T07:43:47.211457+00:00",
+  "status": "tool-verified-awaiting-live-source",
+  "releaseComplete": false,
+  "candidateRuntimeCreated": false,
+  "tool": "tools/prepare-life-candidate.py",
+  "toolSha256": "c7de574035ae96eaaeb1d1e5ea21f42f83f9e622d3da6b6eb9d6214450cc43c5",
+  "testsSha256": "9bc94d08bd067830bb2342d86c13627c59039d0c5ba52fd325d2dbbb76752e15",
+  "pythonTests": {
+    "total": 71,
+    "candidatePreparation": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "log": "C:\\Users\\Administrator\\Documents\\starworld\\target\\verification-tools-python-life-candidate-final-20261125.log",
+    "logSha256": "699e6d4bd8a486e9e2bf58b02df19aed6117df59f67cfd75bdca1f7d0152afe3"
+  },
+  "historicalSourceRejection": {
+    "expected": true,
+    "outputDirectoryCreated": false,
+    "log": "C:\\Users\\Administrator\\Documents\\starworld\\target\\life-candidate-historical-source-check.log",
+    "logSha256": "a4a8faf4ac266ca92674d5033731dc585e1c9be736e740d595ed222b6641c77d",
+    "reason": "Historical source lacks the current resource preflight marker."
+  },
+  "preparedRuntimeChecks": [
+    {
+      "suite": "baseline",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-baseline-20261125",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": false
+    },
+    {
+      "suite": "expansion",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-expansion-20261125",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": false
+    },
+    {
+      "suite": "progression",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-progression-20261125",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": false
+    },
+    {
+      "suite": "border",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-border-20261125",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": false
+    },
+    {
+      "suite": "operations",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-operations-20261125",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": false
+    },
+    {
+      "suite": "disaster",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-disaster-20261125",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": false
+    },
+    {
+      "suite": "works",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-works-20261125",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": false
+    },
+    {
+      "suite": "storage",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-storage-20261125",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": false
+    },
+    {
+      "suite": "lifecycle-logistics",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-lifecycle-logistics-20261125",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": false
+    },
+    {
+      "suite": "civic",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-civic-20261125-r2",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": false
+    },
+    {
+      "suite": "smoke",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-smoke-20261125",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": false
+    },
+    {
+      "suite": "upgrade",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-upgrade-20261125",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": true
+    },
+    {
+      "suite": "lifecycle-source",
+      "runtime": "C:\\Users\\Administrator\\Documents\\starworld-tools\\release14-life-source-20261125",
+      "inputState": "prepared-not-started",
+      "hasStoppedDatabase": true
+    }
+  ],
+  "planFile": "C:\\Users\\Administrator\\Documents\\starworld\\target\\release-acceptance-plan.json",
+  "planSha256": "d1ab9bd59bb35c8aa7d1dbe0b5d4018ee7fa8cdddae13aedc36166517eccf7a6",
+  "resourceObservation": {
+    "checkedAt": "2026-11-25T07:43:03.9281586+00:00",
+    "physicalFreeMiB": 912.0,
+    "commitFreeMiB": 937.0,
+    "diskFreeMiB": 1294.0,
+    "java": [
+      {
+        "ProcessId": 11928,
+        "CommandLine": "C:\\tmp\\jdk21\\jdk-21.0.13.1+2\\bin\\java.exe -Xms64M -Xmx384M -Xss512k -XX:ActiveProcessorCount=1 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=1 -XX:+UseSerialGC -Dfile.encoding=UTF-8 -Dterminal.jline=false -Dterminal.ansi=false -jar folia.jar nogui"
+      }
+    ]
+  },
+  "resourceFile": "C:\\Users\\Administrator\\Documents\\starworld\\target\\release-resource-host-20261125-goal.json",
+  "resourceSha256": "e9035660e26e7475653f9f3c7c7ed417cd1c3138e819ecea0a264a6e104dbb08",
+  "nextAction": "Run the prepared lifecycle source when memory permits. After its current source evidence passes, use tools/prepare-life-candidate.py to prepare the exact stopped copy, run candidate preflight, then its seven actual gameplay stages.",
+  "outstanding": [
+    "All current-JAR Paper suites",
+    "Current lifecycle source and candidate gameplay",
+    "Final evidence collection and release ZIP"
+  ]
+}

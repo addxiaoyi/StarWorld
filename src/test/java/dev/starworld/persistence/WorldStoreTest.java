@@ -2,6 +2,7 @@ package dev.starworld.persistence;
 
 import dev.starworld.domain.Definitions;
 import dev.starworld.domain.WorldState.*;
+import dev.starworld.evolution.RegionAtlas;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -23,12 +24,100 @@ class WorldStoreTest {
                 Map.of("workshop", new Definitions.BuildingType("workshop", "工坊", "BLAST_FURNACE", Map.of())), List.of(), Map.of());
     }
 
+    @Test void surveysAreAtomicIdempotentAndLimitedTo128RegionsPerCity() throws Exception {
+        Definitions definitions=definitions();CoreCity city=city();Path db=temp.resolve("survey.db");UUID world=UUID.randomUUID();
+        try(WorldStore store=new WorldStore(db,10000)){
+            store.ensureCity(city);store.stock(city.cityId(),"minecraft:paper",1024);
+            Site first=new Site(world,"survey-world",0,64,0);
+            assertTrue(store.surveyRegion(city,first,"plains",definitions,"manager"));
+            assertFalse(store.surveyRegion(city,first,"plains",definitions,"manager"));
+            assertEquals(1016,store.stock(city.cityId()).get("minecraft:paper"));
+            assertEquals("plains",store.region(first.regionKey()).terrain());
+            store.reserve(first.regionKey(),"ore",7);
+            for(int i=1;i<RegionAtlas.MAX_REGIONS_PER_CITY;i++){
+                Site site=new Site(world,"survey-world",i*16,64,0);
+                assertTrue(store.surveyRegion(city,site,"plains",definitions,"manager"));
+            }
+            Site overflow=new Site(world,"survey-world",RegionAtlas.MAX_REGIONS_PER_CITY*16,64,0);
+            assertThrows(SQLException.class,()->store.surveyRegion(city,overflow,"plains",definitions,"manager"));
+            Building inKnownRegion=new Building(UUID.randomUUID(),city.cityId(),city.nationId(),"workshop",first,1);
+            assertDoesNotThrow(()->store.addBuilding(inKnownRegion,"plains",definitions));
+            Building inNewRegion=new Building(UUID.randomUUID(),city.cityId(),city.nationId(),"workshop",overflow,1);
+            assertThrows(SQLException.class,()->store.addBuilding(inNewRegion,"plains",definitions));
+            assertEquals(1024-8L*RegionAtlas.MAX_REGIONS_PER_CITY,store.stock(city.cityId()).get("minecraft:paper"));
+            assertEquals(RegionAtlas.MAX_REGIONS_PER_CITY,store.query("SELECT COUNT(*) FROM city_region WHERE city=?",r->r.getInt(1),city.cityId()).getFirst());
+            store.execute("CREATE TRIGGER reject_survey_audit BEFORE INSERT ON audit WHEN NEW.action LIKE 'SURVEY %' BEGIN SELECT RAISE(ABORT,'audit unavailable'); END");
+            CoreCity other=city();store.ensureCity(other);store.stock(other.cityId(),"minecraft:paper",8);Site rollback=new Site(UUID.randomUUID(),"rollback-world",0,64,0);
+            assertThrows(SQLException.class,()->store.surveyRegion(other,rollback,"plains",definitions,"manager"));
+            assertEquals(8,store.stock(other.cityId()).get("minecraft:paper"));
+            assertTrue(store.query("SELECT 1 FROM region WHERE id=?",r->r.getInt(1),rollback.regionKey()).isEmpty());
+        }
+    }
+
+    @Test void schemaTwoFacilitiesBackfillIntoTheCityRegionIndex() throws Exception {
+        Path db=temp.resolve("survey-migration.db");CoreCity city=city();Site site=new Site(UUID.randomUUID(),"legacy-world",-17,64,-1);
+        try(WorldStore store=new WorldStore(db,1000)){
+            Building building=new Building(UUID.randomUUID(),city.cityId(),city.nationId(),"workshop",site,1);
+            store.ensureCity(city);store.addBuilding(building,"plains",definitions());
+            store.execute("CREATE INDEX city_region_page ON city_region(city,nation,region)");
+            store.execute("DELETE FROM city_region");store.execute("PRAGMA user_version=2");
+        }
+        try(WorldStore migrated=new WorldStore(db,1000)){
+            assertEquals(3,migrated.schemaVersion());
+            assertEquals(1,migrated.query("SELECT COUNT(*) FROM city_region WHERE city=? AND nation=? AND region=?",r->r.getInt(1),city.cityId(),city.nationId(),site.regionKey()).getFirst());
+            assertEquals(0,migrated.query("SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND name='city_region_page'",r->r.getInt(1)).getFirst());
+        }
+    }
+
+    @Test void facilityRegistrationAndSurveyRequireTheCurrentActiveCityNation() throws Exception {
+        Definitions definitions=definitions();CoreCity city=city();Site site=new Site(UUID.randomUUID(),"authority-world",0,64,0);
+        try(WorldStore store=new WorldStore(temp.resolve("facility-authority.db"),1000)){
+            store.ensureCity(city);
+            store.stock(city.cityId(),"minecraft:paper",8);
+            CoreCity formerNation=new CoreCity(city.cityId(),UUID.randomUUID(),city.cityName(),"former nation",1,"core");
+            assertThrows(SQLException.class,()->store.addBuilding(
+                    new Building(UUID.randomUUID(),city.cityId(),formerNation.nationId(),"workshop",site,1),"plains",definitions));
+            assertThrows(SQLException.class,()->store.surveyRegion(formerNation,site,"plains",definitions,"manager"));
+            store.invalidateCity(city.cityId());
+            assertThrows(SQLException.class,()->store.addBuilding(
+                    new Building(UUID.randomUUID(),city.cityId(),city.nationId(),"workshop",site,1),"plains",definitions));
+            assertThrows(SQLException.class,()->store.surveyRegion(city,site,"plains",definitions,"manager"));
+            assertTrue(store.buildings(city.cityId()).isEmpty());
+            assertEquals(8,store.stock(city.cityId()).get("minecraft:paper"));
+            assertTrue(store.query("SELECT 1 FROM region WHERE id=?",r->r.getInt(1),site.regionKey()).isEmpty());
+        }
+    }
+
+    @Test void transferredCityCanRegisterFacilitiesForItsNewNationWithoutCountingOldSites() throws Exception {
+        Definitions definitions=definitions();CoreCity city=city();Path db=temp.resolve("facility-transfer.db");
+        Site formerSite=new Site(UUID.randomUUID(),"former-world",0,64,0);
+        Site currentSite=new Site(formerSite.worldId(),formerSite.worldName(),1,64,0);
+        try(WorldStore store=new WorldStore(db,1000)){
+            store.ensureCity(city);
+            for(int i=0;i<definitions.maxBuildingsPerCity();i++){
+                Site site=new Site(formerSite.worldId(),formerSite.worldName(),i*16,64,0);
+                store.addBuilding(new Building(UUID.nameUUIDFromBytes(("former-"+i).getBytes(java.nio.charset.StandardCharsets.UTF_8)),city.cityId(),city.nationId(),"workshop",site,1),"plains",definitions);
+            }
+            CoreCity transferred=new CoreCity(city.cityId(),UUID.randomUUID(),city.cityName(),"new nation",2,"core");
+            store.ensureCity(transferred);
+            Building current=new Building(UUID.randomUUID(),city.cityId(),transferred.nationId(),"workshop",currentSite,1);
+            store.addBuilding(current,"plains",definitions);
+            assertEquals(definitions.maxBuildingsPerCity()+1,store.buildings(city.cityId()).size());
+            assertEquals(List.of(current),store.view(city.cityId()).orElseThrow().buildings());
+            store.stock(city.cityId(),"minecraft:oak_planks",32);store.stock(city.cityId(),"minecraft:iron_ingot",8);
+            assertThrows(SQLException.class,()->store.upgrade(city.cityId(),UUID.nameUUIDFromBytes("former-0".getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+            assertThrows(SQLException.class,()->store.removeBuilding(city.cityId(),UUID.nameUUIDFromBytes("former-0".getBytes(java.nio.charset.StandardCharsets.UTF_8))));
+            assertEquals(32,store.stock(city.cityId()).get("minecraft:oak_planks"));
+            store.upgrade(city.cityId(),current.id());assertEquals(2,store.view(city.cityId()).orElseThrow().buildings().getFirst().level());
+        }
+    }
+
     @Test void actualDatabaseMigratesAndRecoversCitiesEventsFacilitiesAndStock() throws Exception {
         Path db = temp.resolve("restore.db"); CoreCity city = city();
         Building b = new Building(UUID.randomUUID(), city.cityId(), city.nationId(), "workshop", new Site(UUID.randomUUID(), "world", -17, 70, -1), 1);
         EventState event = new EventState("drought", 10, 13, 15);
         try (WorldStore store = new WorldStore(db, 1000)) {
-            assertEquals(2, store.schemaVersion());
+            assertEquals(3, store.schemaVersion());
             store.ensureCity(city); store.addBuilding(b, "plains", definitions());
             store.stock(city.cityId(), "minecraft:bread", 27); store.event(city.cityId(), event);
             store.finish(city.cityId(), 10, "持久化报告");
@@ -47,7 +136,7 @@ class WorldStoreTest {
         String firstHash,secondHash;
         try(WorldStore store=new WorldStore(db,1000)){
             store.ensureCity(city);store.stock(city.cityId(),"minecraft:bread",42);
-            WorldStore.Backup first=store.backup(backup);firstHash=first.sha256();assertEquals(2,first.schemaVersion());assertEquals("ok",first.integrity());
+            WorldStore.Backup first=store.backup(backup);firstHash=first.sha256();assertEquals(3,first.schemaVersion());assertEquals("ok",first.integrity());
             try(WorldStore ignored=new WorldStore(backup,1000)) { assertEquals(42,ignored.stock(city.cityId()).get("minecraft:bread")); }
             store.stock(city.cityId(),"minecraft:bread",99);WorldStore.Backup second=store.backup(backup);secondHash=second.sha256();assertNotEquals(firstHash,secondHash);
             try(WorldStore ignored=new WorldStore(backup,1000)) { assertEquals(99,ignored.stock(city.cityId()).get("minecraft:bread")); }
@@ -89,7 +178,7 @@ class WorldStoreTest {
         try(WorldStore store=new WorldStore(db,1000)){
             store.ensureCity(city);store.stock(city.cityId(),"minecraft:bread",42);store.backup(backup);byte[] original=Files.readAllBytes(backup);
             store.tx(s->{s.stock(city.cityId(),"minecraft:bread",99);assertThrows(IllegalStateException.class,()->s.backup(backup));return null;});assertArrayEquals(original,Files.readAllBytes(backup));
-            store.execute("PRAGMA user_version=99");assertThrows(SQLException.class,()->store.backup(backup));assertArrayEquals(original,Files.readAllBytes(backup));store.execute("PRAGMA user_version=2");
+            store.execute("PRAGMA user_version=99");assertThrows(SQLException.class,()->store.backup(backup));assertArrayEquals(original,Files.readAllBytes(backup));store.execute("PRAGMA user_version=3");
             Path directory=temp.resolve("non-file-target");Files.createDirectories(directory);Files.writeString(directory.resolve("keep"),"untouched");assertThrows(IllegalArgumentException.class,()->store.backup(directory));assertEquals("untouched",Files.readString(directory.resolve("keep")));
             try(var remaining=Files.list(backup.getParent())){assertTrue(remaining.noneMatch(p->p.getFileName().toString().startsWith(".starworld-backup-")));}
             try(WorldStore copy=new WorldStore(backup,1000)){assertEquals(42,copy.stock(city.cityId()).get("minecraft:bread"));}
@@ -100,7 +189,7 @@ class WorldStoreTest {
         Path db=temp.resolve("plugin-backup.db"),plugin=temp.resolve("plain-plugin");CoreCity city=city();
         try(WorldStore store=new WorldStore(db,1000)){
             store.ensureCity(city);store.stock(city.cityId(),"minecraft:bread",42);
-            WorldStore.Backup result=store.backupInPluginDirectory(plugin,"weekly-01");assertEquals(plugin.toRealPath().resolve("backups/weekly-01.db"),result.path());assertEquals(2,result.schemaVersion());
+            WorldStore.Backup result=store.backupInPluginDirectory(plugin,"weekly-01");assertEquals(plugin.toRealPath().resolve("backups/weekly-01.db"),result.path());assertEquals(3,result.schemaVersion());
             for(String filename:List.of(".","..","../outside","a/b","a\\b"))assertThrows(IllegalArgumentException.class,()->store.backupInPluginDirectory(plugin,filename));
             try(WorldStore copy=new WorldStore(result.path(),1000)){assertEquals(42,copy.stock(city.cityId()).get("minecraft:bread"));}
         }
@@ -135,11 +224,20 @@ class WorldStoreTest {
     @Test void abruptProcessDeathRecoversCommittedWalAndDiscardsUncommittedWork() throws Exception {
         Path db = temp.resolve("crash.db"); CoreCity city = city();
         String javaExecutable = Path.of(System.getProperty("java.home"), "bin", System.getProperty("os.name").startsWith("Windows") ? "java.exe" : "java").toString();
-        Process process = new ProcessBuilder(javaExecutable, "-cp", System.getProperty("java.class.path"), CrashWriter.class.getName(), db.toString(), city.cityId().toString(), city.nationId().toString())
+        String testClasspath = System.getProperty("surefire.test.class.path", System.getProperty("java.class.path"));
+        Process process = new ProcessBuilder(javaExecutable, "-Xmx64m", "-XX:ActiveProcessorCount=1", "-XX:+UseSerialGC",
+                "-cp", testClasspath, CrashWriter.class.getName(), db.toString(), city.cityId().toString(), city.nationId().toString())
                 .redirectErrorStream(true).start();
-        assertTrue(process.waitFor(20, TimeUnit.SECONDS), "Crash fixture must not leave a server process running");
-        String output = new String(process.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-        assertEquals(23, process.exitValue(), output);
+        try {
+            assertTrue(process.waitFor(20, TimeUnit.SECONDS), "Crash fixture must not leave a server process running");
+            String output = new String(process.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            assertEquals(23, process.exitValue(), output);
+        } finally {
+            if (process.isAlive()) {
+                process.destroyForcibly();
+                process.waitFor(5, TimeUnit.SECONDS);
+            }
+        }
         try (WorldStore store = new WorldStore(db, 1000)) {
             assertEquals(42, store.stock(city.cityId()).get("minecraft:bread"));
             assertFalse(store.settled(city.cityId(), 10));
@@ -177,7 +275,7 @@ class WorldStoreTest {
             store.execute("PRAGMA user_version=1");
         }
         try (WorldStore store = new WorldStore(old, 1000)) {
-            assertEquals(2, store.schemaVersion());
+            assertEquals(3, store.schemaVersion());
             store.audit("migration-test", "schema-one audit table was absent and is now usable");
         }
         try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + old); Statement s = c.createStatement();

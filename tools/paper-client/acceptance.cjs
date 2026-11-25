@@ -7,10 +7,80 @@ const fs = require('node:fs');
 const path = require('node:path');
 const net = require('node:net');
 const crypto = require('node:crypto');
-const { spawn } = require('node:child_process');
+const os = require('node:os');
+const v8 = require('node:v8');
+const { execFile, execFileSync, spawn } = require('node:child_process');
 const { createRequire } = require('node:module');
 const assert = require('node:assert/strict');
 const { setTimeout: delay } = require('node:timers/promises');
+
+const RESOURCE_LIMITS = Object.freeze({
+  minimumStartupFreeMemoryBytes: 1536 * 1024 * 1024,
+  minimumStartupFreeCommitBytes: 2 * 1024 * 1024 * 1024,
+  minimumStartupNonHeapReserveBytes: 1024 * 1024 * 1024,
+  minimumRuntimeFreeMemoryBytes: 768 * 1024 * 1024,
+  minimumRuntimeFreeCommitBytes: 768 * 1024 * 1024,
+  maximumPaperHeapBytes: 768 * 1024 * 1024,
+  maximumNodeHeapBytes: 512 * 1024 * 1024
+});
+const WINDOWS_COMMIT_QUERY_TIMEOUT_MS = 10000;
+const WINDOWS_COMMIT_MEMORY_COMMAND = [
+  "Add-Type -TypeDefinition @'",
+  'using System;',
+  'using System.Runtime.InteropServices;',
+  'public static class StarWorldMemoryStatus {',
+  '  [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]',
+  '  public class MEMORYSTATUSEX {',
+  '    public uint dwLength;',
+  '    public uint dwMemoryLoad;',
+  '    public ulong ullTotalPhys;',
+  '    public ulong ullAvailPhys;',
+  '    public ulong ullTotalPageFile;',
+  '    public ulong ullAvailPageFile;',
+  '    public ulong ullTotalVirtual;',
+  '    public ulong ullAvailVirtual;',
+  '    public ulong ullAvailExtendedVirtual;',
+  '    public MEMORYSTATUSEX() { dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX)); }',
+  '  }',
+  '  [DllImport("kernel32.dll", SetLastError = true)]',
+  '  public static extern bool GlobalMemoryStatusEx([In, Out] MEMORYSTATUSEX buffer);',
+  '}',
+  "'@",
+  '$memory = [StarWorldMemoryStatus+MEMORYSTATUSEX]::new()',
+  'if (![StarWorldMemoryStatus]::GlobalMemoryStatusEx($memory)) { throw "GlobalMemoryStatusEx failed: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())" }',
+  '[math]::Floor($memory.ullAvailPageFile / 1024)'
+].join('\n');
+
+function freeCommitMemoryBytes() {
+  if (process.platform !== 'win32') return Number.MAX_SAFE_INTEGER;
+  const output = execFileSync('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command',
+    WINDOWS_COMMIT_MEMORY_COMMAND],
+  { encoding: 'utf8', timeout: WINDOWS_COMMIT_QUERY_TIMEOUT_MS, windowsHide: true }).trim();
+  assert(/^\d+$/.test(output), 'Could not read available Windows commit memory');
+  return Number(output) * 1024;
+}
+
+async function freeCommitMemoryBytesAsync(execute = execFile, platform = process.platform) {
+  if (platform !== 'win32') return Promise.resolve(Number.MAX_SAFE_INTEGER);
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const stdout = await new Promise((resolve, reject) => {
+        execute('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command',
+          WINDOWS_COMMIT_MEMORY_COMMAND],
+        { encoding: 'utf8', timeout: WINDOWS_COMMIT_QUERY_TIMEOUT_MS, windowsHide: true, maxBuffer: 1024 },
+        (error, output) => error ? reject(error) : resolve(output));
+      });
+      const output = String(stdout).trim();
+      if (!/^\d+$/.test(output)) throw new Error('Could not read available Windows commit memory');
+      return Number(output) * 1024;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) await delay(250);
+    }
+  }
+  throw new Error(`Could not read available Windows commit memory after two attempts: ${lastError.message}`, { cause: lastError });
+}
 
 const HELP = `Usage: node acceptance.cjs --java <java.exe> --runtime <owned-test-directory>
   --paper <local-paper.jar> [--client-deps <directory-with-mineflayer>]
@@ -99,16 +169,85 @@ async function withTimeout(promise, timeout, description) {
   } finally { clearTimeout(timer); }
 }
 
+function assertResourceHeadroom(freeMemoryBytes = os.freemem(), nodeHeapLimitBytes = v8.getHeapStatistics().heap_size_limit,
+                               freeCommitBytes = freeCommitMemoryBytes()) {
+  assert(Number.isSafeInteger(freeMemoryBytes) && freeMemoryBytes >= 0, 'Invalid free system memory measurement');
+  assert(Number.isSafeInteger(nodeHeapLimitBytes) && nodeHeapLimitBytes > 0, 'Invalid Node heap limit');
+  assert(Number.isSafeInteger(freeCommitBytes) && freeCommitBytes >= 0, 'Invalid free commit memory measurement');
+  assert(freeMemoryBytes >= RESOURCE_LIMITS.minimumStartupFreeMemoryBytes,
+    `Paper acceptance requires at least 1536 MiB free physical memory before startup; got ${Math.floor(freeMemoryBytes / 1024 / 1024)} MiB`);
+  assert(freeCommitBytes >= RESOURCE_LIMITS.minimumStartupFreeCommitBytes,
+    `Paper acceptance requires at least 2048 MiB free commit memory before startup; got ${Math.floor(freeCommitBytes / 1024 / 1024)} MiB`);
+  assert(nodeHeapLimitBytes <= RESOURCE_LIMITS.maximumNodeHeapBytes,
+    `Node heap limit must be at most 512 MiB; got ${nodeHeapLimitBytes} bytes. Start with --max-old-space-size=384`);
+  return {
+    minimumStartupFreeMemoryBytes: RESOURCE_LIMITS.minimumStartupFreeMemoryBytes,
+    minimumStartupFreeCommitBytes: RESOURCE_LIMITS.minimumStartupFreeCommitBytes,
+    minimumRuntimeFreeMemoryBytes: RESOURCE_LIMITS.minimumRuntimeFreeMemoryBytes,
+    startupFreeMemoryBytes: freeMemoryBytes,
+    startupFreeCommitBytes: freeCommitBytes,
+    nodeHeapLimitBytes
+  };
+}
+
+function paperHeapLimitBytes(jvmArgs) {
+  assert(Array.isArray(jvmArgs), 'Paper JVM arguments must be an array');
+  const matches = jvmArgs.filter(argument => typeof argument === 'string')
+    .map(argument => argument.match(/^-Xmx([1-9][0-9]*)([mMgG])$/))
+    .filter(Boolean);
+  assert.equal(matches.length, 1, 'Paper JVM arguments must set exactly one explicit -Xmx limit');
+  const [, amount, unit] = matches[0];
+  const limit = Number(amount) * (unit.toLowerCase() === 'm' ? 1024 * 1024 : 1024 * 1024 * 1024);
+  assert(Number.isSafeInteger(limit) && limit <= RESOURCE_LIMITS.maximumPaperHeapBytes,
+    'Paper maximum heap must not exceed 768 MiB');
+  return limit;
+}
+
+function assertPaperLaunchLimits(jvmArgs, javaEnvironment = process.env, freeMemoryBytes = os.freemem(),
+                                 nodeHeapLimitBytes = v8.getHeapStatistics().heap_size_limit,
+                                 freeCommitBytes = freeCommitMemoryBytes()) {
+  for (const name of ['_JAVA_OPTIONS', 'JAVA_TOOL_OPTIONS', 'JDK_JAVA_OPTIONS'])
+    assert(!javaEnvironment[name], `Unexpected JVM option injection: ${name}`);
+  const paperHeapBytes = paperHeapLimitBytes(jvmArgs);
+  const headroom = assertResourceHeadroom(freeMemoryBytes, nodeHeapLimitBytes, freeCommitBytes);
+  const reservedBytes = paperHeapBytes + nodeHeapLimitBytes + RESOURCE_LIMITS.minimumStartupNonHeapReserveBytes
+    + RESOURCE_LIMITS.minimumRuntimeFreeMemoryBytes;
+  const requiredStartupFreeMemoryBytes = Math.max(headroom.minimumStartupFreeMemoryBytes, reservedBytes);
+  const requiredStartupFreeCommitBytes = Math.max(headroom.minimumStartupFreeCommitBytes, reservedBytes);
+  assert(headroom.startupFreeMemoryBytes >= requiredStartupFreeMemoryBytes,
+    `Paper acceptance requires ${Math.ceil(requiredStartupFreeMemoryBytes / 1024 / 1024)} MiB free physical memory for its JVM/Node heaps, non-heap reserve and runtime reserve; got ${Math.floor(headroom.startupFreeMemoryBytes / 1024 / 1024)} MiB`);
+  assert(headroom.startupFreeCommitBytes >= requiredStartupFreeCommitBytes,
+    `Paper acceptance requires ${Math.ceil(requiredStartupFreeCommitBytes / 1024 / 1024)} MiB free commit memory for its JVM/Node heaps, non-heap reserve and runtime reserve; got ${Math.floor(headroom.startupFreeCommitBytes / 1024 / 1024)} MiB`);
+  return { ...headroom, paperMaximumHeapBytes: paperHeapBytes,
+    minimumStartupNonHeapReserveBytes: RESOURCE_LIMITS.minimumStartupNonHeapReserveBytes,
+    requiredStartupFreeMemoryBytes, requiredStartupFreeCommitBytes };
+}
+
 class Paper {
   constructor(options, directory, run) {
     this.options = options; this.directory = directory; this.run = run;
     this.lines = []; this.buffers = { stdout: '', stderr: '' }; this.stopping = false;
     this.child = null; this.exit = null; this.error = null; this.out = null;
+    this.stopCommandSent = false; this.memoryMonitor = null; this.resourceStopTimer = null; this.resourcePreflight = null;
+    this.resourceStopForced = false;
+    this.lastCommitCheck = Date.now(); this.commitCheckPromise = null;
   }
   async start() {
+    const jvmArgs = this.options.jvmArgs || ['-Xms128m', '-Xmx512m', '-XX:ActiveProcessorCount=2', '-XX:+UseSerialGC'];
+    const runner = requireFile(process.argv[1]);
+    this.resourcePreflight = {
+      ...assertPaperLaunchLimits(jvmArgs),
+      minimumRuntimeFreeCommitBytes: RESOURCE_LIMITS.minimumRuntimeFreeCommitBytes,
+      runnerSha256: hash(runner),
+      acceptanceHelperSha256: hash(__filename),
+      jvmArgs,
+      nodeExecArgv: process.execArgv
+    };
+    this.minimumObservedFreeMemoryBytes = this.resourcePreflight.startupFreeMemoryBytes;
+    this.minimumObservedFreeCommitBytes = this.resourcePreflight.startupFreeCommitBytes;
     await portIsFree(this.options.port);
     this.out = fs.createWriteStream(path.join(this.directory, `paper-run-${this.run}.log`), { encoding: 'utf8' });
-    const jvmArgs = this.options.jvmArgs || ['-Xms256m', '-Xmx1024m', '-XX:ActiveProcessorCount=2', '-XX:+UseSerialGC'];
+    this.out.write(`STARWORLD_RESOURCE_PREFLIGHT ${JSON.stringify(this.resourcePreflight)}\n`);
     this.child = spawn(this.options.java, [...jvmArgs,
       '-Dfile.encoding=UTF-8', '-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8', '-Dterminal.jline=false',
       '-Dterminal.ansi=false', '-jar', this.options.paper, '--nogui'], {
@@ -128,11 +267,55 @@ class Paper {
         for (const row of rows) this.lines.push(plain(row));
       });
     }
+    this.lastCommitCheck = Date.now();
+    this.memoryMonitor = setInterval(() => {
+      const freeMemoryBytes = os.freemem();
+      this.minimumObservedFreeMemoryBytes = Math.min(this.minimumObservedFreeMemoryBytes, freeMemoryBytes);
+      if (this.stopping) return;
+      if (freeMemoryBytes < RESOURCE_LIMITS.minimumRuntimeFreeMemoryBytes) {
+        this.stopForResourceFailure(new Error(`Paper acceptance stopped because free physical memory fell below 768 MiB; got ${Math.floor(freeMemoryBytes / 1024 / 1024)} MiB`));
+        return;
+      }
+      if (Date.now() - this.lastCommitCheck < 5000 || this.commitCheckPromise) return;
+      this.lastCommitCheck = Date.now();
+      this.commitCheckPromise = freeCommitMemoryBytesAsync()
+        .then(freeCommitBytes => {
+          this.minimumObservedFreeCommitBytes = Math.min(this.minimumObservedFreeCommitBytes, freeCommitBytes);
+          if (!this.stopping && freeCommitBytes < RESOURCE_LIMITS.minimumRuntimeFreeCommitBytes)
+            this.stopForResourceFailure(new Error(`Paper acceptance stopped because free commit memory fell below 768 MiB; got ${Math.floor(freeCommitBytes / 1024 / 1024)} MiB`));
+        })
+        .catch(error => {
+          if (!this.stopping)
+            this.stopForResourceFailure(new Error(`Paper acceptance could not recheck Windows commit memory: ${error.message}`));
+        })
+        .finally(() => { this.commitCheckPromise = null; });
+    }, 1000);
+    this.memoryMonitor.unref();
     await this.wait(/Done \(/, 0, 240000);
     assert(this.lines.some(line => /StarWorld ready:/.test(line)), 'StarWorld did not enable before Paper became ready');
     assert(this.lines.some(line => /StarWorldFixture|StarWorldPaperFixture/.test(line)), 'Real integration fixture was not loaded');
     this.command('starworld status');
     await this.wait(/StarCore.*公共 API 已连接/, 0, 15000);
+  }
+  stopForResourceFailure(error) {
+    if (this.stopping) return;
+    this.error = error;
+    this.stopping = true;
+    this.out.write(`STARWORLD_RESOURCE_STOP ${JSON.stringify({ error: error.message, at: new Date().toISOString() })}\n`);
+    if (!this.child || this.exit) return;
+    if (!this.lines.some(line => /Done \(/.test(line)) || !this.child.stdin.writable) {
+      this.resourceStopForced = true;
+      this.child.kill('SIGKILL');
+      return;
+    }
+    try {
+      this.child.stdin.write('stop\n');
+      this.stopCommandSent = true;
+      this.resourceStopTimer = setTimeout(() => {
+        if (!this.exit) { this.resourceStopForced = true; this.child.kill('SIGKILL'); }
+      }, 5000);
+      this.resourceStopTimer.unref();
+    } catch { this.resourceStopForced = true; this.child.kill('SIGKILL'); }
   }
   check() {
     if (this.error) throw this.error;
@@ -169,21 +352,45 @@ class Paper {
     const raw = await this.wait(new RegExp(`SW_FIXTURE_JSON .*"action":"${action}"`), from);
     return JSON.parse(raw.slice(raw.indexOf('SW_FIXTURE_JSON ') + 'SW_FIXTURE_JSON '.length));
   }
+  async finishResourceLog() {
+    if (this.commitCheckPromise) await this.commitCheckPromise;
+    if (!this.out) return;
+    this.out.write(`STARWORLD_RESOURCE_SUMMARY ${JSON.stringify({ minimumObservedFreeMemoryBytes: this.minimumObservedFreeMemoryBytes,
+      minimumObservedFreeCommitBytes: this.minimumObservedFreeCommitBytes })}\n`);
+    await new Promise(resolve => this.out.end(resolve));
+    this.out = null;
+  }
   async stop() {
     if (!this.child) return;
+    if (this.memoryMonitor) { clearInterval(this.memoryMonitor); this.memoryMonitor = null; }
     this.stopping = true;
-    if (!this.exit && !this.error && this.child.stdin.writable) this.child.stdin.write('stop\n');
-    try { await withTimeout(this.exited, 45000, 'owned Paper clean shutdown'); }
+    if (!this.error && !this.exit && !this.stopCommandSent && this.child.stdin.writable) {
+      this.child.stdin.write('stop\n');
+      this.stopCommandSent = true;
+    }
+    try { await withTimeout(this.exited, this.options.stopTimeoutMs ?? 45000, 'owned Paper clean shutdown'); }
     catch (timeout) {
       // This is only the process spawned above; never inspect/kill another server.
-      this.child.kill('SIGKILL'); await this.exited;
-      throw new Error(`Owned Paper child did not stop cleanly: PID ${this.child.pid}`);
+      this.resourceStopForced = true;
+      const child = this.child;
+      child.kill('SIGKILL'); await this.exited;
+      this.child = null;
+      await this.finishResourceLog();
+      throw new Error(`Owned Paper child did not stop cleanly: PID ${child.pid}`);
+    } finally {
+      if (this.resourceStopTimer) { clearTimeout(this.resourceStopTimer); this.resourceStopTimer = null; }
     }
-    if (this.out) { await new Promise(resolve => this.out.end(resolve)); this.out = null; }
+    await this.finishResourceLog();
+    const child = this.child;
+    this.child = null;
+    if (this.resourceStopForced) {
+      const error = new Error(`Owned Paper child was force-terminated: PID ${child.pid}`);
+      if (this.error) error.cause = this.error;
+      throw error;
+    }
     if (this.error) throw this.error;
     assert(this.exit && this.exit.code === 0, `Paper did not exit successfully: ${JSON.stringify(this.exit)}`);
     assert(!this.lines.some(line => /Could not flush StarWorld storage/.test(line)), 'StarWorld did not flush storage');
-    this.child = null;
   }
 }
 
@@ -202,7 +409,7 @@ async function connect(mineflayer, options, directory, run) {
     bot.once('spawn', () => { clearTimeout(timer); bot.physicsEnabled = false; resolve(); });
     bot.once('error', error => { clearTimeout(timer); reject(error); });
     bot.once('kicked', reason => { clearTimeout(timer); reject(new Error(`Client kicked before spawn: ${JSON.stringify(reason)}`)); });
-  }); } catch (error) { bot.quit(); await bot.finishTranscript(); throw error; }
+  }); } catch (error) { bot.end('client connection failed'); await bot.finishTranscript(); throw error; }
   return bot;
 }
 
@@ -223,7 +430,8 @@ async function main() {
   const args = argumentsOf(process.argv.slice(2));
   if (args.help) { process.stdout.write(HELP); return; }
   for (const name of ['java', 'runtime', 'paper']) assert(args[name], `Required: --${name}\n${HELP}`);
-  const options = { java: requireFile(args.java), paper: requireFile(args.paper), runtime: path.resolve(args.runtime) };
+  const options = { java: requireFile(args.java), paper: requireFile(args.paper), runtime: path.resolve(args.runtime),
+    jvmArgs: ['-Xms128m', '-Xmx512m', '-XX:ActiveProcessorCount=2', '-XX:+UseSerialGC'] };
   assert.equal(fs.readFileSync(path.join(options.runtime, '.starworld-smoke-runtime'), 'utf8').trim(), 'StarWorld isolated Paper smoke runtime v1', 'Refusing an unowned runtime');
   assert.equal(properties(path.join(options.runtime, 'eula.txt')).eula, 'true', 'Accept the EULA separately; this script will not alter it');
   const config = properties(path.join(options.runtime, 'server.properties'));
@@ -243,7 +451,8 @@ async function main() {
   const evidence = { schema: 1, startedAt: new Date().toISOString(), status: 'running', node: process.version,
     mineflayer: localRequire('mineflayer/package.json').version, minecraft: '1.21.11', runtime: options.runtime,
     paperSha256: hash(options.paper), pluginJars: {},
-    testTuning: { periodSeconds: options.periodSeconds, eventChance, configSha256: hash(worldConfig), definitionsSha256: hash(worldDefinitions),
+    testTuning: { periodSeconds: options.periodSeconds, eventChance, paperJvmArgs: options.jvmArgs,
+      configSha256: hash(worldConfig), definitionsSha256: hash(worldDefinitions),
       nodeVersion: process.version, nodeExecArgv: process.execArgv, javaOptionsEnvironment: process.env._JAVA_OPTIONS || '' },
     steps: [], snapshots: [] };
   for (const file of fs.readdirSync(path.join(options.runtime, 'plugins'))) if (/\.jar$/i.test(file)) evidence.pluginJars[file] = hash(path.join(options.runtime, 'plugins', file));
@@ -322,7 +531,7 @@ async function main() {
       preRestart = snapshot; evidence.snapshots.push(snapshot); return snapshot;
     });
     await stage('first server shuts down and flushes extension state', async () => {
-      bot.quit(); await bot.finishTranscript(); bot = null; await server.stop(); return { cleanExit: true };
+      bot.end('acceptance stage complete'); await bot.finishTranscript(); bot = null; await server.stop(); return { cleanExit: true };
     });
     server = new Paper(options, directory, 2);
     await stage('same world and real core city recover after restart', async () => {
@@ -344,7 +553,7 @@ async function main() {
       evidence.snapshots.push(snapshot); return { before: preRestart, after: snapshot, currentPeriod,
         clientArrowCount: count(bot, 'arrow'), inventory };
     });
-    await stage('second server cleanly stops', async () => { bot.quit(); await bot.finishTranscript(); bot = null; await server.stop(); return { cleanExit: true }; });
+    await stage('second server cleanly stops', async () => { bot.end('acceptance stage complete'); await bot.finishTranscript(); bot = null; await server.stop(); return { cleanExit: true }; });
     evidence.status = 'passed'; evidence.finishedAt = new Date().toISOString(); save();
     console.log(`PASS: ${evidence.steps.length} real protocol/client checks. Evidence: ${path.join(directory, 'evidence.json')}`);
   } catch (error) {
@@ -352,11 +561,20 @@ async function main() {
     console.error(`FAIL: ${error.stack}\nRecent server output:\n${server.lines.slice(-20).join('\n')}\nEvidence: ${path.join(directory, 'evidence.json')}`);
     process.exitCode = 1;
   } finally {
-    if (bot) { try { bot.quit(); await bot.finishTranscript(); } catch {} }
-    if (server.child) { try { await server.stop(); } catch (error) { console.error(`Cleanup: ${error.message}`); evidence.status = 'failed'; evidence.cleanupError = error.stack; save(); process.exitCode = 1; } }
+    if (bot) { try { bot.end('acceptance cleanup'); await bot.finishTranscript(); } catch {} }
+    if (server.child) {
+      try { await server.stop(); }
+      catch (error) {
+        evidence.status = 'failed'; process.exitCode = 1;
+        if (error !== server.error) {
+          console.error(`Cleanup: ${error.message}`); evidence.cleanupError = error.stack; save();
+        }
+      }
+    }
     fs.writeFileSync(path.join(options.runtime, 'client-acceptance', 'latest.json'), JSON.stringify({ directory, status: evidence.status }, null, 2) + '\n');
   }
 }
 
-module.exports = { Paper, connect, botMessage, properties, configuredNumber, hash, plain, requireFile, waitUntil, withTimeout, argumentsOf };
+module.exports = { Paper, connect, botMessage, properties, configuredNumber, hash, plain, requireFile, waitUntil, withTimeout, argumentsOf,
+  assertResourceHeadroom, assertPaperLaunchLimits, paperHeapLimitBytes, freeCommitMemoryBytesAsync, RESOURCE_LIMITS };
 if (require.main === module) main().catch(error => { console.error(error.stack); process.exitCode = 1; });

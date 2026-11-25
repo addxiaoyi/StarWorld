@@ -20,8 +20,8 @@ world.city(starCoreCityId).thenAccept(result -> {
 | `development(UUID)` | `Future<Optional<Profile>>`；规划/专长、城市繁荣、稳定、知识、军需、文化、倾向 |
 | `nationDevelopment(UUID)` | `Future<Optional<NationalEvolution.NationDevelopment>>`；最近核心复核的有效归属城市聚合的国家倾向、知识/文化、主导方向和专长；入参为StarCore国家UUID |
 | `culture(UUID)` | `Future<List<Culture>>`；已登记地区各文明传统与影响值 |
-| `regions(UUID,String,int)` | `Future<Optional<RegionAtlas.Page>>`；本城已登记地区、资源/文化/设施的 cursor 分页，空字符串开始，limit 为 1–64 |
-| `geography(UUID)` | `Future<Optional<RegionAtlas.Summary>>`；按不同地区只计一次的地形、剩余量/初始容量/恢复汇总 |
+| `regions(UUID,String,int)` | `Future<Optional<RegionAtlas.Page>>`；本城设施或勘探地区、资源/文化/设施的 cursor 分页，空字符串开始，limit 为 1–64 |
+| `geography(UUID)` | `Future<Optional<RegionAtlas.Summary>>`；最多128个不同地区的地形、剩余量/初始容量/恢复汇总 |
 | `life(UUID)` | `Future<Optional<LifeView>>`；累计生活文化、当前有限倍率、家具和活动会话 |
 | `lifeEvolutionCredit(UUID)` | `Future<Optional<LifeState.EvolutionCredit>>`；按真实生活动作 UUID 只读诊断原文化、已归集文化、最近归集周期和是否待处理；不存在返回空，不推进归集、不暴露玩家身份 |
 | `routes(UUID,int,int)` | `Future<List<Route>>`；有限分页查询城市相关商路 |
@@ -45,6 +45,8 @@ world.city(starCoreCityId).thenAccept(result -> {
 未登记或模块不可用返回empty/空列表；API扩展查询有默认空实现以保留旧消费端源码兼容。城市、成员和领土的权威仍来自StarCore。`WorldStore`、直接SQL以及模块内部mutation入口不是稳定的无权限公开写API，不应让不受信玩家参数直接调用。
 
 所有表中的 `Future` 实际类型为 `CompletableFuture`，结果不包含可变 Bukkit 世界/玩家对象。完成回调可运行于 IO worker，消费端必须自行安排 Bukkit 操作线程。数据库快照只承诺提交时一致性：地区和国家聚合采用最近一次有限核心归属复核，cursor 不是权限令牌，读取不会自动扫描未登记世界。`regions` 的空 `nextCursor` 表示末页，失效城市保留身份/周期并返回空地区。详见 [地区地图册](geography.md)。
+
+由存储队列产生的 Future 由插件完成，调用方的 `complete`、`completeExceptionally` 和 `obtrude` 不会替代数据库结果。`cancel` 只会取消尚未开始的排队任务，任务开始后返回 `false`，因为 SQLite 写入无法安全回滚为“已取消”。`orTimeout` 与 `completeOnTimeout` 返回只影响调用方的独立 Future 视图；它们不会取消或伪造底层读写结果。
 
 ## 提交后通知
 

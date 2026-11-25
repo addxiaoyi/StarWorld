@@ -4,10 +4,12 @@
 
 在本目录安装 `package.json` 固定的 Mineflayer，或通过 `--client-deps` 指定外部已安装依赖的目录。要求 Node.js 22 以上。
 
+服务器验收统一使用最多 384 MiB 的 Node 旧生代堆，启动前至少保留 1.5 GiB 可用物理内存、2 GiB提交余量，并覆盖实际 JVM堆、Node堆、1 GiB非堆储备及768 MiB运行余量。运行中任一余量低于768 MiB时只停止本次启动的 Paper 子进程。脚本固定并记录 `-Xmx`，拒绝隐式 JVM 环境参数。使用 `npm run` 脚本时 Node堆参数已内置，直接运行 Node 时请添加 `--max-old-space-size=384`。存储压力套件另有更严格的192 MiB Node堆限制。
+
 ```sh
 npm install
 node acceptance.cjs --help
-node acceptance.cjs --java C:/jdk21/bin/java.exe --runtime C:/starworld-joint-test --paper C:/paper.jar
+node --max-old-space-size=384 acceptance.cjs --java C:/jdk21/bin/java.exe --runtime C:/starworld-joint-test --paper C:/paper.jar
 ```
 
 预先准备独立测试目录，含有效 Paper bootstrap 缓存、三个本地插件 JAR、已显式接受的 eula.txt，server.properties 绑定 `127.0.0.1`、offline模式、指定空闲端口。目录 `.starworld-smoke-runtime` 内容必须为 `StarWorld isolated Paper smoke runtime v1`，防误用现有生产目录。
@@ -18,17 +20,31 @@ node acceptance.cjs --java C:/jdk21/bin/java.exe --runtime C:/starworld-joint-te
 
 结果在 `runtime/client-acceptance/<UTC timestamp>/evidence.json`，同目录有完整服务端和客户端日志。只有所有阶段状态均为passed才算成功。`latest.json` 指向最近一次结果，失败不会被重新标为成功。不要把 helper 派发命令或仅日志里出现插件名称当作玩法通过。
 
+准备新候选版的回归目录可使用仓库内的 `tools/prepare-paper-acceptance.py`。从已拥有的隔离模板复制静态配置和依赖，为本次候选 JAR、夹具、运行器及共享资源启动器重新记录指纹；输出 `PREPARATION.json` 包含可执行的 `command` 参数数组。支持 `baseline`、`expansion`、`progression`、`border`、`operations`、`disaster`、`works`、`storage`、`lifecycle-logistics`、`civic` 和 `smoke`。每个套件使用已按该套件调好的模板，工具保留原有 YAML 覆盖，并从候选 JAR 补充缺失的默认配置。
+
+```powershell
+python tools/prepare-paper-acceptance.py --suite baseline `
+  --template C:/tests/accepted-baseline --runtime C:/tests/new-baseline `
+  --jar target/starworld-1.4.0.jar `
+  --fixture tools/paper-fixture/target/starworld-paper-fixture-0.1.0-test.jar `
+  --paper C:/tests/paper-1.21.11-132.jar --java C:/jdk21/bin/java.exe `
+  --client-deps C:/tests/mc-client --port 25840 --check-only
+```
+
+去掉 `--check-only` 才创建新目录；已存在的目录始终拒绝覆盖。工具排除世界、玩家、数据库、旧运行记录和重映射插件；复制模板的既有 EULA 选择，模板为 `false` 时继续保持 `false`。`--link-bootstrap` 可在同一磁盘上硬链接 Paper 引导 JAR 和静态依赖 JAR，配置、插件和内容资源仍各自独立；写入前至少留出 1 GiB 磁盘余量。准备和只读预检均不计为实服通过，启动仍执行原有内存门槛。
+
+`civic` 另传 `--senluo-fixture`，模板须含已审计的 `PREPARATION.json`、上游来源记录及厨房资源包；工具核对原依赖指纹、厨房包的解压副本和活动资源副本，并绑定当前单测证据。`smoke` 仅安装 StarWorld JAR，由插件在真实启动时生成默认配置。旧存档升级继续使用下文的 `prepare-upgrade-10.py`；生活源/候选迁移须保留各自已停服数据库，不能用全新玩法目录替代。
+
 完整扩展使用独立的 `node expansion-acceptance.cjs --help`，参数相同。它使用 `StarWorldEA` 和 `StarWorldEB` 两个真实玩家、两个国家和两个城市，包含20阶段的设施维护/知识/军需/容量、国家实际发展倾向与创始人专长及生产倍率、职业与实际宴会扣费及农场产量、真实持久军团的公共作战扩展、双向实物托管运输、区域文化、核心国家资源回执、撤领和战争封锁、停战恢复、重启及公共核心城市删除后的聚合失效。该套件明确记录玩家物品和国库测试投入；未把 seed 当作产出。测试 helper 明确保活十个测试区块，StarWorld 本身不会加载区块。仅隔离配置关闭 `playability.new-nation-protection-days` 并把 `diplomacy.war.declaration-cost` 设零或公开充值后运行。结果位于 `runtime/expansion-acceptance/<UTC timestamp>`，格式与限制见 [evidence-schema.md](../../docs/evidence-schema.md)。原 `acceptance.cjs` 仍可直接执行原15阶段，亦向扩展套件提供公用服务器和客户端 harness。
 
-逐世界气候验收可用仓库根目录的 `tools/prepare-climate-acceptance.ps1` 准备全新目录。它只复制已验证的 Paper 缓存、插件 JAR 和 YAML 配置，不复制世界或数据库，也不会下载文件。示例：
+逐世界气候验收可用仓库根目录的 `tools/prepare-climate-acceptance.ps1` 准备全新目录。它只复制 Paper JAR、插件 JAR 和 YAML 配置，不复制世界或数据库。可传入已验证的 Paper 缓存来避免首次启动引导，也可省略 `-BootstrapDirectory`，让 Paper 在首次启动时自行引导依赖。
 
 ```powershell
 .\tools\prepare-climate-acceptance.ps1 `
   -PaperJar C:\paper\paper-1.21.11-132.jar `
   -StarCoreJar C:\tested\StarCore.jar `
-  -StarWorldJar .\target\starworld-1.2.0.jar `
+  -StarWorldJar .\target\starworld-1.4.0.jar `
   -FixtureJar .\tools\paper-fixture\target\starworld-paper-fixture-0.1.0-test.jar `
-  -BootstrapDirectory C:\paper\prepared-bootstrap `
   -StarCoreConfig C:\configs\StarCore\config.yml `
   -StarWorldConfigDirectory C:\configs\StarWorld `
   -RuntimeDirectory C:\tests\climate-fresh -Port 25673
@@ -36,6 +52,10 @@ node .\tools\paper-client\expansion-acceptance.cjs `
   --java C:\jdk21\bin\java.exe --paper C:\tests\climate-fresh\paper.jar `
   --runtime C:\tests\climate-fresh
 ```
+
+勘探与存储验收连续60秒重复有界过载探针，每轮提交384个公开API查询以超过256项队列容量，恢复查询完成后留250毫秒间隔。单项及恢复查询超时为30秒，客户端等待每轮结果最多135秒。客户端须以 `node --max-old-space-size=192 --max-semi-space-size=8 survey-acceptance.cjs ...` 启动，脚本检查 Node 实际堆上限不超过256 MiB。Paper 启动前至少要求1.5 GiB可用物理内存和2 GiB可用提交空间，并按 JVM/Node 堆与768 MiB运行余量计算更高的动态预留；运行中任一余量低于768 MiB即停止本次Paper进程。隔离Paper进程最大堆512 MiB；夹具每 tick 采样堆用量，超过实际最大堆的95%立即中止，约保留25 MiB供JVM回收；所有请求轮次还须成功恢复。需要全新且带所有权标记的隔离Paper目录，不复用其他项目的Folia或现有世界。
+
+准备脚本将 `eula.txt` 初始化为 `eula=false`。你接受 Minecraft EULA 后，再在这个隔离目录将其改为 `eula=true`；验收脚本会拒绝启动尚未接受 EULA 的运行目录。
 
 扩展套件的隔离 Paper 进程固定使用 512 MiB 最大堆和 128 MiB 初始堆；此运行参数写入验收证据，不影响生产服务器默认值。
 
@@ -47,7 +67,7 @@ node .\tools\paper-client\expansion-acceptance.cjs `
 
 ```sh
 node upgrade-acceptance.cjs --help
-node upgrade-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --runtime C:/starworld-upgrade-copy --python C:/python/python.exe --client-deps C:/mineflayer-deps
+node --max-old-space-size=384 upgrade-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --runtime C:/starworld-upgrade-copy --python C:/python/python.exe --client-deps C:/mineflayer-deps
 ```
 
 输入必须是已通过原15阶段、正常停服并完成SQLite checkpoint的0.2隔离服完整副本，包含原世界、玩家数据、StarCore权威数据库、StarWorld数据库、六份已有配置及原helper。只在副本中换入0.3候选JAR并指定空闲localhost端口，不能指向原始验收目录或生产服。`UPGRADE-PROVENANCE.json` 必须记录 `sourceVersion=0.2.0`、`targetVersion=0.3.0`、两个版本的JAR哈希、原15阶段通过证据及哈希、复制前只读数据库快照、关键世界/玩家/数据库文件哈希和旧配置哈希。脚本在启动前逐项验证；不接受已升级数据库作为新一轮初始输入。
@@ -59,7 +79,7 @@ node upgrade-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --
 边境资源事件使用独立的 `npm run border -- --help` 或：
 
 ```sh
-node border-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --runtime C:/starworld-border-fresh --client-deps C:/mineflayer-deps
+node --max-old-space-size=384 border-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --runtime C:/starworld-border-fresh --client-deps C:/mineflayer-deps
 ```
 
 必须新建隔离目录、世界、数据库和 `StarWorldBA` / `StarWorldBB` 玩家。测试配置将周期设10秒、`event-chance=1`，保持完整 `definitions.yml`；`evolution.yml` 保留全部事件定义，仅 `event-rules.border_dispute: {condition: border, weight: 2, cooldown: 10}` 参与随机选择，并将该事件duration设12、aftermath设2，以跨过真实服务器重启的等待时间。国家保护关闭；由于同一对端需要停战后再次宣战，隔离核心 `war.declaration_cooldown_hours=0`。建国/认领/宣战费用设零或显式公开充值。全部调优、JAR和配置指纹写入证据；它们不是生产推荐值。
@@ -77,7 +97,7 @@ node border-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --r
 0.4 运维与经济反馈使用独立 `npm run operations -- --help`：
 
 ```sh
-node operations-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --runtime C:/starworld-operations-fresh --python C:/python/python.exe --client-deps C:/mineflayer-deps
+node --max-old-space-size=384 operations-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --runtime C:/starworld-operations-fresh --python C:/python/python.exe --client-deps C:/mineflayer-deps
 ```
 
 它保留原进阶20阶段及严格断言，再加九阶段实际路线维护材料规划、只读查询不扣库存、付款未到货/易货不计市场到货、普通玩家拒绝备份、管理员在线一致快照、完成到货精确统计、同名快照替换和第三次真实启动后统计去重。`exp-operations` 只读取公开 `StarWorldApi.routePlans` 与 `marketDeliveryStats` Future，不主动结算或调用归集器；`exp-permissions` 只查询当前玩家实际权限。管理员权限只由隔离服控制台临时op，备份命令仍由真实玩家执行，随后deop。
@@ -88,7 +108,7 @@ node operations-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar
 
 ```sh
 python prepare-upgrade-10.py --source C:/accepted-disaster05 --runtime C:/upgrade10-fresh --jar C:/starworld-1.0.0.jar --fixture C:/StarWorldFixture.jar --port 25633
-node upgrade-10-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --runtime C:/upgrade10-fresh --python C:/python/python.exe --client-deps C:/mineflayer-deps
+node --max-old-space-size=384 upgrade-10-acceptance.cjs --java C:/jdk21/bin/java.exe --paper C:/paper.jar --runtime C:/upgrade10-fresh --python C:/python/python.exe --client-deps C:/mineflayer-deps
 ```
 
 七个阶段覆盖两次正常启停。通过真实客户端读取原城市、设施和命名物品，打开新治理界面与旧市场，以原 UUID 重试已付款的救灾策略并核对同周期库存与历史。两次停服后只读核对 SQLite：两国两城、十设施、八笔仓储转移和三笔已付款救灾回执全部保留；工程和需求只加法创建表，不自动发起项目或认领凭据；新库存增量不超过实际在线结算产出。八份旧配置按 SHA-256 保持不变，两份自动生成的配置与 JAR 内文件一致。证据与两份服务端、两份客户端日志保存在 `runtime/upgrade-10-acceptance/<UTC timestamp>`。重跑请从同一个未改动的0.5原件准备新目录。

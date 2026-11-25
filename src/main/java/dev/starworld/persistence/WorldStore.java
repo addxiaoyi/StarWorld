@@ -13,6 +13,9 @@ import java.util.function.Function;
 
 /** One connection, serialized transactions. This database contains ONLY StarWorld extension state. */
 public final class WorldStore implements AutoCloseable {
+    public static final int MAX_CITY_REGIONS = 128;
+    private static final int SCHEMA_VERSION = 3;
+
     private final Connection connection;
     private final long stockLimit;
     private final Path databasePath;
@@ -24,7 +27,7 @@ public final class WorldStore implements AutoCloseable {
         connection=DriverManager.getConnection("jdbc:sqlite:"+databasePath);
         try {
             try (Statement s=connection.createStatement()) {
-                try(ResultSet r=s.executeQuery("PRAGMA user_version")) { if(r.next() && r.getInt(1)>2) throw new SQLException("Database newer than this StarWorld version"); }
+                try(ResultSet r=s.executeQuery("PRAGMA user_version")) { if(r.next() && r.getInt(1)>SCHEMA_VERSION) throw new SQLException("Database newer than this StarWorld version"); }
                 s.execute("PRAGMA foreign_keys=ON"); s.execute("PRAGMA busy_timeout=5000");
                 s.execute("PRAGMA journal_mode=WAL"); s.execute("PRAGMA synchronous=FULL");
             }
@@ -41,14 +44,19 @@ public final class WorldStore implements AutoCloseable {
             execute("CREATE TABLE IF NOT EXISTS building (id TEXT PRIMARY KEY,city TEXT NOT NULL REFERENCES city_state(id),nation TEXT NOT NULL,type TEXT NOT NULL,world TEXT NOT NULL,world_name TEXT NOT NULL,x INTEGER,y INTEGER,z INTEGER,level INTEGER NOT NULL DEFAULT 1,UNIQUE(world,x,y,z))");
             execute("CREATE TABLE IF NOT EXISTS settlement (city TEXT NOT NULL REFERENCES city_state(id),period INTEGER NOT NULL,report TEXT NOT NULL,PRIMARY KEY(city,period))");
             execute("CREATE TABLE IF NOT EXISTS transfer (id TEXT PRIMARY KEY,player TEXT NOT NULL,city TEXT NOT NULL REFERENCES city_state(id),direction TEXT NOT NULL,item TEXT NOT NULL,amount INTEGER NOT NULL CHECK(amount>0),state TEXT NOT NULL,created INTEGER NOT NULL,decision TEXT)");
-            execute("PRAGMA user_version=1");
             execute("CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY AUTOINCREMENT,at INTEGER NOT NULL,actor TEXT NOT NULL,action TEXT NOT NULL)");
             execute("CREATE INDEX IF NOT EXISTS building_city ON building(city)");
+            execute("CREATE INDEX IF NOT EXISTS building_city_nation ON building(city,nation,id)");
             execute("CREATE INDEX IF NOT EXISTS transfer_pending ON transfer(state)");
             execute("CREATE TABLE IF NOT EXISTS city_capacity(city TEXT PRIMARY KEY REFERENCES city_state(id),limit_per_item INTEGER NOT NULL CHECK(limit_per_item>=64))");
             execute("CREATE TABLE IF NOT EXISTS city_authority(city TEXT PRIMARY KEY REFERENCES city_state(id),active INTEGER NOT NULL CHECK(active IN (0,1)))");
             execute("INSERT OR IGNORE INTO city_authority(city,active) SELECT id,1 FROM city_state");
-            execute("PRAGMA user_version=2");
+            execute("CREATE TABLE IF NOT EXISTS city_region(city TEXT NOT NULL REFERENCES city_state(id),nation TEXT NOT NULL,region TEXT NOT NULL REFERENCES region(id),world_name TEXT NOT NULL,PRIMARY KEY(city,nation,region))");
+            execute("DROP INDEX IF EXISTS city_region_page");
+            if(schemaVersion()<SCHEMA_VERSION){
+                execute("INSERT OR IGNORE INTO city_region(city,nation,region,world_name) SELECT city,nation,world||':'||(x >> 4)||':'||(z >> 4),world_name FROM building");
+                execute("PRAGMA user_version="+SCHEMA_VERSION);
+            }
             return null;
         });
     }
@@ -81,7 +89,7 @@ public final class WorldStore implements AutoCloseable {
     public synchronized Optional<CityView> view(UUID id) throws SQLException {
         List<CityView> rows=query("SELECT * FROM city_state WHERE id=?",r->new CityView(id,UUID.fromString(r.getString("nation")),r.getString("name"),r.getString("civilization"),r.getLong("last_period"),Map.of(),List.of(),r.getString("event_type")==null ? null : new EventState(r.getString("event_type"),r.getLong("event_start"),r.getLong("event_end"),r.getLong("aftermath_end")),r.getString("last_report")),id);
         if(rows.isEmpty()) return Optional.empty(); CityView c=rows.getFirst();
-        return Optional.of(new CityView(c.id(),c.nationId(),c.name(),c.civilization(),c.lastPeriod(),stock(id),buildings(id),c.event(),c.lastReport()));
+        return Optional.of(new CityView(c.id(),c.nationId(),c.name(),c.civilization(),c.lastPeriod(),stock(id),buildings(id,c.nationId()),c.event(),c.lastReport()));
     }
     public synchronized Map<String,Long> stock(UUID city) throws SQLException {
         Map<String,Long> result=new TreeMap<>();query("SELECT item,amount FROM stock WHERE city=?",r->{ result.put(r.getString(1),r.getLong(2));return 0; },city);return result;
@@ -94,20 +102,61 @@ public final class WorldStore implements AutoCloseable {
     public synchronized long cityCapacity(UUID city)throws SQLException{return Math.min(stockLimit,query("SELECT limit_per_item FROM city_capacity WHERE city=?",r->r.getLong(1),city).stream().findFirst().orElse(stockLimit));}
     public synchronized void cityCapacity(UUID city,long limit)throws SQLException{if(limit<64||limit>stockLimit)throw new IllegalArgumentException("Invalid city capacity");execute("INSERT INTO city_capacity(city,limit_per_item) VALUES(?,?) ON CONFLICT(city) DO UPDATE SET limit_per_item=excluded.limit_per_item",city,limit);}
     public synchronized List<Building> buildings(UUID city) throws SQLException { return query("SELECT * FROM building WHERE city=? ORDER BY id",this::building,city); }
+    private List<Building> buildings(UUID city,UUID nation) throws SQLException { return query("SELECT * FROM building WHERE city=? AND nation=? ORDER BY id",this::building,city,nation); }
     private Building building(ResultSet r) throws SQLException { return new Building(UUID.fromString(r.getString("id")),UUID.fromString(r.getString("city")),UUID.fromString(r.getString("nation")),r.getString("type"),new Site(UUID.fromString(r.getString("world")),r.getString("world_name"),r.getInt("x"),r.getInt("y"),r.getInt("z")),r.getInt("level")); }
     public synchronized void addBuilding(Building b,String terrain,Definitions definitions) throws SQLException {
         tx(s->{
-            if(buildings(b.cityId()).size()>=definitions.maxBuildingsPerCity()) throw new IllegalArgumentException("城市设施已达上限");
-            if(buildings(b.cityId()).stream().anyMatch(x->x.site().regionKey().equals(b.site().regionKey()) && x.type().equals(b.type()))) throw new IllegalArgumentException("每区块同类设施限一座");
+            requireActiveNation(b.cityId(),b.nationId());
+            List<Building> current=buildings(b.cityId(),b.nationId());
+            if(current.size()>=definitions.maxBuildingsPerCity()) throw new IllegalArgumentException("城市设施已达上限");
+            if(current.stream().anyMatch(x->x.site().regionKey().equals(b.site().regionKey()) && x.type().equals(b.type()))) throw new IllegalArgumentException("每区块同类设施限一座");
+            requireCityRegionSlot(b.cityId(),b.nationId(),b.site().regionKey());
             Definitions.Terrain t=Objects.requireNonNull(definitions.terrains().get(terrain),"Unknown terrain");
             execute("INSERT OR IGNORE INTO region(id,terrain) VALUES(?,?)",b.site().regionKey(),terrain);
             // Only initialize reserves when region is first seen; unregistering/re-registering never refills it.
             for(var e:t.reserves().entrySet()) execute("INSERT OR IGNORE INTO reserve(region,resource,amount) VALUES(?,?,?)",b.site().regionKey(),e.getKey(),e.getValue());
+            execute("INSERT OR IGNORE INTO city_region(city,nation,region,world_name) VALUES(?,?,?,?)",b.cityId(),b.nationId(),b.site().regionKey(),b.site().worldName());
             execute("INSERT INTO building(id,city,nation,type,world,world_name,x,y,z,level) VALUES(?,?,?,?,?,?,?,?,?,?)",b.id(),b.cityId(),b.nationId(),b.type(),b.site().worldId(),b.site().worldName(),b.site().x(),b.site().y(),b.site().z(),b.level());
             audit("system","REGISTER "+b.id()+" "+b.cityId()+" "+b.type());return null;
         });
     }
-    public synchronized void removeBuilding(UUID city,UUID building) throws SQLException { execute("DELETE FROM building WHERE city=? AND id=?",city,building); }
+    public synchronized boolean surveyRegion(CoreCity city,Site site,String terrain,Definitions definitions,String actor)throws SQLException {
+        Objects.requireNonNull(city);Objects.requireNonNull(site);Objects.requireNonNull(actor);
+        Definitions.Terrain definition=Optional.ofNullable(definitions.terrains().get(terrain)).orElseThrow(()->new IllegalArgumentException("Unknown terrain "+terrain));
+        return tx(s->{
+            requireActiveNation(city.cityId(),city.nationId());
+            String region=site.regionKey();
+            if(!query("SELECT 1 FROM city_region WHERE city=? AND nation=? AND region=?",r->1,city.cityId(),city.nationId(),region).isEmpty())return false;
+            requireCityRegionSlot(city.cityId(),city.nationId(),region);
+            long paper=query("SELECT amount FROM stock WHERE city=? AND item='minecraft:paper'",r->r.getLong(1),city.cityId()).stream().findFirst().orElse(0L);
+            if(paper<8)throw new IllegalArgumentException("城市仓库需要8张纸才能勘探");
+            stock(city.cityId(),"minecraft:paper",paper-8);
+            execute("INSERT OR IGNORE INTO region(id,terrain) VALUES(?,?)",region,terrain);
+            for(var entry:definition.reserves().entrySet())execute("INSERT OR IGNORE INTO reserve(region,resource,amount) VALUES(?,?,?)",region,entry.getKey(),entry.getValue());
+            execute("INSERT INTO city_region(city,nation,region,world_name) VALUES(?,?,?,?)",city.cityId(),city.nationId(),region,site.worldName());
+            audit(actor,"SURVEY "+city.cityId()+" "+region+" "+terrain);
+            return true;
+        });
+    }
+    private void requireActiveNation(UUID city,UUID nation)throws SQLException {
+        if(query("SELECT 1 FROM city_state c JOIN city_authority a ON a.city=c.id WHERE c.id=? AND c.nation=? AND a.active=1",r->1,city,nation).isEmpty())
+            throw new IllegalArgumentException("城市归属或有效状态已变化，请刷新 StarCore 状态");
+    }
+    private void requireCityRegionSlot(UUID city,UUID nation,String region)throws SQLException {
+        if(!query("SELECT 1 FROM city_region WHERE city=? AND nation=? AND region=?",r->1,city,nation,region).isEmpty())return;
+        int count=query("SELECT COUNT(*) FROM city_region WHERE city=? AND nation=?",r->r.getInt(1),city,nation).getFirst();
+        if(count>=MAX_CITY_REGIONS)throw new IllegalArgumentException("本城地图册已达到128个地区上限");
+    }
+    public synchronized void removeBuilding(UUID city,UUID building) throws SQLException {
+        tx(s->{
+            UUID nation=query("SELECT nation FROM city_state WHERE id=?",r->UUID.fromString(r.getString(1)),city)
+                    .stream().findFirst().orElseThrow(()->new IllegalArgumentException("城市尚未登记"));
+            if(buildings(city,nation).stream().noneMatch(candidate->candidate.id().equals(building)))
+                throw new IllegalArgumentException("设施不属于城市的当前国家");
+            execute("DELETE FROM building WHERE city=? AND nation=? AND id=?",city,nation,building);
+            return null;
+        });
+    }
     public synchronized Region region(String id) throws SQLException {
         List<String> type=query("SELECT terrain FROM region WHERE id=?",r->r.getString(1),id); if(type.isEmpty()) throw new SQLException("Unknown region");
         Map<String,Long> reserves=new HashMap<>();query("SELECT resource,amount FROM reserve WHERE region=?",r->{reserves.put(r.getString(1),r.getLong(2));return 0;},id);
@@ -128,7 +177,9 @@ public final class WorldStore implements AutoCloseable {
             execute("UPDATE city_state SET civilization=? WHERE nation=?",civilization,c.nationId());return null; });
     }
     public synchronized void upgrade(UUID city,UUID id) throws SQLException {
-        tx(s->{Building b=buildings(city).stream().filter(x->x.id().equals(id)).findFirst().orElseThrow();
+        tx(s->{UUID nation=query("SELECT nation FROM city_state WHERE id=?",r->UUID.fromString(r.getString(1)),city)
+                    .stream().findFirst().orElseThrow(()->new IllegalArgumentException("城市尚未登记"));
+            Building b=buildings(city,nation).stream().filter(x->x.id().equals(id)).findFirst().orElseThrow();
             if(b.level()>=3)throw new IllegalArgumentException("设施已达三级");Map<String,Long> stock=stock(city);
             long planks=16L*b.level(),iron=4L*b.level();if(stock.getOrDefault("minecraft:oak_planks",0L)<planks || stock.getOrDefault("minecraft:iron_ingot",0L)<iron)throw new IllegalArgumentException("升级需要橡木板 "+planks+"、铁锭 "+iron);
             stock(city,"minecraft:oak_planks",stock.get("minecraft:oak_planks")-planks);stock(city,"minecraft:iron_ingot",stock.get("minecraft:iron_ingot")-iron);
@@ -200,7 +251,7 @@ public final class WorldStore implements AutoCloseable {
             if(Files.isSymbolicLink(target))throw new IllegalArgumentException("Backup target cannot be a symbolic link");
             if(Files.exists(target,LinkOption.NOFOLLOW_LINKS)&&!Files.isRegularFile(target,LinkOption.NOFOLLOW_LINKS))throw new IllegalArgumentException("Backup target must be an ordinary file");
             int sourceVersion=readUserVersion(connection);
-            if(sourceVersion!=2)throw new SQLException("Online backup requires the current StarWorld schema 2");
+            if(sourceVersion!=SCHEMA_VERSION)throw new SQLException("Online backup requires the current StarWorld schema "+SCHEMA_VERSION);
             Path temporary=Files.createTempFile(target.getParent(),".starworld-backup-", ".db.tmp");
             try {
                 Files.deleteIfExists(temporary);
@@ -210,7 +261,7 @@ public final class WorldStore implements AutoCloseable {
                 String integrity;int version;
                 try(Connection verify=DriverManager.getConnection("jdbc:sqlite:"+temporary.toAbsolutePath())) {
                     try(Statement statement=verify.createStatement();ResultSet result=statement.executeQuery("PRAGMA quick_check")){if(!result.next())throw new SQLException("SQLite backup quick_check returned no row");integrity=result.getString(1);if(!"ok".equalsIgnoreCase(integrity)||result.next())throw new SQLException("SQLite backup integrity check failed");}
-                    version=readUserVersion(verify);if(version!=sourceVersion||version!=2)throw new SQLException("SQLite backup schema differs from the current database");
+                    version=readUserVersion(verify);if(version!=sourceVersion)throw new SQLException("SQLite backup schema differs from the current database");
                 }
                 String digest=sha256(temporary);long bytes=Files.size(temporary);
                 // No weaker fallback: a filesystem without atomic replacement fails closed.

@@ -1,4 +1,4 @@
-# StarWorld schema 2. World state is in starworld.db, never StarCore's database.
+# StarWorld schema 3. World state is in starworld.db, never StarCore's database.
 config-version: 2
 simulation:
   period-seconds: 300

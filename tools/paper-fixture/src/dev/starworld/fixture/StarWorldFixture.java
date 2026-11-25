@@ -5,11 +5,15 @@ import com.google.gson.GsonBuilder;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.bukkit.*;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -20,6 +24,7 @@ public final class StarWorldFixture extends JavaPlugin implements CommandExecuto
     private static final String CORE = "dev.starcore.starcore.";
     private final Gson json = new GsonBuilder().serializeNulls().create();
     private final Set<UUID> registering = new HashSet<>();
+    private final AtomicBoolean storageSaturationRunning = new AtomicBoolean();
     private final ExpansionFixture expansion = new ExpansionFixture(this);
     private final PublicWorksFixture works = new PublicWorksFixture(this);
 
@@ -36,6 +41,7 @@ public final class StarWorldFixture extends JavaPlugin implements CommandExecuto
         try {
             if (args.length>0 && args[0].startsWith("exp-")) return expansion.execute(args);
             if (args.length>0 && args[0].startsWith("works-")) return works.execute(args);
+            if (args.length>0 && (args[0].startsWith("survey-") || args[0].equals("storage-saturation"))) return survey(args);
             if (args.length != 2) throw new IllegalArgumentException("swfixture <setup|register|verify|unclaim|reclaim|seed|inventory> <connected-player>");
             Player player = Bukkit.getPlayerExact(args[1]);
             if (player == null) throw new IllegalArgumentException("A real connected player is required: " + args[1]);
@@ -71,6 +77,14 @@ public final class StarWorldFixture extends JavaPlugin implements CommandExecuto
                     city = call(result, "city");
                 }
                 UUID cityId = (UUID) call(city, "id");
+                Object currentCity = unwrap(cityServiceType.getMethod("getPlayerCity", UUID.class).invoke(cities, player.getUniqueId()));
+                Object currentNation = unwrap(nationServiceType.getMethod("nationOf", UUID.class).invoke(nations, player.getUniqueId()));
+                if (currentCity == null || !cityId.equals(call(currentCity, "id"))
+                        || !Boolean.TRUE.equals(city.getClass().getMethod("isResident", UUID.class)
+                                .invoke(city, player.getUniqueId())))
+                    throw new IllegalStateException("StarCore city membership index does not contain the test player");
+                if (currentNation == null || !nationId.equals(call(currentNation, "id")))
+                    throw new IllegalStateException("StarCore nation membership index does not contain the test player");
                 for (int x = 0; x < 3; x++) {
                     claim(nations, nationServiceType, player, x);
                     cityServiceType.getMethod("addClaim", UUID.class, String.class, int.class, int.class)
@@ -119,6 +133,133 @@ public final class StarWorldFixture extends JavaPlugin implements CommandExecuto
             getLogger().log(java.util.logging.Level.SEVERE, "SW_FIXTURE_FAILED", error);
         }
         return true;
+    }
+
+    private boolean survey(String[] args)throws Exception{
+        if(args[0].equals("storage-saturation")){
+            if(args.length!=3)throw new IllegalArgumentException("swfixture storage-saturation <player> <requests>");
+            Player player=Objects.requireNonNull(Bukkit.getPlayerExact(args[1]),"Connected player required");
+            int requests=Integer.parseInt(args[2]);if(requests<257||requests>1024)throw new IllegalArgumentException("Request count must be between 257 and 1024");
+            Object core=service("StarCore",CORE+"api.StarCoreApi");Class<?> coreType=type("StarCore",CORE+"api.StarCoreApi");
+            Class<?> cityServiceType=type("StarCore",CORE+"module.city.CityService");Object cities=unwrap(coreType.getMethod("service",Class.class).invoke(core,cityServiceType));
+            Object city=Objects.requireNonNull(unwrap(cityServiceType.getMethod("getPlayerCity",UUID.class).invoke(cities,player.getUniqueId())),"Player has no city");UUID cityId=(UUID)call(city,"id");
+            Object api=service("StarWorld","dev.starworld.api.StarWorldApi");Class<?> apiType=type("StarWorld","dev.starworld.api.StarWorldApi");
+            Method cityQuery=apiType.getMethod("city",UUID.class);
+            if(!storageSaturationRunning.compareAndSet(false,true))throw new IllegalStateException("Storage saturation probe is already running");
+            new StorageSaturationRun(api,cityId,cityQuery,requests).submitNextBatch();
+            return true;
+        }
+        if(args[0].equals("survey-position")){
+            if(args.length!=3)throw new IllegalArgumentException("swfixture survey-position <player> <chunkX>");
+            Player player=Objects.requireNonNull(Bukkit.getPlayerExact(args[1]),"Connected player required");int chunk=Integer.parseInt(args[2]);
+            Location target=new Location(player.getWorld(),chunk*16+8,80,8);
+            if(!target.getWorld().isChunkLoaded(chunk,0)||!player.teleport(target))throw new IllegalStateException("Survey fixture chunk must already be loaded and teleportable");
+            getLogger().info("SW_FIXTURE_SURVEY_POSITION chunk="+chunk+" loaded="+target.getWorld().isChunkLoaded(chunk,0));return true;
+        }
+        if(args.length!=2)throw new IllegalArgumentException("swfixture survey-seed|survey-snapshot <player>");
+        Player player=Objects.requireNonNull(Bukkit.getPlayerExact(args[1]),"Connected player required");
+        if(args[0].equals("survey-seed")){
+            if(!player.getInventory().addItem(new ItemStack(Material.PAPER,16)).isEmpty())throw new IllegalStateException("Player inventory is full");
+            player.saveData();getLogger().info("SW_FIXTURE_SURVEY_SEED paper=16 player="+player.getName());return true;
+        }
+        if(!args[0].equals("survey-snapshot"))throw new IllegalArgumentException("Unknown survey fixture action");
+        Object api=service("StarCore",CORE+"api.StarCoreApi");Class<?> apiType=type("StarCore",CORE+"api.StarCoreApi");
+        Class<?> cityServiceType=type("StarCore",CORE+"module.city.CityService");Object cities=unwrap(apiType.getMethod("service",Class.class).invoke(api,cityServiceType));
+        Object city=Objects.requireNonNull(unwrap(cityServiceType.getMethod("getPlayerCity",UUID.class).invoke(cities,player.getUniqueId())),"Player has no city");UUID cityId=(UUID)call(city,"id");
+        Object worldApi=service("StarWorld","dev.starworld.api.StarWorldApi");Class<?> worldType=type("StarWorld","dev.starworld.api.StarWorldApi");
+        @SuppressWarnings("unchecked") CompletableFuture<Optional<?>> geography=(CompletableFuture<Optional<?>>)worldType.getMethod("geography",UUID.class).invoke(worldApi,cityId);
+        @SuppressWarnings("unchecked") CompletableFuture<Optional<?>> regions=(CompletableFuture<Optional<?>>)worldType.getMethod("regions",UUID.class,String.class,int.class).invoke(worldApi,cityId,"",64);
+        geography.thenCombine(regions,(summary,page)->Map.of("cityId",cityId.toString(),"summary",summary.orElseThrow(),"regions",callUnchecked(page.orElseThrow(),"regions")))
+                .whenComplete((snapshot,failure)->Bukkit.getScheduler().runTask(this,()->{
+                    if(failure!=null){getLogger().log(java.util.logging.Level.SEVERE,"SW_FIXTURE_FAILED survey snapshot",failure);return;}
+                    getLogger().info("SW_FIXTURE_SURVEY_JSON "+json.toJson(snapshot));
+                }));
+        return true;
+    }
+
+    private final class StorageSaturationRun {
+        private static final int BATCH_SIZE=384;
+        private static final long REQUEST_TIMEOUT_SECONDS=30;
+        private final Object api;
+        private final UUID cityId;
+        private final Method cityQuery;
+        private final int requests;
+        private final long startedAt=System.nanoTime();
+        private int submitted;
+        private int accepted;
+        private int rejected;
+        private final AtomicLong peakHeapBytes=new AtomicLong();
+        private final AtomicLong heapSampleCount=new AtomicLong();
+        private final BukkitTask heapSampler;
+
+        private StorageSaturationRun(Object api,UUID cityId,Method cityQuery,int requests){
+            this.api=api;this.cityId=cityId;this.cityQuery=cityQuery;this.requests=requests;
+            sampleHeap();
+            heapSampler=Bukkit.getScheduler().runTaskTimer(StarWorldFixture.this,this::sampleHeap,1L,1L);
+        }
+
+        @SuppressWarnings("unchecked")
+        private void submitNextBatch(){
+            int batchCount=Math.min(BATCH_SIZE,requests-submitted);
+            if(batchCount==0){recover();return;}
+            List<CompletableFuture<Optional<?>>> batch=new ArrayList<>(batchCount);
+            try{
+                for(int index=0;index<batchCount;index++){
+                    CompletableFuture<Optional<?>> future=(CompletableFuture<Optional<?>>)cityQuery.invoke(api,cityId);
+                    batch.add(future.orTimeout(REQUEST_TIMEOUT_SECONDS,TimeUnit.SECONDS));
+                }
+            }catch(ReflectiveOperationException failure){
+                for(CompletableFuture<Optional<?>> future:batch)future.cancel(false);
+                heapSampler.cancel();
+                storageSaturationRunning.set(false);
+                getLogger().log(java.util.logging.Level.SEVERE,"SW_FIXTURE_FAILED storage request submission",failure);
+                return;
+            }
+            submitted+=batchCount;
+            CompletableFuture.allOf(batch.toArray(CompletableFuture[]::new)).whenComplete((ignored,batchFailure)->{
+                for(CompletableFuture<Optional<?>> future:batch){
+                    if(future.isCompletedExceptionally()||future.isCancelled())rejected++;
+                    else accepted++;
+                }
+                sampleHeap();
+                batch.clear();
+                Bukkit.getScheduler().runTask(StarWorldFixture.this,this::submitNextBatch);
+            });
+        }
+
+        @SuppressWarnings("unchecked")
+        private void recover(){
+            try{
+                CompletableFuture<Optional<?>> recovery=((CompletableFuture<Optional<?>>)cityQuery.invoke(api,cityId))
+                        .orTimeout(REQUEST_TIMEOUT_SECONDS,TimeUnit.SECONDS);
+                recovery.whenComplete((value,failure)->{
+                    sampleHeap();
+                    Bukkit.getScheduler().runTask(StarWorldFixture.this,()->{
+                        sampleHeap();
+                        heapSampler.cancel();
+                        Map<String,Object> result=new LinkedHashMap<>();
+                        result.put("requests",requests);result.put("accepted",accepted);result.put("rejected",rejected);
+                        result.put("recovery",failure==null&&value!=null&&value.isPresent());result.put("queueCapacity",256);
+                        result.put("batchSize",BATCH_SIZE);result.put("requestTimeoutSeconds",REQUEST_TIMEOUT_SECONDS);
+                        result.put("sampledPeakHeapBytes",peakHeapBytes.get());result.put("heapSampleCount",heapSampleCount.get());
+                        result.put("maxHeapBytes",Runtime.getRuntime().maxMemory());
+                        result.put("elapsedMillis",TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startedAt));
+                        getLogger().info("SW_FIXTURE_STORAGE_JSON "+json.toJson(result));
+                        storageSaturationRunning.set(false);
+                    });
+                });
+            }catch(ReflectiveOperationException failure){
+                heapSampler.cancel();
+                storageSaturationRunning.set(false);
+                getLogger().log(java.util.logging.Level.SEVERE,"SW_FIXTURE_FAILED storage recovery",failure);
+            }
+        }
+
+        private void sampleHeap(){
+            long used=Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory();
+            peakHeapBytes.accumulateAndGet(used,Math::max);
+            heapSampleCount.incrementAndGet();
+        }
     }
 
     private void registerStep(Player player, int index) {
@@ -190,6 +331,7 @@ public final class StarWorldFixture extends JavaPlugin implements CommandExecuto
         getLogger().info("SW_FIXTURE_JSON " + json.toJson(Map.of("action", action, "player", player.getName(), "items", content)));
     }
     private static Object call(Object target, String method) throws Exception { return target.getClass().getMethod(method).invoke(target); }
+    private static Object callUnchecked(Object target,String method){try{return call(target,method);}catch(Exception error){throw new IllegalStateException(error);}}
     private static Object unwrap(Object value) { return ((Optional<?>) value).orElse(null); }
     private static Class<?> type(String plugin, String type) throws ClassNotFoundException {
         Plugin p = Objects.requireNonNull(Bukkit.getPluginManager().getPlugin(plugin), plugin);

@@ -84,10 +84,10 @@ public final class CityMenu implements Listener {
             var page=result.get();Holder h=new Holder(p.getUniqueId(),city.cityId());h.atlas=true;h.nextCursor=page.nextCursor();h.inventory=Bukkit.createInventory(h,54,Component.text("StarWorld · 地区地图册"));
             int slot=0;for(var region:page.regions()){
                 Material icon=switch(region.terrain()){case "mountains"->Material.IRON_ORE;case "river"->Material.WATER_BUCKET;case "forest"->Material.OAK_LOG;case "desert"->Material.SAND;case "snow"->Material.SNOW_BLOCK;default->Material.WHEAT;};
-                List<String> lore=new ArrayList<>(List.of(region.worldName()+" 区块 "+region.chunkX()+","+region.chunkZ(),"农业 / 运输 / 防御："+region.agriculture()+" / "+region.transport()+" / "+region.defense(),"剩余："+region.reserves(),"初始容量："+region.initialCapacities(),"每期恢复："+region.regeneration(),"设施："+region.facilities().stream().map(f->f.type()+" Lv"+f.level()).toList()));
+                List<String> lore=new ArrayList<>(List.of(region.worldName()+" 区块 "+region.chunkX()+","+region.chunkZ(),"农业 / 运输 / 防御："+region.agriculture()+" / "+region.transport()+" / "+region.defense(),"剩余："+region.reserves(),"初始容量："+region.initialCapacities(),"每期恢复："+region.regeneration(),region.facilities().isEmpty()?"已勘探，尚无设施":"设施："+region.facilities().stream().map(f->f.type()+" Lv"+f.level()).toList()));
                 region.culture().stream().limit(6).forEach(c->lore.add("文化 "+c.tradition()+"："+c.influence()));h.inventory.setItem(slot++,item(icon,region.terrainName()+" · "+region.chunkX()+","+region.chunkZ(),lore));
             }
-            h.inventory.setItem(45,item(Material.ARROW,"第一页",List.of()));h.inventory.setItem(49,item(Material.BOOK,"返回发展面板",List.of("只显示已登记地区；不扫描或加载世界","归属来自最近一次有界核心复核")));if(!h.nextCursor.isEmpty())h.inventory.setItem(53,item(Material.SUNFLOWER,"下一页",List.of()));p.openInventory(h.inventory);
+            h.inventory.setItem(45,item(Material.ARROW,"第一页",List.of()));h.inventory.setItem(49,item(Material.BOOK,"返回发展面板",List.of("含设施地区与已勘探地区","勘探使用 /sw survey，每城最多128个地区")));if(!h.nextCursor.isEmpty())h.inventory.setItem(53,item(Material.SUNFLOWER,"下一页",List.of()));p.openInventory(h.inventory);
         });
     }
     public void openClimate(Player p){

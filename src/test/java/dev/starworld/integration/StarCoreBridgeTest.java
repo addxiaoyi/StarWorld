@@ -71,6 +71,7 @@ class StarCoreBridgeTest {
         when(manager.load(StarCoreApi.class)).thenReturn(api);
         when(api.version()).thenReturn("1.0.0");
         when(api.nationService()).thenReturn(Optional.of(nations));
+        when(nations.nationOf(playerId)).thenReturn(Optional.of(nation));
         when(api.service(any())).thenAnswer(invocation -> Optional.ofNullable(services.get(invocation.getArgument(0))));
         when(cities.getCity(cityId)).thenReturn(Optional.of(city));
         when(cities.getPlayerCity(playerId)).thenReturn(Optional.of(city));
@@ -141,8 +142,19 @@ class StarCoreBridgeTest {
         when(nation.isFounder(playerId)).thenReturn(true);
         assertTrue(bridge.canManage(playerId, cityId));
         when(nation.hasMember(playerId)).thenReturn(false);
+        when(nations.nationOf(playerId)).thenReturn(Optional.empty());
         assertFalse(bridge.canManage(playerId, cityId));
         assertTrue(bridge.playerCity(playerId).isEmpty());
+    }
+
+    @Test
+    void cityFounderUsesNationMembershipIndexWhenNotListedAsMember() {
+        when(nation.hasMember(playerId)).thenReturn(false);
+        when(nation.isFounder(playerId)).thenReturn(true);
+
+        assertTrue(bridge.playerCity(playerId).isPresent());
+        assertTrue(bridge.canManage(playerId, cityId));
+        assertTrue(bridge.canGovern(playerId, cityId));
     }
 
     @Test
@@ -159,6 +171,19 @@ class StarCoreBridgeTest {
         when(nation.isFounder(playerId)).thenReturn(true);
         assertTrue(bridge.canGovern(playerId, cityId));
         when(nation.hasMember(playerId)).thenReturn(false);
+        when(nations.nationOf(playerId)).thenReturn(Optional.empty());
+        assertFalse(bridge.canGovern(playerId, cityId));
+    }
+
+    @Test
+    void playerCityRejectsMembershipInDifferentNation() {
+        NationId otherNationId = NationId.of(UUID.randomUUID());
+        Nation otherNation = mock(Nation.class);
+        when(otherNation.id()).thenReturn(otherNationId);
+        when(nations.nationOf(playerId)).thenReturn(Optional.of(otherNation));
+
+        assertTrue(bridge.playerCity(playerId).isEmpty());
+        assertFalse(bridge.canManage(playerId, cityId));
         assertFalse(bridge.canGovern(playerId, cityId));
     }
 

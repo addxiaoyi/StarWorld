@@ -1,5 +1,5 @@
 name: StarWorld
-version: '1.2.0'
+version: '1.4.0'
 main: dev.starworld.StarWorldPlugin
 api-version: '1.21.11'
 description: 动态文明与地区产业扩展

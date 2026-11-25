@@ -27,7 +27,7 @@ class LifecycleEvidenceTest(unittest.TestCase):
         self.entries = {}
         self.product_hash = "a" * 64
         self.collector = lifecycle._Collector(
-            self.root, "1.1.0", self.product_hash, self.entries.__setitem__,
+            self.root, "1.4.0", self.product_hash, self.entries.__setitem__,
             parent.regular_file, parent.read_json, parent.require, parent.stage_names)
         self.start = "2026-11-20T00:00:00.000Z"
         self.finish = "2026-11-20T00:01:00.000Z"
@@ -116,6 +116,16 @@ class LifecycleEvidenceTest(unittest.TestCase):
         self.run["e"]["startPreflight"][0]["freeCommitBytes"] = 1610612735
         self.failed(lambda: self.collector.memory(self.run, 1))
 
+    def test_logistics_memory_gate_requires_free_disk_headroom(self):
+        run = copy.deepcopy(self.run)
+        run["label"] = "lifecycle-logistics"
+        run["e"]["testTuning"] = {"minimumFreeDiskBytes": 1024 * 1024 * 1024}
+        run["e"]["startPreflight"][0].update({"minimumFreeDiskBytes": 1024 * 1024 * 1024,
+                                              "freeDiskBytes": 1024 * 1024 * 1024})
+        self.collector.memory(run, 1)
+        run["e"]["startPreflight"][0]["freeDiskBytes"] -= 1
+        self.failed(lambda: self.collector.memory(run, 1))
+
     def test_memory_file_must_equal_embedded_record(self):
         record = self.run["e"]["startPreflight"][0]
         self.write(self.directory / "memory-before-run-1.json", record)
@@ -157,13 +167,57 @@ class LifecycleEvidenceTest(unittest.TestCase):
         plugins = self.runtime / "plugins"
         plugins.mkdir()
         with zipfile.ZipFile(plugins / "StarWorld.jar", "w") as jar:
-            jar.writestr("plugin.yml", "name: StarWorld\nversion: '1.1.0'\n")
+            jar.writestr("plugin.yml", "name: StarWorld\nversion: '1.4.0'\n")
         expected = {"StarWorld.jar": lifecycle._sha((plugins / "StarWorld.jar").read_bytes())}
         self.collector.plugin_hash = expected["StarWorld.jar"]
-        self.collector.plugins(self.run, expected, "1.1.0")
+        self.collector.plugins(self.run, expected, "1.4.0")
         self.failed(lambda: self.collector.plugins(self.run, expected, "1.0.0", False))
         self.write(plugins / "Injected.jar", b"injected")
-        self.failed(lambda: self.collector.plugins(self.run, expected, "1.1.0"))
+        self.failed(lambda: self.collector.plugins(self.run, expected, "1.4.0"))
+
+    def test_life_candidate_climate_default_is_the_only_14_additive_config(self):
+        source = {"config.yml": b"period-seconds: 60\n",
+                  "life.yml": b"player-culture-per-period: 25\ncity-culture-per-period: 30\n"}
+        candidate = {"config.yml": source["config.yml"],
+                     "life.yml": b"player-culture-per-period: 20\ncity-culture-per-period: 20\n",
+                     "climate.yml": b"weather: default\n"}
+        self.assertEqual(lifecycle._minor_version("1.4.0"), 4)
+        self.assertEqual(lifecycle._minor_version("1.2.0"), 2)
+        self.assertEqual(lifecycle._minor_version("1.1.0"), 1)
+
+        plugins = self.runtime / "plugins"
+        plugins.mkdir(exist_ok=True)
+        with zipfile.ZipFile(plugins / "StarWorld.jar", "w") as jar:
+            jar.writestr("plugin.yml", "name: StarWorld\nversion: '1.4.0'\n")
+            jar.writestr("climate.yml", candidate["climate.yml"])
+        with zipfile.ZipFile(plugins / "StarWorld.jar") as jar:
+            self.assertEqual(jar.read("climate.yml"), candidate["climate.yml"])
+
+        lifecycle._validate_life_candidate_configs(self.collector, source, candidate, self.runtime)
+        self.failed(lambda: lifecycle._validate_life_candidate_configs(
+            self.collector, source, dict(candidate, **{"extra.yml": b"unexpected\n"}), self.runtime))
+        self.failed(lambda: lifecycle._validate_life_candidate_configs(
+            self.collector, source, dict(candidate, **{"climate.yml": b"tampered\n"}), self.runtime))
+
+        with zipfile.ZipFile(plugins / "StarWorld.jar", "w") as jar:
+            jar.writestr("plugin.yml", "name: StarWorld\nversion: '1.4.0'\n")
+        self.failed(lambda: lifecycle._validate_life_candidate_configs(
+            self.collector, source, candidate, self.runtime))
+
+        target_version = self.collector.version
+        try:
+            self.collector.version = "1.1.0"
+            legacy_candidate = {"config.yml": source["config.yml"],
+                                "life.yml": b"player-culture-per-period: 20\ncity-culture-per-period: 20\n"}
+            lifecycle._validate_life_candidate_configs(self.collector, source, legacy_candidate, self.runtime)
+            self.failed(lambda: lifecycle._validate_life_candidate_configs(
+                self.collector, source, candidate, self.runtime))
+        finally:
+            self.collector.version = target_version
+
+        self.failed(lambda: lifecycle._validate_life_candidate_configs(
+            self.collector, dict(source, **{"climate.yml": b"unexpected source climate\n"}),
+            candidate, self.runtime))
 
     def test_exact_stage_names_order_and_complete_timespan_are_checked(self):
         script_name = "tools/senluo-fixture/lifecycle-acceptance.cjs"
@@ -185,7 +239,10 @@ class LifecycleEvidenceTest(unittest.TestCase):
 
     def test_all_three_real_run_inputs_are_mandatory(self):
         self.failed(lambda: lifecycle.collect_lifecycle(
-            self.root, "1.1.0", "a" * 64, None, None, None, self.entries.__setitem__,
+            self.root, "1.4.0", "a" * 64, None, None, None, self.entries.__setitem__,
+            parent.regular_file, parent.read_json, parent.require, parent.stage_names))
+        self.failed(lambda: lifecycle.collect_lifecycle(
+            self.root, "1.0.0", "a" * 64, self.runtime, self.runtime, self.runtime, self.entries.__setitem__,
             parent.regular_file, parent.read_json, parent.require, parent.stage_names))
 
 

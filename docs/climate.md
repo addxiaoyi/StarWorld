@@ -6,7 +6,9 @@ StarCore继续拥有天气权威。StarWorld仅在城市结算前，对已登记
 
 完成并本周期已支付运行维护的 `irrigation_network` 可缓冲农场的不利农业天气：默认恢复一半天气惩罚，上限仍受农业倍率范围限制。它不抵消丰收等正面天气，不影响矿井，也不绕过工程施工、运行或设施有效性。
 
-科技倍率按精确的 effect/building/recipe 配置映射，并默认不映射。`production` 聚合键、`crop_growth` 的方块生长机率、未映射效果和未知效果都不直接改变周期产量；管理员如需把 `resource_yield` 解释成工坊矿井额外比例，须在 `climate.yml` 明确填写 `technology-mappings`，额外幅度受 `technology.adjustment-minimum/maximum` 限制。StarCore科技效果聚合的来源语义可能随上游变化，映射前须重新审计。
+科技倍率默认没有映射。只有在 `climate.yml` 中明确匹配效果、设施和配方，`resource_yield` 才会修正该配方产量。有限的科技加成会限制在 `technology.adjustment-minimum/maximum` 范围内。`production` 聚合键和 `crop_growth` 的方块生长机率不参与结算。StarCore 科技效果的聚合语义可能随上游变化，启用映射前须重新审计。
+
+无效或超出输入范围的天气倍率视为 1.0，非有限科技加成忽略。适配层逐项处理，保留同一份快照中的有效倍率和天气归属。气候报告和结算共用最高 10 倍的气候因子，产业总产量仍受原有总倍率上限限制。
 
 ```yaml
 schema-version: 1

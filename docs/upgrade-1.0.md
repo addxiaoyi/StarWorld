@@ -2,7 +2,7 @@
 
 2026-11-20 的隔离 Paper 1.21.11-132 / Java 21 验收通过 **7/7 阶段**。使用通过398项自动化测试的同一个 StarWorld 1.0.0 JAR，先后正常启动和关闭两次；每次都由真实离线协议客户端登录。原服未启动，也未修改原存档。
 
-- 原始证据：[upgrade-client.json](evidence/upgrade-client.json)，SHA-256 `857076149b79e9c31fa3043d368a583d81e1d2bcac5692cc75c9735106948416`。
+- 原始证据：[upgrade-client.json](evidence/history/1.0.0/upgrade-client.json)，SHA-256 `857076149b79e9c31fa3043d368a583d81e1d2bcac5692cc75c9735106948416`。
 - 测试时间：2026-11-20 13:11:25.397–13:12:58.000 UTC（北京时间21:11:25–21:12:58）。
 - 最终 JAR SHA-256：`da87d1af73067a87a3fea04acb2a198ce6a1a4e1f32463f15a375ed824fe9ac6`。
 - 旧版 JAR SHA-256：`096013edfdb8a3ca56654b15966cc0e319f336043ff8ed9ef0f8ef6d825bc5e7`。

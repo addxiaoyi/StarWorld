@@ -21,6 +21,7 @@ let VERSION = '1.0.0';
 const PLAYER = 'StarWorldDA';
 const ADDED = ['public_works_schema', 'public_works', 'public_works_history', 'civic_schema', 'civic_clock', 'civic_request', 'civic_request_cost', 'civic_action_claim', 'civic_history', 'life_evolution_pending', 'life_evolution_budget', 'starworld_dispatch_cursor'];
 const V11_TABLES = ['life_evolution_pending', 'life_evolution_budget', 'starworld_dispatch_cursor'];
+const V13_TABLES = ['city_region'];
 const DISPATCH_QUEUES = ['starworld:market-payment', 'starworld:resource-export'];
 const CONFIGS = ['config.yml', 'definitions.yml', 'disaster-response.yml', 'evolution.yml', 'exports.yml', 'life.yml', 'logistics.yml', 'market.yml'];
 let NEW_CONFIGS = ['civic-needs.yml', 'public-works.yml'];
@@ -74,7 +75,7 @@ function parseArgs(argv) {
   return result;
 }
 function sqliteSnapshot(python, runtime) {
-  const chosen = [...STABLE, ...ADDED, 'life_schema', 'life_city', 'city_state', 'stock', 'settlement', 'region', 'reserve', 'disaster_response', 'disaster_response_history', 'disaster_recovery_ledger'];
+  const chosen = [...STABLE, ...ADDED, ...V13_TABLES, 'life_schema', 'life_city', 'city_state', 'stock', 'settlement', 'region', 'reserve', 'disaster_response', 'disaster_response_history', 'disaster_recovery_ledger'];
   const result = spawnSync(python, ['-c', PROBE, runtime, chosen.join(',')], { encoding: 'utf8', windowsHide: true, maxBuffer: 16 * 1024 * 1024 });
   assert.equal(result.status, 0, `Read-only stopped SQLite probe failed: ${result.error || result.stderr}`);
   return JSON.parse(result.stdout);
@@ -105,8 +106,13 @@ function assertInventory(actual, expected) {
   assert.deepEqual(actual.items, expected, 'Named guide inventory or deposited goods changed across upgrade');
 }
 
-function is11(version) { return /^1\.(?:1|2)\./.test(version); }
-function expectedAddedTables(version) { return ADDED.filter(table => is11(version) || !V11_TABLES.includes(table)).sort(); }
+function minorVersion(version) { return Number(version.split('.')[1]); }
+function is11(version) { return minorVersion(version) >= 1; }
+function is13(version) { return minorVersion(version) >= 3; }
+function expectedAddedTables(version) {
+  return [...ADDED.filter(table => is11(version) || !V11_TABLES.includes(table)),
+    ...(is13(version) ? V13_TABLES : [])].sort();
+}
 function assertAddedTables(before, after, version) {
   assert.deepEqual(after.filter(name => !before.includes(name)).sort(), expectedAddedTables(version));
 }
@@ -294,7 +300,7 @@ function inspectProduction(before, after, startedAt, finishedAt) {
 }
 function assertDurable(before, after, version = VERSION) {
   assert.equal(after.pluginVersion, version);
-  assert.equal(after.world.schema, 2);
+  assert.equal(after.world.schema, is13(version) ? 3 : 2);
   assert.equal(after.world.integrity, 'ok');
   assert.equal(after.core.integrity, 'ok');
   assert.deepEqual(after.world.foreignKeys, []);
@@ -311,6 +317,17 @@ function assertDurable(before, after, version = VERSION) {
     if (table.endsWith('_schema')) assert.deepEqual(next[table], [{ id: 1, version: table === 'civic_schema' ? 2 : 1 }]);
     else if (table === 'civic_clock') assert(next[table].every(row => old.city_state.some(city => row.city === city.id) && row.period >= 0));
     else assert.deepEqual(next[table], [], `Upgrade invented ${table}`);
+  }
+  if (is13(version)) {
+    const expectedRegions = new Map();
+    for (const building of old.building) {
+      const region = `${building.world}:${building.x >> 4}:${building.z >> 4}`;
+      expectedRegions.set(`${building.city}|${building.nation}|${region}`,
+        { city: building.city, nation: building.nation, region, world_name: building.world_name });
+    }
+    assert.deepEqual(next.city_region, [...expectedRegions.values()].sort((left, right) =>
+      `${left.city}|${left.nation}|${left.region}`.localeCompare(`${right.city}|${right.nation}|${right.region}`)),
+    '1.3 must retain every old facility region in its original city and nation atlas');
   }
   assertLifeEvolution(before, after, version);
   const cityIdentity = cities => cities.map(({id,nation,name,civilization}) => ({id,nation,name,civilization}));
@@ -350,9 +367,9 @@ async function main() {
   assert.equal(properties(path.join(options.runtime, 'eula.txt')).eula, 'true');
   assert.equal(fs.readFileSync(path.join(options.runtime, '.starworld-smoke-runtime'), 'utf8').trim(), 'StarWorld isolated Paper smoke runtime v1');
   const prep = readJson(path.join(options.runtime, 'UPGRADE-PROVENANCE.json'));
-  assert.match(prep.targetVersion, /^1\.(?:0|1|2)\.\d+$/);
+  assert.match(prep.targetVersion, /^1\.\d+\.\d+$/);
   VERSION = prep.targetVersion;
-  if(/^1\.2\./.test(VERSION))NEW_CONFIGS=[...NEW_CONFIGS,'climate.yml'];
+  if(minorVersion(VERSION)>=2)NEW_CONFIGS=[...NEW_CONFIGS,'climate.yml'];
   assert.deepEqual(prep.newConfigurationNames||['civic-needs.yml','public-works.yml'],NEW_CONFIGS);
   assert.equal(prep.schema, 1);
   assert.equal(prep.preparationStatus, 'prepared-not-started');

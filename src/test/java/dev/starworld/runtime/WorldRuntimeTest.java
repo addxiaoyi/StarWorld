@@ -7,6 +7,9 @@ import dev.starworld.integration.CoreBridge;
 import dev.starworld.integration.CustomItems;
 import dev.starworld.persistence.WorldStore;
 import org.bukkit.Material;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -38,6 +41,63 @@ import static org.mockito.Mockito.*;
 class WorldRuntimeTest {
     private static final String WHEAT = "minecraft:wheat";
     @TempDir Path temp;
+
+    @Test void staleRegistrationCannotRewriteTheCurrentNationBeforeItsLiveRecheck() throws Exception {
+        try (Fixture f = new Fixture()) {
+            UUID currentNation = UUID.randomUUID();
+            CoreCity current = new CoreCity(f.city.cityId(), currentNation, "City", "Current nation", 1, "current");
+            f.store.ensureCity(current);
+            when(f.core.playerCity(f.playerId)).thenReturn(Optional.of(f.city), Optional.of(current));
+            when(f.core.ownsSite(eq(f.city.cityId()), any())).thenReturn(true);
+            Block block = mock(Block.class);
+            World world = mock(World.class);
+            when(f.player.getTargetBlockExact(6)).thenReturn(block);
+            when(block.getType()).thenReturn(Material.COMPOSTER);
+            when(block.getWorld()).thenReturn(world);
+            when(world.getUID()).thenReturn(UUID.randomUUID());
+            when(world.getName()).thenReturn("fixture");
+
+            f.runtime.register(f.player, "farm");
+            Runnable callback = f.callbacks.poll(5, TimeUnit.SECONDS);
+            assertNotNull(callback);
+            assertEquals(currentNation, f.store.view(f.city.cityId()).orElseThrow().nationId(),
+                    "A queued stale Core snapshot must not overwrite the current nation");
+            callback.run();
+            f.runtime.async(() -> true).get(5, TimeUnit.SECONDS);
+            assertEquals(currentNation, f.store.view(f.city.cityId()).orElseThrow().nationId());
+            assertTrue(f.store.view(f.city.cityId()).orElseThrow().buildings().isEmpty());
+            verify(f.player).sendMessage("§cStarWorld: 城市归属已变化");
+            verify(block, never()).getBiome();
+        }
+    }
+
+    @Test void staleSurveyCannotRewriteTheCurrentNationOrSpendItsStockBeforeItsLiveRecheck() throws Exception {
+        try (Fixture f = new Fixture()) {
+            UUID currentNation = UUID.randomUUID();
+            CoreCity current = new CoreCity(f.city.cityId(), currentNation, "City", "Current nation", 1, "current");
+            f.store.ensureCity(current);
+            f.store.stock(f.city.cityId(), "minecraft:paper", 16);
+            when(f.core.playerCity(f.playerId)).thenReturn(Optional.of(f.city), Optional.of(current));
+            when(f.core.ownsSite(eq(f.city.cityId()), any())).thenReturn(true);
+            World world = mock(World.class);
+            when(world.getUID()).thenReturn(UUID.randomUUID());
+            when(world.getName()).thenReturn("fixture");
+            when(world.isChunkLoaded(anyInt(), anyInt())).thenReturn(true);
+            when(f.player.getLocation()).thenReturn(new Location(world, 8, 64, 8));
+
+            f.runtime.survey(f.player);
+            Runnable callback = f.callbacks.poll(5, TimeUnit.SECONDS);
+            assertNotNull(callback);
+            assertEquals(currentNation, f.store.view(f.city.cityId()).orElseThrow().nationId(),
+                    "A queued stale Core snapshot must not overwrite the current nation");
+            callback.run();
+            f.runtime.async(() -> true).get(5, TimeUnit.SECONDS);
+            assertEquals(currentNation, f.store.view(f.city.cityId()).orElseThrow().nationId());
+            assertEquals(16L, f.store.stock(f.city.cityId()).get("minecraft:paper"));
+            verify(f.player).sendMessage("§cStarWorld: 城市归属已变化");
+            verify(world, never()).getBlockAt(anyInt(), anyInt(), anyInt());
+        }
+    }
 
     @Test void newPublicQueriesForwardOnlyToReadMethodsWithoutStartingOrCompletingWork()throws Exception{
         var works=mock(dev.starworld.works.PublicWorksService.class);var civic=mock(dev.starworld.civic.CivicNeedsService.class);var life=mock(dev.starworld.life.LifeService.class);UUID request=UUID.randomUUID();

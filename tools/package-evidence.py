@@ -74,6 +74,118 @@ def hash_string(value: object) -> bool:
     return isinstance(value, str) and re.fullmatch(r"[a-f0-9]{64}", value) is not None
 
 
+def recorded_artifact_hash(proof: dict) -> str | None:
+    return (proof.get("artifact_sha256") or
+            proof.get("pluginJars", {}).get("StarWorld.jar") or
+            proof.get("artifacts", {}).get("jar", {}).get("sha256"))
+
+
+def validate_storage_evidence(evidence: dict, script: bytes, plugin_hash: str) -> dict:
+    require(evidence.get("suite") == "real-paper-survey-and-storage-backpressure" and
+            evidence.get("runnerSha256") == sha256(script) and
+            evidence.get("pluginJars", {}).get("StarWorld.jar") == plugin_hash and
+            hash_string(evidence.get("paperSha256")),
+            "Storage acceptance runner, suite or artifact fingerprint differs")
+    tuning = evidence.get("testTuning", {})
+    node_limit = evidence.get("nodeHeapLimitBytes", 0)
+    jvm_args = tuning.get("jvmArgs", [])
+    minimum_free = tuning.get("minimumFreeSystemMemoryBytes", 0)
+    startup_free = tuning.get("startupFreeSystemMemoryBytes", 0)
+    require(isinstance(node_limit, int) and 0 < node_limit <= 256 * 1024 * 1024 and
+            any(isinstance(arg, str) and re.fullmatch(r"-Xmx(?:[1-4][0-9]{2}|512)[mM]", arg) for arg in jvm_args) and
+            minimum_free >= 1024 * 1024 * 1024 and startup_free >= minimum_free and
+            tuning.get("storageQueueCapacity") == 256 and tuning.get("paperHeapSafetyLimitPercent") == 95,
+            "Storage acceptance exceeds its Node/Paper heap, queue or system-memory bounds")
+    matching_steps = [step for step in evidence.get("steps", [])
+                      if step.get("name") == "real Paper sustains bounded queue saturation and recovers for 60 seconds"]
+    require(len(matching_steps) == 1 and matching_steps[0].get("status") == "passed",
+            "Storage acceptance lacks one passed 60-second pressure stage")
+    pressure = matching_steps[0].get("observed", {})
+    require(isinstance(pressure, dict) and pressure.get("elapsedMillis", 0) >= 60_000 and
+            pressure.get("rounds", 0) >= 10 and pressure.get("requestsPerRound") == 384 and
+            pressure.get("requests") == pressure.get("accepted", -1) + pressure.get("rejected", -1) and
+            pressure.get("accepted", 0) > 0 and pressure.get("rejected", 0) > 0 and
+            pressure.get("heapSamples", 0) > 0 and pressure.get("safetyLimitPercent") == 95 and
+            pressure.get("maxHeapBytes", 0) <= 512 * 1024 * 1024 and
+            pressure.get("peakHeapBytes", 0) <= pressure.get("maxHeapBytes", 0) * 0.95 and
+            pressure.get("peakPercentOfMaximum", 100) <= 95,
+            "Storage acceptance did not prove bounded 60-second pressure, recovery and the heap stop line")
+    return pressure
+
+
+def validate_paper_resource_log(log: bytes, label: str, runner_hash: str, helper_hash: str) -> None:
+    def marker(prefix: bytes) -> dict:
+        matches = [line[len(prefix):] for line in log.splitlines() if line.startswith(prefix)]
+        require(len(matches) == 1, f"{label} Paper log must contain exactly one {prefix.decode().strip()} marker")
+        try:
+            value = json.loads(matches[0].decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise EvidenceError(f"{label} Paper resource marker is invalid JSON") from error
+        require(isinstance(value, dict), f"{label} Paper resource marker must be an object")
+        return value
+
+    preflight = marker(b"STARWORLD_RESOURCE_PREFLIGHT ")
+    summary = marker(b"STARWORLD_RESOURCE_SUMMARY ")
+    mib = 1024 * 1024
+    startup_physical_floor = 1536 * mib
+    startup_commit_floor = 2 * 1024 * mib
+    recorded_runner = preflight.get("runnerSha256")
+    if recorded_runner != runner_hash:
+        raise EvidenceError(
+            f"{label} Paper log runner fingerprint differs: recorded {recorded_runner!r}, current {runner_hash}")
+    recorded_helper = preflight.get("acceptanceHelperSha256")
+    if recorded_helper != helper_hash:
+        raise EvidenceError(
+            f"{label} Paper log shared launcher fingerprint differs: recorded {recorded_helper!r}, current {helper_hash}")
+    for actual, floor in (("minimumStartupFreeMemoryBytes", startup_physical_floor),
+                          ("minimumStartupFreeCommitBytes", startup_commit_floor)):
+        require(type(preflight.get(actual)) is int and preflight[actual] >= floor,
+                f"{label} Paper log lacks its {floor // mib} MiB {actual} guard")
+    runtime_floor = 768 * mib
+    non_heap_reserve = preflight.get("minimumStartupNonHeapReserveBytes")
+    require(type(non_heap_reserve) is int and non_heap_reserve >= 1024 * mib,
+            f"{label} Paper startup reserve omits its 1024 MiB JVM/native allowance")
+    runtime_limit = preflight.get("minimumRuntimeFreeMemoryBytes")
+    observed_free = summary.get("minimumObservedFreeMemoryBytes")
+    require(type(runtime_limit) is int and runtime_limit >= runtime_floor and
+            type(observed_free) is int and observed_free >= runtime_limit,
+            f"{label} Paper process crossed its runtime free-memory limit")
+    commit_limit = preflight.get("minimumRuntimeFreeCommitBytes")
+    observed_commit = summary.get("minimumObservedFreeCommitBytes")
+    require(type(commit_limit) is int and commit_limit >= runtime_floor and
+            type(observed_commit) is int and observed_commit >= commit_limit,
+            f"{label} Paper process crossed its runtime free-commit limit")
+    node_heap = preflight.get("nodeHeapLimitBytes")
+    require(type(node_heap) is int and 0 < node_heap <= 512 * mib,
+            f"{label} Node heap exceeded 512 MiB")
+
+    heap_bytes = []
+    for argument in preflight.get("jvmArgs", []):
+        if not isinstance(argument, str):
+            continue
+        match = re.fullmatch(r"-Xmx([1-9][0-9]*)([mMgG])", argument)
+        if match:
+            heap_bytes.append(int(match.group(1)) * (1024 ** 2 if match.group(2).lower() == "m" else 1024 ** 3))
+    require(len(heap_bytes) == 1 and 0 < heap_bytes[0] <= 768 * mib,
+            f"{label} Paper maximum heap exceeded 768 MiB or was not recorded exactly once")
+    require(preflight.get("paperMaximumHeapBytes") == heap_bytes[0],
+            f"{label} Paper heap fingerprint differs from its recorded -Xmx")
+    required_reserve = heap_bytes[0] + node_heap + non_heap_reserve + runtime_floor
+    required_memory = max(startup_physical_floor, required_reserve)
+    required_commit = max(startup_commit_floor, required_reserve)
+    require(preflight.get("requiredStartupFreeMemoryBytes") == required_memory and
+            preflight.get("requiredStartupFreeCommitBytes") == required_commit,
+            f"{label} Paper startup reserve does not match its JVM/Node heap and runtime limits")
+    require(type(preflight.get("startupFreeMemoryBytes")) is int and
+            preflight["startupFreeMemoryBytes"] >= required_memory,
+            f"{label} Paper process started below its physical memory reserve")
+    require(type(preflight.get("startupFreeCommitBytes")) is int and
+            preflight["startupFreeCommitBytes"] >= required_commit,
+            f"{label} Paper process started below its commit memory reserve")
+    require(not any(line.startswith(b"STARWORLD_RESOURCE_STOP ") for line in log.splitlines()),
+            f"{label} Paper log contains a memory safety stop")
+
+
 def clean_shutdown(log: bytes) -> bool:
     return (b"StarWorld ready:" in log and (b"Stopping server" in log or b"Stopping the server" in log)
             and b"All dimensions are saved" in log and b"Could not flush StarWorld storage" not in log)
@@ -107,11 +219,12 @@ def main() -> int:
     parser.add_argument("--border-dir", type=Path, help="Required 0.3 real neighboring-resource dispute regression")
     parser.add_argument("--operations-dir", type=Path, help="Required for 0.4: route planning, delivery statistics and online backup acceptance")
     parser.add_argument("--disaster-dir", type=Path, help="Required from 0.5: disaster costs, response restart, and finite recovery")
+    parser.add_argument("--storage-dir", type=Path, help="Required from 1.4: bounded storage pressure and heap recovery acceptance")
     parser.add_argument("--works-dir", type=Path, help="Required for 1.0: public works under three consecutive starts")
     parser.add_argument("--civic-dir", type=Path, help="Required for 1.0: real SenLuo integrations and civic needs, including the original fifteen stages")
-    parser.add_argument("--lifecycle-source-dir", type=Path, help="Required from 1.1: real 1.0 source action before migration")
-    parser.add_argument("--lifecycle-dir", type=Path, help="Required from 1.1: three-start 1.0-to-1.1 partial culture migration")
-    parser.add_argument("--lifecycle-logistics-dir", type=Path, help="Required from 1.1: four-start transport configuration recovery")
+    parser.add_argument("--lifecycle-source-dir", type=Path, help="Required from 1.1 onward: real 1.0 source action before migration")
+    parser.add_argument("--lifecycle-dir", type=Path, help="Required from 1.1 onward: three-start partial culture migration on the final JAR")
+    parser.add_argument("--lifecycle-logistics-dir", type=Path, help="Required from 1.1 onward: four-start transport configuration recovery on the final JAR")
     parser.add_argument("--smoke-dir", type=Path, help="Required for 0.3: no-dependency runtime containing smoke-evidence.json and both smoke-run logs")
     parser.add_argument("--check-only", action="store_true", help="Validate all inputs and print the planned archive without writing")
     args = parser.parse_args()
@@ -148,7 +261,7 @@ def main() -> int:
     for file in machine_files:
         data = regular_file(file, machine_dir)
         proof = read_json(data, str(file))
-        recorded_hash = proof.get("artifact_sha256") or proof.get("pluginJars", {}).get("StarWorld.jar")
+        recorded_hash = recorded_artifact_hash(proof)
         require(recorded_hash == plugin_hash, f"Current machine evidence describes another artifact: {file.name}; move historical evidence under history/")
         if "version" in proof:
             require(proof["version"] == version, f"Current machine evidence describes another version: {file.name}")
@@ -216,6 +329,9 @@ def main() -> int:
     if release_version >= (0, 5, 0):
         require(args.disaster_dir is not None, "0.5 or later delivery requires --disaster-dir")
         run_inputs.append(("disaster", args.disaster_dir, "tools/paper-client/disaster-acceptance.cjs"))
+    if release_version >= (1, 4, 0):
+        require(args.storage_dir is not None, "1.4 delivery requires --storage-dir")
+        run_inputs.append(("storage", args.storage_dir, "tools/paper-client/survey-acceptance.cjs"))
     if release_version >= (1, 0, 0):
         for label, directory, script in (
                 ("works", args.works_dir, "tools/paper-client/works-acceptance.cjs"),
@@ -230,6 +346,7 @@ def main() -> int:
         require([name for name in civic_names if name in legacy_names] == legacy_names,
                 "The combined civic suite must retain every original SenLuo stage in order")
     transcript_pattern = re.compile(r"(?:paper-run-[1-9][0-9]*|client-run-[A-Za-z0-9_-]+)\.log")
+    shared_launcher_hash = sha256(regular_file(root / "tools/paper-client/acceptance.cjs", root))
     expected_clients = {
         "expansion": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
         "senluo": {"client-run-1.log", "client-run-listener-1.log", "client-run-2.log"},
@@ -239,6 +356,7 @@ def main() -> int:
         "border": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
         "operations": {f"client-run-{run}-{player}.log" for run in (1, 2, 3) for player in ("a", "b")},
         "disaster": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
+        "storage": {"client-run-1.log"},
         "works": {f"client-run-{run}-{slot}.log" for run in (1, 2, 3) for slot in range(3)},
         "civic": {"client-run-1.log", "client-run-listener-1.log", "client-run-2.log"},
     }
@@ -278,6 +396,19 @@ def main() -> int:
                         f"Invalid {label} plugin fingerprint/name: {name}")
                 require(sha256(regular_file(runtime / "plugins" / name, runtime)) == fingerprint,
                         f"{label} actual installed artifact changed: {name}")
+            if label == "storage":
+                validate_storage_evidence(evidence, script, plugin_hash)
+                require(sha256(regular_file(runtime / "paper.jar", runtime)) == evidence["paperSha256"],
+                        "Storage acceptance Paper artifact changed")
+                tuning = evidence["testTuning"]
+                eula = regular_file(runtime / "eula.txt", runtime).decode("utf-8")
+                server_properties = regular_file(runtime / "server.properties", runtime).decode("utf-8")
+                ownership = regular_file(runtime / ".starworld-smoke-runtime", runtime).decode("utf-8")
+                require(re.search(r"(?m)^\s*eula\s*=\s*true\s*$", eula) is not None and
+                        re.search(r"(?m)^\s*server-ip\s*=\s*127\.0\.0\.1\s*$", server_properties) is not None and
+                        re.search(r"(?m)^\s*online-mode\s*=\s*false\s*$", server_properties) is not None and
+                        ownership.strip() == "StarWorld isolated Paper smoke runtime v1",
+                        "Storage acceptance runtime is not an owned localhost test server with accepted EULA")
             if label in {"disaster", "operations", "works", "upgrade"}:
                 require(preparation_proof is not None and preparation_proof.get("productVersion", preparation_proof.get("targetVersion")) == version and
                         preparation_proof.get("targetPluginSha256") == plugin_hash, f"{label} preparation is not bound to the final JAR/version")
@@ -335,6 +466,8 @@ def main() -> int:
         transcripts = sorted(file for file in directory.iterdir() if transcript_pattern.fullmatch(file.name))
         names = {file.name for file in transcripts}
         required_logs = {"paper-run-1.log", "paper-run-2.log"} | expected_clients[label]
+        if label == "storage":
+            required_logs = {"paper-run-1.log"} | expected_clients[label]
         if label in {"operations", "works"}:
             required_logs.add("paper-run-3.log")
         require(required_logs.issubset(names), f"{label} run lacks required server/client transcripts: {sorted(required_logs - names)}")
@@ -344,6 +477,11 @@ def main() -> int:
             if release_version >= (1, 0, 0) and file.name.startswith("paper-run-"):
                 require(clean_shutdown(log),
                         f"{label} transcript does not show startup and normal shutdown: {file.name}")
+            if release_version >= (1, 4, 0) and file.name.startswith("paper-run-"):
+                validate_paper_resource_log(log, label, sha256(script), shared_launcher_hash)
+            if label == "storage":
+                require(b"OutOfMemoryError" not in log and b"Could not flush StarWorld storage" not in log,
+                        "Storage acceptance log contains OOM or storage flush failure")
             add(f"runtime/{label}/{file.name}", log)
         runs.append({"suite": label, "source_directory": str(directory), "steps": len(steps),
                      "started_at": evidence["startedAt"], "finished_at": evidence["finishedAt"],
@@ -354,10 +492,11 @@ def main() -> int:
         from lifecycle_evidence import collect_lifecycle
 
         require(all((args.lifecycle_source_dir, args.lifecycle_dir, args.lifecycle_logistics_dir)),
-                "1.1 delivery requires the source, candidate and logistics lifecycle suites")
+                "Delivery from 1.1 onward requires the source, candidate and logistics lifecycle suites")
         runs.extend(collect_lifecycle(root, version, plugin_hash,
                                       args.lifecycle_source_dir, args.lifecycle_dir, args.lifecycle_logistics_dir,
-                                      add, regular_file, read_json, require, stage_names))
+                                      add, regular_file, read_json, require, stage_names,
+                                      validate_paper_resource_log, shared_launcher_hash))
 
     if args.smoke_dir:
         directory = absolute_directory(args.smoke_dir)

@@ -1,6 +1,6 @@
 # StarWorld 1.0.0 森罗联调验证
 
-**1.0.0 最终候选实服 30/30 阶段通过。** 时间为 2026-11-20 21:04:12–21:11:21（Asia/Shanghai）。两次 Paper 均正常保存并退出，三份真实协议客户端日志完整，验收运行器 stderr 为空，隔离端口已释放。[机器证据](evidence/civic-client.json) 保存逐阶段结果、运行配置及依赖指纹；原始客户端与服务端日志见同版交付证据包。
+**1.0.0 最终候选实服 30/30 阶段通过。** 时间为 2026-11-20 21:04:12–21:11:21（Asia/Shanghai）。两次 Paper 均正常保存并退出，三份真实协议客户端日志完整，验收运行器 stderr 为空，隔离端口已释放。[机器证据](evidence/history/1.0.0/civic-client.json) 保存逐阶段结果、运行配置及依赖指纹；原始客户端与服务端日志见同版交付证据包。
 
 Paper 1.21.11 build 132、Java 21、CraftEngine 26.9.1。StarWorld JAR SHA-256 为 `da87d1af73067a87a3fea04acb2a198ce6a1a4e1f32463f15a375ed824fe9ac6`，绑定同一产物的 [398 项自动化测试](evidence/unit-tests.json)。启动前校验 9 个插件 JAR、10 份 StarWorld 配置、2,399 个厨房包文件及 5,159 项依赖文件指纹；世界和两插件数据库都是新建。最新已审计森罗 HEAD `7b8ef80…` 与实际运行 Cookery 候选的生产源码基线 `3e774d0…` 分开记录，见[森罗源码审计](audit-senluo.md)。
 

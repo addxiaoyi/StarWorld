@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "version": "1.2.0",
-  "recorded_at": "2026-11-20T21:59:45.219279+00:00",
-  "command": "./mvnw.cmd -B --no-transfer-progress -Dstarworld.testHeap=256m clean verify",
-  "java": "21.0.13.1+2",
-  "artifact_sha256": "da942bffa5771f5cf1c231f51347e5bf247fe6f27ac14a9c8eabc445562534d9",
+  "version": "1.4.0",
+  "recorded_at": "2026-11-25T05:02:00.942327+00:00",
+  "command": "MAVEN_OPTS=-Xmx192m -XX:+UseSerialGC -XX:ActiveProcessorCount=1 -XX:TieredStopAtLevel=1 -XX:ReservedCodeCacheSize=32m -XX:MaxMetaspaceSize=160m -XX:-CreateCoredumpOnCrash -Dfile.encoding=UTF-8; test phase adds JaCoCo 0.8.14 and Mockito 5.20.0 javaagents. ./mvnw.cmd -B --no-transfer-progress -DforkCount=0 -Dstarworld.testHeap=192m clean test; ./mvnw.cmd -B --no-transfer-progress -DskipTests verify",
+  "java": "C:/Users/Administrator/Documents/starworld-tools/jdk-21.0.13.1+2/bin/java.exe",
+  "artifact_sha256": "9d1207953c4883a407a2f284332d0e19e12c71b8b72dee3547931319fdd70dfd",
   "totals": {
-    "tests": 455,
+    "tests": 475,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -42,7 +42,7 @@
     },
     {
       "suite": "dev.starworld.climate.ClimateRulesTest",
-      "tests": 8,
+      "tests": 11,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -70,7 +70,7 @@
     },
     {
       "suite": "dev.starworld.domain.SimulationTest",
-      "tests": 17,
+      "tests": 18,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -112,7 +112,7 @@
     },
     {
       "suite": "dev.starworld.evolution.RegionAtlasTest",
-      "tests": 3,
+      "tests": 4,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -147,7 +147,7 @@
     },
     {
       "suite": "dev.starworld.integration.StarCoreBridgeTest",
-      "tests": 14,
+      "tests": 16,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -161,7 +161,7 @@
     },
     {
       "suite": "dev.starworld.integration.StarCoreExtensionsTest",
-      "tests": 9,
+      "tests": 11,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -280,7 +280,7 @@
     },
     {
       "suite": "dev.starworld.persistence.WorldStoreTest",
-      "tests": 20,
+      "tests": 24,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -336,14 +336,14 @@
     },
     {
       "suite": "dev.starworld.runtime.StorageWorkerTest",
-      "tests": 4,
+      "tests": 9,
       "failures": 0,
       "errors": 0,
       "skipped": 0
     },
     {
       "suite": "dev.starworld.runtime.WorldRuntimeTest",
-      "tests": 13,
+      "tests": 15,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -386,30 +386,30 @@
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 53248,
-      "missed": 15515
+      "covered": 54312,
+      "missed": 15741
     },
     "BRANCH": {
-      "covered": 3858,
-      "missed": 2616
+      "covered": 3901,
+      "missed": 2652
     },
     "LINE": {
-      "covered": 3508,
-      "missed": 664
+      "covered": 3643,
+      "missed": 716
     },
     "COMPLEXITY": {
-      "covered": 2600,
-      "missed": 2670
+      "covered": 2664,
+      "missed": 2710
     },
     "METHOD": {
-      "covered": 1428,
-      "missed": 535
+      "covered": 1477,
+      "missed": 550
     },
     "CLASS": {
-      "covered": 211,
+      "covered": 214,
       "missed": 13
     }
   },
-  "build_log_sha256": "2b2ad6ee801eec05d7be336f1bc0251048478c27713ac16ef96ecca34df6a1ce",
-  "sources_sha256": "3f774d048ccd546eb6bc5b0edcf17641d44237895e448ea9c5b43298aeedd3fa"
+  "build_log_sha256": "eb6faf6fa9eb4a67bff644f4b3999095d520abeb41fd9bac97b19f9bc1394066",
+  "sources_sha256": "7ecd28437433c1c9a8d22e27ad22f831b2f69cbd7f944e36cd110cd76ae5d394"
 }

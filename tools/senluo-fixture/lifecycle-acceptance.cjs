@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// Independent real 1.0 -> 1.1 lifecycle acceptance. SQL is stopped, immutable and read-only.
+// Independent real legacy-to-current lifecycle acceptance. SQL is stopped, immutable and read-only.
 // Preparation/copying, plugin replacement, and the two declared cap changes belong to the operator.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {spawnSync}=require('node:child_process'),{createRequire}=require('node:module');
@@ -36,7 +36,7 @@ player chef/deposit/Cookery-25 action, then cleanly stops while that exact actio
 unconsumed in genuine schema1. Original accepted runtime is read only and never started.
 
 After source passes, separately copy that stopped source to a new candidate, install
-the exact 1.1 product JAR and the same rebuilt fixture. Change only life.yml's
+the current release JAR and the same rebuilt fixture. Change only life.yml's
 player-culture-per-period and city-culture-per-period to 20; preserve all other input.
 Candidate starts three times. Public exact-ID Futures must show 25->20, then 5+new12=17,
 same-period repeat reads and another restart with no duplicate credit. No direct drain,
@@ -165,7 +165,7 @@ async function main() {
     const source=fs.realpathSync(sourceEvidence.runtime);separate(source,options.runtime);
     const finalSource=probe(options.python,source);
     for(const label of ['world','core']){assert.equal(finalSource[label].sha256,sourceEvidence.after[label].sha256,'Stopped source changed after proof');assert.equal(before[label].sha256,finalSource[label].sha256,'Candidate is not the exact stopped source copy');}
-    assert.match(before.version,/^1\.1\.0(?:-SNAPSHOT)?$/);assert.equal(finalSource.version,'1.0.0');
+  assert.match(before.version,/^1\.(?:1|[2-9]\d*)\.\d+(?:-SNAPSHOT)?$/);assert.equal(finalSource.version,'1.0.0');
     assert.deepEqual(configs(source),sourceEvidence.preparation.configSha256);
     const sourceJars=jars(source);assert.deepEqual(sourceJars,sourceEvidence.preparation.pluginJars);
     assert.deepEqual(Object.keys(pluginJars),Object.keys(sourceJars));for(const [name,sum]of Object.entries(sourceJars))if(name!=='StarWorld.jar')assert.equal(pluginJars[name],sum,'Unexpected candidate plugin change: '+name);
@@ -179,7 +179,7 @@ async function main() {
   if(args.preflight){console.log(JSON.stringify({status:'prepared',mode:args.mode,javaStarted:false,version:before.version,preparation}));return;}
   const mineflayer=createRequire(path.resolve(args['client-deps'],'package.json'))('mineflayer');
   const directory=path.join(base,args.mode+'-'+new Date().toISOString().replace(/[:.]/g,'-'));fs.mkdirSync(directory,{recursive:true});
-  const evidence={schema:1,suite:'real-paper-life-carry',mode:args.mode,status:'running',runtime:options.runtime,version:before.version,startedAt:new Date().toISOString(),expectedStages:args.mode==='source'?4:7,preparation,testTuning:{periodSeconds:60,randomEventChance:0,playerCap:configuredNumber(lifeFile,'player-culture-per-period'),cityCap:configuredNumber(lifeFile,'city-culture-per-period'),jvmArgs:JVM,nodeArgs:process.execArgv,nodeVersion:process.version},scope:'Actual CE Cookery player feast and warehouse debits; genuine stopped schema1; additive1.1 migration; indexed public exact-action culture reads; real online settlements; same-period reads; two candidate restarts. No SQL writes, direct drain, period manipulation, Core reconstruction, upstream music completion or Folia claim.',before,steps:[]};
+  const evidence={schema:1,suite:'real-paper-life-carry',mode:args.mode,status:'running',runtime:options.runtime,version:before.version,startedAt:new Date().toISOString(),expectedStages:args.mode==='source'?4:7,preparation,testTuning:{periodSeconds:60,randomEventChance:0,playerCap:configuredNumber(lifeFile,'player-culture-per-period'),cityCap:configuredNumber(lifeFile,'city-culture-per-period'),jvmArgs:JVM,nodeArgs:process.execArgv,nodeVersion:process.version},scope:'Actual CE Cookery player feast and warehouse debits; genuine stopped schema1; additive lifecycle migration; indexed public exact-action culture reads; real online settlements; same-period reads; two candidate restarts. No SQL writes, direct drain, period manipulation, Core reconstruction, upstream music completion or Folia claim.',before,steps:[]};
   const save=()=>fs.writeFileSync(path.join(directory,'evidence.json'),JSON.stringify(evidence,null,2)+'\n');
   const stopped=name=>{const value=probe(options.python,options.runtime);fs.writeFileSync(path.join(directory,name+'.json'),JSON.stringify(value,null,2)+'\n');return value;};
   const stage=async(name,run)=>{console.log('RUN '+name);const row={name,startedAt:new Date().toISOString()};evidence.steps.push(row);save();try{row.result=await run();row.status='passed';return row.result;}catch(error){row.status='failed';row.error=error.stack;throw error;}finally{row.finishedAt=new Date().toISOString();save();}};
@@ -260,9 +260,9 @@ async function main() {
       assert(legacyId,'Original consumed history sample required');
       const legacy=before.world.rows.life_evolution_action.find(row=>row.id===legacyId),legacyAction=before.world.rows.life_action.find(row=>row.id===legacyId);
       const ids=[oldId,legacyId,unknown];
-      await stage('real1.1 migration and first actual cycle credit20',async()=>{
+      await stage('target life-schema migration and first actual cycle credit20',async()=>{
         await start(1);
-        lastPartial=await waitUntil(async()=>{const s=await state(ids);identity(s,sourceEvidence.identity);assert.match(s.version,/^1\.1\.0(?:-SNAPSHOT)?$/);assert.equal(s.creditApiAvailable,true);assert.equal(s.credits[unknown],null);
+        lastPartial=await waitUntil(async()=>{const s=await state(ids);identity(s,sourceEvidence.identity);assert.match(s.version,/^1\.(?:1|[2-9]\d*)\.\d+(?:-SNAPSHOT)?$/);assert.equal(s.creditApiAvailable,true);assert.equal(s.credits[unknown],null);
           const value=s.credits[oldId];assert(value&&value.creditedCulture<=20,'Missed partial-credit window; preserve failed run and prepare fresh candidate');
           return coherent(s)&&value.creditedCulture===20?s:false;},95000,'actual partial20',()=>server.check());
         credit(lastPartial,oldId,25,20,lastPartial.period,true);credit(lastPartial,legacyId,legacyAction.culture,legacyAction.culture,legacy.consumed_period,false);return lastPartial;

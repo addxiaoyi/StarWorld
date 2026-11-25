@@ -35,7 +35,11 @@ python tools/prepare-paper-acceptance.py --suite baseline `
 
 `civic` 另传 `--senluo-fixture`，模板须含已审计的 `PREPARATION.json`、上游来源记录及厨房资源包；工具核对原依赖指纹、厨房包的解压副本和活动资源副本，并绑定当前单测证据。`smoke` 仅安装 StarWorld JAR，由插件在真实启动时生成默认配置。旧存档升级继续使用下文的 `prepare-upgrade-10.py`；生活源/候选迁移须保留各自已停服数据库，不能用全新玩法目录替代。
 
-完整扩展使用独立的 `node expansion-acceptance.cjs --help`，参数相同。它使用 `StarWorldEA` 和 `StarWorldEB` 两个真实玩家、两个国家和两个城市，包含20阶段的设施维护/知识/军需/容量、国家实际发展倾向与创始人专长及生产倍率、职业与实际宴会扣费及农场产量、真实持久军团的公共作战扩展、双向实物托管运输、区域文化、核心国家资源回执、撤领和战争封锁、停战恢复、重启及公共核心城市删除后的聚合失效。该套件明确记录玩家物品和国库测试投入；未把 seed 当作产出。测试 helper 明确保活十个测试区块，StarWorld 本身不会加载区块。仅隔离配置关闭 `playability.new-nation-protection-days` 并把 `diplomacy.war.declaration-cost` 设零或公开充值后运行。结果位于 `runtime/expansion-acceptance/<UTC timestamp>`，格式与限制见 [evidence-schema.md](../../docs/evidence-schema.md)。原 `acceptance.cjs` 仍可直接执行原15阶段，亦向扩展套件提供公用服务器和客户端 harness。
+这些准备和运行工具也可在 Linux 使用；独立安装脚本需要 PowerShell 7，通过 `/proc/meminfo` 检查内存，并自动保存双启动的 `smoke-evidence.json`。成功、失败和仅到达 EULA 门禁分别记录，已有证据拒绝覆盖。普通客户端的 Linux 提交余量字段使用不可用哨兵，实际仍检查物理内存余量；不要把该字段当作真实 Linux commit 测量。
+
+旧设备没有迁移真实存档时，先从对应历史提交构建并验证旧产品，再生成旧版游戏状态。准备工具仅允许 `--suite disaster` 使用 0.5 JAR，完成全部22阶段后才能作为升级来源。重建1.0森罗来源时，`--unit-evidence` 指向那个1.0 JAR的干净单测记录；版本和哈希必须完全匹配。先完成1.0的30阶段 civic 实服，再从正常停服副本运行生活源4阶段。历史源码构建或空库本身不算迁移验收。
+
+完整扩展使用独立的 `node expansion-acceptance.cjs --help`，参数相同。它使用 `StarWorldEA` 和 `StarWorldEB` 两个真实玩家、两个国家和两个城市，当前包含23阶段的设施维护/知识/军需/容量、逐世界真实降雨与农场/矿井产量、国家实际发展倾向与创始人专长及生产倍率、职业与实际宴会扣费及农场产量、真实持久军团的公共作战扩展、双向实物托管运输、区域文化、核心国家资源回执、撤领和战争封锁、停战恢复、重启及公共核心城市删除后的聚合失效。该套件明确记录玩家物品和国库测试投入；未把 seed 当作产出。测试 helper 明确保活十个测试区块，StarWorld 本身不会加载区块。仅隔离配置关闭 `playability.new-nation-protection-days` 并把 `diplomacy.war.declaration-cost` 设零或公开充值后运行。该费用键可能不在默认配置中，需显式添加；`war.min_declaration_cost` 不能替代它。结果位于 `runtime/expansion-acceptance/<UTC timestamp>`，格式与限制见 [evidence-schema.md](../../docs/evidence-schema.md)。原 `acceptance.cjs` 仍可直接执行原15阶段，亦向扩展套件提供公用服务器和客户端 harness。
 
 逐世界气候验收可用仓库根目录的 `tools/prepare-climate-acceptance.ps1` 准备全新目录。它只复制 Paper JAR、插件 JAR 和 YAML 配置，不复制世界或数据库。可传入已验证的 Paper 缓存来避免首次启动引导，也可省略 `-BootstrapDirectory`，让 Paper 在首次启动时自行引导依赖。
 

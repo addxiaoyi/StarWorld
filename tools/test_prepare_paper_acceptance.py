@@ -89,6 +89,26 @@ class FreshPaperInputTests(unittest.TestCase):
         self.assertFalse(self.runtime.exists())
         self.assertIn('--max-old-space-size=192', proof['command'])
 
+    def test_rebuilds_real_05_disaster_source_without_adding_candidate_configuration(self):
+        with zipfile.ZipFile(self.jar, 'w') as archive:
+            archive.writestr('plugin.yml', "name: StarWorld\nversion: '0.5.0'\n")
+            archive.writestr('disaster-response.yml', 'strategies: {}\n')
+        self.args.suite = 'disaster'
+        proof = prepare.prepare(self.args)
+        self.assertEqual(proof['productVersion'], '0.5.0')
+        self.assertEqual(proof['targetPluginSha256'], prepare.sha(self.jar))
+        self.assertTrue((self.runtime / 'plugins/StarWorld/disaster-response.yml').is_file())
+        self.assertFalse((self.runtime / 'plugins/StarWorld/climate.yml').exists())
+        self.assertFalse((self.runtime / 'plugins/StarWorld/public-works.yml').exists())
+
+    def test_old_product_is_rejected_for_candidate_only_suite(self):
+        with zipfile.ZipFile(self.jar, 'w') as archive:
+            archive.writestr('plugin.yml', "name: StarWorld\nversion: '0.5.0'\n")
+        self.args.suite = 'works'
+        with self.assertRaisesRegex(ValueError, 'only as a disaster migration source'):
+            prepare.prepare(self.args)
+        self.assertFalse(self.runtime.exists())
+
     def test_existing_attempt_is_preserved(self):
         self.runtime.mkdir()
         previous = self.runtime / 'previous.json'
@@ -238,6 +258,20 @@ class FreshPaperInputTests(unittest.TestCase):
         self.assertIn(str(self.runtime), proof['command'])
         self.assertEqual(proof['runnerSha256'], prepare.sha(self.root / 'tools/senluo-fixture/civic-acceptance.cjs'))
         self.assertNotIn('old.yml', proof['configurationSha256'])
+
+        # Historical products can use the current runner with their own verified
+        # build; selecting another evidence path must never bypass JAR binding.
+        self.args.runtime = self.base / 'historical-civic'
+        self.args.unit_evidence = self.base / 'historical-unit-tests.json'
+        unit.rename(self.args.unit_evidence)
+        self.args.check_only = True
+        self.assertEqual(prepare.prepare(self.args)['status'], 'checked-not-created')
+        stale = json.loads(self.args.unit_evidence.read_text())
+        stale['artifact_sha256'] = '0' * 64
+        self.args.unit_evidence.write_text(json.dumps(stale))
+        with self.assertRaisesRegex(ValueError, 'another product build'):
+            prepare.prepare(self.args)
+        self.assertFalse(self.args.runtime.exists())
 
     def test_linked_output_parent_cannot_write_into_template(self):
         alias = self.base / 'alias'

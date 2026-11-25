@@ -3,6 +3,29 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { assertDurable, assertLifeEvolution, assertAddedTables, expectedAddedTables, stableTables, addedTables } = require('./upgrade-10-acceptance.cjs');
+const { validateRunConfigurations } = require('../senluo-fixture/lifecycle-acceptance.cjs');
+
+test('life migration permits only the exact new climate default and preserves every original configuration', () => {
+  const initial={'config.yml':'a'.repeat(64),'life.yml':'b'.repeat(64)};
+  const bundled={'climate.yml':'c'.repeat(64)};
+  const actual={...initial,...bundled};
+  assert.deepEqual(validateRunConfigurations('1.4.0',initial,actual,bundled),actual);
+  assert.throws(()=>validateRunConfigurations('1.4.0',initial,initial,bundled),/Configuration input changed/);
+  for(const tampered of [{...actual,'climate.yml':'d'.repeat(64)},
+    {...actual,'life.yml':'d'.repeat(64)},{...actual,'unexpected.yml':'d'.repeat(64)}]) {
+    assert.throws(()=>validateRunConfigurations('1.4.0',initial,tampered,bundled),/Configuration input changed/);
+  }
+  assert.throws(()=>validateRunConfigurations('1.4.0',initial,actual,{}),/must provide its climate default/);
+  assert.throws(()=>validateRunConfigurations('1.4.0',actual,actual,bundled),/must not already contain/);
+});
+
+test('historical life source and pre-climate candidate accept no new configuration files', () => {
+  const initial={'config.yml':'a'.repeat(64),'life.yml':'b'.repeat(64)};
+  for(const version of ['1.0.0','1.1.0']) {
+    assert.deepEqual(validateRunConfigurations(version,initial,{...initial},{}),initial);
+    assert.throws(()=>validateRunConfigurations(version,initial,{...initial,'climate.yml':'c'.repeat(64)},{}),/Configuration input changed/);
+  }
+});
 
 const BASE_ADDED = ['public_works_schema', 'public_works', 'public_works_history', 'civic_schema', 'civic_clock', 'civic_request', 'civic_request_cost', 'civic_action_claim', 'civic_history'].sort();
 const V11_ADDED = ['life_evolution_budget', 'life_evolution_pending', 'starworld_dispatch_cursor'].sort();

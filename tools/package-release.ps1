@@ -169,17 +169,28 @@ function Assert-LifecycleEvidence([IO.Compression.ZipArchive] $Archive, $Manifes
     $originalBytes = Read-ZipEntryBytes (Get-LifecycleEntry $Archive 'runtime/life-source/original-1.0-evidence.json')
     $original = Read-LifecycleJson $originalBytes
     $originalHash = Get-BytesSha256 $originalBytes
-    $historicalPath = Join-Path $RepositoryRoot 'docs/evidence/history/1.0.0/civic-client.json'
-    $historicalHash = (Get-FileHash -LiteralPath $historicalPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $originalLink = $source.Run.preparation.original
-    if ($originalHash -cne $historicalHash -or $originalHash -cne $source.Record.preparation_sha256 -or
+    if ($originalHash -cne $source.Record.preparation_sha256 -or
         $originalHash -cne $originalLink.evidenceSha256 -or
         $original.schema -ne 1 -or $original.status -cne 'passed' -or $original.version -cne '1.0.0' -or
         $original.pluginJars.'StarWorld.jar' -cne $source.Hash -or
         (Get-LifecycleUtcTicks $original.finishedAt 'original1.0.finishedAt') -gt
             (Get-LifecycleUtcTicks $source.Run.startedAt 'life-source.startedAt') -or
         @($original.steps).Count -ne 30 -or @($original.steps | Where-Object status -cne 'passed').Count -ne 0) {
-        throw 'Lifecycle source is not bound to the archived, passed StarWorld 1.0 civic evidence.'
+        throw 'Lifecycle source is not bound to its passed StarWorld 1.0 civic evidence.'
+    }
+    # A new device may regenerate a real 1.0 source. Validate the exact linked
+    # acceptance and all gameplay stages instead of requiring one old machine's hash.
+    $civicScript = [IO.File]::ReadAllText((Join-Path $RepositoryRoot 'tools/senluo-fixture/civic-acceptance.cjs'))
+    $civicStages = [regex]::Matches($civicScript, 'await\s+stage\(\s*([''"])(.*?)\1')
+    if ($civicStages.Count -ne 30) { throw 'Unexpected original civic acceptance stage count.' }
+    for ($i = 0; $i -lt 30; $i++) {
+        if ($original.steps[$i].name -cne $civicStages[$i].Groups[2].Value) {
+            throw "Original StarWorld 1.0 civic evidence lacks stage $($i + 1)."
+        }
+    }
+    foreach ($key in @('error', 'cleanupError', 'playerCleanupError', 'configurationRestoreError')) {
+        if ($original.Contains($key)) { throw "Original StarWorld 1.0 civic run retained an error: $key" }
     }
     $sourceLink = $candidate.Run.preparation.source
     $sourceDirectory = ([string]$source.Record.source_directory).Replace('\', '/').TrimEnd('/')
@@ -429,6 +440,9 @@ try {
     }
     $toolFiles = @(
         'tools/package-release.ps1', 'tools/package-evidence.py', 'tools/smoke-paper.ps1',
+        'tools/record-verification.py', 'tools/test_record_verification.py',
+        'tools/prepare-paper-acceptance.py', 'tools/test_prepare_paper_acceptance.py',
+        'tools/prepare-climate-acceptance.ps1',
         'tools/paper-fixture/pom.xml', 'tools/paper-fixture/plugin.yml',
         'tools/paper-fixture/README.md', 'tools/paper-fixture/starcore-build-provenance.json',
         'tools/paper-client/package.json', 'tools/paper-client/acceptance.cjs', 'tools/paper-client/acceptance.test.cjs',
@@ -440,10 +454,12 @@ try {
     if ($releaseVersion -ge [version]'0.5.0') { $toolFiles += @('tools/paper-client/disaster-acceptance.cjs','tools/paper-client/upgrade-05-acceptance.cjs') }
     if ($isFinalRelease) {
         $toolFiles += @('tools/paper-client/works-acceptance.cjs','tools/paper-client/prepare-upgrade-10.py',
-            'tools/paper-client/upgrade-10-acceptance.cjs','tools/senluo-fixture/civic-acceptance.cjs')
+            'tools/paper-client/upgrade-10-acceptance.cjs','tools/paper-client/upgrade-10-acceptance.test.cjs',
+            'tools/senluo-fixture/civic-acceptance.cjs')
     }
     if ($requiresLifecycleEvidence) {
         $toolFiles += @('tools/lifecycle_evidence.py', 'tools/test_lifecycle_evidence.py', 'tools/test_package_evidence.py', 'tools/test_storage_evidence.py',
+            'tools/prepare-life-candidate.py', 'tools/test_prepare_life_candidate.py',
             'tools/paper-client/lifecycle-logistics-acceptance.cjs', 'tools/senluo-fixture/lifecycle-acceptance.cjs')
     }
     foreach ($file in $toolFiles) { Copy-AllowedFile $file $sourceRoot }
@@ -483,7 +499,9 @@ try {
         '{0}  {1}' -f (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $relative
     }
     [IO.File]::WriteAllText((Join-Path $staging 'SHA256SUMS.txt'), ($checksums -join "`n") + "`n", $utf8)
-    Compress-Archive -LiteralPath @(Get-ChildItem -LiteralPath $staging -Force | ForEach-Object FullName) -DestinationPath $temporaryArchive -CompressionLevel Optimal
+    # Compress-Archive omits dotfiles on Unix, including Maven and CI inputs.
+    [IO.Compression.ZipFile]::CreateFromDirectory($staging, $temporaryArchive,
+        [IO.Compression.CompressionLevel]::Optimal, $false)
     $archive = [IO.Compression.ZipFile]::OpenRead($temporaryArchive)
     try {
         $names = @($archive.Entries | ForEach-Object { $_.FullName.Replace('\', '/') })

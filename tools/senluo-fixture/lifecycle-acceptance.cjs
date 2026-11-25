@@ -71,6 +71,7 @@ for label,relative in [('world','plugins/StarWorld/starworld.db'),('core','plugi
   result[label]=probe
 with zipfile.ZipFile(root/'plugins/StarWorld.jar') as jar:
  result['version']=re.search(r"^version:\s*['\"]?([^'\"\s]+)",jar.read('plugin.yml').decode('utf-8'),re.M).group(1)
+ result['bundledConfigs']={name:hashlib.sha256(jar.read(name)).hexdigest() for name in ['climate.yml'] if name in jar.namelist()}
 with zipfile.ZipFile(root/'plugins/StarWorldSenLuoFixture.jar') as jar:
  result['lifecycleFixture']= 'dev/starworld/fixture/LifecycleSenLuoFixture.class' in jar.namelist()
 print(json.dumps(result,ensure_ascii=False))
@@ -88,6 +89,16 @@ function argsOf(argv) {
 }
 function json(file){return JSON.parse(fs.readFileSync(requireFile(file),'utf8').replace(/^\uFEFF/,''));}
 function configs(runtime){return Object.fromEntries(fs.readdirSync(path.join(runtime,'plugins/StarWorld')).filter(n=>n.endsWith('.yml')).sort().map(n=>[n,hash(path.join(runtime,'plugins/StarWorld',n))]));}
+function validateRunConfigurations(version,initial,actual,bundled) {
+  const expected={...initial};
+  if(/^1\./.test(version)&&Number(version.split('.')[1])>=2) {
+    assert(!Object.hasOwn(initial,'climate.yml'),'Legacy candidate input must not already contain climate.yml');
+    assert.match(bundled?.['climate.yml']||'',/^[a-f0-9]{64}$/,'Candidate JAR must provide its climate default');
+    expected['climate.yml']=bundled['climate.yml'];
+  }
+  assert.deepEqual(actual,expected,'Configuration input changed beyond the bundled climate default');
+  return actual;
+}
 function jars(runtime){return Object.fromEntries(fs.readdirSync(path.join(runtime,'plugins')).filter(n=>n.endsWith('.jar')).sort().map(n=>[n,hash(path.join(runtime,'plugins',n))]));}
 function probe(python,runtime) {
   const process=spawnSync(python,['-c',PROBE,runtime],{encoding:'utf8',windowsHide:true,maxBuffer:16*1024*1024});
@@ -137,7 +148,7 @@ async function main() {
   const before=probe(options.python,options.runtime),pluginJars=jars(options.runtime),configSha256=configs(options.runtime);
   assert(before.lifecycleFixture,'Rebuild and register LifecycleSenLuoFixture before running');
   for(const name of ['StarWorld.jar','StarCore.jar','StarWorldFixture.jar','StarWorldSenLuoFixture.jar'])assert(pluginJars[name],'Missing real plugin '+name);
-  const preparation={javaSha256:hash(options.java),paperSha256:hash(options.paper),pluginJars,configSha256};
+  const preparation={javaSha256:hash(options.java),paperSha256:hash(options.paper),pluginJars,configSha256,inputConfigurationSha256:{...configSha256}};
   let sourceEvidence,original,accepted;
   if(args.mode==='source') {
     for(const key of ['source-runtime','baseline-evidence'])assert(args[key],'Missing --'+key);
@@ -169,6 +180,7 @@ async function main() {
     assert.deepEqual(configs(source),sourceEvidence.preparation.configSha256);
     const sourceJars=jars(source);assert.deepEqual(sourceJars,sourceEvidence.preparation.pluginJars);
     assert.deepEqual(Object.keys(pluginJars),Object.keys(sourceJars));for(const [name,sum]of Object.entries(sourceJars))if(name!=='StarWorld.jar')assert.equal(pluginJars[name],sum,'Unexpected candidate plugin change: '+name);
+    assert.deepEqual(Object.keys(configSha256),Object.keys(sourceEvidence.preparation.configSha256),'Candidate must begin with only the preserved source configurations');
     for(const [name,sum]of Object.entries(sourceEvidence.preparation.configSha256))if(name!=='life.yml')assert.equal(configSha256[name],sum,'Unexpected candidate configuration change: '+name);
     const sourceLife=fs.readFileSync(path.join(source,'plugins/StarWorld/life.yml'),'utf8');
     assert.equal(fs.readFileSync(lifeFile,'utf8'),withNumber(withNumber(sourceLife,'player-culture-per-period',20),'city-culture-per-period',20));
@@ -304,7 +316,7 @@ async function main() {
       });
     }
     assert.deepEqual(jars(options.runtime),pluginJars,'Plugin input changed during the real run');
-    assert.deepEqual(configs(options.runtime),configSha256,'Configuration input changed during the real run');
+    preparation.configSha256=validateRunConfigurations(before.version,configSha256,configs(options.runtime),before.bundledConfigs);
     if(original){const preserved=probe(options.python,preparation.original.runtime);for(const label of ['world','core'])assert.equal(preserved[label].sha256,original[label].sha256,'Original accepted database was changed');assert.deepEqual(configs(preparation.original.runtime),preparation.original.configurationSha256);}
     assert.equal(evidence.steps.length,evidence.expectedStages);assert(evidence.steps.every(row=>row.status==='passed'));evidence.status='passed';evidence.finishedAt=new Date().toISOString();save();
     console.log(JSON.stringify({status:evidence.status,mode:args.mode,steps:evidence.steps.length,directory,evidence:path.join(directory,'evidence.json'),oldActionId:oldId,newActionId:newId||null}));
@@ -315,5 +327,5 @@ async function main() {
   }
 }
 if(require.main===module)main().catch(error=>{console.error(error.stack);process.exitCode=1;});
-module.exports={argsOf,withNumber,PROBE};
+module.exports={argsOf,withNumber,PROBE,validateRunConfigurations};
 

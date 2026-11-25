@@ -30,6 +30,34 @@ $ErrorActionPreference = 'Stop'
 $utf8 = [Text.UTF8Encoding]::new($false)
 $sentinelText = 'StarWorld isolated Paper smoke runtime v1'
 
+function Get-FreeSystemMemory {
+    if ($IsWindows) {
+        $memory = Get-CimInstance Win32_OperatingSystem
+        return @{ PhysicalMiB = [math]::Floor($memory.FreePhysicalMemory / 1024)
+            CommitMiB = [math]::Floor($memory.FreeVirtualMemory / 1024) }
+    }
+    if (!$IsLinux) { throw 'Paper smoke memory monitoring supports Windows and Linux.' }
+    $values = @{}
+    foreach ($line in [IO.File]::ReadAllLines('/proc/meminfo')) {
+        if ($line -match '^(\w+):\s+(\d+) kB$') { $values[$Matches[1]] = [long]$Matches[2] }
+    }
+    foreach ($key in @('MemAvailable', 'SwapFree', 'CommitLimit', 'Committed_AS')) {
+        if (!$values.ContainsKey($key)) { throw "Missing Linux memory measurement: $key" }
+    }
+    # Reclaimable cache is available memory. In strict overcommit mode, also
+    # respect the kernel's commit budget; otherwise use physical + free swap.
+    $available = $values.MemAvailable + $values.SwapFree
+    if ([IO.File]::ReadAllText('/proc/sys/vm/overcommit_memory').Trim() -eq '2') {
+        $available = [math]::Min($available, [math]::Max(0, $values.CommitLimit - $values.Committed_AS))
+    }
+    return @{ PhysicalMiB = [math]::Floor($values.MemAvailable / 1024)
+        CommitMiB = [math]::Floor($available / 1024) }
+}
+
+foreach ($name in @('_JAVA_OPTIONS', 'JAVA_TOOL_OPTIONS', 'JDK_JAVA_OPTIONS')) {
+    if ([Environment]::GetEnvironmentVariable($name)) { throw "Unexpected JVM option injection: $name" }
+}
+
 function Resolve-LocalFile([string] $Path) {
     $resolved = (Resolve-Path -LiteralPath $Path).Path
     if (!(Test-Path -LiteralPath $resolved -PathType Leaf)) { throw "Expected a local file: $Path" }
@@ -64,7 +92,19 @@ if (Test-Path -LiteralPath $RuntimeDirectory) {
 [IO.File]::WriteAllText($sentinel, "$sentinelText`n", $utf8)
 $lock = [IO.File]::Open((Join-Path $RuntimeDirectory '.smoke.lock'), [IO.FileMode]::OpenOrCreate,
     [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+$evidencePath = Join-Path $RuntimeDirectory 'smoke-evidence.json'
+$evidence = $null
 try {
+    if (Test-Path -LiteralPath $evidencePath) { throw 'Preserve the previous smoke evidence; prepare a new runtime.' }
+    $evidence = [ordered]@{
+        schema = 1; status = 'running'; version = $pluginVersion
+        startedAt = [DateTimeOffset]::UtcNow.ToString('o')
+        artifact_sha256 = (Get-FileHash -LiteralPath $PluginJar -Algorithm SHA256).Hash.ToLowerInvariant()
+        paper_sha256 = (Get-FileHash -LiteralPath $ServerJar -Algorithm SHA256).Hash.ToLowerInvariant()
+        runner_sha256 = (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        runtime = $RuntimeDirectory; logs = [ordered]@{}
+    }
+    [IO.File]::WriteAllText($evidencePath, ($evidence | ConvertTo-Json -Depth 5) + "`n", $utf8)
     # Check availability before writing any configuration or starting Java.
     $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $Port)
     try { $listener.Start() } finally { $listener.Stop() }
@@ -140,9 +180,9 @@ motd=StarWorld isolated smoke test
     }
 
     function Invoke-Paper([int] $Run, [bool] $ExpectEulaGate) {
-        $systemMemory = Get-CimInstance Win32_OperatingSystem
-        $freePhysicalMemoryMiB = [math]::Floor($systemMemory.FreePhysicalMemory / 1024)
-        $freeCommitMemoryMiB = [math]::Floor($systemMemory.FreeVirtualMemory / 1024)
+        $systemMemory = Get-FreeSystemMemory
+        $freePhysicalMemoryMiB = $systemMemory.PhysicalMiB
+        $freeCommitMemoryMiB = $systemMemory.CommitMiB
         if ($freePhysicalMemoryMiB -lt 1536 -or $freeCommitMemoryMiB -lt 2048) {
             throw "Paper smoke requires at least 1536 MiB free physical and 2048 MiB free commit memory before startup; found $freePhysicalMemoryMiB MiB physical and $freeCommitMemoryMiB MiB commit."
         }
@@ -175,9 +215,9 @@ motd=StarWorld isolated smoke test
             $ready = $false
             while (!$process.HasExited -and [DateTime]::UtcNow -lt $deadline) {
                 if (!$ExpectEulaGate -and [DateTime]::UtcNow -ge $nextMemoryCheck) {
-                    $memory = Get-CimInstance Win32_OperatingSystem
-                    $freePhysicalMemoryMiB = [math]::Floor($memory.FreePhysicalMemory / 1024)
-                    $freeCommitMemoryMiB = [math]::Floor($memory.FreeVirtualMemory / 1024)
+                    $memory = Get-FreeSystemMemory
+                    $freePhysicalMemoryMiB = $memory.PhysicalMiB
+                    $freeCommitMemoryMiB = $memory.CommitMiB
                     if ($freePhysicalMemoryMiB -lt 768 -or $freeCommitMemoryMiB -lt 768) {
                         throw "Paper smoke stopped because free memory fell below 768 MiB; found $freePhysicalMemoryMiB MiB physical and $freeCommitMemoryMiB MiB commit."
                     }
@@ -226,7 +266,7 @@ motd=StarWorld isolated smoke test
             $process.Dispose()
         }
     }
-    if (!$agreed) { Invoke-Paper 1 $true; return }
+    if (!$agreed) { Invoke-Paper 1 $true; $evidence.status = 'eula-gate-only'; return }
     Invoke-Paper 1 $false
 
     # Probe only the stopped, sentinel-owned StarWorld database; never accesses StarCore tables.
@@ -266,5 +306,24 @@ public class StarWorldSmokeProbe {
     Invoke-Paper 2 $false
     & $JavaPath --class-path $pluginDestination $probeSource $database verify $marker $expectedSchemaVersion
     if ($LASTEXITCODE -ne 0) { throw 'Restart persistence probe failed.' }
+    $evidence.status = 'passed'
+    $evidence.schema_version = $expectedSchemaVersion
+    $evidence.restart_marker = $marker
     Write-Output "PASS: two clean Paper starts, console status, SQLite schema $expectedSchemaVersion and durable restart marker. Logs: $RuntimeDirectory"
-} finally { $lock.Dispose() }
+} catch {
+    if ($null -ne $evidence) { $evidence.status = 'failed'; $evidence.error = $_.ToString() }
+    throw
+} finally {
+    try {
+        if ($null -ne $evidence) {
+            $evidence.finishedAt = [DateTimeOffset]::UtcNow.ToString('o')
+            foreach ($name in @('smoke-run-1.log', 'smoke-run-2.log')) {
+                $log = Join-Path $RuntimeDirectory $name
+                if (Test-Path -LiteralPath $log -PathType Leaf) {
+                    $evidence.logs[$name] = (Get-FileHash -LiteralPath $log -Algorithm SHA256).Hash.ToLowerInvariant()
+                }
+            }
+            [IO.File]::WriteAllText($evidencePath, ($evidence | ConvertTo-Json -Depth 5) + "`n", $utf8)
+        }
+    } finally { $lock.Dispose() }
+}

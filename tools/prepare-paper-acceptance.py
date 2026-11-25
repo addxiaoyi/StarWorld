@@ -119,10 +119,12 @@ def prepare(args):
     with zipfile.ZipFile(jar) as archive:
         checked(archive.testzip() is None, 'Product JAR failed CRC validation')
         descriptor = archive.read('plugin.yml').decode('utf-8')
-        match = re.search(r'^version:\s*[\'"]?(1\.\d+\.\d+)[\'"]?\s*$', descriptor, re.M)
-        checked(match is not None, 'Expected a released StarWorld 1.x product JAR')
+        match = re.search(r'^version:\s*[\'"]?((?:0\.5|1\.\d+)\.\d+)[\'"]?\s*$', descriptor, re.M)
+        checked(match is not None, 'Expected a released StarWorld 0.5 or 1.x product JAR')
         checked(re.search(r'^name:\s*StarWorld\s*$', descriptor, re.M), 'Expected the StarWorld plugin')
         version = match.group(1)
+        checked(not version.startswith('0.') or args.suite == 'disaster',
+                'StarWorld 0.5 is supported only as a disaster migration source')
         defaults = {name: archive.read(name) for name in archive.namelist()
                     if '/' not in name and name.endswith('.yml') and name != 'plugin.yml'}
 
@@ -218,7 +220,7 @@ def prepare(args):
         # downloads. Never copy CE's databases or generated resource-pack cache.
         for file in sorted((template / 'plugins/CraftEngine/libs').rglob('*.jar')):
             include(file.relative_to(template).as_posix())
-        unit = ordinary(root / 'docs/evidence/unit-tests.json')
+        unit = ordinary(getattr(args, 'unit_evidence', None) or root / 'docs/evidence/unit-tests.json')
         evidence = read_json(unit)
         checked(evidence['version'] == version and evidence['artifact_sha256'] == sha(jar),
                 'Unit evidence belongs to another product build')
@@ -302,6 +304,8 @@ def main():
         cli.add_argument('--' + name, type=Path, required=True)
     cli.add_argument('--fixture', type=Path)
     cli.add_argument('--senluo-fixture', type=Path)
+    cli.add_argument('--unit-evidence', type=Path,
+                     help='Clean verification for the exact JAR (for a rebuilt historical civic source)')
     cli.add_argument('--node', type=Path, default=Path('node'))
     cli.add_argument('--powershell', type=Path, default=Path('pwsh'))
     cli.add_argument('--port', type=int, required=True)

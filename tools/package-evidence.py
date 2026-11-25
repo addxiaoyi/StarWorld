@@ -361,7 +361,7 @@ def main() -> int:
         "border": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
         "operations": {f"client-run-{run}-{player}.log" for run in (1, 2, 3) for player in ("a", "b")},
         "disaster": {f"client-run-{run}-{player}.log" for run in (1, 2) for player in ("a", "b")},
-        "storage": {"client-run-1.log"},
+        "storage": {f"client-run-{run}.log" for run in ((1, 2) if release_version >= (1, 6, 0) else (1,))},
         "works": {f"client-run-{run}-{slot}.log" for run in (1, 2, 3) for slot in range(3)},
         "civic": {"client-run-1.log", "client-run-listener-1.log", "client-run-2.log"},
     }
@@ -486,7 +486,7 @@ def main() -> int:
         transcripts = sorted(file for file in directory.iterdir() if transcript_pattern.fullmatch(file.name))
         names = {file.name for file in transcripts}
         required_logs = {"paper-run-1.log", "paper-run-2.log"} | expected_clients[label]
-        if label == "storage":
+        if label == "storage" and release_version < (1, 6, 0):
             required_logs = {"paper-run-1.log"} | expected_clients[label]
         if label in {"operations", "works"} or (label == "progression" and release_version >= (1, 5, 0)):
             required_logs.add("paper-run-3.log")

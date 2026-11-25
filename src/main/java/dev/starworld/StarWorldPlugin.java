@@ -29,10 +29,11 @@ public final class StarWorldPlugin extends JavaPlugin {
             runtime=new WorldRuntime(this,definitions,core,items,store);
             runtime.installExpansion(getDataFolder());
             CityMenu menu=new CityMenu(runtime,getConfig().getString("gui.title","StarWorld · 城市产业"));
-            GovernanceMenu governance=new GovernanceMenu(runtime);WorldCommand command=new WorldCommand(runtime,menu,governance);
+            GovernanceMenu governance=new GovernanceMenu(runtime);GeographyMenu geography=new GeographyMenu(runtime);WorldCommand command=new WorldCommand(runtime,menu,governance,geography);
             java.util.Objects.requireNonNull(getCommand("starworld")).setExecutor(command);getCommand("starworld").setTabCompleter(command);
             Bukkit.getPluginManager().registerEvents(menu,this);
             Bukkit.getPluginManager().registerEvents(governance,this);
+            Bukkit.getPluginManager().registerEvents(geography,this);
             Bukkit.getServicesManager().register(StarWorldApi.class,runtime,this,ServicePriority.Normal);
             Bukkit.getScheduler().runTaskTimer(this,runtime::tick,40L,40L);
             runtime.integrationStatus().forEach((k,v)->getLogger().info(k+": "+v));

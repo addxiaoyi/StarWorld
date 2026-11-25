@@ -162,11 +162,21 @@ public final class StarWorldFixture extends JavaPlugin implements CommandExecuto
             if(!player.getInventory().addItem(new ItemStack(Material.PAPER,16)).isEmpty())throw new IllegalStateException("Player inventory is full");
             player.saveData();getLogger().info("SW_FIXTURE_SURVEY_SEED paper=16 player="+player.getName());return true;
         }
-        if(!args[0].equals("survey-snapshot"))throw new IllegalArgumentException("Unknown survey fixture action");
+        if(!Set.of("survey-snapshot","survey-map").contains(args[0]))throw new IllegalArgumentException("Unknown survey fixture action");
         Object api=service("StarCore",CORE+"api.StarCoreApi");Class<?> apiType=type("StarCore",CORE+"api.StarCoreApi");
         Class<?> cityServiceType=type("StarCore",CORE+"module.city.CityService");Object cities=unwrap(apiType.getMethod("service",Class.class).invoke(api,cityServiceType));
         Object city=Objects.requireNonNull(unwrap(cityServiceType.getMethod("getPlayerCity",UUID.class).invoke(cities,player.getUniqueId())),"Player has no city");UUID cityId=(UUID)call(city,"id");
         Object worldApi=service("StarWorld","dev.starworld.api.StarWorldApi");Class<?> worldType=type("StarWorld","dev.starworld.api.StarWorldApi");
+        if(args[0].equals("survey-map")){
+            Location at=player.getLocation();
+            @SuppressWarnings("unchecked") CompletableFuture<Optional<?>> map=(CompletableFuture<Optional<?>>)worldType.getMethod("regionMap",UUID.class,UUID.class,int.class,int.class).invoke(worldApi,cityId,at.getWorld().getUID(),at.getBlockX()>>4,at.getBlockZ()>>4);
+            @SuppressWarnings("unchecked") CompletableFuture<Optional<?>> districts=(CompletableFuture<Optional<?>>)worldType.getMethod("districts",UUID.class).invoke(worldApi,cityId);
+            map.thenCombine(districts,(view,groups)->Map.of("map",view.orElseThrow(),"districts",groups.orElseThrow(),"entryPoints",List.of("StarWorldApi.regionMap","StarWorldApi.districts")))
+                    .whenComplete((snapshot,failure)->Bukkit.getScheduler().runTask(this,()->{
+                        if(failure!=null){getLogger().log(java.util.logging.Level.SEVERE,"SW_FIXTURE_FAILED map snapshot",failure);return;}
+                        getLogger().info("SW_FIXTURE_MAP_JSON "+json.toJson(snapshot));
+                    }));return true;
+        }
         @SuppressWarnings("unchecked") CompletableFuture<Optional<?>> geography=(CompletableFuture<Optional<?>>)worldType.getMethod("geography",UUID.class).invoke(worldApi,cityId);
         @SuppressWarnings("unchecked") CompletableFuture<Optional<?>> regions=(CompletableFuture<Optional<?>>)worldType.getMethod("regions",UUID.class,String.class,int.class).invoke(worldApi,cityId,"",64);
         geography.thenCombine(regions,(summary,page)->Map.of("cityId",cityId.toString(),"summary",summary.orElseThrow(),"regions",callUnchecked(page.orElseThrow(),"regions")))

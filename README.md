@@ -1,6 +1,6 @@
 # StarWorld
 
-持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.5.0**，分批市场功能已通过本轮验证；后续扩展按[开发计划](docs/development-plan.md)持续实施。
+持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.6.0**，地区分组和方位地图已通过本轮验证；1.5分批市场的证据已归档；后续扩展按[开发计划](docs/development-plan.md)持续实施。
 
 **开发分支：** [`codex/complete-development-stages`](https://github.com/addxiaoyi/StarWorld/tree/codex/complete-development-stages)，对应[草稿PR #2](https://github.com/addxiaoyi/StarWorld/pull/2)。当前状态见[开发计划](docs/development-plan.md)和[测试记录](docs/test-results.md)，已完成的历史发行见[1.4交接说明](docs/handoff-1.4.0.md)。
 
@@ -23,7 +23,7 @@ python -m unittest discover -s tools -p "test_*.py" -v
 npm --prefix tools/paper-client test
 ```
 
-产物为 `target/starworld-1.5.0.jar` 和 `target/starworld-1.5.0-sources.jar`。完整验证证据包和发行 ZIP 只在全部运行套件绑定同一JAR后生成；只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
+产物为 `target/starworld-1.6.0.jar` 和 `target/starworld-1.6.0-sources.jar`。完整验证证据包和发行 ZIP 只在全部运行套件绑定同一JAR后生成；只安装主插件 JAR，源码包和 `original-*` 不是运行插件。
 
 1. 正常关服，备份整个 `plugins/StarWorld/`。升级时保留数据库和持久配置 ID。
 2. 放置插件 JAR，使用 Paper 1.21.11 和审计兼容的 StarCore 启动。
@@ -50,7 +50,7 @@ npm --prefix tools/paper-client test
 | 国家资源出口 | 配置实物成本兑换已有国家抽象资源分类；outbox、稳定事务 ID、核心持久回执、退避重试 |
 | 核心军队战斗 | 已提交真实军需与地形通过公开army_combat贡献点影响有效设施区块的军队伤害 |
 | GUI/API | 城市仓储/设施与发展GUI，生活/贸易命令入口；不可变 Future 查询及提交后事件 |
-| 地区地图册 | 有界分页地形、资源余量/初始容量/恢复、文化与设施；城市管理者可用 `/sw survey` 勘探脚下已加载且本国、本城拥有的区块，每城最多128个地区 |
+| 地区地图册 | 分页地形、资源、文化与设施；`/sw map` 方位地图和 `/sw districts` 相邻同地形分组；管理者用 `/sw survey` 勘探脚下已加载且本国、本城拥有的区块，每城最多128个地区 |
 | 商路调度 | 同端点替代商路、双方确认改道、共享运力瓶颈；改道重计完整运时，原当期占用不退款 |
 | 国库实物市场 | 按数量分批购买限价挂牌，实体货物先托管；国家创始人通过核心原子幂等转账付款，确认回执后实际商路交货 |
 | 长期存档 | 有界无损审计压缩归档、旧报表清理；付款/货物/生活活动的关键去重凭据永久保留 |
@@ -71,7 +71,7 @@ npm --prefix tools/paper-client test
 
 ```text
 /sw menu|develop|status|stock|buildings|development|history|culture|nation
-/sw atlas|regions|survey|climate|market-menu|disaster-menu|governance
+/sw atlas|map|districts|regions|survey|climate|market-menu|disaster-menu|governance
 /sw disaster options|respond <策略ID> <requestUUID>|status [页]|history [页]
 /sw works options|start <工程ID> <requestUUID>|status [页]|history [页]
 /sw civic options|request <需求ID> <requestUUID>|complete <requestUUID>|status [页]|history [页]
@@ -127,7 +127,7 @@ npm --prefix tools/paper-client test
 
 [需求映射](docs/requirements.md) · [架构](docs/architecture.md) · [Java API](docs/API.md) · [玩法验收](docs/gameplay.md) · [地区地图册](docs/geography.md) · [逐世界气候](docs/climate.md) · [交通贸易](docs/logistics.md) · [国库实物市场](docs/market.md) · [国家服务](docs/core-extension.md) · [战斗联动](docs/combat.md) · [生活联动](docs/life-integrations.md) · [森罗实服验收](docs/senluo-acceptance.md) · [存档维护](docs/storage-maintenance.md) · [千城基线](docs/scale.md) · [测试结果](docs/test-results.md) · [1.2验收状态](docs/evidence/1.2-acceptance-status.md) · [后续边界](docs/roadmap.md)
 
-当前1.5构建通过 **493项Java / 54套件、73项Python、21项Node**，失败、错误与跳过均为0；千城SQLite和覆盖率报告已生成。同一JAR通过 **25阶段Paper进阶/分批购买与6阶段真实1.4市场升级**，五次启动均正常停服。主JAR SHA-256：`7bc7f174632de063d95f5e4fc85fdff7cf6d673d9839db306c5e93a553d22f26`。范围与限制见[测试记录](docs/test-results.md)。
+已冻结的1.5构建通过 **493项Java / 54套件、73项Python、21项Node**，失败、错误与跳过均为0；千城SQLite和覆盖率报告已生成。同一JAR通过 **25阶段Paper进阶/分批购买与6阶段真实1.4市场升级**，五次启动均正常停服。主JAR SHA-256：`7bc7f174632de063d95f5e4fc85fdff7cf6d673d9839db306c5e93a553d22f26`。范围与限制见[测试记录](docs/test-results.md)。
 
 1.5完整发行及roadmap后续扩展仍在推进。历史1.4的217阶段、独立安装和发行包证据保留于[历史报告](docs/history/test-results-1.4.0.md)；已验证的二进制交付件保存在`runtime/releases/1.4.0`。依赖、世界和原始日志位于忽略的`runtime/`，第三方插件与玩家数据库不进入源码交付。
 

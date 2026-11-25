@@ -1,44 +1,35 @@
 {
   "schema": 1,
-  "version": "1.5.0",
+  "version": "1.6.0",
   "status": "feature-acceptance-passed",
   "release_status": "full-release-suite-not-run",
-  "recorded_at": "2026-11-25T11:12:33.183676+00:00",
-  "artifact_sha256": "7bc7f174632de063d95f5e4fc85fdff7cf6d673d9839db306c5e93a553d22f26",
-  "sources_sha256": "11697cc26d56b9071370bb7a443f6e66f9dcf8a422cad292b9952cfedde88c7b",
-  "unit_evidence_sha256": "c6c5a45d488c9b4ac2b99c470ac20e1b95d37cddd9789030d75e1e497c5687b8",
+  "recorded_at": "2026-11-25T11:29:57.879576+00:00",
+  "artifact_sha256": "e2a4ecf9daaa3393ba418109ff0408f23cf32af07603f1c5522cfeb0947dcbe1",
+  "sources_sha256": "710da49ea08639525d65108f56461c7064bfc5c75bef8bc87f5475cea00603fb",
+  "unit_evidence_sha256": "bc1f6414bb4f721b8ca1891c3a522334dcd61ab851d3bf9ed3a83edb5a76121d",
   "tests": {
-    "java": 493,
-    "java_suites": 54,
+    "java": 502,
+    "java_suites": 56,
     "python": 73,
     "node": 21
   },
-  "runtime_stages": 31,
+  "runtime_stages": 12,
   "runs": [
     {
-      "suite": "progression",
-      "stages": 25,
-      "runtime": "runtime/progression15/progression-acceptance/2026-11-25T11-05-21-095Z",
-      "evidence_sha256": "1808fb9cf2d23632233db77448a908cbf3c66be7676dca85249a7db41d3d3076",
-      "runner_sha256": "14c813c8405c8d3d9a2ccfd1e8e3ec2cb6da5c5d7f3b60aa99f2abfa0de1cf22",
-      "finished_at": "2026-11-25T11:09:56.340Z",
-      "normal_server_stops": 3
-    },
-    {
-      "suite": "market-upgrade",
-      "stages": 6,
-      "runtime": "runtime/market-upgrade15-r2/market-upgrade-acceptance/2026-11-25T11-10-25-188Z",
-      "evidence_sha256": "e6f3771cc7493d5b0e11c51cfe2bee5db159f6885d68744bc73a45b5794e8420",
-      "runner_sha256": "32998a73417ff47cd0161bb5a89f48b35e12eb6b7bf6c08bcdd1c991e8218746",
-      "finished_at": "2026-11-25T11:10:56.493Z",
+      "suite": "storage-and-geography",
+      "stages": 12,
+      "runtime": "runtime/storage16/survey-acceptance/2026-11-25T11-27-30-122Z",
+      "evidence_sha256": "1fdda1985ba13b6714f2ec6788596636e54d6086c22fb24b7f43e7c4eb7a45cc",
+      "runner_sha256": "9fbef4f54552f0839126aecb1ab88de2a33b56c539671fee39aae9cc89c32be8",
+      "finished_at": "2026-11-25T11:29:08.195Z",
       "normal_server_stops": 2
     }
   ],
-  "scope": "Partial marketplace purchases and real 1.4 market migration. Other roadmap extensions remain in progress.",
+  "scope": "Read-only regional grouping, map navigation, restart consistency and bounded 60-second storage saturation. Remaining roadmap extensions continue.",
   "historical_release": "runtime/releases/1.4.0",
   "tool_logs": {
-    "build-1.5.0.log": "83a5ada126e3687e291a41abc8bd21939ba471cd6a474504c1da37a9f36dd824",
-    "python-tests-1.5.0-r2.log": "adff6625f05befbff66b278770d89f71683b499357297714ec386372cacbb50b",
-    "node-tests-1.5.0-r2.log": "cdca81e2664a6c5a011fd7704e02830d3ba59c10f628d1621349f95841e6e76c"
+    "build-1.6.0.log": "9171894e0d7a55c6ae6ddc150ba5d7e2fb8a9d737c7177ae0c3db39446536f3e",
+    "python-tests-1.6.0.log": "199c0a45e019f9e513190edf098553ab2941f4d96e9032cd6a31784d755a28eb",
+    "node-tests-1.6.0.log": "48f015859eedd780da392ea44e7752ea0a487a88e36990936fdd478a47069099"
   }
 }

@@ -32,6 +32,10 @@ public interface StarWorldApi {
     default CompletableFuture<Optional<dev.starworld.evolution.NationalEvolution.NationDevelopment>> nationDevelopment(UUID nationId){return CompletableFuture.completedFuture(Optional.empty());}
     default CompletableFuture<Optional<dev.starworld.evolution.RegionAtlas.Page>> regions(UUID cityId,String after,int limit){return CompletableFuture.completedFuture(Optional.empty());}
     default CompletableFuture<Optional<dev.starworld.evolution.RegionAtlas.Summary>> geography(UUID cityId){return CompletableFuture.completedFuture(Optional.empty());}
+    /** Four-neighbor groups of current-nation registered regions, without moving any original reserve. */
+    default CompletableFuture<Optional<dev.starworld.evolution.RegionalMap.DistrictReport>> districts(UUID cityId){return CompletableFuture.completedFuture(Optional.empty());}
+    /** Fixed 9 by 5 chunk viewport. Missing cells remain unknown; this call does not inspect Bukkit worlds. */
+    default CompletableFuture<Optional<dev.starworld.evolution.RegionalMap.View>> regionMap(UUID cityId,UUID worldId,int centerChunkX,int centerChunkZ){return CompletableFuture.completedFuture(Optional.empty());}
     default CompletableFuture<Optional<dev.starworld.logistics.LogisticsState.TransportStatus>> transport(UUID routeId){return CompletableFuture.completedFuture(Optional.empty());}
     default CompletableFuture<List<dev.starworld.market.MarketState.Listing>> marketListings(int limit,int offset){return CompletableFuture.completedFuture(List.of());}
     default CompletableFuture<List<dev.starworld.market.MarketState.Purchase>> marketPurchases(UUID cityId,int limit,int offset){return CompletableFuture.completedFuture(List.of());}

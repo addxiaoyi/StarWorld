@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "version": "1.5.0",
-  "recorded_at": "2026-11-25T11:04:58.476322+00:00",
+  "version": "1.6.0",
+  "recorded_at": "2026-11-25T11:27:22.752631+00:00",
   "command": "./mvnw -B --no-transfer-progress clean verify",
   "java": "OpenJDK 21.0.10+7-Ubuntu-124.04",
-  "artifact_sha256": "7bc7f174632de063d95f5e4fc85fdff7cf6d673d9839db306c5e93a553d22f26",
+  "artifact_sha256": "e2a4ecf9daaa3393ba418109ff0408f23cf32af07603f1c5522cfeb0947dcbe1",
   "totals": {
-    "tests": 493,
+    "tests": 502,
     "failures": 0,
     "errors": 0,
     "skipped": 0
@@ -112,7 +112,14 @@
     },
     {
       "suite": "dev.starworld.evolution.RegionAtlasTest",
-      "tests": 4,
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "dev.starworld.evolution.RegionalMapTest",
+      "tests": 3,
       "failures": 0,
       "errors": 0,
       "skipped": 0
@@ -370,6 +377,13 @@
       "skipped": 0
     },
     {
+      "suite": "dev.starworld.ui.GeographyMenuTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
       "suite": "dev.starworld.ui.GovernanceMenuTest",
       "tests": 14,
       "failures": 0,
@@ -393,30 +407,30 @@
   ],
   "coverage": {
     "INSTRUCTION": {
-      "covered": 55291,
-      "missed": 15662
+      "covered": 56763,
+      "missed": 16177
     },
     "BRANCH": {
-      "covered": 3993,
-      "missed": 2664
+      "covered": 4099,
+      "missed": 2728
     },
     "LINE": {
-      "covered": 3769,
-      "missed": 720
+      "covered": 3875,
+      "missed": 748
     },
     "COMPLEXITY": {
-      "covered": 2718,
-      "missed": 2724
+      "covered": 2797,
+      "missed": 2794
     },
     "METHOD": {
-      "covered": 1495,
-      "missed": 548
+      "covered": 1536,
+      "missed": 568
     },
     "CLASS": {
-      "covered": 215,
+      "covered": 224,
       "missed": 13
     }
   },
-  "build_log_sha256": "83a5ada126e3687e291a41abc8bd21939ba471cd6a474504c1da37a9f36dd824",
-  "sources_sha256": "11697cc26d56b9071370bb7a443f6e66f9dcf8a422cad292b9952cfedde88c7b"
+  "build_log_sha256": "9171894e0d7a55c6ae6ddc150ba5d7e2fb8a9d737c7177ae0c3db39446536f3e",
+  "sources_sha256": "710da49ea08639525d65108f56461c7064bfc5c75bef8bc87f5475cea00603fb"
 }

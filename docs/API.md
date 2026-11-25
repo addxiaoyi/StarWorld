@@ -22,6 +22,8 @@ world.city(starCoreCityId).thenAccept(result -> {
 | `culture(UUID)` | `Future<List<Culture>>`；已登记地区各文明传统与影响值 |
 | `regions(UUID,String,int)` | `Future<Optional<RegionAtlas.Page>>`；本城设施或勘探地区、资源/文化/设施的 cursor 分页，空字符串开始，limit 为 1–64 |
 | `geography(UUID)` | `Future<Optional<RegionAtlas.Summary>>`；最多128个不同地区的地形、剩余量/初始容量/恢复汇总 |
+| `districts(UUID)` | `Future<Optional<RegionalMap.DistrictReport>>`；同世界、同地形、四向相邻的已登记地区分组，保留成员ID及各资源总和；最多128个地区，不改变原地区储量 |
+| `regionMap(UUID,UUID,int,int)` | `Future<Optional<RegionalMap.View>>`；城市、世界、中心区块X/Z的9×5只读地图，上北下南，未知位置不返回单元；坐标范围±1,875,000，不读取或加载世界区块 |
 | `life(UUID)` | `Future<Optional<LifeView>>`；累计生活文化、当前有限倍率、家具和活动会话 |
 | `lifeEvolutionCredit(UUID)` | `Future<Optional<LifeState.EvolutionCredit>>`；按真实生活动作 UUID 只读诊断原文化、已归集文化、最近归集周期和是否待处理；不存在返回空，不推进归集、不暴露玩家身份 |
 | `routes(UUID,int,int)` | `Future<List<Route>>`；有限分页查询城市相关商路 |

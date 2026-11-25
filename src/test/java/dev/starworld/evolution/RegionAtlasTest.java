@@ -53,4 +53,21 @@ class RegionAtlasTest {
             assertEquals(RegionAtlas.MAX_REGIONS_PER_CITY,ids.size());assertEquals(RegionAtlas.MAX_REGIONS_PER_CITY,atlas.summary(c.cityId()).regions());assertEquals(0,atlas.summary(c.cityId()).facilities());
         }
     }
+    @Test void groupingAndMapKeepOriginalResourceRowsAndObserveNationChangesAcrossRestart()throws Exception {
+        Definitions d=definitions();CoreCity c=city(),foreign=city();Path db=temp.resolve("map.db");RegionalMap.DistrictReport report;
+        try(WorldStore s=new WorldStore(db,100000)){
+            cultureSchema(s,d);add(s,d,c,"farm",-16,-16);add(s,d,c,"workshop",0,-16);add(s,d,c,"farm",0,0);add(s,d,foreign,"farm",16,0);
+            RegionAtlas atlas=new RegionAtlas(s,d);var reserves=s.query("SELECT region||resource||amount FROM reserve ORDER BY region,resource",r->r.getString(1));
+            var stock=s.stock(c.cityId());report=atlas.districts(c.cityId());assertEquals(1,report.districts().size());assertEquals(3,report.districts().getFirst().regions().size());assertEquals(3,report.districts().getFirst().facilities());assertEquals(150,report.districts().getFirst().reserves().get("ore"));
+            var map=atlas.map(c.cityId(),world,0,0);assertEquals(List.of(12,13,22),map.cells().stream().map(RegionalMap.Cell::slot).toList());
+            assertEquals(report.districts(),map.districts());assertEquals(reserves,s.query("SELECT region||resource||amount FROM reserve ORDER BY region,resource",r->r.getString(1)));assertEquals(stock,s.stock(c.cityId()));
+            assertTrue(s.query("SELECT id FROM region WHERE last_regen<>-1",r->r.getString(1)).isEmpty());
+        }
+        try(WorldStore s=new WorldStore(db,100000)){
+            cultureSchema(s,d);RegionAtlas atlas=new RegionAtlas(s,d);assertEquals(report,atlas.districts(c.cityId()));
+            CoreCity transferred=new CoreCity(c.cityId(),UUID.randomUUID(),c.cityName(),"new nation",1,"snapshot");s.ensureCity(transferred);
+            assertTrue(atlas.districts(c.cityId()).districts().isEmpty());assertTrue(atlas.map(c.cityId(),world,0,0).cells().isEmpty());
+            s.ensureCity(c);assertEquals(report,atlas.districts(c.cityId()));s.invalidateCity(c.cityId());assertFalse(atlas.map(c.cityId(),world,0,0).authorityActive());assertTrue(atlas.districts(c.cityId()).districts().isEmpty());
+        }
+    }
 }

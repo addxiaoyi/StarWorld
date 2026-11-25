@@ -42,6 +42,23 @@ public final class RegionAtlas {
     private record CityIdentity(UUID nation,boolean active,long period) {}
     private record RegionKey(String id,String worldName) {}
 
+    public RegionalMap.DistrictReport districts(UUID city)throws SQLException {
+        return store.tx(s->{CityIdentity identity=identity(city);return new RegionalMap.DistrictReport(city,identity.nation(),identity.active(),identity.period(),RegionalMap.districts(all(city,identity)));});
+    }
+    public RegionalMap.View map(UUID city,UUID world,int centerX,int centerZ)throws SQLException {
+        RegionalMap.coordinates(centerX,centerZ);Objects.requireNonNull(world);
+        return store.tx(s->{CityIdentity identity=identity(city);return RegionalMap.view(city,identity.nation(),identity.active(),identity.period(),world,centerX,centerZ,all(city,identity));});
+    }
+    private List<AtlasRegion> all(UUID city,CityIdentity identity)throws SQLException {
+        if(!identity.active())return List.of();
+        List<RegionKey> keys=store.query("SELECT region,world_name FROM city_region WHERE city=? AND nation=? ORDER BY region LIMIT ?",
+                r->new RegionKey(r.getString(1),r.getString(2)),city,identity.nation(),MAX_REGIONS_PER_CITY+1);
+        if(keys.size()>MAX_REGIONS_PER_CITY)throw new IllegalStateException("Region atlas refuses more than 128 regions in one city");
+        Map<String,List<Facility>> facilities=facilities(city,identity.nation());List<AtlasRegion> result=new ArrayList<>();
+        for(RegionKey key:keys)result.add(region(key,facilities.getOrDefault(key.id(),List.of())));
+        return List.copyOf(result);
+    }
+
     public Page page(UUID city,String after,int limit)throws SQLException {
         Objects.requireNonNull(city);if(limit<1||limit>MAX_PAGE_SIZE)throw new IllegalArgumentException("Region page size must be 1–64");
         String cursor=after==null?"":after;

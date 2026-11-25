@@ -1,6 +1,6 @@
 # 原始需求与实现、验证映射
 
-此表按开发任务逐项对应当前1.5.0开发源码，保留各增量版本的实现边界。自动化组名指 `src/test/java/dev/starworld/` 下测试；通过数、真实服务端流程、JAR 哈希及未验证项以 [test-results.md](test-results.md) 为准。
+此表按开发任务逐项对应当前1.6.0开发源码，保留各增量版本的实现边界。自动化组名指 `src/test/java/dev/starworld/` 下测试；通过数、真实服务端流程、JAR 哈希及未验证项以 [test-results.md](test-results.md) 为准。
 
 ## 项目、环境和复用
 
@@ -16,7 +16,7 @@
 
 | 原始要求 | 实现路径与行为 | 验证和边界 |
 | --- | --- | --- |
-| 地区划分与地形战略属性 | `WorldState.Site.regionKey`、`TerrainClassifier`、Definitions.Terrain | 登记区块增量分区，单点群系采样；RegionAtlas分页地图册与汇总显示储量、恢复、设施和文化；不全图扫描 |
+| 地区划分与地形战略属性 | `WorldState.Site.regionKey`、`TerrainClassifier`、Definitions.Terrain、`RegionalMap` | 登记区块增量分区；分页地图册、9×5方位图和四向同地形分组；每地区只统计一次，不全图扫描或改变储量；`RegionalMapTest`、`RegionAtlasTest`、`GeographyMenuTest` |
 | 山/河/平原/林/沙/雪六类地区 | definitions.yml六项农业/运输/军事系数 | `SimulationTest`、配置测试 |
 | 区域资源丰度和恢复 | region/reserve/last_regen；肥力、林木和矿藏有限储量 | 共享地区每期只恢复一次，矿藏默认不可再生；重复登记不刷新 |
 | 地形影响农业/运输/贸易/军事 | Simulation农业与运输阻力；Logistics地形运时；readiness与terrainDefense通过公开army_combat影响真实军队伤害 | `SimulationTest`、`LogisticsServiceTest`、`StarCoreCombatContributorTest`及真实ArmyService/army_combat验收；有限设施区块/当前或前一周期，核心最高值聚合，不影响玩家PVP |
@@ -112,9 +112,9 @@
 | 增量 | 实现与验证 |
 | --- | --- |
 | 旧生活贡献分期结转 | `LifeEvolutionCarryTest` 验证降低上限后的分期额度、持久预算与重启去重；真实1.0源和当前候选分别运行4/7阶段。当前候选7阶段、三次正常启停通过 |
-| 商路配置收紧与恢复 | `LogisticsConfigurationRecoveryTest` 验证受限路线、托管货物及恢复；当前JAR真实四次启停14阶段已通过 |
+| 商路配置收紧与恢复 | `LogisticsConfigurationRecoveryTest` 验证受限路线、托管货物及恢复；1.4历史JAR真实四次启停14阶段已通过，当前版本验证范围见测试记录 |
 | 逐世界气候与灌溉韧性 | `ClimateRulesTest`、`StarCoreBridgeTest` 和生产结算接线覆盖国家/世界归属、倍率边界与精确配方映射；扩展实服套件验证真实核心天气对产量的影响 |
-| 有限地区勘探 | `RegionAtlasTest`、`WorldRuntimeTest`、`WorldStoreTest` 覆盖纸张成本、128地区上限、归属复核、幂等发现和schema3回填；当前JAR的勘探/存储套件8阶段通过 |
+| 有限地区勘探 | `RegionAtlasTest`、`WorldRuntimeTest`、`WorldStoreTest` 覆盖纸张成本、128地区上限、归属复核、幂等发现和schema3回填；1.6当前JAR的勘探/地图/存储套件12阶段通过 |
 | 存储过载和批次边界 | `StorageWorkerTest` 覆盖256项队列、拒绝与顺序、关闭终态；城市生产批次最多64个。当前JAR的60秒真实Paper压力及恢复验证通过 |
 | 完整发行交付 | 当前JAR的475项Java测试、千城SQLite、217阶段真实Paper玩法/迁移及独立安装双启动共同通过收集器；`package-release.ps1` 已生成发行ZIP。源码、证据清单、CRC和全部载荷SHA-256独立核验通过，准确范围见[测试记录](test-results.md) |
 

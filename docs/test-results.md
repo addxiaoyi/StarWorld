@@ -1,5 +1,11 @@
 # StarWorld 测试与验收记录
 
+## 2026-11-25 GitHub交付与跨设备交接
+
+产品代码提交 `0a4898622cb96cf6bd6f5b5f4b99189c2463d4a3` 已推送到 `codex/complete-development-stages`，建立[草稿PR #2](https://github.com/addxiaoyi/StarWorld/pull/2)。[GitHub Actions #39](https://github.com/addxiaoyi/StarWorld/actions/runs/45571366911)的Java验证和工具验证两个任务均已完成且成功：Java21运行 **475项、0失败/错误/跳过**，Python **71项**通过，Node **18项**通过；插件artifact及Surefire/JaCoCo报告上传成功。日志摘要和artifact标识见[远程CI记录](evidence/ci/1.4.0-20261125.json)。
+
+CI验证同一源码的构建和测试，未运行Paper或真实存档迁移，也未比对远程JAR与本机冻结JAR字节。当前本机JAR仍为 `9d120795…`，13个隔离输入尚未开始实服，最终发行ZIP尚未生成。阶段状态、新设备命令、需要另行迁移的存档/第三方依赖以及原始运行计划统一记录在[换设备交接](handoff-1.4.0.md)。
+
 ## 2026-11-25 生活候选迁移准备补齐
 
 新增 `tools/prepare-life-candidate.py`，只从已通过当前四阶段、正常停服且资源日志绑定当前运行器的真实1.0生活源准备候选副本。它核对未消费的Cookery25凭据、插件/配置指纹、两个数据库的完整性和SHA-256；保留世界、玩家及数据库文件的原始字节，只替换已通过单测的候选JAR、端口和两项文化上限。复制前后复核源库与WAL，发现源服重新启动或库文件改变时拒绝输出准备成功记录。使用方式见[生活夹具说明](../tools/senluo-fixture/README.md)。

@@ -2,6 +2,8 @@
 
 持续演化的 Minecraft 文明世界。独立 Maven/Paper 插件，复用 **StarCore 的国家、城市、领土、科技、政策、繁荣、天气、时代和资源服务**，保存自己的地理产业、城市发展、交通、文化与生活状态，不创建第二套国家核心。当前源代码版本为 **1.4.0**。
 
+**换设备继续开发：** 使用分支 [`codex/complete-development-stages`](https://github.com/addxiaoyi/StarWorld/tree/codex/complete-development-stages)，先读[开发进度与交接](docs/handoff-1.4.0.md)。[PR #2](https://github.com/addxiaoyi/StarWorld/pull/2)保留草稿；当前代码已通过远程CI的475项Java、71项Python、18项Node测试，新JAR的完整Paper/迁移验收与发行ZIP仍待完成。
+
 代码仓库：[addxiaoyi/StarWorld](https://github.com/addxiaoyi/StarWorld)。技术基线：Java 21、Paper **1.21.11**，CraftEngine **26.9.1** 为可选内容依赖。2026-11-20 审计固定 StarCore `f769e62799e769a18fe51305b545869a17f80cd1` 和 SenLuo 源码 `cecc87d616a577b8bf3bccaff1d812619e87c59f`；森罗隔离服使用固定生产候选 `3e774d00567deb9cb65eee8da6de8a65254e5b8e`。见 [StarCore 审计](docs/audit-starcore.md) 和 [森罗审计](docs/audit-senluo.md)。
 
 **Folia 仍为兼容规划。** 当前 StarCore 可变服务缺少区域线程安全契约，本版检测 Folia 后明确停用。缺 StarCore 时可独立安装、生成配置和数据库并显示降级原因；城市玩法需要真实 StarCore 国家/城市模块，不会自动建立替代国家。森罗模块或 CE 缺失时保留原版产业、贸易和音符盒演奏；缺失内容或 API 明确停用。

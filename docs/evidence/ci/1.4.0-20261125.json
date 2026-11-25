@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "kind": "remote-ci-verification",
+  "version": "1.4.0",
+  "repository": "addxiaoyi/StarWorld",
+  "sourceCommit": "0a4898622cb96cf6bd6f5b5f4b99189c2463d4a3",
+  "branch": "codex/complete-development-stages",
+  "pullRequest": "https://github.com/addxiaoyi/StarWorld/pull/2",
+  "workflow": {
+    "id": 45571366911,
+    "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45571366911",
+    "name": "Java 21 build",
+    "status": "completed",
+    "conclusion": "success",
+    "event": "pull_request"
+  },
+  "jobs": [
+    {
+      "id": 139058544288,
+      "name": "verify",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45571366911/job/139058544288"
+    },
+    {
+      "id": 139058544431,
+      "name": "Evidence and acceptance tool tests",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45571366911/job/139058544431"
+    }
+  ],
+  "tests": {
+    "java": {
+      "tests": 475,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "logSummary": "2026-11-25T07:51:47.3351138Z [INFO] Tests run: 475, Failures: 0, Errors: 0, Skipped: 0"
+    },
+    "python": {
+      "tests": 71,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "logSummary": "2026-11-25T07:51:15.2001771Z Ran 71 tests in 2.284s"
+    },
+    "node": {
+      "tests": 18,
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "artifacts": [
+    {
+      "id": 15002745412,
+      "name": "starworld-plugin",
+      "bytes": 15280601,
+      "digest": "sha256:6b4b611c7f38d40fbe4c73fe54c685323580207c30722c98df9f116bae495553",
+      "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45571366911/artifacts/15002745412",
+      "expiresAt": "2027-02-23T07:51:05Z"
+    },
+    {
+      "id": 15002421256,
+      "name": "starworld-test-reports",
+      "bytes": 1082448,
+      "digest": "sha256:b64f0b3cf36cd4bd79bda837acf9fbbbe66a82d43a39cc81574654ddefb7514b",
+      "url": "https://github.com/addxiaoyi/StarWorld/actions/runs/45571366911/artifacts/15002421256",
+      "expiresAt": "2027-02-23T07:51:05Z"
+    }
+  ],
+  "localFrozenPluginSha256": "9d1207953c4883a407a2f284332d0e19e12c71b8b72dee3547931319fdd70dfd",
+  "ciPluginHashComparedToLocalFrozenBuild": false,
+  "realPaperAcceptanceForLocalFrozenBuild": "not-started",
+  "releaseEvidenceZipCreated": false,
+  "releaseZipCreated": false,
+  "scope": "CI builds the source and checks unit/tool tests. It does not run Paper, migrate real saved worlds, or certify a final release. Artifact digests describe GitHub ZIPs, not the inner plugin JAR."
+}
